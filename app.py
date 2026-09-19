@@ -9,10 +9,10 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
-sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
+sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜŞAVİRLİK MÜHENDİSLİK İNŞ.SAN.TİC.LTD")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
-rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Ahmet Yılmaz (Makine Mühendisi)")
+rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet KÜÇÜK (Makine Mühendisi)")
 tarih = st.text_input("Rapor Tarihi", "Eylül 2026")
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
