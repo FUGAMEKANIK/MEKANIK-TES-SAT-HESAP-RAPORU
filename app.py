@@ -5,21 +5,30 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
-st.write("Lütfen kurumsal kapak bilgilerini giriniz:")
+st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
-# Girdi Alanları
+# --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
+st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Ahmet Yılmaz (Makine Mühendisi)")
 tarih = st.text_input("Rapor Tarihi", "Eylül 2026")
 
+# --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
+st.header("2. Genel Bilgiler ve Tasarım Kriterleri")
+proje_yeri = st.text_input("Projenin Yeri / İl", "Ankara")
+dis_hava_sicaklik = st.text_input("Dış Hava Tasarım Sıcaklığı (°C)", "-12 °C")
+ic_hava_sicaklik = st.text_input("İç Ortam Tasarım Sıcaklığı (°C)", "20 °C")
+yonetmelik_standart = st.text_input("Esas Alınan Standart / Yönetmelik", "TS 825, ASHRAE, Binalarda Yangın Korunması Yönetmeliği")
+proje_aciklamasi = st.text_area("Proje Genel Açıklaması", "Bu rapor, ilgili bina mekanik tesisat sistemlerinin, yürürlükteki standartlar ve yönetmeliklere uygun olarak tasarlanması amacıyla hazırlanmıştır.")
+
 # Rapor Oluştur Butonu
-if st.button("Profesyonel Kapaklı Word Raporu Oluştur"):
+if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     if is_adi and sirket_adi:
         doc = Document()
         
-        # Sayfa boşluklarını ayarlayalım (Kapak için ferah olsun)
+        # Sayfa boşlukları
         sections = doc.sections
         for section in sections:
             section.top_margin = Inches(1.5)
@@ -27,7 +36,7 @@ if st.button("Profesyonel Kapaklı Word Raporu Oluştur"):
             section.left_margin = Inches(1.2)
             section.right_margin = Inches(1.2)
 
-        # 1. Şirket / Kuruluş İsmi (Büyük ve Ortalanmış)
+        # --- KAPAK SAYFASI ---
         p_sirket = doc.add_paragraph()
         p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_sirket = p_sirket.add_run(sirket_adi.upper())
@@ -35,11 +44,9 @@ if st.button("Profesyonel Kapaklı Word Raporu Oluştur"):
         run_sirket.font.bold = True
         run_sirket.font.name = 'Arial'
         
-        # Araya biraz boşluk bırakalım
         doc.add_paragraph()
         doc.add_paragraph()
 
-        # 2. İşin Adı (Proje Başlığı)
         p_is = doc.add_paragraph()
         p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_is_baslik = p_is.add_run("PROJE ADI:\n")
@@ -53,7 +60,6 @@ if st.button("Profesyonel Kapaklı Word Raporu Oluştur"):
 
         doc.add_paragraph()
 
-        # 3. Rapor Türü (Mekanik Tesisat Hesap Raporu)
         p_tur = doc.add_paragraph()
         p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_tur = p_tur.add_run(rapor_turu.upper())
@@ -61,29 +67,47 @@ if st.button("Profesyonel Kapaklı Word Raporu Oluştur"):
         run_tur.font.bold = True
         run_tur.font.name = 'Arial'
 
-        # Sayfanın alt kısmına doğru boşluk bırakmak için birkaç paragraf ekleyelim
         for _ in range(4):
             doc.add_paragraph()
 
-        # 4. En Altta Hazırlayan ve Tarih (Sağa veya Ortaya Hizalı)
         p_alt = doc.add_paragraph()
         p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
         run_hazirlayan = p_alt.add_run(f"Hazırlayan:\n{hazirlayan}\n\nTarih:\n{tarih}")
         run_hazirlayan.font.size = Pt(11)
         run_hazirlayan.font.name = 'Arial'
 
-        # Hafızada dosya tutma ve indirme hazırlığı
+        # Yeni sayfaya geçiş (Genel Bilgiler için)
+        doc.add_page_break()
+
+        # --- BÖLÜM 1: GENEL BİLGİLER ---
+        doc.add_heading("1. GENEL BİLGİLER VE TASARIM KRİTERLERİ", level=1)
+        
+        doc.add_paragraph(proje_aciklamasi)
+        
+        # Genel Bilgiler Tablosu veya Maddeleri
+        doc.add_heading("1.1. Proje Parametreleri", level=2)
+        
+        p_bilgi = doc.add_paragraph()
+        p_bilgi.add_run(f"• Proje Yeri / İl: ").bold = True
+        p_bilgi.add_run(f"{proje_yeri}\n")
+        p_bilgi.add_run(f"• Dış Hava Tasarım Sıcaklığı: ").bold = True
+        p_bilgi.add_run(f"{dis_hava_sicaklik}\n")
+        p_bilgi.add_run(f"• İç Ortam Tasarım Sıcaklığı: ").bold = True
+        p_bilgi.add_run(f"{ic_hava_sicaklik}\n")
+        p_bilgi.add_run(f"• Esas Alınan Standartlar: ").bold = True
+        p_bilgi.add_run(f"{yonetmelik_standart}\n")
+
+        # Hafızada dosya oluşturma
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
         
-        st.success("Kapak sayfası tasarımı başarıyla oluşturuldu!")
+        st.success("Genel bilgiler ve kapak başarıyla rapora eklendi!")
         
         st.download_button(
-            label="📥 Düzenli Kapaklı Word Dosyasını İndir (.docx)",
+            label="📥 Genel Bilgiler İçeren Word Dosyasını İndir (.docx)",
             data=buffer,
-            file_name=f"{is_adi.replace(' ', '_')}_Kapak_Raporu.docx",
+            file_name=f"{is_adi.replace(' ', '_')}_Genel_Bilgiler_Raporu.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
