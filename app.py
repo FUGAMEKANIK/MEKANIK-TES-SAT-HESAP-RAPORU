@@ -91,9 +91,9 @@ kapsam_atik_su = st.checkbox("Yapı içinde atık su tesisatı (Yapı çıkış 
 kapsam_yangin_dagitim = st.checkbox("Yangın suyu iç ve dış dağıtım sistemleri,", value=True)
 kapsam_kazan_dairesi = st.checkbox("Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True)
 kapsam_havalandirma = st.checkbox("Havalandırma Tesisatı", value=True)
-kapsam_otomatik = st.checkbox("Otomatik kontrol sistemi kavramı tanımı,", value=True)
 kapsam_basinc_hava = st.checkbox("Basınçlı hava tesisatı,", value=False)
 kapsam_medikal_gaz = st.checkbox("Medikal gaz tesisatı", value=False)
+kapsam_otomatik = st.checkbox("Otomatik kontrol sistemi kavramı tanımı,", value=True)
 
 ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
@@ -254,17 +254,14 @@ if st.button("Raporu Oluştur (.docx)"):
     if kapsam_yangin_dagitim: secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
     if kapsam_kazan_dairesi: secilen_kapsam.append("Merkezi ısıtma kazan dairesi ve tali teknik hacimler,")
     if kapsam_havalandirma: secilen_kapsam.append("Havalandırma Tesisatı")
-    if kapsam_otomatik: secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
     if kapsam_basinc_hava: secilen_kapsam.append("Basınçlı hava tesisatı,")
     if kapsam_medikal_gaz: secilen_kapsam.append("Medikal gaz tesisatı")
+    if kapsam_otomatik: secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
     
     if ek_kapsam.strip():
         for ekk in ek_kapsam.split("\n"):
             if ekk.strip():
                 secilen_kapsam.append(ekk.strip())
-
-    # Kapsam maddelerini alfabetik sıraya göre sıralama
-    secilen_kapsam.sort()
 
     if secilen_kapsam:
         for k in secilen_kapsam:
@@ -277,7 +274,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Tesisat kapsam maddelerindeki harfler kaldırılarak alfabetik sırayla hazırlandı!")
+    st.success("Otomatik kontrol tesisatı en sona alınarak Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
