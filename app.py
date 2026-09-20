@@ -51,22 +51,35 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
 st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-# Eksiksiz standart listesi checkbox'ları
-std_ts_825 = st.checkbox("TS 825 Binalarda Isı Yalıtım Kuralları", value=True)
+# Güncellenmiş standart ve yönetmelik seçim kutuları
+std_ts_825 = st.checkbox("TS 825 - BİNALARDA ISI YALITIM KURALLARI", value=True)
+std_yangin = st.checkbox('09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"', value=True)
+std_bep_2008_2010 = st.checkbox("5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”", value=True)
+std_ts_1258 = st.checkbox("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI", value=True)
+std_ts_826 = st.checkbox("TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI", value=True)
+std_ts_2164 = st.checkbox("TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI", value=True)
+std_ts_3419 = st.checkbox("TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI", value=True)
+std_ts_en_12056_2 = st.checkbox("TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA", value=True)
+std_ts_en_12845 = st.checkbox("TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM", value=True)
+std_mmo_84 = st.checkbox("MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)", value=True)
+std_mmo_352_5 = st.checkbox("MMO KALORİFER TESİSATI (Y.NO:352/5)", value=True)
+std_mmo_122 = st.checkbox("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)", value=True)
+std_mmo_133 = st.checkbox("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)", value=True)
+std_mmo_155 = st.checkbox("MMO KAZAN VE BACA(Y.NO:155)", value=True)
+
+# Diğer standartlar
 std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
-std_yangin = st.checkbox("Binaların Yangından Korunması Hakkında Yönetmelik", value=True)
 std_su = st.checkbox("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True)
 std_klima = st.checkbox("Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True)
-std_enerji = st.checkbox("Binalarda Enerji Performansı Yönetmeliği", value=True)
 std_tesisat = st.checkbox("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik", value=False)
 std_kanal = st.checkbox("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar", value=False)
-std_asansor = st.checkbox("Asansör Yönetmeliği / Standartları", value=False)
+std_asansor = st.checkbox("Asansör Yönetmeliği ve İlgili Standartlar", value=False)
 std_deprem = st.checkbox("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)", value=True)
 std_akustik = st.checkbox("Binaların Gürültüye Karşı Korunması Yönetmeliği", value=False)
 std_isg = st.checkbox("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler", value=True)
 
 # Ekstra özel standart eklemek isterseniz
-ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar (Her satıra bir tane yazabilirsiniz)", "", height=80)
+ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar ve açıklamaları (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
 sehir = "" 
 
@@ -172,20 +185,54 @@ if st.button("Raporu Oluştur (.docx)"):
     standart_giris = "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası standartlar ile yönetmelikler esas alınmıştır:"
     doc.add_paragraph(standart_giris)
     
-    # Seçilen standartları toplama listesi
+    # Seçilen standartların listesi
     secilen_standartlar = []
-    if std_ts_825: secilen_standartlar.append("TS 825 Binalarda Isı Yalıtım Kuralları")
-    if std_ashrae: secilen_standartlar.append("ASHRAE Standartları")
-    if std_yangin: secilen_standartlar.append("Binaların Yangından Korunması Hakkında Yönetmelik")
-    if std_su: secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
-    if std_klima: secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
-    if std_enerji: secilen_standartlar.append("Binalarda Enerji Performansı Yönetmeliği")
-    if std_tesisat: secilen_standartlar.append("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik")
-    if std_kanal: secilen_standartlar.append("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar")
-    if std_asansor: secilen_standartlar.append("Asansör Yönetmeliği / Standartları")
-    if std_deprem: secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)")
-    if std_akustik: secilen_standartlar.append("Binaların Gürültüye Karşı Korunması Yönetmeliği")
-    if std_isg: secilen_standartlar.append("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler")
+    if std_ts_825: 
+        secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
+    if std_yangin: 
+        secilen_standartlar.append('09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"')
+    if std_bep_2008_2010: 
+        secilen_standartlar.append("5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”")
+    if std_ts_1258:
+        secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
+    if std_ts_826:
+        secilen_standartlar.append("TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI")
+    if std_ts_2164:
+        secilen_standartlar.append("TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI")
+    if std_ts_3419:
+        secilen_standartlar.append("TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI")
+    if std_ts_en_12056_2:
+        secilen_standartlar.append("TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA")
+    if std_ts_en_12845:
+        secilen_standartlar.append("TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM")
+    if std_mmo_84:
+        secilen_standartlar.append("MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)")
+    if std_mmo_352_5:
+        secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
+    if std_mmo_122:
+        secilen_standartlar.append("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)")
+    if std_mmo_133:
+        secilen_standartlar.append("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)")
+    if std_mmo_155:
+        secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
+    if std_ashrae: 
+        secilen_standartlar.append("ASHRAE Standartları")
+    if std_su: 
+        secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
+    if std_klima: 
+        secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
+    if std_tesisat: 
+        secilen_standartlar.append("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik")
+    if std_kanal: 
+        secilen_standartlar.append("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar")
+    if std_asansor: 
+        secilen_standartlar.append("Asansör Yönetmeliği ve İlgili Standartlar")
+    if std_deprem: 
+        secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)")
+    if std_akustik: 
+        secilen_standartlar.append("Binaların Gürültüye Karşı Korunması Yönetmeliği")
+    if std_isg: 
+        secilen_standartlar.append("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler")
     
     # Ekstra girilen özel standartlar varsa ekle
     if ek_standartlar.strip():
@@ -205,7 +252,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Tüm standartlar ve yönetmelikler güncellenerek Word dosyası hazırlandı!")
+    st.success("MMO Y.No: 155 eklenerek Word dosyası başarıyla hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
