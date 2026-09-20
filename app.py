@@ -101,11 +101,10 @@ ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her
 st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
 st.write("Tesisat sistemlerinde kullanılacak akışkan sıcaklık ve basınç rejimlerini sekmeli olarak yapılandırın:")
 
-# Arayüz İçi Sekmeler (Tabs)
 tab_isitma_sogutma, tab_buhar_kizgin = st.tabs(["Isıtma / Soğutma Tesisatları", "Buhar ve Kızgın Su Tesisatları"])
 
 sicaklik_secenekleri = ["80/60", "70/50", "60/40", "50/30", "50/40", "7/12", "6/11", "10/60"]
-buhar_secenekleri = ["1 atm (100 oC)", "2 bar (120 oC)", "3 bar (133 oC)", "4 bar (143 oC)", "6 bar (165 oC)", "8 bar (175 oC)"]
+buhar_secenekleri = ["1 atm (100 °C)", "2 bar (120 °C)", "3 bar (133 °C)", "4 bar (143 °C)", "6 bar (165 °C)", "8 bar (175 °C)"]
 kizgin_su_secenekleri = ["120/90", "130/70", "140/90", "150/100", "160/110", "180/130"]
 
 with tab_isitma_sogutma:
@@ -113,10 +112,10 @@ with tab_isitma_sogutma:
     with col1:
         rej_kalorifer = st.selectbox("Kalorifer tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
         rej_fco_ist = st.selectbox("Fan-Coil ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
-        rej_fco_sog = st.selectbox("Fan-Coil soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        rej_fco_sog = st.selectbox("Fan-Coil Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
         rej_ks_ist = st.selectbox("Klima santrali ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
     with col2:
-        rej_ks_sog = st.selectbox("Klima santrali soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        rej_ks_sog = st.selectbox("Klima santrali Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
         rej_boyler = st.selectbox("Boyler ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
         rej_k_sicak = st.selectbox("Kullanma sıcak suyu sıcaklık rejimi:", sicaklik_secenekleri, index=2)
         rej_doseme = st.selectbox("Döşemeden ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=3)
@@ -308,20 +307,20 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph("Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık rejimleri kullanılacaktır:")
     
     akiskan_maddeleri = [
-        f"Kalorifer tesisatında {rej_kalorifer} oC sıcak su.",
-        f"Fan-Coil ısıtma tesisatında {rej_fco_ist} oC sıcak su.",
-        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} oC soğuk su.",
-        f"Klima santrali ısıtma tesisatında {rej_ks_ist} oC sıcak su.",
-        f"Klima santrali Soğutma tesisatında {rej_ks_sog} oC soğuk su.",
-        f"Boyler ısıtma tesisatında {rej_boyler} oC sıcak su.",
-        f"Kullanma sıcak suyunda {rej_k_sicak} oC sıcak su.",
-        f"Döşemeden ısıtma tesisatında {rej_doseme} oC sıcak su."
+        f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.",
+        f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su.",
+        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su.",
+        f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su.",
+        f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su.",
+        f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su.",
+        f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.",
+        f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
     ]
 
     if aktif_buhar:
         akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
     if aktif_kizgin:
-        akiskan_maddeleri.append(f"Kızgın su tesisatında {rej_kizgin} oC kızgın su.")
+        akiskan_maddeleri.append(f"Kızgın su tesisatında {rej_kizgin} °C sıcak su.")
 
     for akiskan in akiskan_maddeleri:
         doc.add_paragraph(akiskan, style='List Bullet')
@@ -331,7 +330,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Sekmeli Isı İletim Akışkanları ayarlarıyla Word dosyası hazırlandı!")
+    st.success("Tüm ısı iletim akışkanları ve ifade formatları güncellenerek Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
