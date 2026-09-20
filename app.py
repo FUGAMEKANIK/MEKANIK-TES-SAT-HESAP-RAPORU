@@ -82,18 +82,18 @@ ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar ve açıkl
 st.header("3. MEKANİK TESİSAT PROJE KAPSAMI")
 st.write("Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:")
 
-kapsam_a = st.checkbox("A) Isıtma tesisatı,", value=True)
-kapsam_b = st.checkbox("B) Soğutma tesisatı,", value=True)
-kapsam_c = st.checkbox("C) Kullanma soğuk suyu tesisatı,", value=True)
-kapsam_d = st.checkbox("D) Kullanma sıcak suyu tesisatı,", value=True)
-kapsam_e = st.checkbox("E) Yangın ve kullanma suyu depolaması ve dağıtımı,", value=True)
-kapsam_f = st.checkbox("F) Yapı içinde atık su tesisatı (Yapı çıkış rögarına),", value=True)
-kapsam_g = st.checkbox("G) Yangın suyu iç ve dış dağıtım sistemleri,", value=True)
-kapsam_h = st.checkbox("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True)
-kapsam_i = st.checkbox("I) Havalandırma Tesisatı", value=True)
-kapsam_k = st.checkbox("K) Otomatik kontrol sistemi kavramı tanımı,", value=True)
-kapsam_l = st.checkbox("L) Basınçlı hava tesisatı,", value=False)
-kapsam_m = st.checkbox("M) Medikal gaz tesisatı", value=False)
+kapsam_isitma = st.checkbox("Isıtma tesisatı,", value=True)
+kapsam_sogutma = st.checkbox("Soğutma tesisatı,", value=True)
+kapsam_soguk_su = st.checkbox("Kullanma soğuk suyu tesisatı,", value=True)
+kapsam_sicak_su = st.checkbox("Kullanma sıcak suyu tesisatı,", value=True)
+kapsam_yangin_depo = st.checkbox("Yangın ve kullanma suyu depolaması ve dağıtımı,", value=True)
+kapsam_atik_su = st.checkbox("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),", value=True)
+kapsam_yangin_dagitim = st.checkbox("Yangın suyu iç ve dış dağıtım sistemleri,", value=True)
+kapsam_kazan_dairesi = st.checkbox("Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True)
+kapsam_havalandirma = st.checkbox("Havalandırma Tesisatı", value=True)
+kapsam_otomatik = st.checkbox("Otomatik kontrol sistemi kavramı tanımı,", value=True)
+kapsam_basinc_hava = st.checkbox("Basınçlı hava tesisatı,", value=False)
+kapsam_medikal_gaz = st.checkbox("Medikal gaz tesisatı", value=False)
 
 ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
@@ -245,18 +245,18 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph("Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır.")
     
     secilen_kapsam = []
-    if kapsam_a: secilen_kapsam.append("A) Isıtma tesisatı,")
-    if kapsam_b: secilen_kapsam.append("B) Soğutma tesisatı,")
-    if kapsam_c: secilen_kapsam.append("C) Kullanma soğuk suyu tesisatı,")
-    if kapsam_d: secilen_kapsam.append("D) Kullanma sıcak suyu tesisatı,")
-    if kapsam_e: secilen_kapsam.append("E) Yangın ve kullanma suyu depolaması ve dağıtımı,")
-    if kapsam_f: secilen_kapsam.append("F) Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
-    if kapsam_g: secilen_kapsam.append("G) Yangın suyu iç ve dış dağıtım sistemleri,")
-    if kapsam_h: secilen_kapsam.append("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,")
-    if kapsam_i: secilen_kapsam.append("I) Havalandırma Tesisatı")
-    if kapsam_k: secilen_kapsam.append("K) Otomatik kontrol sistemi kavramı tanımı,")
-    if kapsam_l: secilen_kapsam.append("L) Basınçlı hava tesisatı,")
-    if kapsam_m: secilen_kapsam.append("M) Medikal gaz tesisatı")
+    if kapsam_isitma: secilen_kapsam.append("Isıtma tesisatı,")
+    if kapsam_sogutma: secilen_kapsam.append("Soğutma tesisatı,")
+    if kapsam_soguk_su: secilen_kapsam.append("Kullanma soğuk suyu tesisatı,")
+    if kapsam_sicak_su: secilen_kapsam.append("Kullanma sıcak suyu tesisatı,")
+    if kapsam_yangin_depo: secilen_kapsam.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
+    if kapsam_atik_su: secilen_kapsam.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
+    if kapsam_yangin_dagitim: secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
+    if kapsam_kazan_dairesi: secilen_kapsam.append("Merkezi ısıtma kazan dairesi ve tali teknik hacimler,")
+    if kapsam_havalandirma: secilen_kapsam.append("Havalandırma Tesisatı")
+    if kapsam_otomatik: secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
+    if kapsam_basinc_hava: secilen_kapsam.append("Basınçlı hava tesisatı,")
+    if kapsam_medikal_gaz: secilen_kapsam.append("Medikal gaz tesisatı")
     
     if ek_kapsam.strip():
         for ekk in ek_kapsam.split("\n"):
@@ -277,7 +277,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Tesisat kapsam maddeleri alfabetik sıraya göre düzenlenerek Word dosyası hazırlandı!")
+    st.success("Tesisat kapsam maddelerindeki harfler kaldırılarak alfabetik sırayla hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
