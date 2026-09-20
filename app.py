@@ -2,6 +2,7 @@ import streamlit as st
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
@@ -16,18 +17,21 @@ aylar = {
 bugun = datetime.now()
 bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
-# Kapak sayfasına şık bir çerçeve (page border) ekleyen yardımcı fonksiyon
-def add_page_border(section):
-    sectPr = section._sectPr
-    pgBorders = OxmlElement('w:pgBorders')
-    pgBorders.set(qn('w:left'), 'single')
-    pgBorders.set(qn('w:top'), 'single')
-    pgBorders.set(qn('w:right'), 'single')
-    pgBorders.set(qn('w:bottom'), 'single')
-    pgBorders.set(qn('w:sz'), '24')  # Çerçeve kalınlığı (yaklaşık 3pt)
-    pgBorders.set(qn('w:space'), '24') # Sayfa kenarından uzaklığı
-    pgBorders.set(qn('w:color'), '365F91') # Kurumsal koyu mavi tonu (isterseniz '000000' siyah yapabilirsiniz)
-    sectPr.append(pgBorders)
+# Hücre kenarlıklarını (border) ayarlamak için yardımcı fonksiyon
+def set_cell_border(cell, **kwargs):
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcBorders = OxmlElement('w:tcBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        edge_data = kwargs.get(edge)
+        if edge_data:
+            tag = 'w:{}'.format(edge)
+            element = OxmlElement(tag)
+            element.set(qn('w:val'), edge_data.get('val', 'single'))
+            element.set(qn('w:sz'), str(edge_data.get('sz', 24)))
+            element.set(qn('w:space'), str(edge_data.get('space', 0)))
+            element.set(qn('w:color'), edge_data.get('color', '365F91'))
+            tcBorders.append(element)
+    tcPr.append(tcBorders)
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
@@ -57,30 +61,39 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
 
     doc = Document()
     
-    # --- BÖLÜM AYARLARI VE KAPAK ÇERÇEVESİ ---
-    # 1. Bölüm: Kapak Sayfası
+    # Sayfa boşlukları
     cover_section = doc.sections[0]
-    cover_section.top_margin = Inches(1.5)
-    cover_section.bottom_margin = Inches(1.5)
-    cover_section.left_margin = Inches(1.2)
-    cover_section.right_margin = Inches(1.2)
-    
-    # Kapak sayfasına çerçeve ekle
-    add_page_border(cover_section)
+    cover_section.top_margin = Inches(1.0)
+    cover_section.bottom_margin = Inches(1.0)
+    cover_section.left_margin = Inches(1.0)
+    cover_section.right_margin = Inches(1.0)
 
-    # --- KAPAK SAYFASI İÇERİĞİ ---
-    p_sirket = doc.add_paragraph()
+    # --- KAPAK SAYFASI İÇİN TAM SAYFA ÇERÇEVELİ TABLO ---
+    # 1 satır, 1 sütunluk tablo oluşturarak sayfayı tam çevreleyen profesyonel çerçeve yapıyoruz
+    table = doc.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    
+    cell = table.cell(0, 0)
+    cell.width = Inches(6.5) # A4 genişliğine uyumlu
+    
+    # Tablo hücresine kurumsal mavi çerçeve uyguluyoruz (Kalınlık: 24 = ~3pt, Renk: Koyu Mavi)
+    border_style = {'val': 'single', 'sz': 24, 'color': '365F91'}
+    set_cell_border(cell, top=border_style, bottom=border_style, left=border_style, right=border_style)
+    
+    # Hücre içindeki ilk paragraf üzerinden kapak içeriğini yazmaya başlıyoruz
+    p_sirket = cell.paragraphs[0]
     p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_sirket = p_sirket.add_run(aktif_sirket.upper())
+    run_sirket = p_sirket.add_run(f"\n\n{aktif_sirket.upper()}")
     run_sirket.font.size = Pt(13)
     run_sirket.font.bold = True
     run_sirket.font.name = 'Arial'
     
-    doc.add_paragraph()
-    doc.add_paragraph()
+    cell.add_paragraph()
+    cell.add_paragraph()
 
     if aktif_is:
-        p_is = doc.add_paragraph()
+        p_is = cell.add_paragraph()
         p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_is_baslik = p_is.add_run("PROJE ADI:\n")
         run_is_baslik.font.size = Pt(11)
@@ -91,34 +104,32 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         run_is.font.bold = True
         run_is.font.name = 'Arial'
 
-        doc.add_paragraph()
+        cell.add_paragraph()
 
-    p_tur = doc.add_paragraph()
+    p_tur = cell.add_paragraph()
     p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_tur = p_tur.add_run(rapor_turu.upper())
     run_tur.font.size = Pt(14)
     run_tur.font.bold = True
     run_tur.font.name = 'Arial'
 
-    for _ in range(4):
-        doc.add_paragraph()
+    for _ in range(3):
+        cell.add_paragraph()
 
-    p_alt = doc.add_paragraph()
+    p_alt = cell.add_paragraph()
     p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_hazirlayan = p_alt.add_run(f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No: {mmo_no}\n\nTarih:\n{tarih}")
-    run_hazirlayer = run_hazirlayan # typo correction
+    run_hazirlayan = p_alt.add_run(f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No: {mmo_no}\n\nTarih:\n{tarih}\n\n")
     run_hazirlayan.font.size = Pt(11)
     run_hazirlayan.font.name = 'Arial'
 
     # --- YENİ BÖLÜM (GENEL BİLGİLER İÇİN ÇERÇEVESİZ SAYFA) ---
+    doc.add_page_break()
+
     body_section = doc.add_section()
     body_section.top_margin = Inches(1.2)
     body_section.bottom_margin = Inches(1.2)
     body_section.left_margin = Inches(1.2)
     body_section.right_margin = Inches(1.2)
-    
-    # Not: body_section'a add_page_border çağırmadığımız için 
-    # genel bilgiler ve sonraki sayfalar tamamen çerçevesiz (normal rapor formatında) olacak.
 
     # --- BÖLÜM 1: GENEL BİLGİLER ---
     doc.add_heading("1. GENEL BİLGİLER", level=1)
