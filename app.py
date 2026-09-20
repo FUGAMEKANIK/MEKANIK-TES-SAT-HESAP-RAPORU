@@ -51,14 +51,19 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
 st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-# Checkbox (Seçim Kutuları) ile standart yönetimi
+# Eksiksiz standart listesi checkbox'ları
 std_ts_825 = st.checkbox("TS 825 Binalarda Isı Yalıtım Kuralları", value=True)
 std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
 std_yangin = st.checkbox("Binaların Yangından Korunması Hakkında Yönetmelik", value=True)
 std_su = st.checkbox("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True)
 std_klima = st.checkbox("Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True)
+std_enerji = st.checkbox("Binalarda Enerji Performansı Yönetmeliği", value=True)
+std_tesisat = st.checkbox("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik", value=False)
+std_kanal = st.checkbox("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar", value=False)
 std_asansor = st.checkbox("Asansör Yönetmeliği / Standartları", value=False)
-std_deprem = st.checkbox("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı/Destekleri)", value=False)
+std_deprem = st.checkbox("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)", value=True)
+std_akustik = st.checkbox("Binaların Gürültüye Karşı Korunması Yönetmeliği", value=False)
+std_isg = st.checkbox("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler", value=True)
 
 # Ekstra özel standart eklemek isterseniz
 ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar (Her satıra bir tane yazabilirsiniz)", "", height=80)
@@ -174,8 +179,13 @@ if st.button("Raporu Oluştur (.docx)"):
     if std_yangin: secilen_standartlar.append("Binaların Yangından Korunması Hakkında Yönetmelik")
     if std_su: secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
     if std_klima: secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
+    if std_enerji: secilen_standartlar.append("Binalarda Enerji Performansı Yönetmeliği")
+    if std_tesisat: secilen_standartlar.append("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik")
+    if std_kanal: secilen_standartlar.append("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar")
     if std_asansor: secilen_standartlar.append("Asansör Yönetmeliği / Standartları")
-    if std_deprem: secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı/Destekleri)")
+    if std_deprem: secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)")
+    if std_akustik: secilen_standartlar.append("Binaların Gürültüye Karşı Korunması Yönetmeliği")
+    if std_isg: secilen_standartlar.append("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler")
     
     # Ekstra girilen özel standartlar varsa ekle
     if ek_standartlar.strip():
@@ -195,7 +205,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Seçtiğiniz standartlar filtrelenerek Word dosyası başarıyla hazırlandı!")
+    st.success("Tüm standartlar ve yönetmelikler güncellenerek Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
