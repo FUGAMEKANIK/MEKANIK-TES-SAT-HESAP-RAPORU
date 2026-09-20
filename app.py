@@ -9,10 +9,10 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
-sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜŞAVİRLİK MÜHENDİSLİK İNŞ.SAN.TİC.LTD")
+sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
-rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet KÜÇÜK (Makine Mühendisi)")
+rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Ahmet Yılmaz (Makine Mühendisi)")
 tarih = st.text_input("Rapor Tarihi", "Eylül 2026")
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
@@ -21,7 +21,7 @@ proje_yeri = st.text_input("Projenin Yeri / İl", "Ankara")
 dis_hava_sicaklik = st.text_input("Dış Hava Tasarım Sıcaklığı (°C)", "-12 °C")
 ic_hava_sicaklik = st.text_input("İç Ortam Tasarım Sıcaklığı (°C)", "20 °C")
 yonetmelik_standart = st.text_input("Esas Alınan Standart / Yönetmelik", "TS 825, ASHRAE, Binalarda Yangın Korunması Yönetmeliği")
-proje_aciklamasi = st.text_area("Proje Genel Açıklaması", "Bu rapor, ilgili bina mekanik tesisat sistemlerinin, yürürlükteki standartlar ve yönetmeliklere uygun olarak tasarlanması amacıyla hazırlanmıştır.")
+proje_aciklamasi = st.text_area("Ek Açıklamalar", "Bu rapor, ilgili bina mekanik tesisat sistemlerinin, yürürlükteki standartlar ve yönetmeliklere uygun olarak tasarlanması amacıyla hazırlanmıştır.")
 
 # Rapor Oluştur Butonu
 if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
@@ -82,9 +82,14 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         # --- BÖLÜM 1: GENEL BİLGİLER ---
         doc.add_heading("1. GENEL BİLGİLER VE TASARIM KRİTERLERİ", level=1)
         
-        doc.add_paragraph(proje_aciklamasi)
+        # İstediğiniz Sabit Giriş Metni (Proje Adı dinamik ekleniyor)
+        giris_metni = f"Bu raporda '{is_adi}' için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
+        doc.add_paragraph(giris_metni)
         
-        # Genel Bilgiler Tablosu veya Maddeleri
+        if proje_aciklamasi:
+            doc.add_paragraph(proje_aciklamasi)
+        
+        # Proje Parametreleri Başlığı ve Listesi
         doc.add_heading("1.1. Proje Parametreleri", level=2)
         
         p_bilgi = doc.add_paragraph()
@@ -102,12 +107,12 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         doc.save(buffer)
         buffer.seek(0)
         
-        st.success("Genel bilgiler ve kapak başarıyla rapora eklendi!")
+        st.success("Sabit metin ve genel bilgiler rapora eklendi!")
         
         st.download_button(
-            label="📥 Genel Bilgiler İçeren Word Dosyasını İndir (.docx)",
+            label="📥 Güncel Word Dosyasını İndir (.docx)",
             data=buffer,
-            file_name=f"{is_adi.replace(' ', '_')}_Genel_Bilgiler_Raporu.docx",
+            file_name=f"{is_adi.replace(' ', '_')}_Genel_Bilgiler.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
