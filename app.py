@@ -36,7 +36,7 @@ def add_toc(paragraph):
     r.append(fldChar3)
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
-st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
+st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
@@ -47,14 +47,32 @@ hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
 mmo_no = st.text_input("MMO Oda No", "109913")
 tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
-# --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
-st.header("2. Genel Bilgiler")
-st.write("Genel bilgiler bölümü standart kurumsal metinlerle otomatik olarak oluşturulacaktır.")
+# --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
+st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
+st.write("Projeye esas alınacak standart ve yönetmelikleri aşağıda düzenleyebilirsiniz:")
+
+varsayilan_standartlar = (
+    "• 5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” şartları ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”\n"
+    "• 09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan \" BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK\"\n"
+    "• TS 825 - BİNALARDA ISI YALITIM KURALLARI\n"
+    "• TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI\n"
+    "• TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI\n"
+    "• TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI\n"
+    "• TS3419–HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI\n"
+    "• TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA\n"
+    "• TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM\n"
+    "• MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)\n"
+    "• MMO KALORİFER TESİSATI (Y.NO:352/5)\n"
+    "• MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)\n"
+    "• MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)\n"
+    "• MMO KAZAN VE BACA(Y.NO:155)"
+)
+standartlar_input = st.text_area("Standart ve Yönetmelik Listesi", varsayilan_standartlar, height=250)
 
 sehir = "" 
 
 # Rapor Oluştur Butonu
-if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
+if st.button("Raporu Oluştur (.docx)"):
     if not is_adi:
         st.warning("⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor ancak kapak başlığı boş bırakılacak.")
     
@@ -130,7 +148,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     run_not.font.color.rgb = RGBColor(128, 128, 128)
 
     # ==========================================
-    # 3. SAYFA: GENEL BİLGİLER BÖLÜMÜNÜN BAŞLANGICI
+    # 3. SAYFA: GENEL BİLGİLER VE STANDARTLAR
     # ==========================================
     doc.add_page_break()
 
@@ -148,21 +166,26 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     
     yapi_metni = f"Yapı {sehir if sehir else '...'} 'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
+
+    # --- UYGULANACAK STANDART VE YÖNETMELİKLER BÖLÜMÜ ---
+    doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
     
-    doc.add_heading("1.1. Tasarım Kriterleri ve Esas Alınan Standartlar", level=2)
-    doc.add_paragraph("Tasarım aşamasında yürürlükteki yönetmelikler ve standartlar esas alınmıştır.")
+    standart_giris = "Bu projenin tasarım ve uygulamasında aşağıda belirtilen ulusal ve uluslararası standartlar ile yönetmelikler esas alınmıştır:"
+    doc.add_paragraph(standart_giris)
     
-    doc.add_heading("2. ISITMA TESİSATI HESAPLARI", level=1)
-    doc.add_paragraph("Isıtma tesisatı yük hesapları detayları bu bölümde yer almaktadır.")
+    # Madde işaretlerini temizleyip docx listesi olarak ekleyelim (ya da doğrudan paragraf olarak)
+    standartlar_listesi = [s.strip().lstrip("•").strip() for s in standartlar_input.split("\n") if s.strip()]
+    for std in standartlar_listesi:
+        doc.add_paragraph(std, style='List Bullet')
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("İçindekiler sonrasında yeni sayfadan başlayan Word dosyası başarıyla hazırlandı!")
+    st.success("Standartlar ve yönetmelikler listesi eklenerek Word dosyası hazırlandı!")
     
-    dosya_adi = f"{aktif_is.replace(' ', '_')}_Genel_Bilgiler.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
+    dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
     st.download_button(
         label="📥 Word Dosyasını İndir (.docx)",
