@@ -20,14 +20,14 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
-is_adi = st.text_input("İşin Adı / Proje Başlığı", "") # Varsayılan olarak boş bırakıldı
+is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
 mmo_no = st.text_input("MMO Oda No", "109913")
 tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
-st.header("2. Genel Bilgiler ve Tasarım Kriterleri")
+st.header("2. Genel Bilgiler")
 proje_yeri = st.text_input("Projenin Yeri / İl", "Ankara")
 dis_hava_sicaklik = st.text_input("Dış Hava Tasarım Sıcaklığı (°C)", "-12 °C")
 ic_hava_sicaklik = st.text_input("İç Ortam Tasarım Sıcaklığı (°C)", "20 °C")
@@ -91,11 +91,15 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         doc.add_page_break()
 
         # --- BÖLÜM 1: GENEL BİLGİLER ---
-        doc.add_heading("1. GENEL BİLGİLER VE TASARIM KRİTERLERİ", level=1)
+        doc.add_heading("1. GENEL BİLGİLER", level=1)
         
-        # Sabit Giriş Metni
+        # 1. Sabit Giriş Metni (Proje Adı ile)
         giris_metni = f"Bu raporda '{is_adi}' için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
         doc.add_paragraph(giris_metni)
+        
+        # 2. İl Bilgisi Eklenen Cümle
+        yapi_metni = f"Yapı '{proje_yeri}' 'da inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
+        doc.add_paragraph(yapi_metni)
         
         if proje_aciklamasi:
             doc.add_paragraph(proje_aciklamasi)
@@ -123,7 +127,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         st.download_button(
             label="📥 Güncel Word Dosyasını İndir (.docx)",
             data=buffer,
-            file_name=f"{is_adi.replace(' ', '_')}_Uygulama_Raporu.docx" if is_adi else "Mekanik_Rapor.docx",
+            file_name=f"{is_adi.replace(' ', '_')}_Genel_Bilgiler.docx" if is_adi else "Mekanik_Rapor.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
