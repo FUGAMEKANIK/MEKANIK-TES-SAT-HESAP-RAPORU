@@ -101,60 +101,40 @@ ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her
 st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
 st.write("Tesisat sistemlerinde kullanılacak akışkan sıcaklık ve basınç rejimlerini sekmeli olarak yapılandırın:")
 
-# Arayüz sekmeleri
+# Arayüz İçi Sekmeler (Tabs)
 tab_isitma_sogutma, tab_buhar_kizgin = st.tabs(["Isıtma / Soğutma Tesisatları", "Buhar ve Kızgın Su Tesisatları"])
 
-sicaklik_secenekleri = ["80/60", "70/50", "60/40", "50/30", "50/40", "7/12", "6/11", "10/60", "Diğer (Özel Gir)"]
-buhar_secenekleri = ["1 atm (100 °C)", "2 bar (120 °C)", "3 bar (133 °C)", "4 bar (143 °C)", "6 bar (165 °C)", "8 bar (175 °C)", "Diğer (Özel Gir)"]
-kizgin_su_secenekleri = ["120/90", "130/70", "140/90", "150/100", "160/110", "180/130", "Diğer (Özel Gir)"]
-
-# Yardımcı fonksiyon: "Diğer" seçilirse özel metin kutusundan değeri alır
-def rejim_degeri_al(secim_key, ozel_key, varsayilan_metin):
-    secim = st.selectbox("Sıcaklık Rejimi:", sicaklik_secenekleri, index=varsayilan_metin, key=secim_key)
-    if secim == "Diğer (Özel Gir)":
-        return st.text_input("Özel Rejim Girin (örn: 90/70):", "90/70", key=ozel_key)
-    return secim
+sicaklik_secenekleri = ["80/60", "70/50", "60/40", "50/30", "50/40", "7/12", "6/11", "10/60"]
+buhar_secenekleri = ["1 atm (100 °C)", "2 bar (120 °C)", "3 bar (133 °C)", "4 bar (143 °C)", "6 bar (165 °C)", "8 bar (175 °C)"]
+kizgin_su_secenekleri = ["120/90", "130/70", "140/90", "150/100", "160/110", "180/130"]
 
 with tab_isitma_sogutma:
     col1, col2 = st.columns(2)
     with col1:
-        st.write("**1. Kalorifer Tesisatı**")
-        rej_kalorifer = rejim_degeri_al("k1", "ozel_k1", 0) # 80/60
-        
-        st.write("**2. Fan-Coil Isıtma Tesisatı**")
-        rej_fco_ist = rejim_degeri_al("k2", "ozel_k2", 0) # 80/60
-        
-        st.write("**3. Fan-Coil Soğutma Tesisatı**")
-        rej_fco_sog = rejim_degeri_al("k3", "ozel_k3", 5) # 7/12
-        
-        st.write("**4. Klima Santrali Isıtma Tesisatı**")
-        rej_ks_ist = rejim_degeri_al("k4", "ozel_k4", 0) # 80/60
-        
+        rej_kalorifer = st.selectbox("Kalorifer tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        rej_fco_ist = st.selectbox("Fan-Coil ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        rej_fco_sog = st.selectbox("Fan-Coil Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        rej_ks_ist = st.selectbox("Klima santrali ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
     with col2:
-        st.write("**5. Klima Santrali Soğutma Tesisatı**")
-        rej_ks_sog = rejim_degeri_al("k5", "ozel_k5", 5) # 7/12
-        
-        st.write("**6. Boyler Isıtma Tesisatı**")
-        rej_boyler = rejim_degeri_al("k6", "ozel_k6", 0) # 80/60
-        
-        st.write("**7. Kullanma Sıcak Suyu**")
-        rej_k_sicak = rejim_degeri_al("k7", "ozel_k7", 7) # 10/60
-        
-        st.write("**8. Döşemeden Isıtma Tesisatı**")
-        rej_doseme = rejim_degeri_al("k8", "ozel_k8", 4) # 50/40
+        rej_ks_sog = st.selectbox("Klima santrali Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        rej_boyler = st.selectbox("Boyler ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        rej_k_sicak = st.selectbox("Kullanma sıcak suyu sıcaklık rejimi:", sicaklik_secenekleri, index=7)  # 10/60
+        rej_doseme = st.selectbox("Döşemeden ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=4)  # 50/40
 
 with tab_buhar_kizgin:
     col3, col4 = st.columns(2)
     with col3:
         aktif_buhar = st.checkbox("Buhar tesisatı dahil et", value=False)
         if aktif_buhar:
-            sec_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1, key="buhar_s")
-            rej_buhar = st.text_input("Özel Buhar Basınç/Sıcaklık:", "2 bar (120 °C)", key="ozel_buhar") if sec_buhar == "Diğer (Özel Gir)" else sec_buhar
+            rej_buhar = st.selectbox("Buhar tesisatı basınç/sıcaklık seçimi:", buhar_secenekleri, index=1)
+        else:
+            rej_buhar = ""
     with col4:
         aktif_kizgin = st.checkbox("Kızgın su tesisatı dahil et", value=False)
         if aktif_kizgin:
-            sec_kizgin = st.selectbox("Kızgın Su Seçimi:", kizgin_su_secenekleri, index=0, key="kizgin_s")
-            rej_kizgin = st.text_input("Özel Kızgın Su Rejimi:", "120/90", key="ozel_kizgin") if sec_kizgin == "Diğer (Özel Gir)" else sec_kizgin
+            rej_kizgin = st.selectbox("Kızgın su tesisatı sıcaklık rejimi:", kizgin_su_secenekleri, index=0)
+        else:
+            rej_kizgin = ""
 
 sehir = "" 
 
@@ -344,9 +324,9 @@ if st.button("Raporu Oluştur (.docx)"):
         f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
     ]
 
-    if aktif_buhar:
+    if aktif_buhar and rej_buhar:
         akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
-    if aktif_kizgin:
+    if aktif_kizgin and rej_kizgin:
         akiskan_maddeleri.append(f"Kızgın su tesisatında {rej_kizgin} °C sıcak su.")
 
     for akiskan in akiskan_maddeleri:
@@ -357,7 +337,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Tüm sıcaklık rejimlerine 'Diğer (Özel Gir)' seçeneği eklenerek Word dosyası hazırlandı!")
+    st.success("Sekmeli Isı İletim Akışkanları ve Rejim seçimleri tamamlanarak Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
