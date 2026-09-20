@@ -51,7 +51,6 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
 st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-# Güncellenmiş standart ve yönetmelik seçim kutuları
 std_ts_825 = st.checkbox("TS 825 - BİNALARDA ISI YALITIM KURALLARI", value=True)
 std_yangin = st.checkbox('09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"', value=True)
 std_bep_2008_2010 = st.checkbox("5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”", value=True)
@@ -67,7 +66,6 @@ std_mmo_122 = st.checkbox("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122
 std_mmo_133 = st.checkbox("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)", value=True)
 std_mmo_155 = st.checkbox("MMO KAZAN VE BACA(Y.NO:155)", value=True)
 
-# Diğer standartlar
 std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
 std_su = st.checkbox("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True)
 std_klima = st.checkbox("Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True)
@@ -78,8 +76,24 @@ std_deprem = st.checkbox("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman As
 std_akustik = st.checkbox("Binaların Gürültüye Karşı Korunması Yönetmeliği", value=False)
 std_isg = st.checkbox("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler", value=True)
 
-# Ekstra özel standart eklemek isterseniz
 ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar ve açıklamaları (Her satıra bir tane yazabilirsiniz)", "", height=80)
+
+# --- 3. SEKME / BÖLÜM: MEKANİK TESİSAT PROJE KAPSAMI ---
+st.header("3. MEKANİK TESİSAT PROJE KAPSAMI")
+st.write("Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:")
+
+kapsam_a = st.checkbox("A) Isıtma tesisatı,", value=True)
+kapsam_b = st.checkbox("B) Soğutma tesisatı,", value=True)
+kapsam_c = st.checkbox("C) Kullanma soğuk suyu tesisatı,", value=True)
+kapsam_d = st.checkbox("D) Kullanma sıcak suyu tesisatı,", value=True)
+kapsam_e = st.checkbox("E) Yangın ve kullanma suyu depolaması ve dağıtımı,", value=True)
+kapsam_f = st.checkbox("F) Yapı içinde atık su tesisatı (Yapı çıkış rögarına),", value=True)
+kapsam_g = st.checkbox("G) Yangın suyu iç ve dış dağıtım sistemleri,", value=True)
+kapsam_h = st.checkbox("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True)
+kapsam_i = st.checkbox("I) Havalandırma Tesisatı", value=True)
+kapsam_k = st.checkbox("K) Otomatik kontrol sistemi kavramı tanımı,", value=True)
+
+ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
 sehir = "" 
 
@@ -160,7 +174,7 @@ if st.button("Raporu Oluştur (.docx)"):
     run_not.font.color.rgb = RGBColor(128, 128, 128)
 
     # ==========================================
-    # 3. SAYFA: GENEL BİLGİLER VE SEÇİLEN STANDARTLAR
+    # 3. SAYFA: GENEL BİLGİLER VE RAPOR İÇERİĞİ
     # ==========================================
     doc.add_page_break()
 
@@ -179,80 +193,86 @@ if st.button("Raporu Oluştur (.docx)"):
     yapi_metni = f"Yapı {sehir if sehir else '...'} 'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
 
-    # --- UYGULANACAK STANDART VE YÖNETMELİKLER BÖLÜMÜ ---
+    # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
     doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
     
     standart_giris = "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası standartlar ile yönetmelikler esas alınmıştır:"
     doc.add_paragraph(standart_giris)
     
-    # Seçilen standartların listesi
     secilen_standartlar = []
-    if std_ts_825: 
-        secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
-    if std_yangin: 
-        secilen_standartlar.append('09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"')
-    if std_bep_2008_2010: 
-        secilen_standartlar.append("5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”")
-    if std_ts_1258:
-        secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
-    if std_ts_826:
-        secilen_standartlar.append("TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI")
-    if std_ts_2164:
-        secilen_standartlar.append("TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI")
-    if std_ts_3419:
-        secilen_standartlar.append("TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI")
-    if std_ts_en_12056_2:
-        secilen_standartlar.append("TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA")
-    if std_ts_en_12845:
-        secilen_standartlar.append("TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM")
-    if std_mmo_84:
-        secilen_standartlar.append("MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)")
-    if std_mmo_352_5:
-        secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
-    if std_mmo_122:
-        secilen_standartlar.append("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)")
-    if std_mmo_133:
-        secilen_standartlar.append("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)")
-    if std_mmo_155:
-        secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
-    if std_ashrae: 
-        secilen_standartlar.append("ASHRAE Standartları")
-    if std_su: 
-        secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
-    if std_klima: 
-        secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
-    if std_tesisat: 
-        secilen_standartlar.append("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik")
-    if std_kanal: 
-        secilen_standartlar.append("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar")
-    if std_asansor: 
-        secilen_standartlar.append("Asansör Yönetmeliği ve İlgili Standartlar")
-    if std_deprem: 
-        secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)")
-    if std_akustik: 
-        secilen_standartlar.append("Binaların Gürültüye Karşı Korunması Yönetmeliği")
-    if std_isg: 
-        secilen_standartlar.append("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler")
+    if std_ts_825: secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
+    if std_yangin: secilen_standartlar.append('09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"')
+    if std_bep_2008_2010: secilen_standartlar.append("5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”")
+    if std_ts_1258: secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
+    if std_ts_826: secilen_standartlar.append("TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI")
+    if std_ts_2164: secilen_standartlar.append("TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI")
+    if std_ts_3419: secilen_standartlar.append("TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI")
+    if std_ts_en_12056_2: secilen_standartlar.append("TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA")
+    if std_ts_en_12845: secilen_standartlar.append("TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM")
+    if std_mmo_84: secilen_standartlar.append("MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)")
+    if std_mmo_352_5: secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
+    if std_mmo_122: secilen_standartlar.append("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)")
+    if std_mmo_133: secilen_standartlar.append("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)")
+    if std_mmo_155: secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
+    if std_ashrae: secilen_standartlar.append("ASHRAE Standartları")
+    if std_su: secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
+    if std_klima: secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
+    if std_tesisat: secilen_standartlar.append("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik")
+    if std_kanal: secilen_standartlar.append("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar")
+    if std_asansor: secilen_standartlar.append("Asansör Yönetmeliği ve İlgili Standartlar")
+    if std_deprem: secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)")
+    if std_akustik: secilen_standartlar.append("Binaların Gürültüye Karşı Korunması Yönetmeliği")
+    if std_isg: secilen_standartlar.append("İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler")
     
-    # Ekstra girilen özel standartlar varsa ekle
     if ek_standartlar.strip():
         for ek in ek_standartlar.split("\n"):
             if ek.strip():
                 secilen_standartlar.append(ek.strip())
 
-    # Rapora madde işaretli olarak basma
+    secilen_standartlar.sort()
+
     if secilen_standartlar:
         for std in secilen_standartlar:
             doc.add_paragraph(std, style='List Bullet')
     else:
         doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style='Italic')
 
+    # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
+    doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
+    
+    doc.add_paragraph("Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır.")
+    
+    secilen_kapsam = []
+    if kapsam_a: secilen_kapsam.append("A) Isıtma tesisatı,")
+    if kapsam_b: secilen_kapsam.append("B) Soğutma tesisatı,")
+    if kapsam_c: secilen_kapsam.append("C) Kullanma soğuk suyu tesisatı,")
+    if kapsam_d: secilen_kapsam.append("D) Kullanma sıcak suyu tesisatı,")
+    if kapsam_e: secilen_kapsam.append("E) Yangın ve kullanma suyu depolaması ve dağıtımı,")
+    if kapsam_f: secilen_kapsam.append("F) Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
+    if kapsam_g: secilen_kapsam.append("G) Yangın suyu iç ve dış dağıtım sistemleri,")
+    if kapsam_h: secilen_kapsam.append("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,")
+    if kapsam_i: secilen_kapsam.append("I) Havalandırma Tesisatı")
+    if kapsam_k: secilen_kapsam.append("K) Otomatik kontrol sistemi kavramı tanımı,")
+    
+    if ek_kapsam.strip():
+        for ekk in ek_kapsam.split("\n"):
+            if ekk.strip():
+                secilen_kapsam.append(ekk.strip())
+                
+    # Proje kapsamı maddelerinin kendi sıralarını bozmadan (A-K arası sıralı kalacak şekilde) eklenmesi için .sort() kullanmıyoruz, harf sırasına göre zaten tanımlandılar.
+
+    if secilen_kapsam:
+        for k in secilen_kapsam:
+            doc.add_paragraph(k, style='List Bullet')
+    else:
+        doc.add_paragraph("Herhangi bir proje kapsam maddesi seçilmemiştir.", style='Italic')
+
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("MMO Y.No: 155 eklenerek Word dosyası başarıyla hazırlandı!")
+    st.success("Proje Kapsamı maddeleri eklenerek Word dosyası başarıyla hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
