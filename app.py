@@ -12,7 +12,7 @@ st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Ahmet Yılmaz (Makine Mühendisi)")
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet KÜÇÜK (Makine Mühendisi)")
 tarih = st.text_input("Rapor Tarihi", "Eylül 2026")
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
