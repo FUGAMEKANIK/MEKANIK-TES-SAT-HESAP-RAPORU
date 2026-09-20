@@ -12,7 +12,7 @@ aylar = {
 }
 
 bugun = datetime.now()
-bugun_turkce = f"{bugun.day} {aylar[bugun.month]} {bugun.year}"
+bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
@@ -21,12 +21,12 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
-rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
+rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
 mmo_no = st.text_input("MMO Oda No", "109913")
 
-# Tarih alanı otomatik bugünün tarihiyle gelir, istersek değiştirebiliriz
-tarih = st.text_input("Rapor Tarihi", bugun_turkce)
+# Tarih alanı otomatik olarak Ay ve Yıl şeklinde gelir
+tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
 st.header("2. Genel Bilgiler ve Tasarım Kriterleri")
@@ -120,12 +120,12 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         doc.save(buffer)
         buffer.seek(0)
         
-        st.success("Otomatik tarih ve güncel bilgiler rapora başarıyla işlendi!")
+        st.success("Güncel rapor türü ve tarih formatıyla Word dosyası hazırlandı!")
         
         st.download_button(
             label="📥 Güncel Word Dosyasını İndir (.docx)",
             data=buffer,
-            file_name=f"{is_adi.replace(' ', '_')}_Genel_Bilgiler.docx",
+            file_name=f"{is_adi.replace(' ', '_')}_Uygulama_Raporu.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
