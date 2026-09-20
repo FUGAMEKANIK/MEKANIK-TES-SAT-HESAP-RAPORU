@@ -20,12 +20,10 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
-is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
+is_adi = st.text_input("İşin Adı / Proje Başlığı", "") # Varsayılan olarak boş bırakıldı
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
 mmo_no = st.text_input("MMO Oda No", "109913")
-
-# Tarih alanı otomatik olarak Ay ve Yıl şeklinde gelir
 tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
@@ -120,13 +118,13 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         doc.save(buffer)
         buffer.seek(0)
         
-        st.success("Güncel rapor türü ve tarih formatıyla Word dosyası hazırlandı!")
+        st.success("Word dosyası başarıyla hazırlandı!")
         
         st.download_button(
             label="📥 Güncel Word Dosyasını İndir (.docx)",
             data=buffer,
-            file_name=f"{is_adi.replace(' ', '_')}_Uygulama_Raporu.docx",
+            file_name=f"{is_adi.replace(' ', '_')}_Uygulama_Raporu.docx" if is_adi else "Mekanik_Rapor.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     else:
-        st.warning("Lütfen Şirket İsmi ve Proje Adı alanlarını doldurun.")
+        st.warning("Lütfen İşin Adı / Proje Başlığı ve Şirket İsmi alanlarını doldurun.")
