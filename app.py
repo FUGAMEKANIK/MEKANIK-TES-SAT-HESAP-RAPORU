@@ -19,7 +19,7 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
-sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.T.C.LTD.ŞTİ")
+sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
@@ -30,12 +30,15 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. Genel Bilgiler")
 st.write("Genel bilgiler bölümü standart kurumsal metinlerle otomatik olarak oluşturulacaktır.")
 
+# İleride 3. sekmeden gelecek şehir değişkeni
+sehir = "" 
+
 # Rapor Oluştur Butonu
 if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     if not is_adi:
         st.warning("⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor ancak kapak başlığı boş bırakılacak.")
     
-    aktif_sirket = sirket_adi if sirket_adi else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.T.C.LTD.ŞTİ"
+    aktif_sirket = sirket_adi if sirket_adi else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
     aktif_is = is_adi if is_adi else ""
 
     doc = Document()
@@ -52,7 +55,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     p_sirket = doc.add_paragraph()
     p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_sirket = p_sirket.add_run(aktif_sirket.upper())
-    run_sirket.font.size = Pt(14)
+    run_sirket.font.size = Pt(13)  # Uzun ünvan için en ideal boyut
     run_sirket.font.bold = True
     run_sirket.font.name = 'Arial'
     
@@ -102,7 +105,8 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     doc.add_paragraph(giris_metni)
     
     # 2. Mahal Cümlesi
-    yapi_metni = "Yapıda aşağıdaki mahaller bulunmaktadır."
+    sehir_ifadesi = f"{sehir}'nda" if sehir else "''de"
+    yapi_metni = f"Yapı {sehir_ifadesi} inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
 
     # Hafızada dosya oluşturma
