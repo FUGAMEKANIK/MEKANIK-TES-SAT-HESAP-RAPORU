@@ -49,25 +49,19 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
-st.write("Projeye esas alınacak standart ve yönetmelikleri aşağıda düzenleyebilirsiniz:")
+st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-varsayilan_standartlar = (
-    "• 5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ” şartları ve 1 Nisan 2010 tarih, 27539 sayılı resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”\n"
-    "• 09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan \" BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK\"\n"
-    "• TS 825 - BİNALARDA ISI YALITIM KURALLARI\n"
-    "• TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI\n"
-    "• TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI\n"
-    "• TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI\n"
-    "• TS3419–HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME KURALLARI\n"
-    "• TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA\n"
-    "• TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM\n"
-    "• MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)\n"
-    "• MMO KALORİFER TESİSATI (Y.NO:352/5)\n"
-    "• MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)\n"
-    "• MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)\n"
-    "• MMO KAZAN VE BACA(Y.NO:155)"
-)
-standartlar_input = st.text_area("Standart ve Yönetmelik Listesi", varsayilan_standartlar, height=250)
+# Checkbox (Seçim Kutuları) ile standart yönetimi
+std_ts_825 = st.checkbox("TS 825 Binalarda Isı Yalıtım Kuralları", value=True)
+std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
+std_yangin = st.checkbox("Binaların Yangından Korunması Hakkında Yönetmelik", value=True)
+std_su = st.checkbox("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True)
+std_klima = st.checkbox("Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True)
+std_asansor = st.checkbox("Asansör Yönetmeliği / Standartları", value=False)
+std_deprem = st.checkbox("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı/Destekleri)", value=False)
+
+# Ekstra özel standart eklemek isterseniz
+ek_standartlar = st.text_area("Eklemek istediğiniz ilave standartlar (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
 sehir = "" 
 
@@ -148,7 +142,7 @@ if st.button("Raporu Oluştur (.docx)"):
     run_not.font.color.rgb = RGBColor(128, 128, 128)
 
     # ==========================================
-    # 3. SAYFA: GENEL BİLGİLER VE STANDARTLAR
+    # 3. SAYFA: GENEL BİLGİLER VE SEÇİLEN STANDARTLAR
     # ==========================================
     doc.add_page_break()
 
@@ -170,20 +164,38 @@ if st.button("Raporu Oluştur (.docx)"):
     # --- UYGULANACAK STANDART VE YÖNETMELİKLER BÖLÜMÜ ---
     doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
     
-    standart_giris = "Bu projenin tasarım ve uygulamasında aşağıda belirtilen ulusal ve uluslararası standartlar ile yönetmelikler esas alınmıştır:"
+    standart_giris = "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası standartlar ile yönetmelikler esas alınmıştır:"
     doc.add_paragraph(standart_giris)
     
-    # Madde işaretlerini temizleyip docx listesi olarak ekleyelim (ya da doğrudan paragraf olarak)
-    standartlar_listesi = [s.strip().lstrip("•").strip() for s in standartlar_input.split("\n") if s.strip()]
-    for std in standartlar_listesi:
-        doc.add_paragraph(std, style='List Bullet')
+    # Seçilen standartları toplama listesi
+    secilen_standartlar = []
+    if std_ts_825: secilen_standartlar.append("TS 825 Binalarda Isı Yalıtım Kuralları")
+    if std_ashrae: secilen_standartlar.append("ASHRAE Standartları")
+    if std_yangin: secilen_standartlar.append("Binaların Yangından Korunması Hakkında Yönetmelik")
+    if std_su: secilen_standartlar.append("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları")
+    if std_klima: secilen_standartlar.append("Klima ve Havalandırma Tesisatı Yönetmelikleri")
+    if std_asansor: secilen_standartlar.append("Asansör Yönetmeliği / Standartları")
+    if std_deprem: secilen_standartlar.append("Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı/Destekleri)")
+    
+    # Ekstra girilen özel standartlar varsa ekle
+    if ek_standartlar.strip():
+        for ek in ek_standartlar.split("\n"):
+            if ek.strip():
+                secilen_standartlar.append(ek.strip())
+
+    # Rapora madde işaretli olarak basma
+    if secilen_standartlar:
+        for std in secilen_standartlar:
+            doc.add_paragraph(std, style='List Bullet')
+    else:
+        doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style='Italic')
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Standartlar ve yönetmelikler listesi eklenerek Word dosyası hazırlandı!")
+    st.success("Seçtiğiniz standartlar filtrelenerek Word dosyası başarıyla hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
