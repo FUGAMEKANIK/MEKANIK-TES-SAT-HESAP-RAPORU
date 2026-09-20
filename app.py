@@ -92,6 +92,8 @@ kapsam_g = st.checkbox("G) Yangın suyu iç ve dış dağıtım sistemleri,", va
 kapsam_h = st.checkbox("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True)
 kapsam_i = st.checkbox("I) Havalandırma Tesisatı", value=True)
 kapsam_k = st.checkbox("K) Otomatik kontrol sistemi kavramı tanımı,", value=True)
+kapsam_l = st.checkbox("L) Basınçlı hava tesisatı,", value=False)
+kapsam_m = st.checkbox("M) Medikal gaz tesisatı", value=False)
 
 ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane yazabilirsiniz)", "", height=80)
 
@@ -253,13 +255,16 @@ if st.button("Raporu Oluştur (.docx)"):
     if kapsam_h: secilen_kapsam.append("H) Merkezi ısıtma kazan dairesi ve tali teknik hacimler,")
     if kapsam_i: secilen_kapsam.append("I) Havalandırma Tesisatı")
     if kapsam_k: secilen_kapsam.append("K) Otomatik kontrol sistemi kavramı tanımı,")
+    if kapsam_l: secilen_kapsam.append("L) Basınçlı hava tesisatı,")
+    if kapsam_m: secilen_kapsam.append("M) Medikal gaz tesisatı")
     
     if ek_kapsam.strip():
         for ekk in ek_kapsam.split("\n"):
             if ekk.strip():
                 secilen_kapsam.append(ekk.strip())
-                
-    # Proje kapsamı maddelerinin kendi sıralarını bozmadan (A-K arası sıralı kalacak şekilde) eklenmesi için .sort() kullanmıyoruz, harf sırasına göre zaten tanımlandılar.
+
+    # Kapsam maddelerini alfabetik sıraya göre sıralama
+    secilen_kapsam.sort()
 
     if secilen_kapsam:
         for k in secilen_kapsam:
@@ -272,7 +277,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Proje Kapsamı maddeleri eklenerek Word dosyası başarıyla hazırlandı!")
+    st.success("Tesisat kapsam maddeleri alfabetik sıraya göre düzenlenerek Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
