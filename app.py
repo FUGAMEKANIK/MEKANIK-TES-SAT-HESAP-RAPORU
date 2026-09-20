@@ -19,7 +19,7 @@ st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
-sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
+sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.T.C.LTD.ŞTİ")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU")
 hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
@@ -28,16 +28,15 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
 st.header("2. Genel Bilgiler")
-proje_yeri = st.text_input("Projenin Yeri / İl", "Ankara")
-proje_aciklamasi = st.text_area("Ek Açıklamalar", "Bu rapor, ilgili bina mekanik tesisat sistemlerinin, yürürlükteki standartlar ve yönetmeliklere uygun olarak tasarlanması amacıyla hazırlanmıştır.")
+st.write("Genel bilgiler bölümü standart kurumsal metinlerle otomatik olarak oluşturulacaktır.")
 
 # Rapor Oluştur Butonu
 if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     if not is_adi:
-        st.warning("⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor yine de oluşturuluyor ancak kapak başlığı boş kalabilir.")
+        st.warning("⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor ancak kapak başlığı boş bırakılacak.")
     
-    aktif_sirket = sirket_adi if sirket_adi else "FUGAMEKANİK MÜHENDİSLİK A.Ş."
-    aktif_is = is_adi if is_adi else "PROJE ADI BELİRTİLMEDİ"
+    aktif_sirket = sirket_adi if sirket_adi else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.T.C.LTD.ŞTİ"
+    aktif_is = is_adi if is_adi else ""
 
     doc = Document()
     
@@ -53,25 +52,27 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     p_sirket = doc.add_paragraph()
     p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_sirket = p_sirket.add_run(aktif_sirket.upper())
-    run_sirket.font.size = Pt(18)
+    run_sirket.font.size = Pt(14)
     run_sirket.font.bold = True
     run_sirket.font.name = 'Arial'
     
     doc.add_paragraph()
     doc.add_paragraph()
 
-    p_is = doc.add_paragraph()
-    p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_is_baslik = p_is.add_run("PROJE ADI:\n")
-    run_is_baslik.font.size = Pt(11)
-    run_is_baslik.font.name = 'Arial'
-    
-    run_is = p_is.add_run(aktif_is)
-    run_is.font.size = Pt(16)
-    run_is.font.bold = True
-    run_is.font.name = 'Arial'
+    # Eğer proje adı girildiyse kapakta gösterelim, girilmediyse boş bırakalım
+    if aktif_is:
+        p_is = doc.add_paragraph()
+        p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run_is_baslik = p_is.add_run("PROJE ADI:\n")
+        run_is_baslik.font.size = Pt(11)
+        run_is_baslik.font.name = 'Arial'
+        
+        run_is = p_is.add_run(aktif_is)
+        run_is.font.size = Pt(16)
+        run_is.font.bold = True
+        run_is.font.name = 'Arial'
 
-    doc.add_paragraph()
+        doc.add_paragraph()
 
     p_tur = doc.add_paragraph()
     p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -96,15 +97,13 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     doc.add_heading("1. GENEL BİLGİLER", level=1)
     
     # 1. Sabit Giriş Metni
-    giris_metni = f"Bu raporda {aktif_is} için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
+    proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
+    giris_metni = f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
     doc.add_paragraph(giris_metni)
     
-    # 2. İl Bilgisi Eklenen Cümle
-    yapi_metni = f"Yapı {proje_yeri}'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
+    # 2. Mahal Cümlesi
+    yapi_metni = "Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
-    
-    if proje_aciklamasi:
-        doc.add_paragraph(proje_aciklamasi)
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
