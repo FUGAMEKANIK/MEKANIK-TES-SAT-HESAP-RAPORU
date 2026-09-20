@@ -139,7 +139,21 @@ with col2:
     chk_kizgin = st.checkbox("10. Kızgın su tesisatı", value=False)
     rej_kizgin = st.selectbox("Kızgın Su Rejimi:", kizgin_su_secenekleri, index=0)
 
-sehir = "" 
+# --- 5. BÖLÜM: İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+st.header("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
+
+st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
+iller_listesi = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
+    "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
+    "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari",
+    "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir",
+    "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir",
+    "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
+    "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman",
+    "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
+]
+secilen_il = st.selectbox("Yapının inşa edileceği ili seçin:", iller_listesi, index=5) # Varsayılan Ankara
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
@@ -234,7 +248,7 @@ if st.button("Raporu Oluştur (.docx)"):
     giris_metni = f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
     doc.add_paragraph(giris_metni)
     
-    yapi_metni = f"Yapı {sehir if sehir else '...'} 'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
+    yapi_metni = f"Yapı {secilen_il}'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
 
     # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
@@ -334,12 +348,19 @@ if st.button("Raporu Oluştur (.docx)"):
     else:
         doc.add_paragraph("Herhangi bir ısı iletim akışkanı seçilmemiştir.", style='Italic')
 
+    # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+    doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
+    
+    doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
+    dih_hava_metni = f"Yapının inşa edileceği '{secilen_il}' için kabul edilen dış hava koşulları aşağıdaki gibidir:"
+    doc.add_paragraph(dih_hava_metni)
+
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("İşaret kutulu Isı İletim Akışkanları ayarlarıyla Word dosyası hazırlandı!")
+    st.success("5.1 Dış Hava Tasarım Kriterleri eklenerek Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
