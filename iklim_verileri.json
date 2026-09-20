@@ -1,1 +1,253 @@
+{
+  "Adana": {
+    "Seyhan": { "kis_kt": -0.5, "kis_yt": -1.5, "yaz_kt": 35.0, "yaz_yt": 24.0, "enlem": "36° 59' Kuzey", "boylam": "35° 19' Doğu", "rakim": 23, "gsf": 14.0 },
+    "Çukurova": { "kis_kt": -0.5, "kis_yt": -1.5, "yaz_kt": 35.0, "yaz_yt": 24.0, "enlem": "37° 03' Kuzey", "boylam": "35° 16' Doğu", "rakim": 45, "gsf": 14.2 }
+  },
+  "Adıyaman": {
+    "Merkez": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 38.0, "yaz_yt": 22.0, "enlem": "37° 45' Kuzey", "boylam": "38° 16' Doğu", "rakim": 670, "gsf": 13.5 }
+  },
+  "Afyonkarahisar": {
+    "Merkez": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "38° 45' Kuzey", "boylam": "30° 32' Doğu", "rakim": 1021, "gsf": 15.0 }
+  },
+  "Ağrı": {
+    "Merkez": { "kis_kt": -21.0, "kis_yt": -22.5, "yaz_kt": 31.0, "yaz_yt": 16.5, "enlem": "39° 43' Kuzey", "boylam": "43° 03' Doğu", "rakim": 1640, "gsf": 17.0 }
+  },
+  "Amasya": {
+    "Merkez": { "kis_kt": -6.0, "kis_yt": -7.2, "yaz_kt": 34.0, "yaz_yt": 19.0, "enlem": "40° 39' Kuzey", "boylam": "35° 49' Doğu", "rakim": 411, "gsf": 14.5 }
+  },
+  "Ankara": {
+    "Çankaya": { "kis_kt": -12.0, "kis_yt": -13.2, "yaz_kt": 33.0, "yaz_yt": 19.0, "enlem": "39° 57' Kuzey", "boylam": "32° 53' Doğu", "rakim": 949, "gsf": 15.5 },
+    "Keçiören": { "kis_kt": -12.5, "kis_yt": -13.7, "yaz_kt": 32.5, "yaz_yt": 18.5, "enlem": "39° 58' Kuzey", "boylam": "32° 51' Doğu", "rakim": 930, "gsf": 16.0 },
+    "Yenimahalle": { "kis_kt": -12.0, "kis_yt": -13.2, "yaz_kt": 33.0, "yaz_yt": 19.0, "enlem": "39° 58' Kuzey", "boylam": "32° 48' Doğu", "rakim": 830, "gsf": 15.8 }
+  },
+  "Antalya": {
+    "Muratpaşa": { "kis_kt": 3.0, "kis_yt": 1.5, "yaz_kt": 36.0, "yaz_yt": 25.0, "enlem": "36° 53' Kuzey", "boylam": "30° 42' Doğu", "rakim": 35, "gsf": 10.0 },
+    "Alanya": { "kis_kt": 4.0, "kis_yt": 2.5, "yaz_kt": 35.0, "yaz_yt": 26.0, "enlem": "36° 33' Kuzey", "boylam": "32° 00' Doğu", "rakim": 10, "gsf": 8.5 }
+  },
+  "Artvin": {
+    "Merkez": { "kis_kt": -4.0, "kis_yt": -5.2, "yaz_kt": 30.0, "yaz_yt": 18.0, "enlem": "41° 11' Kuzey", "boylam": "41° 49' Doğu", "rakim": 345, "gsf": 11.5 }
+  },
+  "Aydın": {
+    "Efeler": { "kis_kt": 1.0, "kis_yt": -0.5, "yaz_kt": 38.0, "yaz_yt": 23.0, "enlem": "37° 50' Kuzey", "boylam": "27° 50' Doğu", "rakim": 62, "gsf": 13.0 }
+  },
+  "Balıkesir": {
+    "Karesi": { "kis_kt": -4.0, "kis_yt": -5.2, "yaz_kt": 33.0, "yaz_yt": 20.5, "enlem": "39° 38' Kuzey", "boylam": "27° 53' Doğu", "rakim": 140, "gsf": 12.0 }
+  },
+  "Bilecik": {
+    "Merkez": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 32.0, "yaz_yt": 18.5, "enlem": "40° 09' Kuzey", "boylam": "29° 58' Doğu", "rakim": 500, "gsf": 13.5 }
+  },
+  "Bingöl": {
+    "Merkez": { "kis_kt": -14.0, "kis_yt": -15.2, "yaz_kt": 35.0, "yaz_yt": 20.0, "enlem": "38° 53' Kuzey", "boylam": "40° 30' Doğu", "rakim": 1150, "gsf": 15.0 }
+  },
+  "Bitlis": {
+    "Merkez": { "kis_kt": -15.0, "kis_yt": -16.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "38° 24' Kuzey", "boylam": "42° 06' Doğu", "rakim": 1540, "gsf": 14.0 }
+  },
+  "Bolu": {
+    "Merkez": { "kis_kt": -12.0, "kis_yt": -13.2, "yaz_kt": 30.0, "yaz_yt": 17.5, "enlem": "40° 44' Kuzey", "boylam": "31° 36' Doğu", "rakim": 740, "gsf": 14.5 }
+  },
+  "Burdur": {
+    "Merkez": { "kis_kt": -6.0, "kis_yt": -7.2, "yaz_kt": 33.0, "yaz_yt": 19.0, "enlem": "37° 44' Kuzey", "boylam": "30° 17' Doğu", "rakim": 950, "gsf": 14.0 }
+  },
+  "Bursa": {
+    "Osmangazi": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 33.0, "yaz_yt": 21.0, "enlem": "40° 15' Kuzey", "boylam": "29° 04' Doğu", "rakim": 155, "gsf": 11.5 },
+    "Nilüfer": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 33.0, "yaz_yt": 21.0, "enlem": "40° 13' Kuzey", "boylam": "28° 52' Doğu", "rakim": 100, "gsf": 11.8 }
+  },
+  "Çanakkale": {
+    "Merkez": { "kis_kt": -2.0, "kis_yt": -3.5, "yaz_kt": 32.0, "yaz_yt": 22.0, "enlem": "40° 09' Kuzey", "boylam": "26° 24' Doğu", "rakim": 30, "gsf": 10.0 }
+  },
+  "Çankırı": {
+    "Merkez": { "kis_kt": -13.0, "kis_yt": -14.2, "yaz_kt": 33.0, "yaz_yt": 18.0, "enlem": "40° 36' Kuzey", "boylam": "33° 36' Doğu", "rakim": 725, "gsf": 16.0 }
+  },
+  "Çorum": {
+    "Merkez": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 32.0, "yaz_yt": 18.0, "enlem": "40° 33' Kuzey", "boylam": "34° 57' Doğu", "rakim": 801, "gsf": 15.0 }
+  },
+  "Denizli": {
+    "Pamukkale": { "kis_kt": -2.0, "kis_yt": -3.2, "yaz_kt": 36.0, "yaz_yt": 21.0, "enlem": "37° 55' Kuzey", "boylam": "29° 05' Doğu", "rakim": 354, "gsf": 13.5 }
+  },
+  "Diyarbakır": {
+    "Bağlar": { "kis_kt": -7.0, "kis_yt": -8.2, "yaz_kt": 39.0, "yaz_yt": 22.0, "enlem": "37° 55' Kuzey", "boylam": "40° 13' Doğu", "rakim": 670, "gsf": 15.5 }
+  },
+  "Edirne": {
+    "Merkez": { "kis_kt": -6.0, "kis_yt": -7.5, "yaz_kt": 34.0, "yaz_yt": 21.0, "enlem": "41° 40' Kuzey", "boylam": "26° 33' Doğu", "rakim": 48, "gsf": 13.0 }
+  },
+  "Elazığ": {
+    "Merkez": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 36.0, "yaz_yt": 20.0, "enlem": "38° 40' Kuzey", "boylam": "39° 13' Doğu", "rakim": 1067, "gsf": 14.5 }
+  },
+  "Erzincan": {
+    "Merkez": { "kis_kt": -14.0, "kis_yt": -15.2, "yaz_kt": 33.0, "yaz_yt": 18.5, "enlem": "39° 44' Kuzey", "boylam": "39° 29' Doğu", "rakim": 1218, "gsf": 16.5 }
+  },
+  "Erzurum": {
+    "Yakutiye": { "kis_kt": -23.0, "kis_yt": -24.5, "yaz_kt": 29.0, "yaz_yt": 16.0, "enlem": "39° 54' Kuzey", "boylam": "41° 16' Doğu", "rakim": 1890, "gsf": 17.5 }
+  },
+  "Eskişehir": {
+    "Odunpazarı": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 32.0, "yaz_yt": 18.0, "enlem": "39° 46' Kuzey", "boylam": "30° 31' Doğu", "rakim": 788, "gsf": 15.0 }
+  },
+  "Gaziantep": {
+    "Şahinbey": { "kis_kt": -4.0, "kis_yt": -5.2, "yaz_kt": 36.0, "yaz_yt": 21.5, "enlem": "37° 03' Kuzey", "boylam": "37° 22' Doğu", "rakim": 850, "gsf": 13.0 }
+  },
+  "Giresun": {
+    "Merkez": { "kis_kt": 1.0, "kis_yt": -0.5, "yaz_kt": 28.0, "yaz_yt": 21.0, "enlem": "40° 55' Kuzey", "boylam": "38° 23' Doğu", "rakim": 10, "gsf": 8.0 }
+  },
+  "Gümüşhane": {
+    "Merkez": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "40° 27' Kuzey", "boylam": "39° 28' Doğu", "rakim": 1210, "gsf": 15.5 }
+  },
+  "Hakkari": {
+    "Merkez": { "kis_kt": -14.0, "kis_yt": -15.2, "yaz_kt": 32.0, "yaz_yt": 18.0, "enlem": "37° 34' Kuzey", "boylam": "43° 44' Doğu", "rakim": 1370, "gsf": 16.0 }
+  },
+  "Hatay": {
+    "Antakya": { "kis_kt": -1.0, "kis_yt": -2.2, "yaz_kt": 36.0, "yaz_yt": 24.0, "enlem": "36° 12' Kuzey", "boylam": "36° 09' Doğu", "rakim": 85, "gsf": 13.0 }
+  },
+  "Isparta": {
+    "Merkez": { "kis_kt": -7.0, "kis_yt": -8.2, "yaz_kt": 32.0, "yaz_yt": 18.5, "enlem": "37° 45' Kuzey", "boylam": "30° 33' Doğu", "rakim": 1050, "gsf": 14.5 }
+  },
+  "Mersin": {
+    "Akdeniz": { "kis_kt": 2.0, "kis_yt": 0.5, "yaz_kt": 35.0, "yaz_yt": 25.0, "enlem": "36° 48' Kuzey", "boylam": "34° 38' Doğu", "rakim": 10, "gsf": 11.0 }
+  },
+  "İstanbul": {
+    "Beşiktaş": { "kis_kt": -2.0, "kis_yt": -3.5, "yaz_kt": 31.0, "yaz_yt": 23.0, "enlem": "41° 02' Kuzey", "boylam": "29° 00' Doğu", "rakim": 25, "gsf": 8.5 },
+    "Kadıköy": { "kis_kt": -2.0, "kis_yt": -3.5, "yaz_kt": 31.0, "yaz_yt": 23.0, "enlem": "40° 59' Kuzey", "boylam": "29° 02' Doğu", "rakim": 30, "gsf": 9.0 }
+  },
+  "İzmir": {
+    "Konak": { "kis_kt": 0.0, "kis_yt": -1.5, "yaz_kt": 35.0, "yaz_yt": 24.0, "enlem": "38° 25' Kuzey", "boylam": "27° 08' Doğu", "rakim": 5, "gsf": 11.0 },
+    "Karşıyaka": { "kis_kt": 0.0, "kis_yt": -1.5, "yaz_kt": 35.0, "yaz_yt": 24.0, "enlem": "38° 27' Kuzey", "boylam": "27° 07' Doğu", "rakim": 4, "gsf": 11.2 }
+  },
+  "Kars": {
+    "Merkez": { "kis_kt": -22.0, "kis_yt": -23.5, "yaz_kt": 28.0, "yaz_yt": 15.5, "enlem": "40° 36' Kuzey", "boylam": "43° 05' Doğu", "rakim": 1750, "gsf": 18.0 }
+  },
+  "Kastamonu": {
+    "Merkez": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "41° 22' Kuzey", "boylam": "33° 46' Doğu", "rakim": 790, "gsf": 15.0 }
+  },
+  "Kayseri": {
+    "Kocasinan": { "kis_kt": -12.0, "kis_yt": -13.2, "yaz_kt": 33.0, "yaz_yt": 18.5, "enlem": "38° 43' Kuzey", "boylam": "35° 29' Doğu", "rakim": 1054, "gsf": 16.0 }
+  },
+  "Kırklareli": {
+    "Merkez": { "kis_kt": -5.0, "kis_yt": -6.2, "yaz_kt": 32.0, "yaz_yt": 20.0, "enlem": "41° 44' Kuzey", "boylam": "27° 13' Doğu", "rakim": 205, "gsf": 12.5 }
+  },
+  "Kırşehir": {
+    "Merkez": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 32.0, "yaz_yt": 18.0, "enlem": "39° 08' Kuzey", "boylam": "34° 09' Doğu", "rakim": 985, "gsf": 15.0 }
+  },
+  "Kocaeli": {
+    "İzmit": { "kis_kt": -2.0, "kis_yt": -3.2, "yaz_kt": 32.0, "yaz_yt": 22.0, "enlem": "40° 46' Kuzey", "boylam": "29° 55' Doğu", "rakim": 30, "gsf": 10.0 }
+  },
+  "Konya": {
+    "Selçuklu": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 32.0, "yaz_yt": 17.5, "enlem": "37° 52' Kuzey", "boylam": "32° 29' Doğu", "rakim": 1016, "gsf": 15.5 }
+  },
+  "Kütahya": {
+    "Merkez": { "kis_kt": -9.0, "kis_yt": -10.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "39° 25' Kuzey", "boylam": "29° 59' Doğu", "rakim": 968, "gsf": 14.5 }
+  },
+  "Malatya": {
+    "Battalgazi": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 36.0, "yaz_yt": 20.5, "enlem": "38° 25' Kuzey", "boylam": "38° 21' Doğu", "rakim": 954, "gsf": 14.0 }
+  },
+  "Manisa": {
+    "Yunusemre": { "kis_kt": 0.0, "kis_yt": -1.2, "yaz_kt": 37.0, "yaz_yt": 23.0, "enlem": "38° 36' Kuzey", "boylam": "27° 25' Doğu", "rakim": 70, "gsf": 12.5 }
+  },
+  "Kahramanmaraş": {
+    "Dulkadiroğlu": { "kis_kt": -4.0, "kis_yt": -5.2, "yaz_kt": 36.0, "yaz_yt": 22.0, "enlem": "37° 35' Kuzey", "boylam": "36° 55' Doğu", "rakim": 568, "gsf": 13.5 }
+  },
+  "Mardin": {
+    "Artuklu": { "kis_kt": -4.0, "kis_yt": -5.2, "yaz_kt": 37.0, "yaz_yt": 22.0, "enlem": "37° 18' Kuzey", "boylam": "40° 43' Doğu", "rakim": 1050, "gsf": 13.0 }
+  },
+  "Muğla": {
+    "Menteşe": { "kis_kt": 1.0, "kis_yt": -0.2, "yaz_kt": 34.0, "yaz_yt": 21.0, "enlem": "37° 13' Kuzey", "boylam": "28° 22' Doğu", "rakim": 670, "gsf": 12.0 }
+  },
+  "Muş": {
+    "Merkez": { "kis_kt": -17.0, "kis_yt": -18.2, "yaz_kt": 34.0, "yaz_yt": 19.0, "enlem": "38° 44' Kuzey", "boylam": "41° 29' Doğu", "rakim": 1340, "gsf": 16.0 }
+  },
+  "Nevşehir": {
+    "Merkez": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "38° 37' Kuzey", "boylam": "34° 42' Doğu", "rakim": 1224, "gsf": 15.0 }
+  },
+  "Niğde": {
+    "Merkez": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 32.0, "yaz_yt": 18.0, "enlem": "37° 58' Kuzey", "boylam": "34° 40' Doğu", "rakim": 1230, "gsf": 15.0 }
+  },
+  "Ordu": {
+    "Altınordu": { "kis_kt": 1.0, "kis_yt": -0.5, "yaz_kt": 29.0, "yaz_yt": 21.0, "enlem": "40° 59' Kuzey", "boylam": "37° 52' Doğu", "rakim": 4, "gsf": 8.0 }
+  },
+  "Rize": {
+    "Merkez": { "kis_kt": 2.0, "kis_yt": 0.5, "yaz_kt": 28.0, "yaz_yt": 22.0, "enlem": "41° 01' Kuzey", "boylam": "40° 31' Doğu", "rakim": 6, "gsf": 7.5 }
+  },
+  "Sakarya": {
+    "Adapazarı": { "kis_kt": -2.0, "kis_yt": -3.2, "yaz_kt": 32.0, "yaz_yt": 22.0, "enlem": "40° 46' Kuzey", "boylam": "30° 24' Doğu", "rakim": 31, "gsf": 10.5 }
+  },
+  "Samsun": {
+    "İlkadım": { "kis_kt": 0.0, "kis_yt": -1.2, "yaz_kt": 30.0, "yaz_yt": 21.5, "enlem": "41° 17' Kuzey", "boylam": "36° 20' Doğu", "rakim": 4, "gsf": 8.5 }
+  },
+  "Siirt": {
+    "Merkez": { "kis_kt": -5.0, "kis_yt": -6.2, "yaz_kt": 38.0, "yaz_yt": 23.0, "enlem": "37° 55' Kuzey", "boylam": "41° 56' Doğu", "rakim": 895, "gsf": 13.5 }
+  },
+  "Sinop": {
+    "Merkez": { "kis_kt": 1.0, "kis_yt": -0.2, "yaz_kt": 28.0, "yaz_yt": 21.0, "enlem": "42° 01' Kuzey", "boylam": "35° 09' Doğu", "rakim": 30, "gsf": 7.5 }
+  },
+  "Sivas": {
+    "Merkez": { "kis_kt": -16.0, "kis_yt": -17.2, "yaz_kt": 31.0, "yaz_yt": 17.0, "enlem": "39° 44' Kuzey", "boylam": "37° 01' Doğu", "rakim": 1285, "gsf": 16.5 }
+  },
+  "Tekirdağ": {
+    "Süleymanpaşa": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 31.0, "yaz_yt": 21.0, "enlem": "40° 58' Kuzey", "boylam": "27° 30' Doğu", "rakim": 10, "gsf": 9.5 }
+  },
+  "Tokat": {
+    "Merkez": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 33.0, "yaz_yt": 18.5, "enlem": "40° 18' Kuzey", "boylam": "36° 33' Doğu", "rakim": 622, "gsf": 14.0 }
+  },
+  "Trabzon": {
+    "Ortahisar": { "kis_kt": 1.0, "kis_yt": -0.5, "yaz_kt": 28.0, "yaz_yt": 21.0, "enlem": "41° 00' Kuzey", "boylam": "39° 43' Doğu", "rakim": 38, "gsf": 8.0 }
+  },
+  "Tunceli": {
+    "Merkez": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 36.0, "yaz_yt": 20.0, "enlem": "39° 06' Kuzey", "boylam": "39° 32' Doğu", "rakim": 695, "gsf": 14.5 }
+  },
+  "Şanlıurfa": {
+    "Eyyübiye": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 39.0, "yaz_yt": 23.0, "enlem": "37° 09' Kuzey", "boylam": "38° 47' Doğu", "rakim": 518, "gsf": 13.0 }
+  },
+  "Uşak": {
+    "Merkez": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 33.0, "yaz_yt": 18.5, "enlem": "38° 40' Kuzey", "boylam": "29° 24' Doğu", "rakim": 908, "gsf": 14.0 }
+  },
+  "Van": {
+    "İpekyolu": { "kis_kt": -12.0, "kis_yt": -13.2, "yaz_kt": 29.0, "yaz_yt": 16.5, "enlem": "38° 30' Kuzey", "boylam": "43° 22' Doğu", "rakim": 1725, "gsf": 15.0 }
+  },
+  "Yozgat": {
+    "Merkez": { "kis_kt": -13.0, "kis_yt": -14.2, "yaz_kt": 31.0, "yaz_yt": 17.5, "enlem": "39° 49' Kuzey", "boylam": "34° 48' Doğu", "rakim": 1300, "gsf": 16.0 }
+  },
+  "Zonguldak": {
+    "Merkez": { "kis_kt": -1.0, "kis_yt": -2.2, "yaz_kt": 28.0, "yaz_yt": 20.5, "enlem": "41° 26' Kuzey", "boylam": "31° 47' Doğu", "rakim": 105, "gsf": 8.0 }
+  },
+  "Aksaray": {
+    "Merkez": { "kis_kt": -10.0, "kis_yt": -11.2, "yaz_kt": 32.0, "yaz_yt": 17.5, "enlem": "38° 22' Kuzey", "boylam": "34° 01' Doğu", "rakim": 980, "gsf": 15.0 }
+  },
+  "Bayburt": {
+    "Merkez": { "kis_kt": -16.0, "kis_yt": -17.2, "yaz_kt": 31.0, "yaz_yt": 17.0, "enlem": "40° 15' Kuzey", "boylam": "40° 13' Doğu", "rakim": 1550, "gsf": 16.5 }
+  },
+  "Karaman": {
+    "Merkez": { "kis_kt": -9.0, "kis_yt": -10.2, "yaz_kt": 33.0, "yaz_yt": 18.0, "enlem": "37° 10' Kuzey", "boylam": "33° 13' Doğu", "rakim": 1033, "gsf": 14.5 }
+  },
+  "Kırıkkale": {
+    "Merkez": { "kis_kt": -11.0, "kis_yt": -12.2, "yaz_kt": 33.0, "yaz_yt": 18.5, "enlem": "39° 50' Kuzey", "boylam": "33° 30' Doğu", "rakim": 730, "gsf": 15.5 }
+  },
+  "Batman": {
+    "Merkez": { "kis_kt": -6.0, "kis_yt": -7.2, "yaz_kt": 39.0, "yaz_yt": 22.5, "enlem": "37° 53' Kuzey", "boylam": "41° 07' Doğu", "rakim": 550, "gsf": 14.0 }
+  },
+  "Şırnak": {
+    "Merkez": { "kis_kt": -5.0, "kis_yt": -6.2, "yaz_kt": 37.0, "yaz_yt": 22.0, "enlem": "37° 31' Kuzey", "boylam": "42° 27' Doğu", "rakim": 1350, "gsf": 13.5 }
+  },
+  "Bartın": {
+    "Merkez": { "kis_kt": -1.0, "kis_yt": -2.2, "yaz_kt": 29.0, "yaz_yt": 21.0, "enlem": "41° 37' Kuzey", "boylam": "32° 20' Doğu", "rakim": 25, "gsf": 8.5 }
+  },
+  "Ardahan": {
+    "Merkez": { "kis_kt": -21.0, "kis_yt": -22.5, "yaz_kt": 27.0, "yaz_yt": 15.0, "enlem": "41° 06' Kuzey", "boylam": "42° 41' Doğu", "rakim": 1800, "gsf": 17.5 }
+  },
+  "Iğdır": {
+    "Merkez": { "kis_kt": -9.0, "kis_yt": -10.2, "yaz_kt": 35.0, "yaz_yt": 20.0, "enlem": "39° 55' Kuzey", "boylam": "44° 02' Doğu", "rakim": 850, "gsf": 14.0 }
+  },
+  "Yalova": {
+    "Merkez": { "kis_kt": -2.0, "kis_yt": -3.2, "yaz_kt": 31.0, "yaz_yt": 22.5, "enlem": "40° 39' Kuzey", "boylam": "29° 16' Doğu", "rakim": 5, "gsf": 9.0 }
+  },
+  "Karabük": {
+    "Merkez": { "kis_kt": -8.0, "kis_yt": -9.2, "yaz_kt": 32.0, "yaz_yt": 18.5, "enlem": "41° 12' Kuzey", "boylam": "32° 37' Doğu", "rakim": 260, "gsf": 13.5 }
+  },
+  "Kilis": {
+    "Merkez": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 37.0, "yaz_yt": 22.5, "enlem": "36° 42' Kuzey", "boylam": "37° 06' Doğu", "rakim": 650, "gsf": 13.0 }
+  },
+  "Osmaniye": {
+    "Merkez": { "kis_kt": -1.0, "kis_yt": -2.2, "yaz_kt": 36.0, "yaz_yt": 23.5, "enlem": "37° 04' Kuzey", "boylam": "36° 14' Doğu", "rakim": 125, "gsf": 13.5 }
+  },
+  "Düzce": {
+    "Merkez": { "kis_kt": -3.0, "kis_yt": -4.2, "yaz_kt": 31.0, "yaz_yt": 21.0, "enlem": "40° 50' Kuzey", "boylam": "31° 09' Doğu", "rakim": 140, "gsf": 11.0 }
+  }
+}
 
