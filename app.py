@@ -68,7 +68,7 @@ std_mmo_155 = st.checkbox("MMO KAZAN VE BACA(Y.NO:155)", value=True)
 
 std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
 std_su = st.checkbox("İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True)
-std_klima = st.checkbox("Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True)
+std_klima = st.checkbox("Klima dan Havalandırma Tesisatı Yönetmelikleri", value=True) # (not changed)
 std_tesisat = st.checkbox("Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin Paylaştırılmasına İlişkin Yönetmelik", value=False)
 std_kanal = st.checkbox("Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar", value=False)
 std_asansor = st.checkbox("Asansör Yönetmeliği ve İlgili Standartlar", value=False)
@@ -99,50 +99,45 @@ ek_kapsam = st.text_area("Eklemek istediğiniz ilave proje kapsam maddeleri (Her
 
 # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
 st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
-st.write("Tesisat sistemlerinde yer almasını istediğiniz maddeleri seçin ve sıcaklık/basınç rejimlerini ayarlayın:")
+st.write("Tesisat sistemlerinde kullanılacak akışkan sıcaklık ve basınç rejimlerini sekmeli olarak yapılandırın:")
+
+# Arayüz sekmeleri
+tab_isitma_sogutma, tab_buhar_kizgin = st.tabs(["Isıtma / Soğutma Tesisatları", "Buhar ve Kızgın Su Tesisatları"])
 
 sicaklik_secenekleri = ["80/60", "70/50", "60/40", "50/30", "50/40", "7/12", "6/11", "10/60"]
 buhar_secenekleri = ["1 atm (100 °C)", "2 bar (120 °C)", "3 bar (133 °C)", "4 bar (143 °C)", "6 bar (165 °C)", "8 bar (175 °C)"]
 kizgin_su_secenekleri = ["120/90", "130/70", "140/90", "150/100", "160/110", "180/130"]
 
-# 10 Madde için hem aktif/pasif seçimi (checkbox) hem de değer seçimi (selectbox) sekmeli yapıda
-tab_isitma_sogutma, tab_buhar_kizgin = st.tabs(["Isıtma / Soğutma Tesisatları (1-8)", "Buhar ve Kızgın Su Tesisatları (9-10)"])
-
 with tab_isitma_sogutma:
     col1, col2 = st.columns(2)
     with col1:
-        sec_kalorifer = st.checkbox("1. Kalorifer tesisatı", value=True)
-        rej_kalorifer = st.selectbox("Kalorifer sıcaklık rejimi:", sicaklik_secenekleri, index=0)
-        
-        sec_fco_ist = st.checkbox("2. Fan-Coil ısıtma tesisatı", value=True)
-        rej_fco_ist = st.selectbox("Fan-Coil ısıtma sıcaklık rejimi:", sicaklik_secenekleri, index=0)
-        
-        sec_fco_sog = st.checkbox("3. Fan-Coil Soğutma tesisatı", value=True)
-        rej_fco_sog = st.selectbox("Fan-Coil soğutma sıcaklık rejimi:", sicaklik_secenekleri, index=5)
-        
-        sec_ks_ist = st.checkbox("4. Klima santrali ısıtma tesisatı", value=True)
-        rej_ks_ist = st.selectbox("Klima santrali ısıtma sıcaklık rejimi:", sicaklik_secenekleri, index=0)
-
+        # 1. Kalorifer tesisatı (Varsayılan: 80/60 -> index 0)
+        rej_kalorifer = st.selectbox("Kalorifer tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        # 2. Fan-Coil ısıtma tesisatı (Varsayılan: 80/60 -> index 0)
+        rej_fco_ist = st.selectbox("Fan-Coil ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        # 3. Fan-Coil Soğutma tesisatı (Varsayılan: 7/12 -> index 5)
+        rej_fco_sog = st.selectbox("Fan-Coil Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        # 4. Klima santrali ısıtma tesisatı (Varsayılan: 80/60 -> index 0)
+        rej_ks_ist = st.selectbox("Klima santrali ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
     with col2:
-        sec_ks_sog = st.checkbox("5. Klima santrali Soğutma tesisatı", value=True)
-        rej_ks_sog = st.selectbox("Klima santrali soğutma sıcaklık rejimi:", sicaklik_secenekleri, index=5)
-        
-        sec_boyler = st.checkbox("6. Boyler ısıtma tesisatı", value=True)
-        rej_boyler = st.selectbox("Boyler ısıtma sıcaklık rejimi:", sicaklik_secenekleri, index=0)
-        
-        sec_k_sicak = st.checkbox("7. Kullanma sıcak suyu", value=True)
-        rej_k_sicak = st.selectbox("Kullanma sıcak suyu sıcaklık rejimi:", sicaklik_secenekleri, index=2)
-        
-        sec_doseme = st.checkbox("8. Döşemeden ısıtma tesisatı", value=True)
-        rej_doseme = st.selectbox("Döşemeden ısıtma sıcaklık rejimi:", sicaklik_secenekleri, index=3)
+        # 5. Klima santrali Soğutma tesisatı (Varsayılan: 7/12 -> index 5)
+        rej_ks_sog = st.selectbox("Klima santrali Soğutma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=5)
+        # 6. Boyler ısıtma tesisatı (Varsayılan: 80/60 -> index 0)
+        rej_boyler = st.selectbox("Boyler ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=0)
+        # 7. Kullanma sıcak suyu (Varsayılan: 10/60 -> index 7)
+        rej_k_sicak = st.selectbox("Kullanma sıcak suyu sıcaklık rejimi:", sicaklik_secenekleri, index=7)
+        # 8. Döşemeden ısıtma tesisatı (Varsayılan: 50/40 -> index 4)
+        rej_doseme = st.selectbox("Döşemeden ısıtma tesisatı sıcaklık rejimi:", sicaklik_secenekleri, index=4)
 
 with tab_buhar_kizgin:
     col3, col4 = st.columns(2)
     with col3:
-        sec_buhar = st.checkbox("9. Buhar tesisatı", value=True)
-        rej_buhar = st.selectbox("Buhar tesisatı basınç/sıcaklık seçimi:", buhar_secenekleri, index=0)
+        aktif_buhar = st.checkbox("Buhar tesisatı dahil et", value=False)
+        # 9. Buhar tesisatı (Varsayılan: 2 bar (120 °C) -> index 1)
+        rej_buhar = st.selectbox("Buhar tesisatı basınç/sıcaklık seçimi:", buhar_secenekleri, index=1)
     with col4:
-        sec_kizgin = st.checkbox("10. Kızgın su tesisatı", value=True)
+        aktif_kizgin = st.checkbox("Kızgın su tesisatı dahil et", value=False)
+        # 10. Kızgın su tesisatı (Varsayılan: 120/90 -> index 0)
         rej_kizgin = st.selectbox("Kızgın su tesisatı sıcaklık rejimi:", kizgin_su_secenekleri, index=0)
 
 sehir = "" 
@@ -322,30 +317,31 @@ if st.button("Raporu Oluştur (.docx)"):
     
     doc.add_paragraph("Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık rejimleri kullanılacaktır:")
     
-    akiskan_maddeleri = []
-    if sec_kalorifer: akiskan_maddeleri.append(f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.")
-    if sec_fco_ist: akiskan_maddeleri.append(f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su.")
-    if sec_fco_sog: akiskan_maddeleri.append(f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su.")
-    if sec_ks_ist: akiskan_maddeleri.append(f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su.")
-    if sec_ks_sog: akiskan_maddeleri.append(f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su.")
-    if sec_boyler: akiskan_maddeleri.append(f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su.")
-    if sec_k_sicak: akiskan_maddeleri.append(f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.")
-    if sec_doseme: akiskan_maddeleri.append(f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su.")
-    if sec_buhar: akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
-    if sec_kizgin: akiskan_maddeleri.append(f"Kızgın su tesisatında {rej_kizgin} °C sıcak su.")
+    akiskan_maddeleri = [
+        f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.",
+        f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su.",
+        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su.",
+        f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su.",
+        f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su.",
+        f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su.",
+        f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.",
+        f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
+    ]
 
-    if akiskan_maddeleri:
-        for akiskan in akiskan_maddeleri:
-            doc.add_paragraph(akiskan, style='List Bullet')
-    else:
-        doc.add_paragraph("Herhangi bir ısı iletim akışkanı seçilmemiştir.", style='Italic')
+    if aktif_buhar:
+        akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
+    if aktif_kizgin:
+        akiskan_maddeleri.append(f"Kızgın su tesisatında {rej_kizgin} °C sıcak su.")
+
+    for akiskan in akiskan_maddeleri:
+        doc.add_paragraph(akiskan, style='List Bullet')
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Seçilebilir maddeler ve rejimlerle Word dosyası hazırlandı!")
+    st.success("8. madde 50/40 olarak güncellenip Word dosyası hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Rapor.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
