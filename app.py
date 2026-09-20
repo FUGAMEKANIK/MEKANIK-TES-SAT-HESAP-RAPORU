@@ -33,6 +33,25 @@ def set_cell_border(cell, **kwargs):
             tcBorders.append(element)
     tcPr.append(tcBorders)
 
+# Otomatik İçindekiler Tablosu (TOC) Alanı Ekleyen Fonksiyon
+def add_toc(paragraph):
+    run = paragraph.add_run()
+    fldChar1 = OxmlElement('w:fldChar')
+    fldChar1.set(qn('w:fldCharType'), 'begin')
+    instrText = OxmlElement('w:instrText')
+    instrText.set(qn('xml:space'), 'preserve')
+    instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
+    fldChar2 = OxmlElement('w:fldChar')
+    fldChar2.set(qn('w:fldCharType'), 'separate')
+    fldChar3 = OxmlElement('w:fldChar')
+    fldChar3.set(qn('w:fldCharType'), 'end')
+    
+    r = run._r
+    r.append(fldChar1)
+    r.append(instrText)
+    r.append(fldChar2)
+    r.append(fldChar3)
+
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
 
@@ -68,20 +87,17 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     cover_section.left_margin = Inches(1.0)
     cover_section.right_margin = Inches(1.0)
 
-    # --- KAPAK SAYFASI İÇİN TAM SAYFA ÇERÇEVELİ TABLO ---
-    # 1 satır, 1 sütunluk tablo oluşturarak sayfayı tam çevreleyen profesyonel çerçeve yapıyoruz
+    # --- 1. SAYFA: ÇERÇEVELİ KAPAK SAYFASI ---
     table = doc.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
     
     cell = table.cell(0, 0)
-    cell.width = Inches(6.5) # A4 genişliğine uyumlu
+    cell.width = Inches(6.5)
     
-    # Tablo hücresine kurumsal mavi çerçeve uyguluyoruz (Kalınlık: 24 = ~3pt, Renk: Koyu Mavi)
     border_style = {'val': 'single', 'sz': 24, 'color': '365F91'}
     set_cell_border(cell, top=border_style, bottom=border_style, left=border_style, right=border_style)
     
-    # Hücre içindeki ilk paragraf üzerinden kapak içeriğini yazmaya başlıyoruz
     p_sirket = cell.paragraphs[0]
     p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_sirket = p_sirket.add_run(f"\n\n{aktif_sirket.upper()}")
@@ -122,7 +138,22 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     run_hazirlayan.font.size = Pt(11)
     run_hazirlayan.font.name = 'Arial'
 
-    # --- YENİ BÖLÜM (GENEL BİLGİLER İÇİN ÇERÇEVESİZ SAYFA) ---
+    # --- 2. SAYFA: OTOMATİK İÇİNDEKİLER ---
+    doc.add_page_break()
+    
+    doc.add_heading("İÇİNDEKİLER", level=1)
+    
+    # Word'ün kendi otomatik alan kodunu içeren paragrafı ekliyoruz
+    p_toc = doc.add_paragraph()
+    add_toc(p_toc)
+    
+    p_bilgi_notu = doc.add_paragraph()
+    run_not = p_bilgi_notu.add_run("(Not: Belgeyi Word'de açtığınızda üstüne sağ tıklayıp 'Alanı Güncelle' diyerek veya Word uyarı verdiğinde otomatik olarak tüm başlıkları ve sayfa numaralarını güncelleyebilirsiniz.)")
+    run_not.font.size = Pt(9)
+    run_not.font.italic = True
+    run_not.font.color.rgb = RGBColor(128, 128, 128)
+    
+    # --- 3. SAYFA: GENEL BİLGİLER (ÇERÇEVESİZ ASIL METİN) ---
     doc.add_page_break()
 
     body_section = doc.add_section()
@@ -134,22 +165,26 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
     # --- BÖLÜM 1: GENEL BİLGİLER ---
     doc.add_heading("1. GENEL BİLGİLER", level=1)
     
-    # 1. Sabit Giriş Metni
     proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
     giris_metni = f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
     doc.add_paragraph(giris_metni)
     
-    # 2. Mahal Cümlesi
-    sehir_ifadesi = f"{sehir}'nda" if sehir else "''de"
-    yapi_metni = f"Yapı {sehir_ifadesi} inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
+    yapi_metni = f"Yapı {sehir if sehir else '...'} 'nda inşa edilecektir. Yapıda aşağıdaki mahaller bulunmaktadır."
     doc.add_paragraph(yapi_metni)
+    
+    # İleride eklenecek diğer ana başlıklar için örnekler (Otomatik algılamayı test etmek için)
+    doc.add_heading("1.1. Tasarım Kriterleri ve Esas Alınan Standartlar", level=2)
+    doc.add_paragraph("Tasarım aşamasında yürürlükteki yönetmelikler ve standartlar esas alınmıştır.")
+    
+    doc.add_heading("2. ISITMA TESİSATI HESAPLARI", level=1)
+    doc.add_paragraph("Isıtma tesisatı yük hesapları detayları bu bölümde yer almaktadır.")
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    st.success("Çerçeveli kapak ve genel bilgiler içeren Word dosyası başarıyla hazırlandı!")
+    st.success("Tam otomatik içindekiler tablosuna sahip Word dosyası başarıyla hazırlandı!")
     
     dosya_adi = f"{aktif_is.replace(' ', '_')}_Genel_Bilgiler.docx" if is_adi else "Mekanik_Uygulama_Raporu.docx"
     
