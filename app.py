@@ -3,6 +3,16 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
+from datetime import datetime
+
+# Türkçe ay isimleri için sözlük
+aylar = {
+    1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
+    7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"
+}
+
+bugun = datetime.now()
+bugun_turkce = f"{bugun.day} {aylar[bugun.month]} {bugun.year}"
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve genel bilgiler kısımlarını doldurun:")
@@ -12,8 +22,11 @@ st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input("Şirket / Kuruluş İsmi", "FUGAMEKANİK MÜHENDİSLİK A.Ş.")
 is_adi = st.text_input("İşin Adı / Proje Başlığı", "Merkezi Isıtma ve Havalandırma Tesisatı Projesi")
 rapor_turu = st.text_input("Rapor Türü", "MEKANİK TESİSAT HESAP RAPORU")
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet KÜÇÜK (Makine Mühendisi)")
-tarih = st.text_input("Rapor Tarihi", "Eylül 2026")
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
+mmo_no = st.text_input("MMO Oda No", "109913")
+
+# Tarih alanı otomatik bugünün tarihiyle gelir, istersek değiştirebiliriz
+tarih = st.text_input("Rapor Tarihi", bugun_turkce)
 
 # --- 2. SEKME / BÖLÜM: GENEL BİLGİLER ---
 st.header("2. Genel Bilgiler ve Tasarım Kriterleri")
@@ -72,7 +85,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
 
         p_alt = doc.add_paragraph()
         p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_hazirlayan = p_alt.add_run(f"Hazırlayan:\n{hazirlayan}\n\nTarih:\n{tarih}")
+        run_hazirlayan = p_alt.add_run(f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No: {mmo_no}\n\nTarih:\n{tarih}")
         run_hazirlayan.font.size = Pt(11)
         run_hazirlayan.font.name = 'Arial'
 
@@ -82,7 +95,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         # --- BÖLÜM 1: GENEL BİLGİLER ---
         doc.add_heading("1. GENEL BİLGİLER VE TASARIM KRİTERLERİ", level=1)
         
-        # İstediğiniz Sabit Giriş Metni (Proje Adı dinamik ekleniyor)
+        # Sabit Giriş Metni
         giris_metni = f"Bu raporda '{is_adi}' için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit edilmiştir."
         doc.add_paragraph(giris_metni)
         
@@ -107,7 +120,7 @@ if st.button("Genel Bilgiler Dahil Word Raporu Oluştur"):
         doc.save(buffer)
         buffer.seek(0)
         
-        st.success("Sabit metin ve genel bilgiler rapora eklendi!")
+        st.success("Otomatik tarih ve güncel bilgiler rapora başarıyla işlendi!")
         
         st.download_button(
             label="📥 Güncel Word Dosyasını İndir (.docx)",
