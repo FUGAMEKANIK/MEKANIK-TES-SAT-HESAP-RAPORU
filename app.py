@@ -36,6 +36,7 @@ def iklim_verisini_yukle():
     with open(dosya_adi, "r", encoding="utf-8") as f:
       return json.load(f)
   else:
+    # Dosya henüz yoksa varsayılan geçici yapı
     return {
         "Ankara": {
             "Çankaya": {
@@ -47,8 +48,30 @@ def iklim_verisini_yukle():
                 "boylam": "32° 53' Doğu",
                 "rakim": 949,
                 "gsf": 15.5,
+            },
+            "Keçiören": {
+                "kis_kt": -12.5,
+                "kis_yt": -13.7,
+                "yaz_kt": 32.5,
+                "yaz_yt": 18.5,
+                "enlem": "39° 58' Kuzey",
+                "boylam": "32° 51' Doğu",
+                "rakim": 930,
+                "gsf": 16.0,
+            },
+        },
+        "İstanbul": {
+            "Kadıköy": {
+                "kis_kt": -2.0,
+                "kis_yt": -3.5,
+                "yaz_kt": 31.0,
+                "yaz_yt": 23.0,
+                "enlem": "40° 59' Kuzey",
+                "boylam": "29° 02' Doğu",
+                "rakim": 30,
+                "gsf": 9.0,
             }
-        }
+        },
     }
 
 
@@ -78,7 +101,7 @@ def add_toc(paragraph):
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
-# --- 1. KAPAK BİLGİLERİ ---
+# --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input(
     "Şirket / Kuruluş İsmi",
@@ -92,8 +115,10 @@ hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
 mmo_no = st.text_input("MMO Oda No", "109913")
 tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
-# --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
+# --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
+st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
+
 std_ts_825 = st.checkbox("TS 825 - BİNALARDA ISI YALITIM KURALLARI", value=True)
 std_yangin = st.checkbox(
     '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
@@ -102,7 +127,8 @@ std_yangin = st.checkbox(
 )
 std_bep_2008_2010 = st.checkbox(
     "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
-    " ENERJİ PERFORMANSI YÖNETMELİĞİ”",
+    " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi"
+    " gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”",
     value=True,
 )
 std_ts_1258 = st.checkbox(
@@ -124,28 +150,64 @@ std_ts_en_12056_2 = st.checkbox(
     value=True,
 )
 std_ts_en_12845 = st.checkbox(
-    "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ", value=True
+    "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
+    " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM",
+    value=True,
 )
 std_mmo_84 = st.checkbox(
-    "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI (Y.NO:84)", value=True
+    "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)", value=True
 )
+std_mmo_352_5 = st.checkbox("MMO KALORİFER TESİSATI (Y.NO:352/5)", value=True)
 std_mmo_122 = st.checkbox(
-    "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI (Y.NO:122)", value=True
+    "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)", value=True
 )
 std_mmo_133 = st.checkbox(
-    "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI (Y.NO:133)", value=True
+    "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)", value=True
+)
+std_mmo_155 = st.checkbox("MMO KAZAN VE BACA(Y.NO:155)", value=True)
+
+std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
+std_su = st.checkbox(
+    "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True
+)
+std_klima = st.checkbox(
+    "Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True
+)
+std_tesisat = st.checkbox(
+    "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
+    " Paylaştırılmasına İlişkin Yönetmelik",
+    value=False,
+)
+std_kanal = st.checkbox(
+    "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar", value=False
+)
+std_asansor = st.checkbox(
+    "Asansör Yönetmeliği ve İlgili Standartlar", value=False
 )
 std_deprem = st.checkbox(
     "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)",
     value=True,
 )
-
-ek_standartlar = st.text_area(
-    "Eklemek istediğiniz ilave standartlar (Her satıra bir tane)", "", height=80
+std_akustik = st.checkbox(
+    "Binaların Gürültüye Karşı Korunması Yönetmeliği", value=False
+)
+std_isg = st.checkbox(
+    "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler", value=True
 )
 
-# --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
+ek_standartlar = st.text_area(
+    "Eklemek istediğiniz ilave standartlar ve açıklamaları (Her satıra bir tane"
+    " yazabilirsiniz)",
+    "",
+    height=80,
+)
+
+# --- 3. SEKME / BÖLÜM: MEKANİK TESİSAT PROJE KAPSAMI ---
 st.header("3. MEKANİK TESİSAT PROJE KAPSAMI")
+st.write(
+    "Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:"
+)
+
 kapsam_isitma = st.checkbox("Isıtma tesisatı,", value=True)
 kapsam_sogutma = st.checkbox("Soğutma tesisatı,", value=True)
 kapsam_soguk_su = st.checkbox("Kullanma soğuk suyu tesisatı,", value=True)
@@ -156,165 +218,185 @@ kapsam_yangin_depo = st.checkbox(
 kapsam_atik_su = st.checkbox(
     "Yapı içinde atık su tesisatı (Yapı çıkış rögarına),", value=True
 )
+kapsam_yangin_dagitim = st.checkbox(
+    "Yangın suyu iç ve dış dağıtım sistemleri,", value=True
+)
+kapsam_kazan_dairesi = st.checkbox(
+    "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True
+)
 kapsam_havalandirma = st.checkbox("Havalandırma Tesisatı", value=True)
-
-ek_kapsam = st.text_area(
-    "Eklemek istediğiniz ilave proje kapsam maddeleri", "", height=80
+kapsam_basinc_hava = st.checkbox("Basınçlı hava tesisatı,", value=False)
+kapsam_medikal_gaz = st.checkbox("Medikal gaz tesisatı", value=False)
+kapsam_otomatik = st.checkbox(
+    "Otomatik kontrol sistemi kavramı tanımı,", value=True
 )
 
-# --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
+ek_kapsam = st.text_area(
+    "Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane"
+    " yazabilirsiniz)",
+    "",
+    height=80,
+)
+
+# --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
 st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
-sicaklik_secenekleri = ["80/60", "70/50", "60/40", "50/30", "50/40", "7/12"]
+st.write(
+    "Raporda yer almasını istediğiniz ısı iletim akışkanlarını seçin ve"
+    " rejimlerini belirleyin:"
+)
+
+sicaklik_secenekleri = [
+    "80/60",
+    "70/50",
+    "60/40",
+    "50/30",
+    "50/40",
+    "7/12",
+    "6/11",
+    "10/60",
+]
+buhar_secenekleri = [
+    "1 atm (100 °C)",
+    "2 bar (120 °C)",
+    "3 bar (133 °C)",
+    "4 bar (143 °C)",
+    "6 bar (165 °C)",
+    "8 bar (175 °C)",
+]
+kizgin_su_secenekleri = [
+    "120/90",
+    "130/70",
+    "140/90",
+    "150/100",
+    "160/110",
+    "180/130",
+]
 
 col1, col2 = st.columns(2)
+
 with col1:
   chk_kalorifer = st.checkbox("1. Kalorifer tesisatı", value=True)
   rej_kalorifer = st.selectbox(
       "Kalorifer Rejimi:", sicaklik_secenekleri, index=0
   )
+
+  chk_fco_ist = st.checkbox("2. Fan-Coil ısıtma tesisatı", value=True)
+  rej_fco_ist = st.selectbox(
+      "Fan-Coil Isıtma Rejimi:", sicaklik_secenekleri, index=0
+  )
+
   chk_fco_sog = st.checkbox("3. Fan-Coil Soğutma tesisatı", value=True)
   rej_fco_sog = st.selectbox(
       "Fan-Coil Soğutma Rejimi:", sicaklik_secenekleri, index=5
   )
-with col2:
-  chk_k_sicak = st.checkbox("7. Kullanma sıcak suyu", value=True)
-  rej_k_sicak = st.selectbox(
-      "Kullanma Sıcak Suyu Rejimi:", ["10/60", "50/40"], index=0
+
+  chk_ks_ist = st.checkbox("4. Klima santrali ısıtma tesisatı", value=True)
+  rej_ks_ist = st.selectbox(
+      "Klima Santrali Isıtma Rejimi:", sicaklik_secenekleri, index=0
   )
 
-# --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+  chk_buhar = st.checkbox("9. Buhar tesisatı", value=False)
+  rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
+
+with col2:
+  chk_ks_sog = st.checkbox("5. Klima santrali Soğutma tesisatı", value=True)
+  rej_ks_sog = st.selectbox(
+      "Klima Santrali Soğutma Rejimi:", sicaklik_secenekleri, index=5
+  )
+
+  chk_boyler = st.checkbox("6. Boyler ısıtma tesisatı", value=True)
+  rej_boyler = st.selectbox(
+      "Boyler Isıtma Rejimi:", sicaklik_secenekleri, index=0
+  )
+
+  chk_k_sicak = st.checkbox("7. Kullanma sıcak suyu", value=True)
+  rej_k_sicak = st.selectbox(
+      "Kullanma Sıcak Suyu Rejimi:", sicaklik_secenekleri, index=7
+  )
+
+  chk_doseme = st.checkbox("8. Döşemeden ısıtma tesisatı", value=True)
+  rej_doseme = st.selectbox(
+      "Döşemeden Isıtma Rejimi:", sicaklik_secenekleri, index=4
+  )
+
+  chk_kizgin = st.checkbox("10. Kızgın su tesisatı", value=False)
+  rej_kizgin = st.selectbox(
+      "Kızgın Su Rejimi:", kizgin_su_secenekleri, index=0
+  )
+
+# --- 5. BÖLÜM: İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
 st.header("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
 st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
 
+# İl ve İlçe Seçimi (Dinamik Yapı)
 iller_listesi = sorted(list(iklim_veritabani.keys()))
-secilen_il = st.selectbox("İl seçin:", iller_listesi, index=0)
+secilen_il = st.selectbox(
+    "Yapının inşa edileceği ili seçin:", iller_listesi, index=0
+)
+
 ilceler_listesi = sorted(list(iklim_veritabani[secilen_il].keys()))
-secilen_ilce = st.selectbox("İlçe seçin:", ilceler_listesi)
+secilen_ilce = st.selectbox(
+    "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi
+)
+
+# Seçilen ilçe verilerini çek
 iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
 
-# --- 6. SIHHİ TESİSAT ---
+# Arayüzde anlık gösterim
+st.markdown(f"### 📌 {secilen_il} / {secilen_ilce} İklim Verileri")
+c_1, c_2 = st.columns(2)
+with c_1:
+  st.markdown(
+      f"• **KIŞ**: `{iklim_veri['kis_kt']}` °C KT , `{iklim_veri['kis_yt']}`"
+      " °C YT"
+  )
+  st.markdown(
+      f"• **YAZ**: `{iklim_veri['yaz_kt']}` °C KT , `{iklim_veri['yaz_yt']}`"
+      " °C YT"
+  )
+  st.markdown(f"• **Günlük Sıcaklık Farkı**: `{iklim_veri['gsf']}` °C")
+with c_2:
+  st.markdown(f"• **Enlem**: `{iklim_veri['enlem']}`")
+  st.markdown(f"• **Boylam**: `{iklim_veri['boylam']}`")
+  st.markdown(
+      f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m."
+  )
+
+# --- 6. BÖLÜM: SIHHİ TESİSAT ---
 st.header("6. SIHHİ TESİSAT")
-st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
 st.write(
-    "Raporun 6.1 maddesinde yer almasını istediğiniz ön bilgi esaslarını"
+    "Sıhhi tesisat sistemi için raporda yer almasını istediğiniz kriterleri"
     " seçin:"
 )
 
-sih_sec_1 = st.checkbox(
-    "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden sağlanacaktır.",
+sihhi_su_temini = st.checkbox(
+    "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini", value=True
+)
+sihhi_sicak_su = st.checkbox(
+    "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve sirkülasyonu",
     value=True,
 )
-sih_sec_2 = st.checkbox(
-    "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
-    " hattından sağlanacaktır.",
-    value=False,
+sihhi_pis_su = st.checkbox(
+    "Bina içi atık su (pis su) ve havalandırma boratları", value=True
 )
-sih_sec_3 = st.checkbox(
-    "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
-    " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
-    " Diğer bütün sarfiyatlar bu birime tamamlanacaktır.",
-    value=True,
+sihhi_yagmur = st.checkbox(
+    "Çatı yağmur suyu drenajı ve uzaklaştırılması", value=True
 )
 
-sih_sec_4 = st.checkbox(
-    "Bütün binanın kullanma soğuk su ihtiyacı soğuk su deposundan sağlanacaktır."
-    " Basıncın yetersizliği ve su kesilmelerine karşın depo hidrofor sistemi"
-    " uygulanmıştır. TS 1258 ve ilgili standartlar esas alınacaktır.",
-    value=True,
-)
-sih_depo_konum = st.selectbox(
-    "Soğuk Su Deposu Konumu:",
-    ["Bodrum kat", "Zemin kat", "1. kat", "2. kat", "Çatı katı"],
-    index=0,
-)
-
-sih_sec_depo_tipi = st.checkbox(
-    "Bina da kullanım soğuk su depolaması için belirtilen tipte su deposu"
-    " kullanılmıştır.",
-    value=True,
-)
-sih_depo_tipi = st.selectbox(
-    "Kullanma Soğuk Su Deposu Tipi:",
-    [
-        "Paslanmaz Çelik Modüler su deposu",
-        "Galvaniz Çelik Modüler su deposu",
-        "GRP (Cam Takviyeli Polyester) Modüler su deposu",
-        "Betonarme Su deposu",
-        "Silindirik Plastik Su deposu",
-    ],
-    index=0,
-)
-
-sih_sec_5 = st.checkbox(
-    "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz vitrifiye"
-    " seramik olacaktır.",
-    value=True,
-)
-sih_sec_6 = st.checkbox(
-    "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari projede"
-    " belirtilen yerlere techiz edilecektir.",
-    value=True,
-)
-
-sih_sec_7 = st.checkbox(
-    "Kullanma Sıcak suyu üretimi ısı merkezindeki sistem vasıtasıyla"
-    " yapılacaktır.",
-    value=True,
-)
-sih_sicak_su_yontemi = st.selectbox(
-    "Sıcak Su Üretim Sistemi / Yöntemi:",
-    [
-        "Dik tip hijyenik tek serpantinli boyler",
-        "Dik tip hijyenik çift serpantinli boyler",
-        "Elektrikli Sıcak Su üreticisi",
-        "Kombi",
-        "Plakalı eşanjör akümülasyon tankı",
-        "Isıtma kazanı",
-    ],
-)
-
-sih_sec_8 = st.checkbox(
-    "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
-    " dağıtım boruları PPRC tipte seçilecektir.",
-    value=True,
-)
-sih_sec_9 = st.checkbox(
-    "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su kullanılacaktır.",
-    value=True,
-)
-sih_sec_10 = st.checkbox(
-    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
-    " sistemi kullanılacaktır.",
-    value=True,
-)
-sih_sec_11 = st.checkbox(
-    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır.",
-    value=False,
-)
-sih_sec_12 = st.checkbox(
-    "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
-    " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
-    " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
-    " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
-    " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
-    " tesisatı yapılmıştır.",
-    value=True,
-)
-
-ek_sihhi_on_bilgi = st.text_area(
-    "İlave Sıhhi Tesisat Ön Bilgi Maddesi (Her satıra bir tane)", "", height=80
+ek_sihhi = st.text_area(
+    "Eklemek istediğiniz ilave sıhhi tesisat esasları (Her satıra bir tane"
+    " yazabilirsiniz)",
+    "",
+    height=80,
 )
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
-  doc = Document()
-
-  # Sayfa Yapısı
-  cover_section = doc.sections[0]
-  cover_section.top_margin = Inches(1.5)
-  cover_section.bottom_margin = Inches(1.5)
-  cover_section.left_margin = Inches(1.2)
-  cover_section.right_margin = Inches(1.2)
+  if not is_adi:
+    st.warning(
+        "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
+        " ancak kapak başlığı boş bırakılacak."
+    )
 
   aktif_sirket = (
       sirket_adi
@@ -323,260 +405,402 @@ if st.button("Raporu Oluştur (.docx)"):
   )
   aktif_is = is_adi if is_adi else ""
 
-  # 1. KAPAK
-  p_s = doc.add_paragraph()
-  p_s.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  r_s = p_s.add_run(aktif_sirket.upper())
-  r_s.font.size = Pt(13)
-  r_s.font.bold = True
+  doc = Document()
+
+  # Sayfa boşlukları
+  cover_section = doc.sections[0]
+  cover_section.top_margin = Inches(1.5)
+  cover_section.bottom_margin = Inches(1.5)
+  cover_section.left_margin = Inches(1.2)
+  cover_section.right_margin = Inches(1.2)
+
+  # ==========================================
+  # 1. SAYFA: KAPAK SAYFASI
+  # ==========================================
+  p_sirket = doc.add_paragraph()
+  p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
+  run_sirket = p_sirket.add_run(aktif_sirket.upper())
+  run_sirket.font.size = Pt(13)
+  run_sirket.font.bold = True
+  run_sirket.font.name = "Arial"
 
   doc.add_paragraph()
   doc.add_paragraph()
 
   if aktif_is:
-    p_i = doc.add_paragraph()
-    p_i.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_i.add_run("PROJE ADI:\n").font.size = Pt(11)
-    r_is = p_i.add_run(aktif_is)
-    r_is.font.size = Pt(16)
-    r_is.font.bold = True
+    p_is = doc.add_paragraph()
+    p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_is_baslik = p_is.add_run("PROJE ADI:\n")
+    run_is_baslik.font.size = Pt(11)
+    run_is_baslik.font.name = "Arial"
+
+    run_is = p_is.add_run(aktif_is)
+    run_is.font.size = Pt(16)
+    run_is.font.bold = True
+    run_is.font.name = "Arial"
+
     doc.add_paragraph()
 
-  p_t = doc.add_paragraph()
-  p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  r_t = p_t.add_run(rapor_turu.upper())
-  r_t.font.size = Pt(14)
-  r_t.font.bold = True
+  p_tur = doc.add_paragraph()
+  p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
+  run_tur = p_tur.add_run(rapor_turu.upper())
+  run_tur.font.size = Pt(14)
+  run_tur.font.bold = True
+  run_tur.font.name = "Arial"
 
   for _ in range(4):
     doc.add_paragraph()
 
-  p_a = doc.add_paragraph()
-  p_a.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  p_a.add_run(
+  p_alt = doc.add_paragraph()
+  p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+  run_hazirlayan = p_alt.add_run(
       f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
       f" {mmo_no}\n\nTarih:\n{tarih}"
-  ).font.size = Pt(11)
+  )
+  run_hazirlayan.font.size = Pt(11)
+  run_hazirlayan.font.name = "Arial"
 
-  # 2. İÇİNDEKİLER
+  # ==========================================
+  # 2. SAYFA: İÇİNDEKİLER SAYFASI
+  # ==========================================
   doc.add_page_break()
+
   doc.add_heading("İÇİNDEKİLER", level=1)
-  add_toc(doc.add_paragraph())
 
-  # 3. GÖVDE
+  p_toc = doc.add_paragraph()
+  add_toc(p_toc)
+
+  p_bilgi_notu = doc.add_paragraph()
+  run_not = p_bilgi_notu.add_run(
+      "(Not: Belgeyi Word'de açtığınızda üstüne sağ tıklayıp 'Alanı Güncelle'"
+      " diyerek başlıkları ve sayfa numaralarını güncelleyebilirsiniz.)"
+  )
+  run_not.font.size = Pt(9)
+  run_not.font.italic = True
+  run_not.font.color.rgb = RGBColor(128, 128, 128)
+
+  # ==========================================
+  # 3. SAYFA: GENEL BİLGİLER VE RAPOR İÇERİĞİ
+  # ==========================================
   doc.add_page_break()
+
   body_section = doc.add_section()
   body_section.top_margin = Inches(1.2)
   body_section.bottom_margin = Inches(1.2)
   body_section.left_margin = Inches(1.2)
   body_section.right_margin = Inches(1.2)
 
-  # 1. GENEL BİLGİLER
   doc.add_heading("1. GENEL BİLGİLER", level=1)
-  doc.add_paragraph(
-      f"Bu raporda '{aktif_is}' için tasarlanan mekanik tesisatlar açıklanmıştır."
+
+  proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
+  giris_metni = (
+      f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
+      " açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden"
+      " tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit"
+      " edilmiştir."
   )
-  doc.add_paragraph(
+  doc.add_paragraph(giris_metni)
+
+  yapi_metni = (
       f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
   )
+  doc.add_paragraph(yapi_metni)
 
-  # 2. UYGULANACAK STANDART VE YÖNETMELİKLER
+  # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
   doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
-  st_list = []
+
+  standart_giris = (
+      "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
+      " standartlar ile yönetmelikler esas alınmıştır:"
+  )
+  doc.add_paragraph(standart_giris)
+
+  secilen_standartlar = []
   if std_ts_825:
-    st_list.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
+    secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
   if std_yangin:
-    st_list.append("BİNALARIN YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK")
+    secilen_standartlar.append(
+        '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
+        ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"'
+    )
   if std_bep_2008_2010:
-    st_list.append("BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ")
+    secilen_standartlar.append(
+        "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
+        " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı"
+        " resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”"
+    )
   if std_ts_1258:
-    st_list.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
+    secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
   if std_ts_826:
-    st_list.append("TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI")
+    secilen_standartlar.append(
+        "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI"
+    )
   if std_ts_2164:
-    st_list.append("TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI")
+    secilen_standartlar.append(
+        "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI"
+    )
   if std_ts_3419:
-    st_list.append(
+    secilen_standartlar.append(
         "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
         " KURALLARI"
     )
   if std_ts_en_12056_2:
-    st_list.append(
+    secilen_standartlar.append(
         "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE"
         " HESAPLAMA"
     )
   if std_ts_en_12845:
-    st_list.append("TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ")
+    secilen_standartlar.append(
+        "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
+        " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM"
+    )
   if std_mmo_84:
-    st_list.append("MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI (Y.NO:84)")
+    secilen_standartlar.append(
+        "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)"
+    )
+  if std_mmo_352_5:
+    secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
   if std_mmo_122:
-    st_list.append("MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI (Y.NO:122)")
+    secilen_standartlar.append(
+        "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)"
+    )
   if std_mmo_133:
-    st_list.append("MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI (Y.NO:133)")
+    secilen_standartlar.append(
+        "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)"
+    )
+  if std_mmo_155:
+    secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
+  if std_ashrae:
+    secilen_standartlar.append("ASHRAE Standartları")
+  if std_su:
+    secilen_standartlar.append(
+        "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları"
+    )
+  if std_klima:
+    secilen_standartlar.append(
+        "Klima ve Havalandırma Tesisatı Yönetmelikleri"
+    )
+  if std_tesisat:
+    secilen_standartlar.append(
+        "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
+        " Paylaştırılmasına İlişkin Yönetmelik"
+    )
+  if std_kanal:
+    secilen_standartlar.append(
+        "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar"
+    )
+  if std_asansor:
+    secilen_standartlar.append(
+        "Asansör Yönetmeliği ve İlgili Standartlar"
+    )
   if std_deprem:
-    st_list.append(
+    secilen_standartlar.append(
         "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)"
     )
-  for s in st_list:
-    doc.add_paragraph(s, style="List Bullet")
+  if std_akustik:
+    secilen_standartlar.append(
+        "Binaların Gürültüye Karşı Korunması Yönetmeliği"
+    )
+  if std_isg:
+    secilen_standartlar.append(
+        "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler"
+    )
 
-  # 3. MEKANİK TESİSAT PROJE KAPSAMI
+  if ek_standartlar.strip():
+    for ek in ek_standartlar.split("\n"):
+      if ek.strip():
+        secilen_standartlar.append(ek.strip())
+
+  secilen_standartlar.sort()
+
+  if secilen_standartlar:
+    for std in secilen_standartlar:
+      doc.add_paragraph(std, style="List Bullet")
+  else:
+    doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style="Italic")
+
+  # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
   doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
-  kp_list = []
-  if kapsam_isitma:
-    kp_list.append("Isıtma tesisatı,")
-  if kapsam_sogutma:
-    kp_list.append("Soğutma tesisatı,")
-  if kapsam_soguk_su:
-    kp_list.append("Kullanma soğuk suyu tesisatı,")
-  if kapsam_sicak_su:
-    kp_list.append("Kullanma sıcak suyu tesisatı,")
-  if kapsam_yangin_depo:
-    kp_list.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
-  if kapsam_atik_su:
-    kp_list.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
-  if kapsam_havalandirma:
-    kp_list.append("Havalandırma Tesisatı")
-  for k in kp_list:
-    doc.add_paragraph(k, style="List Bullet")
+  doc.add_paragraph("Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır.")
 
-  # 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI
-  doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
-  if chk_kalorifer:
+  secilen_kapsam = []
+  if kapsam_isitma:
+    secilen_kapsam.append("Isıtma tesisatı,")
+  if kapsam_sogutma:
+    secilen_kapsam.append("Soğutma tesisatı,")
+  if kapsam_soguk_su:
+    secilen_kapsam.append("Kullanma soğuk suyu tesisatı,")
+  if kapsam_sicak_su:
+    secilen_kapsam.append("Kullanma sıcak suyu tesisatı,")
+  if kapsam_yangin_depo:
+    secilen_kapsam.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
+  if kapsam_atik_su:
+    secilen_kapsam.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
+  if kapsam_yangin_dagitim:
+    secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
+  if kapsam_kazan_dairesi:
+    secilen_kapsam.append(
+        "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,"
+    )
+  if kapsam_havalandirma:
+    secilen_kapsam.append("Havalandırma Tesisatı")
+  if kapsam_basinc_hava:
+    secilen_kapsam.append("Basınçlı hava tesisatı,")
+  if kapsam_medikal_gaz:
+    secilen_kapsam.append("Medikal gaz tesisatı")
+  if kapsam_otomatik:
+    secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
+
+  if ek_kapsam.strip():
+    for ekk in ek_kapsam.split("\n"):
+      if ekk.strip():
+        secilen_kapsam.append(ekk.strip())
+
+  if secilen_kapsam:
+    for k in secilen_kapsam:
+      doc.add_paragraph(k, style="List Bullet")
+  else:
     doc.add_paragraph(
-        f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.", style="List Bullet"
+        "Herhangi bir proje kapsam maddesi seçilmemiştir.", style="Italic"
+    )
+
+  # --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
+  doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
+  doc.add_paragraph(
+      "Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık"
+      " rejimleri kullanılacaktır:"
+  )
+
+  akiskan_maddeleri = []
+  if chk_kalorifer:
+    akiskan_maddeleri.append(
+        f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
+    )
+  if chk_fco_ist:
+    akiskan_maddeleri.append(
+        f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su."
     )
   if chk_fco_sog:
-    doc.add_paragraph(
-        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su.",
-        style="List Bullet",
+    akiskan_maddeleri.append(
+        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
+    )
+  if chk_ks_ist:
+    akiskan_maddeleri.append(
+        f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
+    )
+  if chk_ks_sog:
+    akiskan_maddeleri.append(
+        f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
+    )
+  if chk_boyler:
+    akiskan_maddeleri.append(
+        f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
     )
   if chk_k_sicak:
-    doc.add_paragraph(
-        f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.", style="List Bullet"
+    akiskan_maddeleri.append(
+        f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
+    )
+  if chk_doseme:
+    akiskan_maddeleri.append(
+        f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
+    )
+  if chk_buhar:
+    akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
+  if chk_kizgin:
+    akiskan_maddeleri.append(
+        f"Kızgın su tesisatında {rej_kizgin} °C sıcak su."
     )
 
-  # 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ
+  if akiskan_maddeleri:
+    for akiskan in akiskan_maddeleri:
+      doc.add_paragraph(akiskan, style="List Bullet")
+  else:
+    doc.add_paragraph(
+        "Herhangi bir ısı iletim akışkanı seçilmemiştir.", style="Italic"
+    )
+
+  # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
   doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
+
   doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
-  doc.add_paragraph(
-      f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
-      " koşulları aşağıdaki gibidir:"
+  dih_hava_metni = (
+      f"Yapının inşa edileceği {secilen_il} ili {secilen_ilce} ilçesi için"
+      " kabul edilen dış hava koşulları ve coğrafi konum bilgileri"
+      " aşağıdadır:"
   )
+  doc.add_paragraph(dih_hava_metni)
+
   doc.add_paragraph(
-      f"• KIŞ: {iklim_veri['kis_kt']} °C KT , {iklim_veri['kis_yt']} °C YT",
+      f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
+      f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)",
       style="List Bullet",
   )
   doc.add_paragraph(
-      f"• YAZ: {iklim_veri['yaz_kt']} °C KT , {iklim_veri['yaz_yt']} °C YT",
+      f"• YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
+      f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)",
       style="List Bullet",
   )
   doc.add_paragraph(f"• Enlem: {iklim_veri['enlem']}", style="List Bullet")
   doc.add_paragraph(f"• Boylam: {iklim_veri['boylam']}", style="List Bullet")
   doc.add_paragraph(
-      f"• Rakım: {iklim_veri['rakim']} m.", style="List Bullet"
+      f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m.",
+      style="List Bullet",
   )
   doc.add_paragraph(
       f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C",
       style="List Bullet",
   )
 
-  # 6. SIHHİ TESİSAT & 6.1 ÖN BİLGİLER
+  # --- 6. SIHHİ TESİSAT ---
   doc.add_heading("6. SIHHİ TESİSAT", level=1)
-  doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
+  doc.add_paragraph(
+      "Yapının sıhhi tesisat projelendirmesinde ilgili standartlar (TS 1258 ve"
+      " TS 826) esas alınarak aşağıdaki sistemler tasarlanmıştır:"
+  )
 
-  sihhi_maddeler = []
-  if sih_sec_1:
-    sihhi_maddeler.append(
-        "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden"
-        " sağlanacaktır."
+  secilen_sihhi = []
+  if sihhi_su_temini:
+    secilen_sihhi.append(
+        "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini,"
     )
-  if sih_sec_2:
-    sihhi_maddeler.append(
-        "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
-        " hattından sağlanacaktır."
+  if sihhi_sicak_su:
+    secilen_sihhi.append(
+        "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve"
+        " sirkülasyonu,"
     )
-  if sih_sec_3:
-    sihhi_maddeler.append(
-        "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
-        " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
-        " Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
-    )
-  if sih_sec_4:
-    sihhi_maddeler.append(
-        f"Bütün binanın kullanma soğuk su ihtiyacı {sih_depo_konum.lower()} soğuk"
-        " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
-        " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
-        " ilgili standartlar esas alınacaktır."
-    )
-  if sih_sec_depo_tipi:
-    sihhi_maddeler.append(
-        "Binada kullanım soğuk su depolaması için "
-        f"{sih_depo_tipi.lower()} tipinde su deposu kullanılmıştır."
-    )
-  if sih_sec_5:
-    sihhi_maddeler.append(
-        "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
-        " vitrifiye seramik olacaktır."
-    )
-  if sih_sec_6:
-    sihhi_maddeler.append(
-        "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari"
-        " projede belirtilen yerlere techiz edilecektir."
-    )
-  if sih_sec_7:
-    sihhi_maddeler.append(
-        "Kullanma Sıcak suyu üretimi ısı merkezindeki "
-        f"{sih_sicak_su_yontemi.lower()} vasıtasıyla yapılacaktır."
-    )
-  if sih_sec_8:
-    sihhi_maddeler.append(
-        "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
-        " dağıtım boruları PPRC tipte seçilecektir."
-    )
-  if sih_sec_9:
-    sihhi_maddeler.append(
-        "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su"
-        " kullanılacaktır."
-    )
-  if sih_sec_10:
-    sihhi_maddeler.append(
-        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
-        " sistemi kullanılacaktır."
-    )
-  if sih_sec_11:
-    sihhi_maddeler.append(
-        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır."
-    )
-  if sih_sec_12:
-    sihhi_maddeler.append(
-        "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
-        " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
-        " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
-        " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
-        " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
-        " tesisatı yapılmıştır."
+  if sihhi_pis_su:
+    secilen_sihhi.append("Bina içi atık su (pis su) ve havalandırma boratları,")
+  if sihhi_yagmur:
+    secilen_sihhi.append("Çatı yağmur suyu drenajı ve uzaklaştırılması,")
+
+  if ek_sihhi.strip():
+    for esh in ek_sihhi.split("\n"):
+      if esh.strip():
+        secilen_sihhi.append(esh.strip())
+
+  if secilen_sihhi:
+    for sih in secilen_sihhi:
+      doc.add_paragraph(sih, style="List Bullet")
+  else:
+    doc.add_paragraph(
+        "Herhangi bir sıhhi tesisat kapsam maddesi seçilmemiştir.", style="Italic"
     )
 
-  if ek_sihhi_on_bilgi.strip():
-    for es in ek_sihhi_on_bilgi.split("\n"):
-      if es.strip():
-        sihhi_maddeler.append(es.strip())
-
-  for sm in sihhi_maddeler:
-    doc.add_paragraph(sm, style="List Bullet")
-
-  # Kaydetme ve İndirme
+  # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler eksiksiz olarak güncellendi ve rapor hazırlandı!")
+  st.success(
+      "Sıhhi tesisat ve tüm önceki bölümler eklenerek rapor hazırlandı!"
+  )
+
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
       if is_adi
       else "Mekanik_Uygulama_Raporu.docx"
   )
+
   st.download_button(
       label="📥 Word Dosyasını İndir (.docx)",
       data=buffer,
