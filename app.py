@@ -148,33 +148,32 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
 st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-_toplu_secim_butonlari(
-    [
-        "std_ts_825",
-        "std_yangin",
-        "std_bep_2008_2010",
-        "std_ts_1258",
-        "std_ts_826",
-        "std_ts_2164",
-        "std_ts_3419",
-        "std_ts_en_12056_2",
-        "std_ts_en_12845",
-        "std_mmo_84",
-        "std_mmo_352_5",
-        "std_mmo_122",
-        "std_mmo_133",
-        "std_mmo_155",
-        "std_ashrae",
-        "std_su",
-        "std_klima",
-        "std_tesisat",
-        "std_kanal",
-        "std_asansor",
-        "std_deprem",
-        "std_akustik",
-        "std_isg",
-    ]
-)
+std_keys = [
+    "std_ts_825",
+    "std_yangin",
+    "std_bep_2008_2010",
+    "std_ts_1258",
+    "std_ts_826",
+    "std_ts_2164",
+    "std_ts_3419",
+    "std_ts_en_12056_2",
+    "std_ts_en_12845",
+    "std_mmo_84",
+    "std_mmo_352_5",
+    "std_mmo_122",
+    "std_mmo_133",
+    "std_mmo_155",
+    "std_ashrae",
+    "std_su",
+    "std_klima",
+    "std_tesisat",
+    "std_kanal",
+    "std_asansor",
+    "std_deprem",
+    "std_akustik",
+    "std_isg",
+]
+_toplu_secim_butonlari(std_keys)
 
 std_ts_825 = st.checkbox(
     "TS 825 - BİNALARDA ISI YALITIM KURALLARI", key="std_ts_825", value=True
@@ -193,7 +192,9 @@ std_bep_2008_2010 = st.checkbox(
     value=True,
 )
 std_ts_1258 = st.checkbox(
-    "TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI", key="std_ts_1258", value=True
+    "TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI",
+    key="std_ts_1258",
+    value=True,
 )
 std_ts_826 = st.checkbox(
     "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI",
@@ -298,24 +299,25 @@ st.write(
     "Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:"
 )
 
-_toplu_secim_butonlari(
-    [
-        "kapsam_isitma",
-        "kapsam_sogutma",
-        "kapsam_soguk_su",
-        "kapsam_sicak_su",
-        "kapsam_yangin_depo",
-        "kapsam_atik_su",
-        "kapsam_yangin_dagitim",
-        "kapsam_kazan_dairesi",
-        "kapsam_havalandirma",
-        "kapsam_basinc_hava",
-        "kapsam_medikal_gaz",
-        "kapsam_otomatik",
-    ]
-)
+kapsam_keys = [
+    "kapsam_isitma",
+    "kapsam_sogutma",
+    "kapsam_soguk_su",
+    "kapsam_sicak_su",
+    "kapsam_yangin_depo",
+    "kapsam_atik_su",
+    "kapsam_yangin_dagitim",
+    "kapsam_kazan_dairesi",
+    "kapsam_havalandirma",
+    "kapsam_basinc_hava",
+    "kapsam_medikal_gaz",
+    "kapsam_otomatik",
+]
+_toplu_secim_butonlari(kapsam_keys)
 
-kapsam_isitma = st.checkbox("Isıtma tesisatı,", key="kapsam_isitma", value=True)
+kapsam_isitma = st.checkbox(
+    "Isıtma tesisatı,", key="kapsam_isitma", value=True
+)
 kapsam_sogutma = st.checkbox(
     "Soğutma tesisatı,", key="kapsam_sogutma", value=True
 )
@@ -401,20 +403,19 @@ kizgin_su_secenekleri = [
     "180/130",
 ]
 
-_toplu_secim_butonlari(
-    [
-        "chk_kalorifer",
-        "chk_fco_ist",
-        "chk_fco_sog",
-        "chk_ks_ist",
-        "chk_buhar",
-        "chk_ks_sog",
-        "chk_boyler",
-        "chk_k_sicak",
-        "chk_doseme",
-        "chk_kizgin",
-    ]
-)
+akiskan_keys = [
+    "chk_kalorifer",
+    "chk_fco_ist",
+    "chk_fco_sog",
+    "chk_ks_ist",
+    "chk_buhar",
+    "chk_ks_sog",
+    "chk_boyler",
+    "chk_k_sicak",
+    "chk_doseme",
+    "chk_kizgin",
+]
+_toplu_secim_butonlari(akiskan_keys)
 
 col1, col2 = st.columns(2)
 
@@ -527,23 +528,22 @@ st.write(
     " seçin:"
 )
 
-_toplu_secim_butonlari(
-    [
-        "sih_sec_1",
-        "sih_sec_2",
-        "sih_sec_3",
-        "sih_sec_4",
-        "sih_sec_depo_tipi",
-        "sih_sec_5",
-        "sih_sec_6",
-        "sih_sec_7",
-        "sih_sec_8",
-        "sih_sec_9",
-        "sih_sec_10",
-        "sih_sec_11",
-        "sih_sec_12",
-    ]
-)
+sihhi_keys = [
+    "sih_sec_1",
+    "sih_sec_2",
+    "sih_sec_3",
+    "sih_sec_4",
+    "sih_sec_depo_tipi",
+    "sih_sec_5",
+    "sih_sec_6",
+    "sih_sec_7",
+    "sih_sec_8",
+    "sih_sec_9",
+    "sih_sec_10",
+    "sih_sec_11",
+    "sih_sec_12",
+]
+_toplu_secim_butonlari(sihhi_keys)
 
 sih_sec_1 = st.checkbox(
     "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden sağlanacaktır.",
@@ -570,7 +570,6 @@ sih_sec_4 = st.checkbox(
     key="sih_sec_4",
     value=True,
 )
-# Su Deposu Konumu (ÇOKLU SEÇİM)
 sih_depo_konumlari = st.multiselect(
     "Soğuk Su Deposu Konumu (Birden fazla seçebilirsiniz):",
     ["Bodrum kat", "Zemin kat", "1. kat", "2. kat", "Çatı katı"],
@@ -583,7 +582,6 @@ sih_sec_depo_tipi = st.checkbox(
     key="sih_sec_depo_tipi",
     value=True,
 )
-# Su Deposu Tipi (ÇOKLU SEÇİM)
 sih_depo_tipleri = st.multiselect(
     "Kullanma Soğuk Su Deposu Tipi (Birden fazla seçebilirsiniz):",
     [
@@ -632,11 +630,22 @@ sih_sec_8 = st.checkbox(
     key="sih_sec_8",
     value=True,
 )
+
+# --- YUMUŞAK SU KULLANILACAK MAHALLER (ÇOKLU SEÇİM + DİĞER) ---
 sih_sec_9 = st.checkbox(
-    "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su kullanılacaktır.",
+    "Belirtilen mahallerde yumuşak su kullanılacaktır.",
     key="sih_sec_9",
     value=True,
 )
+sih_yumusak_su_mahalleri = st.multiselect(
+    "Yumuşak Su Kullanılacak Mahaller (Birden fazla seçebilirsiniz):",
+    ["Çamaşırhane", "Laboratuvar", "Mutfak", "Kuaför / Spa", "Diğer"],
+    default=["Çamaşırhane", "Laboratuvar", "Mutfak"],
+)
+sih_yumusak_su_diger = st.text_input(
+    "Diğer (Yumuşak su kullanılacak başka mahal varsa yazın):", ""
+)
+
 sih_sec_10 = st.checkbox(
     "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
     " sistemi kullanılacaktır.",
@@ -1040,7 +1049,6 @@ if st.button("Raporu Oluştur (.docx)"):
         " Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
     )
 
-  # Çoklu seçilen Su Deposu Konumlarını rapora dinamik metin olarak ekleme
   if sih_sec_4 and sih_depo_konumlari:
     if len(sih_depo_konumlari) == 1:
       konum_str = sih_depo_konumlari[0].lower()
@@ -1060,7 +1068,6 @@ if st.button("Raporu Oluştur (.docx)"):
         " ilgili standartlar esas alınacaktır."
     )
 
-  # Çoklu seçilen Su Deposu Tiplerini rapora dinamik metin olarak ekleme
   if sih_sec_depo_tipi and sih_depo_tipleri:
     if len(sih_depo_tipleri) == 1:
       tip_str = sih_depo_tipleri[0].lower()
@@ -1089,7 +1096,6 @@ if st.button("Raporu Oluştur (.docx)"):
         " belirtilen yerlere techiz edilecektir."
     )
 
-  # Çoklu seçilen Sıcak Su Yöntemlerini rapora dinamik metin olarak ekleme
   if sih_sec_7 and sih_sicak_su_yontemleri:
     if len(sih_sicak_su_yontemleri) == 1:
       secilenler_str = sih_sicak_su_yontemleri[0].lower()
@@ -1113,11 +1119,31 @@ if st.button("Raporu Oluştur (.docx)"):
         "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
         " dağıtım boruları PPRC tipte seçilecektir."
     )
+
+  # --- YUMUŞAK SU KULLANILACAK MAHALLELERİN RAPORA İŞLENMESİ ---
   if sih_sec_9:
-    sihhi_maddeler.append(
-        "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su"
-        " kullanılacaktır."
-    )
+    # Listeden seçilenleri (Diğer hariç) küçük harfe çevir
+    secilen_mahaller = [
+        m.lower() for m in sih_yumusak_su_mahalleri if m != "Diğer"
+    ]
+    # Eğer metin kutusuna ekstra bir şey yazıldıysa onu da ekle
+    if sih_yumusak_su_diger.strip():
+      secilen_mahaller.append(sih_yumusak_su_diger.strip().lower())
+
+    if secilen_mahaller:
+      if len(secilen_mahaller) == 1:
+        mahal_str = secilen_mahaller[0]
+      elif len(secilen_mahaller) == 2:
+        mahal_str = f"{secilen_mahaller[0]} ve {secilen_mahaller[1]}"
+      else:
+        ilkler = ", ".join(secilen_mahaller[:-1])
+        son = secilen_mahaller[-1]
+        mahal_str = f"{ilkler} ve {son}"
+
+      sihhi_maddeler.append(
+          f"{mahal_str.capitalize()} mahallerinde yumuşak su kullanılacaktır."
+      )
+
   if sih_sec_10:
     sihhi_maddeler.append(
         "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
@@ -1150,7 +1176,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler ve çoklu seçim özellikleriyle rapor hazırlandı!")
+  st.success("Tüm bölümler ve yumuşak su detaylarıyla rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
