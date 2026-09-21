@@ -29,7 +29,7 @@ bugun = datetime.now()
 bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
 
-# İklim verilerini JSON dosyasından yükleme fonksiyonu (İlk ilçe merkez ilçe olacak şekilde sıralanmıştır)
+# İklim verilerini ve merkez ilçeleri tanımlayan fonksiyon
 def iklim_verisini_yukle():
   dosya_adi = "iklim_verileri.json"
   if os.path.exists(dosya_adi):
@@ -38,47 +38,73 @@ def iklim_verisini_yukle():
   else:
     return {
         "Ankara": {
-            "Çankaya (Merkez)": {
-                "kis_kt": -12.0,
-                "kis_yt": -13.2,
-                "yaz_kt": 33.0,
-                "yaz_yt": 19.0,
-                "enlem": "39° 57' Kuzey",
-                "boylam": "32° 53' Doğu",
-                "rakim": 949,
-                "gsf": 15.5,
-            },
-            "Keçiören": {
-                "kis_kt": -12.5,
-                "kis_yt": -13.7,
-                "yaz_kt": 32.5,
-                "yaz_yt": 18.5,
-                "enlem": "39° 58' Kuzey",
-                "boylam": "32° 51' Doğu",
-                "rakim": 930,
-                "gsf": 16.0,
+            "merkez_ilce": "Çankaya",  # Otomatik seçilecek merkez ilçe
+            "ilceler": {
+                "Çankaya": {
+                    "kis_kt": -12.0,
+                    "kis_yt": -13.2,
+                    "yaz_kt": 33.0,
+                    "yaz_yt": 19.0,
+                    "enlem": "39° 57' Kuzey",
+                    "boylam": "32° 53' Doğu",
+                    "rakim": 949,
+                    "gsf": 15.5,
+                },
+                "Keçiören": {
+                    "kis_kt": -12.5,
+                    "kis_yt": -13.7,
+                    "yaz_kt": 32.5,
+                    "yaz_yt": 18.5,
+                    "enlem": "39° 58' Kuzey",
+                    "boylam": "32° 51' Doğu",
+                    "rakim": 930,
+                    "gsf": 16.0,
+                },
+                "Yenimahalle": {
+                    "kis_kt": -12.0,
+                    "kis_yt": -13.2,
+                    "yaz_kt": 33.0,
+                    "yaz_yt": 19.0,
+                    "enlem": "39° 58' Kuzey",
+                    "boylam": "32° 48' Doğu",
+                    "rakim": 830,
+                    "gsf": 15.5,
+                },
             },
         },
         "İstanbul": {
-            "Fatih (Merkez)": {
-                "kis_kt": -2.0,
-                "kis_yt": -3.5,
-                "yaz_kt": 31.0,
-                "yaz_yt": 23.0,
-                "enlem": "41° 01' Kuzey",
-                "boylam": "28° 57' Doğu",
-                "rakim": 35,
-                "gsf": 9.0,
-            },
-            "Kadıköy": {
-                "kis_kt": -2.0,
-                "kis_yt": -3.5,
-                "yaz_kt": 31.0,
-                "yaz_yt": 23.0,
-                "enlem": "40° 59' Kuzey",
-                "boylam": "29° 02' Doğu",
-                "rakim": 30,
-                "gsf": 9.0,
+            "merkez_ilce": "Fatih",  # Otomatik seçilecek merkez ilçe
+            "ilceler": {
+                "Fatih": {
+                    "kis_kt": -2.0,
+                    "kis_yt": -3.5,
+                    "yaz_kt": 31.0,
+                    "yaz_yt": 23.0,
+                    "enlem": "41° 01' Kuzey",
+                    "boylam": "28° 57' Doğu",
+                    "rakim": 35,
+                    "gsf": 9.0,
+                },
+                "Kadıköy": {
+                    "kis_kt": -2.0,
+                    "kis_yt": -3.5,
+                    "yaz_kt": 31.0,
+                    "yaz_yt": 23.0,
+                    "enlem": "40° 59' Kuzey",
+                    "boylam": "29° 02' Doğu",
+                    "rakim": 30,
+                    "gsf": 9.0,
+                },
+                "Beşiktaş": {
+                    "kis_kt": -2.0,
+                    "kis_yt": -3.5,
+                    "yaz_kt": 31.0,
+                    "yaz_yt": 23.0,
+                    "enlem": "41° 02' Kuzey",
+                    "boylam": "29° 00' Doğu",
+                    "rakim": 30,
+                    "gsf": 9.0,
+                },
             },
         },
     }
@@ -342,13 +368,25 @@ secilen_il = st.selectbox(
     "Yapının inşa edileceği ili seçin:", iller_listesi, index=0
 )
 
-# İlçe listesinde merkez ilçe her zaman ilk sırada (index=0) gelecek şekilde ayarlandı
-ilceler_listesi = list(iklim_veritabani[secilen_il].keys())
-secilen_ilce = st.selectbox(
-    "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi, index=0
+# Seçilen ilin altındaki ilçeleri ve tanımlı merkez ilçeyi al
+ilceler_sozlugu = iklim_veritabani[secilen_il]["ilceler"]
+varsayilan_merkez = iklim_veritabani[secilen_il]["merkez_ilce"]
+ilceler_listesi = sorted(list(ilceler_sozlugu.keys()))
+
+# Merkez ilçenin index'ini listede otomatik bul, yoksa 0. index'i al
+varsayilan_index = (
+    ilceler_listesi.index(varsayilan_merkez)
+    if varsayilan_merkez in ilceler_listesi
+    else 0
 )
 
-iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
+secilen_ilce = st.selectbox(
+    "Yapının inşa edileceği ilçeyi seçin:",
+    ilceler_listesi,
+    index=varsayilan_index,
+)
+
+iklim_veri = ilceler_sozlugu[secilen_ilce]
 
 st.markdown(f"### 📌 {secilen_il} / {secilen_ilce} İklim Verileri")
 c_1, c_2 = st.columns(2)
@@ -922,7 +960,9 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler ve merkez ilçe varsayılanıyla rapor hazırlandı!")
+  st.success(
+      "Tüm bölümler ve otomatik merkez ilçe seçimi ile rapor hazırlandı!"
+  )
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
