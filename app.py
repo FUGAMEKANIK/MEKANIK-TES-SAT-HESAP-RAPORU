@@ -675,7 +675,7 @@ st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdiler
 
 # --- 6.2 PİS SU TESİSATI ---
 st.subheader("6.2 PİS SU TESİSATI ESASLARI")
-pis_su_keys = [
+pissu_keys = [
     "pissu_sec_1",
     "pissu_sec_2",
     "pissu_sec_3",
