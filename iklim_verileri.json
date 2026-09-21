@@ -711,8 +711,8 @@
   },
   "Kastamonu": {
     "Abana": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.0,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -750,9 +750,9 @@
       "rakim": 800,
       "gsf": 16.2
     },
-    "Doğanyı": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.0,
+    "Doğanyurt": {
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
