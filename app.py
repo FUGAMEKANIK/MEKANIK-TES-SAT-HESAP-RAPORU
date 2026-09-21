@@ -228,6 +228,19 @@ sih_depo_konum = st.selectbox(
     index=0,
 )
 
+# Yeni Eklenen Su Deposu Tipi Seçimi
+sih_depo_tipi = st.selectbox(
+    "Kullanma Soğuk Su Deposu Tipi:",
+    [
+        "Paslanmaz Çelik Modüler su deposu",
+        "Galvaniz Çelik Modüler su deposu",
+        "GRP (Cam Takviyeli Polyester) Modüler su deposu",
+        "Betonarme Su deposu",
+        "Silindirik Plastik Su deposu",
+    ],
+    index=0,
+)
+
 sih_sec_5 = st.checkbox(
     "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz vitrifiye"
     " seramik olacaktır.",
@@ -484,9 +497,9 @@ if st.button("Raporu Oluştur (.docx)"):
   if sih_sec_4:
     sihhi_maddeler.append(
         f"Bütün binanın kullanma soğuk su ihtiyacı {sih_depo_konum.lower()} soğuk"
-        " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
-        " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
-        " ilgili standartlar esas alınacaktır."
+        f" su deposundan ({sih_depo_tipi.lower()}) sağlanacaktır. Basıncın"
+        " yetersizliği ve su kesilmelerine karşın depo hidrofor sistemi"
+        " uygulanmıştır. TS 1258 ve ilgili standartlar esas alınacaktır."
     )
   if sih_sec_5:
     sihhi_maddeler.append(
@@ -545,9 +558,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(
-      "6.1 Sıhhi Tesisat Ön Bilgiler (Seçimli Depo Konumu ile) hazırlandı!"
-  )
+  st.success("6.1 Sıhhi Tesisat Ön Bilgiler (Depo Tipi seçimi ile) hazırlandı!")
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
       if is_adi
