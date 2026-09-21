@@ -102,7 +102,6 @@ st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
 
 def _toplu_checkbox_ayarla(anahtarlar, durum):
-  """Belirtilen checkbox widget'larının durumlarını topluca değiştirir."""
   for anahtar in anahtarlar:
     st.session_state[anahtar] = durum
 
@@ -110,7 +109,6 @@ def _toplu_checkbox_ayarla(anahtarlar, durum):
 def _toplu_secim_butonlari(
     anahtarlar, kolon_basliklari=("☑ TÜMÜNÜ SEÇ", "☐ TÜMÜNÜ KALDIR")
 ):
-  """Bir bölüm için Tümünü Seç / Tümünü Kaldır butonlarını oluşturur."""
   c1, c2 = st.columns(2)
   with c1:
     st.button(
@@ -1178,12 +1176,83 @@ if st.button("Raporu Oluştur (.docx)"):
   for sm in sihhi_maddeler:
     doc.add_paragraph(sm, style="List Bullet")
 
+  # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+  doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
+  doc.add_paragraph(
+      "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
+      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır[span_1](start_span)[span_1](end_span):"
+  )
+
+  # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
+  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti[span_2](start_span)[span_2](end_span)")
+  t1_data = [
+      ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+      ("15", "Ø20", '1/2"', "(0-3.0)"),
+      ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+      ("25", "Ø32", '1"', "(8.0-20.0)"),
+      ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+      ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+      ("50", "Ø63", '2"', "(50.0-144.0)"),
+      ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+      ("80", "Ø90", '3"', "(368.0-1156.0)"),
+      ("100", "Ø125", '4"', "(1156-4900)"),
+      ("125", "-", '5"', "(4.900-14.400)"),
+      ("150", "-", '6"', "(14.400-40.000)"),
+      ("200", "-", '8"', "(40.000-484.000)"),
+      ("250", "-", '10"', "(484.000-518.400)"),
+      ("300", "-", '12"', "(518.400-1.440.000)"),
+  ]
+  t1 = doc.add_table(rows=len(t1_data), cols=4)
+  t1.style = "Table Grid"
+  for r_idx, row in enumerate(t1_data):
+    for c_idx, val in enumerate(row):
+      t1.cell(r_idx, c_idx).text = val
+
+  doc.add_paragraph()  # Boşluk
+
+  # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
+  doc.add_paragraph(
+      "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
+      " Yükleri (TS 1285)[span_3](start_span)[span_3](end_span)"
+  )
+  t2_data = [
+      ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
+      ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
+      ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
+      ("Bide Rezervuarı", "0.13", "0.25"),
+      ("Bulaşık Makinası", "0.40", "2.50"),
+      ("Çamaşır Makinası", "0.40", "2.50"),
+      ("Duş", "0.40", "2.50"),
+      ("1 Gözlü Eviye", "0.25", "1.00"),
+      ("2 Gözlü Eviye", "0.31", "1.50"),
+      ("Hela Rezervuarı", "0.13", "0.25"),
+      ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
+      ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
+      ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
+      ("Kurna", "0.40", "2.50"),
+      ("Lavabo", "0.18", "0.50"),
+      ("DN15 mm musluk", "0.31", "1.50"),
+      ("DN20 mm musluk", "0.71", "8.00"),
+      ("DN25 mm musluk", "1.06", "18.00"),
+      ("Pisuvar", "0.13", "0.25"),
+      ("Şofben (10lt/dk)", "0.18", "0.50"),
+      ("Şofben (16lt/dk)", "0.25", "1.00"),
+      ("Şofben (26lt/dk)", "0.43", "3.00"),
+      ("Taharet Musluğu", "0.13", "0.25"),
+      ("Termosifon", "0.40", "2.50"),
+  ]
+  t2 = doc.add_table(rows=len(t2_data), cols=3)
+  t2.style = "Table Grid"
+  for r_idx, row in enumerate(t2_data):
+    for c_idx, val in enumerate(row):
+      t2.cell(r_idx, c_idx).text = val
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler güncellenerek rapor hazırlandı!")
+  st.success("6.1.1 başlığı ve PDF tabloları eklenerek rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
