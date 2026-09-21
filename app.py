@@ -222,8 +222,10 @@ sih_sec_4 = st.checkbox(
     " uygulanmıştır. TS 1258 ve ilgili standartlar esas alınacaktır.",
     value=True,
 )
-sih_depo_konum = st.text_input(
-    "Soğuk Su Deposu Konumu (Örn: Bodrum kat, Zemin kat)", "Bodrum kat"
+sih_depo_konum = st.selectbox(
+    "Soğuk Su Deposu Konumu:",
+    ["Bodrum kat", "Zemin kat", "1. kat", "2. kat", "Çatı katı"],
+    index=0,
 )
 
 sih_sec_5 = st.checkbox(
@@ -481,10 +483,10 @@ if st.button("Raporu Oluştur (.docx)"):
     )
   if sih_sec_4:
     sihhi_maddeler.append(
-        f"Bütün binanın kullanma soğuk su ihtiyacı {sih_depo_konum} soğuk su"
-        " deposundan sağlanacaktır. Basıncın yetersizliği ve su kesilmelerine"
-        " karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve ilgili"
-        " standartlar esas alınacaktır."
+        f"Bütün binanın kullanma soğuk su ihtiyacı {sih_depo_konum.lower()} soğuk"
+        " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
+        " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
+        " ilgili standartlar esas alınacaktır."
     )
   if sih_sec_5:
     sihhi_maddeler.append(
@@ -543,7 +545,9 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.1 Sıhhi Tesisat Ön Bilgiler dahil edilerek rapor hazırlandı!")
+  st.success(
+      "6.1 Sıhhi Tesisat Ön Bilgiler (Seçimli Depo Konumu ile) hazırlandı!"
+  )
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
       if is_adi
