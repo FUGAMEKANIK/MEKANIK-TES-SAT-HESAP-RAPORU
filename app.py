@@ -228,7 +228,6 @@ sih_depo_konum = st.selectbox(
     index=0,
 )
 
-# Bağımsız Su Deposu Tipi Maddesi ve Seçenekleri
 sih_sec_depo_tipi = st.checkbox(
     "Bina da kullanım soğuk su depolaması için belirtilen tipte su deposu"
     " kullanılmıştır.",
@@ -457,9 +456,16 @@ if st.button("Raporu Oluştur (.docx)"):
         f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.", style="List Bullet"
     )
 
-  # 5. İklim
+  # 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ
   doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
   doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
+
+  # İstediğiniz sabit cümle ve denden içinde il ismi
+  doc.add_paragraph(
+      f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
+      " koşulları aşağıdaki gibidir:"
+  )
+
   doc.add_paragraph(
       f"• KIŞ: {iklim_veri['kis_kt']} °C KT , {iklim_veri['kis_yt']} °C YT",
       style="List Bullet",
@@ -568,9 +574,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(
-      "6.1 Sıhhi Tesisat Ön Bilgiler (Ayrı Depo Tipi Maddesiyle) hazırlandı!"
-  )
+  st.success("Rapor başarıyla güncellendi ve hazırlandı!")
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
       if is_adi
