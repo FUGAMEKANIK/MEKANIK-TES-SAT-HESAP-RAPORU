@@ -1,8 +1,8 @@
 {
   "Adiyaman": {
     "Merkez": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 38.0,
       "yaz_yt": 23.0,
       "enlem": "37° 25' K",
@@ -14,7 +14,7 @@
   "Afyon": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "38° 45' K",
@@ -25,8 +25,8 @@
   },
   "Ağri": {
     "Merkez": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -24.0,
+      "kis_yt": -25.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "39° 43' K",
@@ -38,7 +38,7 @@
   "Aksaray": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 34.0,
       "yaz_yt": 25.0,
       "enlem": "37° 59' K",
@@ -49,8 +49,8 @@
   },
   "Amasya": {
     "Merkez": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "40° 39' K",
@@ -59,8 +59,8 @@
       "gsf": 7.8
     },
     "Merzifon": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "40° 39' K",
@@ -72,7 +72,7 @@
   "Ankara": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 20.0,
       "enlem": "39° 57' K",
@@ -83,8 +83,8 @@
   },
   "Antalya": {
     "Korkuteli": {
-      "kis_kt": 3.0,
-      "kis_yt": 1.8,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 39.0,
       "yaz_yt": 28.0,
       "enlem": "36° 53' K",
@@ -94,7 +94,7 @@
     },
     "Merkez": {
       "kis_kt": 3.0,
-      "kis_yt": 1.8,
+      "kis_yt": 2.0,
       "yaz_kt": 39.0,
       "yaz_yt": 28.0,
       "enlem": "36° 53' K",
@@ -105,8 +105,8 @@
   },
   "Ardahan": {
     "Merkez": {
-      "kis_kt": -27.0,
-      "kis_yt": -28.2,
+      "kis_kt": -21.0,
+      "kis_yt": -22.0,
       "yaz_kt": 30.0,
       "yaz_yt": 22.0,
       "enlem": "41° 6' K",
@@ -118,7 +118,7 @@
   "Artvi̇n": {
     "Arhavi": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "41° 10' K",
@@ -128,7 +128,7 @@
     },
     "Hopa": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "41° 10' K",
@@ -137,8 +137,8 @@
       "gsf": 6.1
     },
     "Merkez": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "41° 10' K",
@@ -150,7 +150,7 @@
   "Aydin": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 40.0,
       "yaz_yt": 26.0,
       "enlem": "37° 40' K",
@@ -162,7 +162,7 @@
   "Balikesi̇r": {
     "Ayvalık": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "39° 39' K",
@@ -171,8 +171,8 @@
       "gsf": 12.8
     },
     "Dursunbey": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "39° 39' K",
@@ -182,7 +182,7 @@
     },
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "39° 39' K",
@@ -194,7 +194,7 @@
   "Bartin": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "41° 27' K",
@@ -203,8 +203,8 @@
       "gsf": 8.1
     },
     "Ulus": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -6.0,
+      "kis_yt": -7.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "41° 27' K",
@@ -216,7 +216,7 @@
   "Batman": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 43.0,
       "yaz_yt": 23.0,
       "enlem": "37° 52' K",
@@ -227,8 +227,8 @@
   },
   "Bayburt": {
     "Merkez": {
-      "kis_kt": -21.0,
-      "kis_yt": -22.2,
+      "kis_kt": -15.0,
+      "kis_yt": -16.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "39° 55' K",
@@ -240,7 +240,7 @@
   "Bi̇leci̇k": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 36.0,
       "yaz_yt": 21.0,
       "enlem": "40° 9' K",
@@ -251,8 +251,8 @@
   },
   "Bi̇ngöl": {
     "Kiğı": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -18.0,
+      "kis_yt": -19.0,
       "yaz_kt": 38.0,
       "yaz_yt": 21.0,
       "enlem": "38° 40' K",
@@ -261,8 +261,8 @@
       "gsf": 13.9
     },
     "Merkez": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -18.0,
+      "kis_yt": -19.0,
       "yaz_kt": 38.0,
       "yaz_yt": 21.0,
       "enlem": "38° 40' K",
@@ -271,8 +271,8 @@
       "gsf": 13.9
     },
     "Solhan": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -18.0,
+      "kis_yt": -19.0,
       "yaz_kt": 38.0,
       "yaz_yt": 21.0,
       "enlem": "38° 40' K",
@@ -283,8 +283,8 @@
   },
   "Bi̇tli̇s": {
     "Merkez": {
-      "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_kt": -15.0,
+      "kis_yt": -16.0,
       "yaz_kt": 40.0,
       "yaz_yt": 23.0,
       "enlem": "37° 56' K",
@@ -295,8 +295,8 @@
   },
   "Bolu": {
     "Düzce": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 33.0,
       "yaz_yt": 23.0,
       "enlem": "40° 44' K",
@@ -306,7 +306,7 @@
     },
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 33.0,
       "yaz_yt": 23.0,
       "enlem": "40° 44' K",
@@ -318,7 +318,7 @@
   "Burdur": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 36.0,
       "yaz_yt": 21.0,
       "enlem": "37° 40' K",
@@ -329,8 +329,8 @@
   },
   "Bursa": {
     "Keles": {
-      "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "40° 11' K",
@@ -340,7 +340,7 @@
     },
     "Merkez": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "40° 11' K",
@@ -350,7 +350,7 @@
     },
     "Uludağ": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "40° 11' K",
@@ -362,7 +362,7 @@
   "Çanakkale": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 25.0,
       "enlem": "40° 8' K",
@@ -374,7 +374,7 @@
   "Çankiri": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 37.0,
       "yaz_yt": 23.0,
       "enlem": "40° 36' K",
@@ -386,7 +386,7 @@
   "Çorum": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 35.0,
       "yaz_yt": 22.0,
       "enlem": "40° 33' K",
@@ -398,7 +398,7 @@
   "Deni̇zli̇": {
     "Merkez": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 38.0,
       "yaz_yt": 24.0,
       "enlem": "37° 45' K",
@@ -410,7 +410,7 @@
   "Di̇yarbakir": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 43.0,
       "yaz_yt": 23.0,
       "enlem": "37° 55' K",
@@ -422,7 +422,7 @@
   "Edi̇rne": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "41° 40' K",
@@ -434,7 +434,7 @@
   "Elaziğ": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 38.0,
       "yaz_yt": 21.0,
       "enlem": "38° 40' K",
@@ -446,7 +446,7 @@
   "Erzi̇ncan": {
     "Merkez": {
       "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_yt": -19.0,
       "yaz_kt": 36.0,
       "yaz_yt": 22.0,
       "enlem": "39° 44' K",
@@ -458,7 +458,7 @@
   "Erzurum": {
     "Merkez": {
       "kis_kt": -21.0,
-      "kis_yt": -22.2,
+      "kis_yt": -22.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "39° 55' K",
@@ -470,7 +470,7 @@
   "Eski̇şehi̇r": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 25.0,
       "enlem": "39° 46' K",
@@ -482,7 +482,7 @@
   "Gazi̇antep": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 29.0,
       "yaz_yt": 25.0,
       "enlem": "37° 5' K",
@@ -494,7 +494,7 @@
   "Gi̇resun": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 29.0,
       "yaz_yt": 21.0,
       "enlem": "40° 55' K",
@@ -504,7 +504,7 @@
     },
     "Şebinkarahis": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 29.0,
       "yaz_yt": 21.0,
       "enlem": "40° 55' K",
@@ -515,8 +515,8 @@
   },
   "Gümüşhane": {
     "Merkez": {
-      "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 36.0,
       "yaz_yt": 22.0,
       "enlem": "40° 4' K",
@@ -527,8 +527,8 @@
   },
   "Hakkari̇": {
     "Merkez": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -24.0,
+      "kis_yt": -25.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "37° 34' K",
@@ -539,8 +539,8 @@
   },
   "Hatay": {
     "Merkez": {
-      "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_kt": 3.0,
+      "kis_yt": 2.0,
       "yaz_kt": 38.0,
       "yaz_yt": 26.0,
       "enlem": "36° 34' K",
@@ -552,7 +552,7 @@
   "Içel": {
     "Merkez": {
       "kis_kt": 3.0,
-      "kis_yt": 1.8,
+      "kis_yt": 2.0,
       "yaz_kt": 39.0,
       "yaz_yt": 28.0,
       "enlem": "36° 43' K",
@@ -564,7 +564,7 @@
   "Iğdir": {
     "Merkez": {
       "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_yt": -19.0,
       "yaz_kt": 36.0,
       "yaz_yt": 29.0,
       "enlem": "39° 56' K",
@@ -576,7 +576,7 @@
   "Isparta": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 34.0,
       "yaz_yt": 24.0,
       "enlem": "37° 45' K",
@@ -588,7 +588,7 @@
   "Istanbul": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 33.0,
       "yaz_yt": 24.0,
       "enlem": "40° 58' K",
@@ -599,8 +599,8 @@
   },
   "Izmi̇r": {
     "Bergama": {
-      "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 22.0,
       "enlem": "38° 24' K",
@@ -610,7 +610,7 @@
     },
     "Merkez": {
       "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_yt": -1.0,
       "yaz_kt": 37.0,
       "yaz_yt": 22.0,
       "enlem": "38° 24' K",
@@ -619,8 +619,8 @@
       "gsf": 12.8
     },
     "Ödemiş": {
-      "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 22.0,
       "enlem": "38° 24' K",
@@ -629,10 +629,10 @@
       "gsf": 12.8
     }
   },
-  "K.maraş": {
+  "K.Maraş": {
     "Merkez": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "37° 35' K",
@@ -643,8 +643,8 @@
   },
   "Kahramanmaraş": {
     "Af": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "37° 35' K",
@@ -653,8 +653,8 @@
       "gsf": 20.1
     },
     "El": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -17.0,
+      "kis_yt": -18.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "37° 35' K",
@@ -663,8 +663,8 @@
       "gsf": 20.1
     },
     "G": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "37° 35' K",
@@ -675,8 +675,8 @@
   },
   "Karabük": {
     "Merkez": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "41° 27' K",
@@ -688,7 +688,7 @@
   "Karaman": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "37° 10' K",
@@ -700,7 +700,7 @@
   "Kars": {
     "Merkez": {
       "kis_kt": -27.0,
-      "kis_yt": -28.2,
+      "kis_yt": -28.0,
       "yaz_kt": 30.0,
       "yaz_yt": 22.0,
       "enlem": "40° 36' K",
@@ -712,7 +712,7 @@
   "Kastamonu": {
     "Abana": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -721,8 +721,8 @@
       "gsf": 16.2
     },
     "Bozkurt": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -731,8 +731,8 @@
       "gsf": 16.2
     },
     "Cide": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -741,8 +741,8 @@
       "gsf": 16.2
     },
     "Çatalzey": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -752,7 +752,7 @@
     },
     "Doğanyı": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -761,8 +761,8 @@
       "gsf": 16.2
     },
     "İnebolu": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -772,7 +772,7 @@
     },
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -781,8 +781,8 @@
       "gsf": 16.2
     },
     "Tosya": {
-      "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_kt": -15.0,
+      "kis_yt": -16.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "41° 22' K",
@@ -794,7 +794,7 @@
   "Kayseri̇": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "38° 43' K",
@@ -805,8 +805,8 @@
   },
   "Kirikkale": {
     "Merkez": {
-      "kis_kt": -125.0,
-      "kis_yt": -126.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 20.0,
       "enlem": "39° 57' K",
@@ -818,7 +818,7 @@
   "Kirklareli̇": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "41° 53' K",
@@ -830,7 +830,7 @@
   "Kirşehi̇r": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 35.0,
       "yaz_yt": 21.0,
       "enlem": "39° 8' K",
@@ -841,8 +841,8 @@
   },
   "Ki̇li̇s": {
     "Merkez": {
-      "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_kt": -6.0,
+      "kis_yt": -7.0,
       "yaz_kt": 29.0,
       "yaz_yt": 25.0,
       "enlem": "36° 42' K",
@@ -854,7 +854,7 @@
   "Kocaeli̇": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 36.0,
       "yaz_yt": 21.0,
       "enlem": "40° 46' K",
@@ -866,7 +866,7 @@
   "Konya": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 34.0,
       "yaz_yt": 21.0,
       "enlem": "37° 52' K",
@@ -878,7 +878,7 @@
   "Kütahya": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 33.0,
       "yaz_yt": 25.0,
       "enlem": "39° 24' K",
@@ -890,7 +890,7 @@
   "Malatya": {
     "Merkez": {
       "kis_kt": -12.0,
-      "kis_yt": -13.2,
+      "kis_yt": -13.0,
       "yaz_kt": 38.0,
       "yaz_yt": 23.0,
       "enlem": "38° 21' K",
@@ -902,7 +902,7 @@
   "Mani̇sa": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 40.0,
       "yaz_yt": 29.0,
       "enlem": "38° 42' K",
@@ -914,7 +914,7 @@
   "Mardi̇n": {
     "Merkez": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 38.0,
       "yaz_yt": 22.0,
       "enlem": "37° 18' K",
@@ -925,8 +925,8 @@
   },
   "Muğla": {
     "Bodrum": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": 3.0,
+      "kis_yt": 2.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -936,7 +936,7 @@
     },
     "Dalaman": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -945,8 +945,8 @@
       "gsf": 13.2
     },
     "Datça": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": 3.0,
+      "kis_yt": 2.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -955,8 +955,8 @@
       "gsf": 13.2
     },
     "Fethiye": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": 3.0,
+      "kis_yt": 2.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -966,7 +966,7 @@
     },
     "Gökova": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -976,7 +976,7 @@
     },
     "Köyceğiz": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -985,8 +985,8 @@
       "gsf": 13.2
     },
     "Marmaris": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": 3.0,
+      "kis_yt": 2.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -996,7 +996,7 @@
     },
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -1005,8 +1005,8 @@
       "gsf": 13.2
     },
     "Milas": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": 0.0,
+      "kis_yt": -1.0,
       "yaz_kt": 37.0,
       "yaz_yt": 26.0,
       "enlem": "37° 12' K",
@@ -1017,8 +1017,8 @@
   },
   "Muş": {
     "Merkez": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -18.0,
+      "kis_yt": -19.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "39° 56' K",
@@ -1030,7 +1030,7 @@
   "Nevşehi̇r": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 36.0,
       "yaz_yt": 25.0,
       "enlem": "38° 37' K",
@@ -1042,7 +1042,7 @@
   "Ni̇ğde": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 34.0,
       "yaz_yt": 25.0,
       "enlem": "37° 59' K",
@@ -1054,7 +1054,7 @@
   "Ordu": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "40° 59' K",
@@ -1063,8 +1063,8 @@
       "gsf": 7.8
     },
     "Mesudiye": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -12.0,
+      "kis_yt": -13.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "40° 59' K",
@@ -1075,8 +1075,8 @@
   },
   "Osmani̇ye": {
     "Merkez": {
-      "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 38.0,
       "yaz_yt": 26.0,
       "enlem": "37° 28' K",
@@ -1088,7 +1088,7 @@
   "Ri̇ze": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 30.0,
       "yaz_yt": 23.0,
       "enlem": "41° 2' K",
@@ -1100,7 +1100,7 @@
   "Samsun": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "41° 17' K",
@@ -1112,7 +1112,7 @@
   "Si̇i̇rt": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 40.0,
       "yaz_yt": 23.0,
       "enlem": "37° 56' K",
@@ -1124,7 +1124,7 @@
   "Si̇nop": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 30.0,
       "yaz_yt": 25.0,
       "enlem": "42° 2' K",
@@ -1136,7 +1136,7 @@
   "Si̇vas": {
     "Merkez": {
       "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_yt": -19.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "39° 45' K",
@@ -1148,7 +1148,7 @@
   "Şanliurfa": {
     "Merkez": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 43.0,
       "yaz_yt": 24.0,
       "enlem": "37° 8' K",
@@ -1159,8 +1159,8 @@
   },
   "Şirnak": {
     "Merkez": {
-      "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_kt": -6.0,
+      "kis_yt": -7.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "37° 29' K",
@@ -1171,8 +1171,8 @@
   },
   "Teki̇rdağ": {
     "Çorlu": {
-      "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 33.0,
       "yaz_yt": 25.0,
       "enlem": "40° 59' K",
@@ -1182,7 +1182,7 @@
     },
     "Merkez": {
       "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_yt": -7.0,
       "yaz_kt": 33.0,
       "yaz_yt": 25.0,
       "enlem": "40° 59' K",
@@ -1193,8 +1193,8 @@
   },
   "Tokat": {
     "Merkez": {
-      "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_kt": -15.0,
+      "kis_yt": -16.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "40° 18' K",
@@ -1206,7 +1206,7 @@
   "Trabzon": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 31.0,
       "yaz_yt": 25.0,
       "enlem": "41° 0' K",
@@ -1218,7 +1218,7 @@
   "Tunceli̇": {
     "Merkez": {
       "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_yt": -19.0,
       "yaz_kt": 36.0,
       "yaz_yt": 22.0,
       "enlem": "39° 6' K",
@@ -1228,7 +1228,7 @@
     },
     "Pülümür": {
       "kis_kt": -18.0,
-      "kis_yt": -19.2,
+      "kis_yt": -19.0,
       "yaz_kt": 36.0,
       "yaz_yt": 22.0,
       "enlem": "39° 6' K",
@@ -1240,7 +1240,7 @@
   "Uşak": {
     "Merkez": {
       "kis_kt": -9.0,
-      "kis_yt": -10.2,
+      "kis_yt": -10.0,
       "yaz_kt": 35.0,
       "yaz_yt": 22.0,
       "enlem": "38° 40' K",
@@ -1252,7 +1252,7 @@
   "Van": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 33.0,
       "yaz_yt": 20.0,
       "enlem": "38° 28' K",
@@ -1263,8 +1263,8 @@
   },
   "Yalova": {
     "Merkez": {
-      "kis_kt": -6.0,
-      "kis_yt": -7.2,
+      "kis_kt": -3.0,
+      "kis_yt": -4.0,
       "yaz_kt": 37.0,
       "yaz_yt": 25.0,
       "enlem": "40° 39' K",
@@ -1276,7 +1276,7 @@
   "Yozgat": {
     "Merkez": {
       "kis_kt": -15.0,
-      "kis_yt": -16.2,
+      "kis_yt": -16.0,
       "yaz_kt": 32.0,
       "yaz_yt": 20.0,
       "enlem": "39° 50' K",
@@ -1288,7 +1288,7 @@
   "Zonguldak": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 32.0,
       "yaz_yt": 25.0,
       "enlem": "41° 27' K",
@@ -1300,7 +1300,7 @@
   "Adana": {
     "Merkez": {
       "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_yt": -1.0,
       "yaz_kt": 38.0,
       "yaz_yt": 26.0,
       "enlem": "36° 59' K",
@@ -1309,8 +1309,8 @@
       "gsf": 12.4
     },
     "Pozantı": {
-      "kis_kt": 0.0,
-      "kis_yt": -1.2,
+      "kis_kt": -9.0,
+      "kis_yt": -10.0,
       "yaz_kt": 38.0,
       "yaz_yt": 26.0,
       "enlem": "36° 59' K",
@@ -1322,7 +1322,7 @@
   "Adapazari": {
     "Merkez": {
       "kis_kt": -3.0,
-      "kis_yt": -4.2,
+      "kis_yt": -4.0,
       "yaz_kt": 35.0,
       "yaz_yt": 25.0,
       "enlem": "40° 11' K",
