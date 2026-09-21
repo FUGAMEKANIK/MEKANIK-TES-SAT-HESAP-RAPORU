@@ -328,7 +328,6 @@ with col2:
 st.header("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
 st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
 
-# İl ve İlçe Seçimi (Dinamik Yapı)
 iller_listesi = sorted(list(iklim_veritabani.keys()))
 secilen_il = st.selectbox(
     "Yapının inşa edileceği ili seçin:", iller_listesi, index=0
@@ -339,10 +338,8 @@ secilen_ilce = st.selectbox(
     "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi
 )
 
-# Seçilen ilçe verilerini çek
 iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
 
-# Arayüzde anlık gösterim
 st.markdown(f"### 📌 {secilen_il} / {secilen_ilce} İklim Verileri")
 c_1, c_2 = st.columns(2)
 with c_1:
@@ -358,36 +355,116 @@ with c_1:
 with c_2:
   st.markdown(f"• **Enlem**: `{iklim_veri['enlem']}`")
   st.markdown(f"• **Boylam**: `{iklim_veri['boylam']}`")
-  st.markdown(
-      f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m."
-  )
+  st.markdown(f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m.")
 
-# --- 6. BÖLÜM: SIHHİ TESİSAT ---
+# --- 6. BÖLÜM: SIHHİ TESİSAT (6.1 SIHHİ TESİSAT ÖN BİLGİLER) ---
 st.header("6. SIHHİ TESİSAT")
+st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
 st.write(
-    "Sıhhi tesisat sistemi için raporda yer almasını istediğiniz kriterleri"
+    "Raporun 6.1 maddesinde yer almasını istediğiniz ön bilgi esaslarını"
     " seçin:"
 )
 
-sihhi_su_temini = st.checkbox(
-    "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini", value=True
-)
-sihhi_sicak_su = st.checkbox(
-    "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve sirkülasyonu",
+sih_sec_1 = st.checkbox(
+    "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden sağlanacaktır.",
     value=True,
 )
-sihhi_pis_su = st.checkbox(
-    "Bina içi atık su (pis su) ve havalandırma boratları", value=True
+sih_sec_2 = st.checkbox(
+    "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
+    " hattından sağlanacaktır.",
+    value=False,
 )
-sihhi_yagmur = st.checkbox(
-    "Çatı yağmur suyu drenajı ve uzaklaştırılması", value=True
+sih_sec_3 = st.checkbox(
+    "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
+    " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
+    " Diğer bütün sarfiyatlar bu birime tamamlanacaktır.",
+    value=True,
+)
+sih_sec_4 = st.checkbox(
+    "Bütün binanın kullanma soğuk su ihtiyacı soğuk su deposundan sağlanacaktır."
+    " Basıncın yetersizliği ve su kesilmelerine karşın depo hidrofor sistemi"
+    " uygulanmıştır. TS 1258 ve ilgili standartlar esas alınacaktır.",
+    value=True,
+)
+sih_depo_konum = st.selectbox(
+    "Soğuk Su Deposu Konumu:",
+    ["Bodrum kat", "Zemin kat", "1. kat", "2. kat", "Çatı katı"],
+    index=0,
 )
 
-ek_sihhi = st.text_area(
-    "Eklemek istediğiniz ilave sıhhi tesisat esasları (Her satıra bir tane"
-    " yazabilirsiniz)",
-    "",
-    height=80,
+sih_sec_depo_tipi = st.checkbox(
+    "Bina da kullanım soğuk su depolaması için belirtilen tipte su deposu"
+    " kullanılmıştır.",
+    value=True,
+)
+sih_depo_tipi = st.selectbox(
+    "Kullanma Soğuk Su Deposu Tipi:",
+    [
+        "Paslanmaz Çelik Modüler su deposu",
+        "Galvaniz Çelik Modüler su deposu",
+        "GRP (Cam Takviyeli Polyester) Modüler su deposu",
+        "Betonarme Su deposu",
+        "Silindirik Plastik Su deposu",
+    ],
+    index=0,
+)
+
+sih_sec_5 = st.checkbox(
+    "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz vitrifiye"
+    " seramik olacaktır.",
+    value=True,
+)
+sih_sec_6 = st.checkbox(
+    "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari projede"
+    " belirtilen yerlere techiz edilecektir.",
+    value=True,
+)
+sih_sec_7 = st.checkbox(
+    "Kullanma Sıcak suyu üretimi ısı merkezindeki sistem vasıtasıyla"
+    " yapılacaktır.",
+    value=True,
+)
+sih_sicak_su_yontemi = st.selectbox(
+    "Sıcak Su Üretim Sistemi / Yöntemi:",
+    [
+        "Dik tip hijyenik tek serpantinli boyler",
+        "Dik tip hijyenik çift serpantinli boyler",
+        "Elektrikli Sıcak Su üreticisi",
+        "Kombi",
+        "Plakalı eşanjör akümülasyon tankı",
+        "Isıtma kazanı",
+    ],
+)
+sih_sec_8 = st.checkbox(
+    "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
+    " dağıtım boruları PPRC tipte seçilecektir.",
+    value=True,
+)
+sih_sec_9 = st.checkbox(
+    "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su kullanılacaktır.",
+    value=True,
+)
+sih_sec_10 = st.checkbox(
+    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
+    " sistemi kullanılacaktır.",
+    value=True,
+)
+sih_sec_11 = st.checkbox(
+    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır.",
+    value=False,
+)
+sih_sec_12 = st.checkbox(
+    "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
+    " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
+    " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
+    " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
+    " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
+    " tesisatı yapılmıştır.",
+    value=True,
+)
+
+ek_sihhi_on_bilgi = st.text_area(
+    "İlave Sıhhi Tesisat Ön Bilgi Maddesi (Her satıra bir tane)", "", height=80
 )
 
 # Rapor Oluştur Butonu
@@ -480,7 +557,7 @@ if st.button("Raporu Oluştur (.docx)"):
   run_not.font.color.rgb = RGBColor(128, 128, 128)
 
   # ==========================================
-  # 3. SAYFA: GENEL BİLGİLER VE RAPOR İÇERİĞİ
+  # 3. SAYFA: GÖVDE VE RAPOR İÇERİĞİ
   # ==========================================
   doc.add_page_break()
 
@@ -490,8 +567,8 @@ if st.button("Raporu Oluştur (.docx)"):
   body_section.left_margin = Inches(1.2)
   body_section.right_margin = Inches(1.2)
 
+  # --- 1. GENEL BİLGİLER ---
   doc.add_heading("1. GENEL BİLGİLER", level=1)
-
   proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
   giris_metni = (
       f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
@@ -500,7 +577,6 @@ if st.button("Raporu Oluştur (.docx)"):
       " edilmiştir."
   )
   doc.add_paragraph(giris_metni)
-
   yapi_metni = (
       f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
   )
@@ -508,7 +584,6 @@ if st.button("Raporu Oluştur (.docx)"):
 
   # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
   doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
-
   standart_giris = (
       "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
       " standartlar ile yönetmelikler esas alınmıştır:"
@@ -721,15 +796,11 @@ if st.button("Raporu Oluştur (.docx)"):
 
   # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
   doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
-
   doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
-  dih_hava_metni = (
-      f"Yapının inşa edileceği {secilen_il} ili {secilen_ilce} ilçesi için"
-      " kabul edilen dış hava koşulları ve coğrafi konum bilgileri"
-      " aşağıdadır:"
+  doc.add_paragraph(
+      f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
+      " koşulları aşağıdaki gibidir:"
   )
-  doc.add_paragraph(dih_hava_metni)
-
   doc.add_paragraph(
       f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
       f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)",
@@ -753,47 +824,95 @@ if st.button("Raporu Oluştur (.docx)"):
 
   # --- 6. SIHHİ TESİSAT ---
   doc.add_heading("6. SIHHİ TESİSAT", level=1)
-  doc.add_paragraph(
-      "Yapının sıhhi tesisat projelendirmesinde ilgili standartlar (TS 1258 ve"
-      " TS 826) esas alınarak aşağıdaki sistemler tasarlanmıştır:"
-  )
+  doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
 
-  secilen_sihhi = []
-  if sihhi_su_temini:
-    secilen_sihhi.append(
-        "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini,"
+  sihhi_maddeler = []
+  if sih_sec_1:
+    sihhi_maddeler.append(
+        "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden"
+        " sağlanacaktır."
     )
-  if sihhi_sicak_su:
-    secilen_sihhi.append(
-        "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve"
-        " sirkülasyonu,"
+  if sih_sec_2:
+    sihhi_maddeler.append(
+        "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
+        " hattından sağlanacaktır."
     )
-  if sihhi_pis_su:
-    secilen_sihhi.append("Bina içi atık su (pis su) ve havalandırma boratları,")
-  if sihhi_yagmur:
-    secilen_sihhi.append("Çatı yağmur suyu drenajı ve uzaklaştırılması,")
+  if sih_sec_3:
+    sihhi_maddeler.append(
+        "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
+        " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
+        " Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
+    )
+  if sih_sec_4:
+    sihhi_maddeler.append(
+        f"Bütün binanın kullanma soğuk su ihtiyacı {sih_depo_konum.lower()} soğuk"
+        " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
+        " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
+        " ilgili standartlar esas alınacaktır."
+    )
+  if sih_sec_depo_tipi:
+    sihhi_maddeler.append(
+        "Binada kullanım soğuk su depolaması için "
+        f"{sih_depo_tipi.lower()} tipinde su deposu kullanılmıştır."
+    )
+  if sih_sec_5:
+    sihhi_maddeler.append(
+        "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
+        " vitrifiye seramik olacaktır."
+    )
+  if sih_sec_6:
+    sihhi_maddeler.append(
+        "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari"
+        " projede belirtilen yerlere techiz edilecektir."
+    )
+  if sih_sec_7:
+    sihhi_maddeler.append(
+        "Kullanma Sıcak suyu üretimi ısı merkezindeki "
+        f"{sih_sicak_su_yontemi.lower()} vasıtasıyla yapılacaktır."
+    )
+  if sih_sec_8:
+    sihhi_maddeler.append(
+        "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
+        " dağıtım boruları PPRC tipte seçilecektir."
+    )
+  if sih_sec_9:
+    sihhi_maddeler.append(
+        "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su"
+        " kullanılacaktır."
+    )
+  if sih_sec_10:
+    sihhi_maddeler.append(
+        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
+        " sistemi kullanılacaktır."
+    )
+  if sih_sec_11:
+    sihhi_maddeler.append(
+        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır."
+    )
+  if sih_sec_12:
+    sihhi_maddeler.append(
+        "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
+        " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
+        " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
+        " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
+        " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
+        " tesisatı yapılmıştır."
+    )
 
-  if ek_sihhi.strip():
-    for esh in ek_sihhi.split("\n"):
-      if esh.strip():
-        secilen_sihhi.append(esh.strip())
+  if ek_sihhi_on_bilgi.strip():
+    for es in ek_sihhi_on_bilgi.split("\n"):
+      if es.strip():
+        sihhi_maddeler.append(es.strip())
 
-  if secilen_sihhi:
-    for sih in secilen_sihhi:
-      doc.add_paragraph(sih, style="List Bullet")
-  else:
-    doc.add_paragraph(
-        "Herhangi bir sıhhi tesisat kapsam maddesi seçilmemiştir.", style="Italic"
-    )
+  for sm in sihhi_maddeler:
+    doc.add_paragraph(sm, style="List Bullet")
 
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(
-      "Sıhhi tesisat ve tüm önceki bölümler eklenerek rapor hazırlandı!"
-  )
+  st.success("Tüm bölümler ve 6.1 Sıhhi Tesisat Ön Bilgiler ile rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
