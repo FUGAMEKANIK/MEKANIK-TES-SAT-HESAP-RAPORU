@@ -518,7 +518,7 @@ with c_2:
   st.markdown(f"• **Boylam**: `{iklim_veri['boylam']}`")
   st.markdown(f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m.")
 
-# --- 6. BÖLÜM: SIHHİ TESİSAT (6.1 SIHHİ TESİSAT ÖN BİLGİLER) ---
+# --- 6. BÖLÜM: SIHHİ TESİSAT ---
 st.header("6. SIHHİ TESİSAT")
 st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
 st.write(
@@ -668,6 +668,24 @@ sih_sec_12 = st.checkbox(
 ek_sihhi_on_bilgi = st.text_area(
     "İlave Sıhhi Tesisat Ön Bilgi Maddesi (Her satıra bir tane)", "", height=80
 )
+
+# --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
+
+
+# --- 6.2 PİS SU TESİSATI GİRDİLERİ ---
+st.subheader("6.2 PİS SU TESİSATI ESASLARI")
+pis_su_konumlari = st.multiselect(
+    "Atık su toplama konumu (1. Seçim - Birden fazla seçebilirsiniz):",
+    ["Bodrum kat", "Zemin kat", "1. kat", "Çatı katı"],
+    default=["Bodrum kat"],
+)
+pis_su_gecisler = st.multiselect(
+    "Atık su boru geçiş yeri (2. Seçim - Birden fazla seçebilirsiniz):",
+    ["döşemesinden", "tavanından", "asma tavan arasından"],
+    default=["döşemesinden"],
+)
+
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
@@ -1180,7 +1198,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
   doc.add_paragraph(
       "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
-      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır:"
+      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır."
   )
 
   # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
@@ -1247,12 +1265,80 @@ if st.button("Raporu Oluştur (.docx)"):
     for c_idx, val in enumerate(row):
       t2.cell(r_idx, c_idx).text = val
 
+  # --- 6.2 PİS SU TESİSATI ---
+  doc.add_heading("6.2 PİS SU TESİSATI", level=2)
+
+  pis_su_maddeleri = []
+
+  # 1. Madde (Çoktan seçmeli konum ve geçiş)
+  if pis_su_konumlari and pis_su_gecisler:
+    if len(pis_su_konumlari) == 1:
+      konum_s = pis_su_konumlari[0].lower()
+    else:
+      konum_s = (
+          f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
+          f" {pis_su_konumlari[-1].lower()}"
+      )
+
+    if len(pis_su_gecisler) == 1:
+      gecis_s = pis_su_gecisler[0].lower()
+    else:
+      gecis_s = (
+          f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
+          f" {pis_su_gecisler[-1].lower()}"
+      )
+
+    pis_su_maddeleri.append(
+        f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
+        f" {gecis_s} rögarlara iletilecektir."
+    )
+
+  # 2. Madde
+  pis_su_maddeleri.append(
+      "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
+      " yerleştirilmiştir."
+  )
+
+  # 3. Madde
+  pis_su_maddeleri.append(
+      "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
+      " yapılacaktır."
+  )
+
+  # 4. Madde
+  pis_su_maddeleri.append(
+      "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
+      " kullanılacaktır."
+  )
+
+  # 5. Madde
+  pis_su_maddeleri.append(
+      "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
+  )
+
+  # 6. Madde (Yeni eklenen kot kurtarmayan katlar maddesi)
+  pis_su_maddeleri.append(
+      "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
+      " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
+  )
+
+  # 7. Madde
+  pis_su_maddeleri.append(
+      "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
+      " pis su kanalına bağlanacaktır."
+  )
+
+  for psm in pis_su_maddeleri:
+    doc.add_paragraph(psm, style="List Bullet")
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.1.1 başlığı ve PDF tabloları eklenerek rapor hazırlandı!")
+  st.success(
+      "6.2 Pis Su Tesisatı tüm maddeler ve pompa/çukur detayıyla hazırlandı!"
+  )
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
