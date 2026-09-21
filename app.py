@@ -100,6 +100,35 @@ def add_toc(paragraph):
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
+
+# --- YARDIMCI: TÜMÜNÜ SEÇ / KALDIR FONKSİYONLARI ---
+def _toplu_checkbox_ayarla(anahtarlar, durum):
+  for anahtar in anahtarlar:
+    st.session_state[anahtar] = durum
+
+
+def _toplu_secim_butonlari(
+    anahtarlar, kolon_basliklari=("☑ TÜMÜNÜ SEÇ", "☐ TÜMÜNÜ KALDIR")
+):
+  c1, c2 = st.columns(2)
+  with c1:
+    st.button(
+        kolon_basliklari[0],
+        key=f"toplu_sec_{anahtarlar[0]}",
+        on_click=_toplu_checkbox_ayarla,
+        args=(anahtarlar, True),
+        use_container_width=True,
+    )
+  with c2:
+    st.button(
+        kolon_basliklari[1],
+        key=f"toplu_kaldir_{anahtarlar[0]}",
+        on_click=_toplu_checkbox_ayarla,
+        args=(anahtarlar, False),
+        use_container_width=True,
+    )
+
+
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input(
@@ -118,80 +147,142 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
 st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
 
-std_ts_825 = st.checkbox("TS 825 - BİNALARDA ISI YALITIM KURALLARI", value=True)
+std_keys = [
+    "std_ts_825",
+    "std_yangin",
+    "std_bep_2008_2010",
+    "std_ts_1258",
+    "std_ts_826",
+    "std_ts_2164",
+    "std_ts_3419",
+    "std_ts_en_12056_2",
+    "std_ts_en_12845",
+    "std_mmo_84",
+    "std_mmo_352_5",
+    "std_mmo_122",
+    "std_mmo_133",
+    "std_mmo_155",
+    "std_ashrae",
+    "std_su",
+    "std_klima",
+    "std_tesisat",
+    "std_kanal",
+    "std_asansor",
+    "std_deprem",
+    "std_akustik",
+    "std_isg",
+]
+_toplu_secim_butonlari(std_keys)
+
+std_ts_825 = st.checkbox(
+    "TS 825 - BİNALARDA ISI YALITIM KURALLARI", key="std_ts_825", value=True
+)
 std_yangin = st.checkbox(
     '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
     ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"',
+    key="std_yangin",
     value=True,
 )
 std_bep_2008_2010 = st.checkbox(
     "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
     " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi"
     " gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”",
+    key="std_bep_2008_2010",
     value=True,
 )
 std_ts_1258 = st.checkbox(
-    "TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI", value=True
+    "TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI",
+    key="std_ts_1258",
+    value=True,
 )
 std_ts_826 = st.checkbox(
-    "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI", value=True
+    "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI",
+    key="std_ts_826",
+    value=True,
 )
 std_ts_2164 = st.checkbox(
-    "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI", value=True
+    "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI",
+    key="std_ts_2164",
+    value=True,
 )
 std_ts_3419 = st.checkbox(
     "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
     " KURALLARI",
+    key="std_ts_3419",
     value=True,
 )
 std_ts_en_12056_2 = st.checkbox(
     "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA",
+    key="std_ts_en_12056_2",
     value=True,
 )
 std_ts_en_12845 = st.checkbox(
     "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
     " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM",
+    key="std_ts_en_12845",
     value=True,
 )
 std_mmo_84 = st.checkbox(
-    "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)", value=True
+    "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)",
+    key="std_mmo_84",
+    value=True,
 )
-std_mmo_352_5 = st.checkbox("MMO KALORİFER TESİSATI (Y.NO:352/5)", value=True)
+std_mmo_352_5 = st.checkbox(
+    "MMO KALORİFER TESİSATI (Y.NO:352/5)", key="std_mmo_352_5", value=True
+)
 std_mmo_122 = st.checkbox(
-    "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)", value=True
+    "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)",
+    key="std_mmo_122",
+    value=True,
 )
 std_mmo_133 = st.checkbox(
-    "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)", value=True
+    "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)",
+    key="std_mmo_133",
+    value=True,
 )
-std_mmo_155 = st.checkbox("MMO KAZAN VE BACA(Y.NO:155)", value=True)
+std_mmo_155 = st.checkbox(
+    "MMO KAZAN VE BACA(Y.NO:155)", key="std_mmo_155", value=True
+)
 
-std_ashrae = st.checkbox("ASHRAE Standartları", value=True)
+std_ashrae = st.checkbox("ASHRAE Standartları", key="std_ashrae", value=True)
 std_su = st.checkbox(
-    "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları", value=True
+    "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları",
+    key="std_su",
+    value=True,
 )
 std_klima = st.checkbox(
-    "Klima ve Havalandırma Tesisatı Yönetmelikleri", value=True
+    "Klima ve Havalandırma Tesisatı Yönetmelikleri",
+    key="std_klima",
+    value=True,
 )
 std_tesisat = st.checkbox(
     "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
     " Paylaştırılmasına İlişkin Yönetmelik",
+    key="std_tesisat",
     value=False,
 )
 std_kanal = st.checkbox(
-    "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar", value=False
+    "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar",
+    key="std_kanal",
+    value=False,
 )
 std_asansor = st.checkbox(
-    "Asansör Yönetmeliği ve İlgili Standartlar", value=False
+    "Asansör Yönetmeliği ve İlgili Standartlar", key="std_asansor", value=False
 )
 std_deprem = st.checkbox(
     "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)",
+    key="std_deprem",
     value=True,
 )
 std_akustik = st.checkbox(
-    "Binaların Gürültüye Karşı Korunması Yönetmeliği", value=False
+    "Binaların Gürültüye Karşı Korunması Yönetmeliği",
+    key="std_akustik",
+    value=False,
 )
 std_isg = st.checkbox(
-    "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler", value=True
+    "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler",
+    key="std_isg",
+    value=True,
 )
 
 ek_standartlar = st.text_area(
@@ -207,27 +298,67 @@ st.write(
     "Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:"
 )
 
-kapsam_isitma = st.checkbox("Isıtma tesisatı,", value=True)
-kapsam_sogutma = st.checkbox("Soğutma tesisatı,", value=True)
-kapsam_soguk_su = st.checkbox("Kullanma soğuk suyu tesisatı,", value=True)
-kapsam_sicak_su = st.checkbox("Kullanma sıcak suyu tesisatı,", value=True)
+kapsam_keys = [
+    "kapsam_isitma",
+    "kapsam_sogutma",
+    "kapsam_soguk_su",
+    "kapsam_sicak_su",
+    "kapsam_yangin_depo",
+    "kapsam_atik_su",
+    "kapsam_yangin_dagitim",
+    "kapsam_kazan_dairesi",
+    "kapsam_havalandirma",
+    "kapsam_basinc_hava",
+    "kapsam_medikal_gaz",
+    "kapsam_otomatik",
+]
+_toplu_secim_butonlari(kapsam_keys)
+
+kapsam_isitma = st.checkbox(
+    "Isıtma tesisatı,", key="kapsam_isitma", value=True
+)
+kapsam_sogutma = st.checkbox(
+    "Soğutma tesisatı,", key="kapsam_sogutma", value=True
+)
+kapsam_soguk_su = st.checkbox(
+    "Kullanma soğuk suyu tesisatı,", key="kapsam_soguk_su", value=True
+)
+kapsam_sicak_su = st.checkbox(
+    "Kullanma sıcak suyu tesisatı,", key="kapsam_sicak_su", value=True
+)
 kapsam_yangin_depo = st.checkbox(
-    "Yangın ve kullanma suyu depolaması ve dağıtımı,", value=True
+    "Yangın ve kullanma suyu depolaması ve dağıtımı,",
+    key="kapsam_yangin_depo",
+    value=True,
 )
 kapsam_atik_su = st.checkbox(
-    "Yapı içinde atık su tesisatı (Yapı çıkış rögarına),", value=True
+    "Yapı içinde atık su tesisatı (Yapı çıkış rögarına),",
+    key="kapsam_atik_su",
+    value=True,
 )
 kapsam_yangin_dagitim = st.checkbox(
-    "Yangın suyu iç ve dış dağıtım sistemleri,", value=True
+    "Yangın suyu iç ve dış dağıtım sistemleri,",
+    key="kapsam_yangin_dagitim",
+    value=True,
 )
 kapsam_kazan_dairesi = st.checkbox(
-    "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,", value=True
+    "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,",
+    key="kapsam_kazan_dairesi",
+    value=True,
 )
-kapsam_havalandirma = st.checkbox("Havalandırma Tesisatı", value=True)
-kapsam_basinc_hava = st.checkbox("Basınçlı hava tesisatı,", value=False)
-kapsam_medikal_gaz = st.checkbox("Medikal gaz tesisatı", value=False)
+kapsam_havalandirma = st.checkbox(
+    "Havalandırma Tesisatı", key="kapsam_havalandirma", value=True
+)
+kapsam_basinc_hava = st.checkbox(
+    "Basınçlı hava tesisatı,", key="kapsam_basinc_hava", value=False
+)
+kapsam_medikal_gaz = st.checkbox(
+    "Medikal gaz tesisatı", key="kapsam_medikal_gaz", value=False
+)
 kapsam_otomatik = st.checkbox(
-    "Otomatik kontrol sistemi kavramı tanımı,", value=True
+    "Otomatik kontrol sistemi kavramı tanımı,",
+    key="kapsam_otomatik",
+    value=True,
 )
 
 ek_kapsam = st.text_area(
@@ -271,54 +402,86 @@ kizgin_su_secenekleri = [
     "180/130",
 ]
 
+akiskan_keys = [
+    "chk_kalorifer",
+    "chk_fco_ist",
+    "chk_fco_sog",
+    "chk_ks_ist",
+    "chk_buhar",
+    "chk_ks_sog",
+    "chk_boyler",
+    "chk_k_sicak",
+    "chk_doseme",
+    "chk_kizgin",
+]
+_toplu_secim_butonlari(akiskan_keys)
+
 col1, col2 = st.columns(2)
 
 with col1:
-  chk_kalorifer = st.checkbox("1. Kalorifer tesisatı", value=True)
+  chk_kalorifer = st.checkbox(
+      "1. Kalorifer tesisatı", key="chk_kalorifer", value=True
+  )
   rej_kalorifer = st.selectbox(
       "Kalorifer Rejimi:", sicaklik_secenekleri, index=0
   )
 
-  chk_fco_ist = st.checkbox("2. Fan-Coil ısıtma tesisatı", value=True)
+  chk_fco_ist = st.checkbox(
+      "2. Fan-Coil ısıtma tesisatı", key="chk_fco_ist", value=True
+  )
   rej_fco_ist = st.selectbox(
       "Fan-Coil Isıtma Rejimi:", sicaklik_secenekleri, index=0
   )
 
-  chk_fco_sog = st.checkbox("3. Fan-Coil Soğutma tesisatı", value=True)
+  chk_fco_sog = st.checkbox(
+      "3. Fan-Coil Soğutma tesisatı", key="chk_fco_sog", value=True
+  )
   rej_fco_sog = st.selectbox(
       "Fan-Coil Soğutma Rejimi:", sicaklik_secenekleri, index=5
   )
 
-  chk_ks_ist = st.checkbox("4. Klima santrali ısıtma tesisatı", value=True)
+  chk_ks_ist = st.checkbox(
+      "4. Klima santrali ısıtma tesisatı", key="chk_ks_ist", value=True
+  )
   rej_ks_ist = st.selectbox(
       "Klima Santrali Isıtma Rejimi:", sicaklik_secenekleri, index=0
   )
 
-  chk_buhar = st.checkbox("9. Buhar tesisatı", value=False)
+  chk_buhar = st.checkbox("9. Buhar tesisatı", key="chk_buhar", value=False)
   rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
 
 with col2:
-  chk_ks_sog = st.checkbox("5. Klima santrali Soğutma tesisatı", value=True)
+  chk_ks_sog = st.checkbox(
+      "5. Klima santrali Soğutma tesisatı", key="chk_ks_sog", value=True
+  )
   rej_ks_sog = st.selectbox(
       "Klima Santrali Soğutma Rejimi:", sicaklik_secenekleri, index=5
   )
 
-  chk_boyler = st.checkbox("6. Boyler ısıtma tesisatı", value=True)
+  chk_boyler = st.checkbox(
+      "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
+  )
   rej_boyler = st.selectbox(
       "Boyler Isıtma Rejimi:", sicaklik_secenekleri, index=0
   )
 
-  chk_k_sicak = st.checkbox("7. Kullanma sıcak suyu", value=True)
+  chk_k_sicak = st.checkbox(
+      "7. Kullanma sıcak suyu", key="chk_k_sicak", value=True
+  )
   rej_k_sicak = st.selectbox(
       "Kullanma Sıcak Suyu Rejimi:", sicaklik_secenekleri, index=7
   )
 
-  chk_doseme = st.checkbox("8. Döşemeden ısıtma tesisatı", value=True)
+  chk_doseme = st.checkbox(
+      "8. Döşemeden ısıtma tesisatı", key="chk_doseme", value=True
+  )
   rej_doseme = st.selectbox(
       "Döşemeden Isıtma Rejimi:", sicaklik_secenekleri, index=4
   )
 
-  chk_kizgin = st.checkbox("10. Kızgın su tesisatı", value=False)
+  chk_kizgin = st.checkbox(
+      "10. Kızgın su tesisatı", key="chk_kizgin", value=False
+  )
   rej_kizgin = st.selectbox(
       "Kızgın Su Rejimi:", kizgin_su_secenekleri, index=0
   )
@@ -364,25 +527,46 @@ st.write(
     " seçin:"
 )
 
+sihhi_keys = [
+    "sih_sec_1",
+    "sih_sec_2",
+    "sih_sec_3",
+    "sih_sec_4",
+    "sih_sec_depo_tipi",
+    "sih_sec_5",
+    "sih_sec_6",
+    "sih_sec_7",
+    "sih_sec_8",
+    "sih_sec_9",
+    "sih_sec_10",
+    "sih_sec_11",
+    "sih_sec_12",
+]
+_toplu_secim_butonlari(sihhi_keys)
+
 sih_sec_1 = st.checkbox(
     "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden sağlanacaktır.",
+    key="sih_sec_1",
     value=True,
 )
 sih_sec_2 = st.checkbox(
     "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
     " hattından sağlanacaktır.",
+    key="sih_sec_2",
     value=False,
 )
 sih_sec_3 = st.checkbox(
     "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
     " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
     " Diğer bütün sarfiyatlar bu birime tamamlanacaktır.",
+    key="sih_sec_3",
     value=True,
 )
 sih_sec_4 = st.checkbox(
     "Bütün binanın kullanma soğuk su ihtiyacı soğuk su deposundan sağlanacaktır."
     " Basıncın yetersizliği ve su kesilmelerine karşın depo hidrofor sistemi"
     " uygulanmıştır. TS 1258 ve ilgili standartlar esas alınacaktır.",
+    key="sih_sec_4",
     value=True,
 )
 sih_depo_konum = st.selectbox(
@@ -394,6 +578,7 @@ sih_depo_konum = st.selectbox(
 sih_sec_depo_tipi = st.checkbox(
     "Bina da kullanım soğuk su depolaması için belirtilen tipte su deposu"
     " kullanılmıştır.",
+    key="sih_sec_depo_tipi",
     value=True,
 )
 sih_depo_tipi = st.selectbox(
@@ -411,18 +596,19 @@ sih_depo_tipi = st.selectbox(
 sih_sec_5 = st.checkbox(
     "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz vitrifiye"
     " seramik olacaktır.",
+    key="sih_sec_5",
     value=True,
 )
 sih_sec_6 = st.checkbox(
     "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari projede"
     " belirtilen yerlere techiz edilecektir.",
+    key="sih_sec_6",
     value=True,
 )
-
-# --- ÇOKLU SEÇİMLİ SICAK SU ÜRETİM SİSTEMİ ---
 sih_sec_7 = st.checkbox(
     "Kullanma Sıcak suyu üretimi ısı merkezindeki sistem vasıtasıyla"
     " yapılacaktır.",
+    key="sih_sec_7",
     value=True,
 )
 sih_sicak_su_yontemleri = st.multiselect(
@@ -437,23 +623,26 @@ sih_sicak_su_yontemleri = st.multiselect(
     ],
     default=["Dik tip hijyenik tek serpantinli boyler"],
 )
-
 sih_sec_8 = st.checkbox(
     "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
     " dağıtım boruları PPRC tipte seçilecektir.",
+    key="sih_sec_8",
     value=True,
 )
 sih_sec_9 = st.checkbox(
     "Çamaşırhane, laboratuvar, mutfak mahallerinde yumuşak su kullanılacaktır.",
+    key="sih_sec_9",
     value=True,
 )
 sih_sec_10 = st.checkbox(
     "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
     " sistemi kullanılacaktır.",
+    key="sih_sec_10",
     value=True,
 )
 sih_sec_11 = st.checkbox(
     "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır.",
+    key="sih_sec_11",
     value=False,
 )
 sih_sec_12 = st.checkbox(
@@ -463,6 +652,7 @@ sih_sec_12 = st.checkbox(
     " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
     " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
     " tesisatı yapılmıştır.",
+    key="sih_sec_12",
     value=True,
 )
 
@@ -869,7 +1059,6 @@ if st.button("Raporu Oluştur (.docx)"):
         " belirtilen yerlere techiz edilecektir."
     )
 
-  # Çoklu seçilen sıcak su yöntemlerini rapora dinamik metin olarak ekleme
   if sih_sec_7 and sih_sicak_su_yontemleri:
     if len(sih_sicak_su_yontemleri) == 1:
       secilenler_str = sih_sicak_su_yontemleri[0].lower()
@@ -930,7 +1119,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Çoklu sıcak su üretim yöntemleri eklenerek rapor hazırlandı!")
+  st.success("Tüm bölümler ve çoklu seçim özellikleriyle rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
