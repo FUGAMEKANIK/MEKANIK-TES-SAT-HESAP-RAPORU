@@ -540,7 +540,6 @@ sihhi_keys = [
     "sih_sec_8",
     "sih_sec_9",
     "sih_sec_10",
-    "sih_sec_11",
     "sih_sec_12",
 ]
 _toplu_secim_butonlari(sihhi_keys)
@@ -631,7 +630,6 @@ sih_sec_8 = st.checkbox(
     value=True,
 )
 
-# --- YUMUŞAK SU KULLANILACAK MAHALLER (ÇOKLU SEÇİM + DİĞER) ---
 sih_sec_9 = st.checkbox(
     "Belirtilen mahallerde yumuşak su kullanılacaktır.",
     key="sih_sec_9",
@@ -647,16 +645,17 @@ sih_yumusak_su_diger = st.text_input(
 )
 
 sih_sec_10 = st.checkbox(
-    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
-    " sistemi kullanılacaktır.",
+    "Kullanım sıcak suyunun ısıtılması belirtilen sistemler vasıtasıyla"
+    " yapılacaktır.",
     key="sih_sec_10",
     value=True,
 )
-sih_sec_11 = st.checkbox(
-    "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır.",
-    key="sih_sec_11",
-    value=False,
+sih_sicak_su_isitma_sistemleri = st.multiselect(
+    "Kullanım Sıcak Suyu Isıtma Sistemleri (Birden fazla seçebilirsiniz):",
+    ["Kazan", "Güneş enerjisi", "Elektrik"],
+    default=["Kazan", "Güneş enerjisi"],
 )
+
 sih_sec_12 = st.checkbox(
     "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
     " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
@@ -1120,13 +1119,10 @@ if st.button("Raporu Oluştur (.docx)"):
         " dağıtım boruları PPRC tipte seçilecektir."
     )
 
-  # --- YUMUŞAK SU KULLANILACAK MAHALLELERİN RAPORA İŞLENMESİ ---
   if sih_sec_9:
-    # Listeden seçilenleri (Diğer hariç) küçük harfe çevir
     secilen_mahaller = [
         m.lower() for m in sih_yumusak_su_mahalleri if m != "Diğer"
     ]
-    # Eğer metin kutusuna ekstra bir şey yazıldıysa onu da ekle
     if sih_yumusak_su_diger.strip():
       secilen_mahaller.append(sih_yumusak_su_diger.strip().lower())
 
@@ -1144,15 +1140,26 @@ if st.button("Raporu Oluştur (.docx)"):
           f"{mahal_str.capitalize()} mahallerinde yumuşak su kullanılacaktır."
       )
 
-  if sih_sec_10:
+  if sih_sec_10 and sih_sicak_su_isitma_sistemleri:
+    if len(sih_sicak_su_isitma_sistemleri) == 1:
+      isitma_str = sih_sicak_su_isitma_sistemleri[0].lower()
+    elif len(sih_sicak_su_isitma_sistemleri) == 2:
+      isitma_str = (
+          f"{sih_sicak_su_isitma_sistemleri[0].lower()} ve"
+          f" {sih_sicak_su_isitma_sistemleri[1].lower()}"
+      )
+    else:
+      ilkler = ", ".join(
+          [s.lower() for s in sih_sicak_su_isitma_sistemleri[:-1]]
+      )
+      son = sih_sicak_su_isitma_sistemleri[-1].lower()
+      isitma_str = f"{ilkler} ve {son}"
+
     sihhi_maddeler.append(
-        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı ve güneş enerjisi"
-        " sistemi kullanılacaktır."
+        f"Kullanım sıcak suyunun ısıtılması {isitma_str} vasıtasıyla"
+        " yapılacaktır."
     )
-  if sih_sec_11:
-    sihhi_maddeler.append(
-        "Kullanım sıcak suyu hazırlanması için ısıtma kazanı kullanılacaktır."
-    )
+
   if sih_sec_12:
     sihhi_maddeler.append(
         "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
@@ -1176,7 +1183,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler ve yumuşak su detaylarıyla rapor hazırlandı!")
+  st.success("Tüm bölümler güncellenerek rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
