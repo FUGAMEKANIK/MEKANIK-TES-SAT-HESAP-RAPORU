@@ -371,7 +371,7 @@ if st.button("Raporu Oluştur (.docx)"):
   body_section.left_margin = Inches(1.2)
   body_section.right_margin = Inches(1.2)
 
-  # 1. Genel Bilgiler
+  # 1. GENEL BİLGİLER
   doc.add_heading("1. GENEL BİLGİLER", level=1)
   doc.add_paragraph(
       f"Bu raporda '{aktif_is}' için tasarlanan mekanik tesisatlar açıklanmıştır."
@@ -380,7 +380,7 @@ if st.button("Raporu Oluştur (.docx)"):
       f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
   )
 
-  # 2. Standartlar
+  # 2. UYGULANACAK STANDART VE YÖNETMELİKLER
   doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
   st_list = []
   if std_ts_825:
@@ -420,7 +420,7 @@ if st.button("Raporu Oluştur (.docx)"):
   for s in st_list:
     doc.add_paragraph(s, style="List Bullet")
 
-  # 3. Kapsam
+  # 3. MEKANİK TESİSAT PROJE KAPSAMI
   doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
   kp_list = []
   if kapsam_isitma:
@@ -440,7 +440,7 @@ if st.button("Raporu Oluştur (.docx)"):
   for k in kp_list:
     doc.add_paragraph(k, style="List Bullet")
 
-  # 4. Akışkanlar
+  # 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI
   doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
   if chk_kalorifer:
     doc.add_paragraph(
@@ -459,13 +459,10 @@ if st.button("Raporu Oluştur (.docx)"):
   # 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ
   doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
   doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
-
-  # İstediğiniz sabit cümle ve denden içinde il ismi
   doc.add_paragraph(
       f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
       " koşulları aşağıdaki gibidir:"
   )
-
   doc.add_paragraph(
       f"• KIŞ: {iklim_veri['kis_kt']} °C KT , {iklim_veri['kis_yt']} °C YT",
       style="List Bullet",
@@ -574,7 +571,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Rapor başarıyla güncellendi ve hazırlandı!")
+  st.success("Tüm bölümler eksiksiz olarak güncellendi ve rapor hazırlandı!")
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
       if is_adi
