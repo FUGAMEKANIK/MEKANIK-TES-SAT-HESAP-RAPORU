@@ -1180,11 +1180,11 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
   doc.add_paragraph(
       "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
-      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır[span_1](start_span)[span_1](end_span):"
+      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır:"
   )
 
   # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
-  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti[span_2](start_span)[span_2](end_span)")
+  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti")
   t1_data = [
       ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
       ("15", "Ø20", '1/2"', "(0-3.0)"),
@@ -1213,7 +1213,7 @@ if st.button("Raporu Oluştur (.docx)"):
   # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
   doc.add_paragraph(
       "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
-      " Yükleri (TS 1285)[span_3](start_span)[span_3](end_span)"
+      " Yükleri (TS 1285)"
   )
   t2_data = [
       ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
