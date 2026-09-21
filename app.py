@@ -673,17 +673,73 @@ ek_sihhi_on_bilgi = st.text_area(
 st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
 
-# --- 6.2 PİS SU TESİSATI GİRDİLERİ ---
+# --- 6.2 PİS SU TESİSATI ---
 st.subheader("6.2 PİS SU TESİSATI ESASLARI")
+pis_su_keys = [
+    "pissu_sec_1",
+    "pissu_sec_2",
+    "pissu_sec_3",
+    "pissu_sec_4",
+    "pissu_sec_5",
+    "pissu_sec_6",
+    "pissu_sec_7",
+]
+_toplu_secim_butonlari(pissu_keys)
+
+pissu_sec_1 = st.checkbox(
+    "Yapının atık suları binanın pik kolonlarla toplanarak belirtilen kat ve"
+    " geçiş yerlerinden rögarlara iletilecektir.",
+    key="pissu_sec_1",
+    value=True,
+)
 pis_su_konumlari = st.multiselect(
-    "Atık su toplama konumu (1. Seçim - Birden fazla seçebilirsiniz):",
+    "Atık su toplama konumu:",
     ["Bodrum kat", "Zemin kat", "1. kat", "Çatı katı"],
     default=["Bodrum kat"],
 )
 pis_su_gecisler = st.multiselect(
-    "Atık su boru geçiş yeri (2. Seçim - Birden fazla seçebilirsiniz):",
+    "Atık su boru geçiş yeri:",
     ["döşemesinden", "tavanından", "asma tavan arasından"],
     default=["döşemesinden"],
+)
+
+pissu_sec_2 = st.checkbox(
+    "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
+    " yerleştirilmiştir.",
+    key="pissu_sec_2",
+    value=True,
+)
+pissu_sec_3 = st.checkbox(
+    "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar yapılacaktır.",
+    key="pissu_sec_3",
+    value=True,
+)
+pissu_sec_4 = st.checkbox(
+    "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
+    " kullanılacaktır.",
+    key="pissu_sec_4",
+    value=True,
+)
+pissu_sec_5 = st.checkbox(
+    "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir.",
+    key="pissu_sec_5",
+    value=True,
+)
+pissu_sec_6 = st.checkbox(
+    "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
+    " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır.",
+    key="pissu_sec_6",
+    value=True,
+)
+pissu_sec_7 = st.checkbox(
+    "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
+    " pis su kanalına bağlanacaktır.",
+    key="pissu_sec_7",
+    value=True,
+)
+
+ek_pissu_on_bilgi = st.text_area(
+    "İlave Pis Su Tesisatı Maddesi (Her satıra bir tane)", "", height=80
 )
 
 
@@ -1270,8 +1326,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
   pis_su_maddeleri = []
 
-  # 1. Madde (Çoktan seçmeli konum ve geçiş)
-  if pis_su_konumlari and pis_su_gecisler:
+  if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
     if len(pis_su_konumlari) == 1:
       konum_s = pis_su_konumlari[0].lower()
     else:
@@ -1293,40 +1348,45 @@ if st.button("Raporu Oluştur (.docx)"):
         f" {gecis_s} rögarlara iletilecektir."
     )
 
-  # 2. Madde
-  pis_su_maddeleri.append(
-      "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
-      " yerleştirilmiştir."
-  )
+  if pissu_sec_2:
+    pis_su_maddeleri.append(
+        "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
+        " yerleştirilmiştir."
+    )
 
-  # 3. Madde
-  pis_su_maddeleri.append(
-      "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
-      " yapılacaktır."
-  )
+  if pissu_sec_3:
+    pis_su_maddeleri.append(
+        "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
+        " yapılacaktır."
+    )
 
-  # 4. Madde
-  pis_su_maddeleri.append(
-      "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
-      " kullanılacaktır."
-  )
+  if pissu_sec_4:
+    pis_su_maddeleri.append(
+        "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
+        " kullanılacaktır."
+    )
 
-  # 5. Madde
-  pis_su_maddeleri.append(
-      "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
-  )
+  if pissu_sec_5:
+    pis_su_maddeleri.append(
+        "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
+    )
 
-  # 6. Madde (Yeni eklenen kot kurtarmayan katlar maddesi)
-  pis_su_maddeleri.append(
-      "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
-      " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
-  )
+  if pissu_sec_6:
+    pis_su_maddeleri.append(
+        "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
+        " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
+    )
 
-  # 7. Madde
-  pis_su_maddeleri.append(
-      "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
-      " pis su kanalına bağlanacaktır."
-  )
+  if pissu_sec_7:
+    pis_su_maddeleri.append(
+        "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
+        " pis su kanalına bağlanacaktır."
+    )
+
+  if ek_pissu_on_bilgi.strip():
+    for ep in ek_pissu_on_bilgi.split("\n"):
+      if ep.strip():
+        pis_su_maddeleri.append(ep.strip())
 
   for psm in pis_su_maddeleri:
     doc.add_paragraph(psm, style="List Bullet")
@@ -1336,9 +1396,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(
-      "6.2 Pis Su Tesisatı tüm maddeler ve pompa/çukur detayıyla hazırlandı!"
-  )
+  st.success("6.2 Pis Su Tesisatı seçimli maddeleriyle rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
