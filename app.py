@@ -362,6 +362,34 @@ with c_2:
       f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m."
   )
 
+# --- 6. BÖLÜM: SIHHİ TESİSAT ---
+st.header("6. SIHHİ TESİSAT")
+st.write(
+    "Sıhhi tesisat sistemi için raporda yer almasını istediğiniz kriterleri"
+    " seçin:"
+)
+
+sihhi_su_temini = st.checkbox(
+    "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini", value=True
+)
+sihhi_sicak_su = st.checkbox(
+    "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve sirkülasyonu",
+    value=True,
+)
+sihhi_pis_su = st.checkbox(
+    "Bina içi atık su (pis su) ve havalandırma boratları", value=True
+)
+sihhi_yagmur = st.checkbox(
+    "Çatı yağmur suyu drenajı ve uzaklaştırılması", value=True
+)
+
+ek_sihhi = st.text_area(
+    "Eklemek istediğiniz ilave sıhhi tesisat esasları (Her satıra bir tane"
+    " yazabilirsiniz)",
+    "",
+    height=80,
+)
+
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
   if not is_adi:
@@ -723,12 +751,49 @@ if st.button("Raporu Oluştur (.docx)"):
       style="List Bullet",
   )
 
+  # --- 6. SIHHİ TESİSAT ---
+  doc.add_heading("6. SIHHİ TESİSAT", level=1)
+  doc.add_paragraph(
+      "Yapının sıhhi tesisat projelendirmesinde ilgili standartlar (TS 1258 ve"
+      " TS 826) esas alınarak aşağıdaki sistemler tasarlanmıştır:"
+  )
+
+  secilen_sihhi = []
+  if sihhi_su_temini:
+    secilen_sihhi.append(
+        "Şebeke suyu veya hidrofor sistemi ile basınçlı su temini,"
+    )
+  if sihhi_sicak_su:
+    secilen_sihhi.append(
+        "Merkezi / bireysel sistem ile sıhhi sıcak su hazırlanması ve"
+        " sirkülasyonu,"
+    )
+  if sihhi_pis_su:
+    secilen_sihhi.append("Bina içi atık su (pis su) ve havalandırma boratları,")
+  if sihhi_yagmur:
+    secilen_sihhi.append("Çatı yağmur suyu drenajı ve uzaklaştırılması,")
+
+  if ek_sihhi.strip():
+    for esh in ek_sihhi.split("\n"):
+      if esh.strip():
+        secilen_sihhi.append(esh.strip())
+
+  if secilen_sihhi:
+    for sih in secilen_sihhi:
+      doc.add_paragraph(sih, style="List Bullet")
+  else:
+    doc.add_paragraph(
+        "Herhangi bir sıhhi tesisat kapsam maddesi seçilmemiştir.", style="Italic"
+    )
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler ve ilçe iklim şartları eklenerek rapor hazırlandı!")
+  st.success(
+      "Sıhhi tesisat ve tüm önceki bölümler eklenerek rapor hazırlandı!"
+  )
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
