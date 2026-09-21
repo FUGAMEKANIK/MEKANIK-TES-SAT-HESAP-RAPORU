@@ -29,17 +29,16 @@ bugun = datetime.now()
 bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
 
-# İklim verilerini JSON dosyasından yükleme fonksiyonu
+# İklim verilerini JSON dosyasından yükleme fonksiyonu (İlk ilçe merkez ilçe olacak şekilde sıralanmıştır)
 def iklim_verisini_yukle():
   dosya_adi = "iklim_verileri.json"
   if os.path.exists(dosya_adi):
     with open(dosya_adi, "r", encoding="utf-8") as f:
       return json.load(f)
   else:
-    # Dosya henüz yoksa varsayılan geçici yapı
     return {
         "Ankara": {
-            "Çankaya": {
+            "Çankaya (Merkez)": {
                 "kis_kt": -12.0,
                 "kis_yt": -13.2,
                 "yaz_kt": 33.0,
@@ -61,6 +60,16 @@ def iklim_verisini_yukle():
             },
         },
         "İstanbul": {
+            "Fatih (Merkez)": {
+                "kis_kt": -2.0,
+                "kis_yt": -3.5,
+                "yaz_kt": 31.0,
+                "yaz_yt": 23.0,
+                "enlem": "41° 01' Kuzey",
+                "boylam": "28° 57' Doğu",
+                "rakim": 35,
+                "gsf": 9.0,
+            },
             "Kadıköy": {
                 "kis_kt": -2.0,
                 "kis_yt": -3.5,
@@ -70,7 +79,7 @@ def iklim_verisini_yukle():
                 "boylam": "29° 02' Doğu",
                 "rakim": 30,
                 "gsf": 9.0,
-            }
+            },
         },
     }
 
@@ -333,9 +342,10 @@ secilen_il = st.selectbox(
     "Yapının inşa edileceği ili seçin:", iller_listesi, index=0
 )
 
-ilceler_listesi = sorted(list(iklim_veritabani[secilen_il].keys()))
+# İlçe listesinde merkez ilçe her zaman ilk sırada (index=0) gelecek şekilde ayarlandı
+ilceler_listesi = list(iklim_veritabani[secilen_il].keys())
 secilen_ilce = st.selectbox(
-    "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi
+    "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi, index=0
 )
 
 iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
@@ -912,7 +922,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tüm bölümler ve 6.1 Sıhhi Tesisat Ön Bilgiler ile rapor hazırlandı!")
+  st.success("Tüm bölümler ve merkez ilçe varsayılanıyla rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
