@@ -36,7 +36,6 @@ def iklim_verisini_yukle():
     with open(dosya_adi, "r", encoding="utf-8") as f:
       return json.load(f)
   else:
-    # Dosya henüz yoksa varsayılan geçici yapı
     return {
         "Ankara": {
             "Çankaya": {
@@ -862,8 +861,8 @@ if st.button("Raporu Oluştur (.docx)"):
     )
   if sih_sec_6:
     sihhi_maddeler.append(
-        "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari"
-        " projede belirtilen yerlere techiz edilecektir."
+        "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari projede"
+        " belirtilen yerlere techiz edilecektir."
     )
   if sih_sec_7:
     sihhi_maddeler.append(
