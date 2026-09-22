@@ -746,7 +746,7 @@ ek_pissu_on_bilgi = st.text_area(
 
 
 # ---------------------------------------------------------------------------
-# 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (ORİJİNAL TABLOLAR)
+# 6.1.1 & 6.2.1 PİS SU TABLOLARI
 # ---------------------------------------------------------------------------
 st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 st.write(
@@ -771,38 +771,8 @@ t1_data = [
     ("250", "-", '10"', "(484.000-518.400)"),
     ("300", "-", '12"', "(518.400-1.440.000)"),
 ]
+t1 = doc_t1_tablo = t1_data  # Tablo referansı
 
-t2_data = [
-    ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
-    ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
-    ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
-    ("Bide Rezervuarı", "0.13", "0.25"),
-    ("Bulaşık Makinası", "0.40", "2.50"),
-    ("Çamaşır Makinası", "0.40", "2.50"),
-    ("Duş", "0.40", "2.50"),
-    ("1 Gözlü Eviye", "0.25", "1.00"),
-    ("2 Gözlü Eviye", "0.31", "1.50"),
-    ("Hela Rezervuarı", "0.13", "0.25"),
-    ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
-    ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
-    ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
-    ("Kurna", "0.40", "2.50"),
-    ("Lavabo", "0.18", "0.50"),
-    ("DN15 mm musluk", "0.31", "1.50"),
-    ("DN20 mm musluk", "0.71", "8.00"),
-    ("DN25 mm musluk", "1.06", "18.00"),
-    ("Pisuvar", "0.13", "0.25"),
-    ("Şofben (10lt/dk)", "0.18", "0.50"),
-    ("Şofben (16lt/dk)", "0.25", "1.00"),
-    ("Şofben (26lt/dk)", "0.43", "3.00"),
-    ("Taharet Musluğu", "0.13", "0.25"),
-    ("Termosifon", "0.40", "2.50"),
-]
-
-
-# ---------------------------------------------------------------------------
-# 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (TS 826 TABLOLARI)
-# ---------------------------------------------------------------------------
 st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 pissu_t1_data = [
     ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
@@ -1130,7 +1100,7 @@ if secilen_psp_listesi:
       )
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
-      # Debi girdisi c1 / c2 akışından bağımsız olarak burada tanımlandı
+      # Debi girdisi
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
           min_value=1.0,
