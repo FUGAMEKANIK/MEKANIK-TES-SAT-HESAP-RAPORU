@@ -8,6 +8,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 import streamlit as st
+import matplotlib.pyplot as plt
 
 # Türkçe ay isimleri için sözlük
 aylar = {
@@ -764,166 +765,256 @@ secilen_psp_listesi = st.multiselect(
 )
 
 
-def otomatik_poz_ve_guc_hesapla(v_str, h_str):
-  try:
-    v = float(v_str)
-  except ValueError:
-    v = 10.0
-  try:
-    h = float(h_str)
-  except ValueError:
-    h = 12.0
 
-  # Elektrik Motor Gücü Hesabı (kW): N = (V * H * 9.81 * 1.2) / (3600 * eta)
-  eta = 0.55
-  guc_val = (v * h * 9.81 * 1.2) / (3600 * eta)
-  guc_val = max(0.75, round(guc_val, 2))
+# ---------------------------------------------------------------------------
+# 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ
+# ---------------------------------------------------------------------------
+st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ")
 
-  # Otomatik Poz Seçimi (25.360.1301 - 25.360.1308)
-  if v <= 10.0:
-    if h <= 10.0:
-      poz = "25.360.1301"
-      tanim = (
-          "Debisi 5.0-10 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-    elif h <= 15.0:
-      poz = "25.360.1302"
-      tanim = (
-          "Debisi 5.0-10 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
+POZ_POMPA_TABLOSU = [
+    {"poz": "25.360.1301", "qmin": 5.0, "qmax": 10.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Debisi 5,0-10 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1302", "qmin": 5.0, "qmax": 10.0, "hmin": 10.0, "hmax": 15.0,
+     "tanim": "Debisi 5,0-10 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1303", "qmin": 5.0, "qmax": 10.0, "hmin": 15.0, "hmax": 20.0,
+     "tanim": "Debisi 5,0-10 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1304", "qmin": 10.0, "qmax": 15.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Debisi 10-15 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1305", "qmin": 10.0, "qmax": 15.0, "hmin": 10.0, "hmax": 15.0,
+     "tanim": "Debisi 10-15 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1306", "qmin": 15.0, "qmax": 20.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Debisi 15-20 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1307", "qmin": 15.0, "qmax": 20.0, "hmin": 10.0, "hmax": 15.0,
+     "tanim": "Debisi 15-20 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+    {"poz": "25.360.1308", "qmin": 15.0, "qmax": 20.0, "hmin": 15.0, "hmax": 20.0,
+     "tanim": "Debisi 15-20 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+]
+
+def _float_girdi(deger, varsayilan=0.0):
+    try:
+        return float(str(deger).replace(",", "."))
+    except (ValueError, TypeError):
+        return float(varsayilan)
+
+def pompa_pozu_sec(q_m3h, h_mss):
+    """Debi ve basma yüksekliğine göre 25.360.1301–1308 arasından poz seçer."""
+    for kayit in POZ_POMPA_TABLOSU:
+        q_uygun = kayit["qmin"] <= q_m3h <= kayit["qmax"]
+        h_uygun = kayit["hmin"] <= h_mss <= kayit["hmax"]
+        if q_uygun and h_uygun:
+            return kayit["poz"], kayit["tanim"], "UYGUN"
+    return "-", "Girilen debi/basma yüksekliği 25.360.1301–25.360.1308 poz aralığı dışında.", "POZ DIŞI"
+
+def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
+    """
+    Q: m³/h
+    H: mSS
+    Hidrolik güç = rho*g*Q*H
+    Pompa mil gücü = hidrolik güç / pompa verimi
+    Elektrik giriş gücü = mil gücü / motor verimi
+    """
+    rho = 1000.0
+    g = 9.81
+    q_m3s = q_m3h / 3600.0
+    p_hid_kw = rho * g * q_m3s * h_mss / 1000.0
+    p_mil_kw = p_hid_kw / pompa_verimi if pompa_verimi > 0 else 0.0
+    p_elektrik_kw = p_mil_kw / motor_verimi if motor_verimi > 0 else 0.0
+
+    # Standart motor seçiminde bir üst nominal güç kademesi.
+    motor_kademeleri = [0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0]
+    motor_secim = next((x for x in motor_kademeleri if x >= p_elektrik_kw), motor_kademeleri[-1])
+
+    return {
+        "q_m3h": q_m3h,
+        "h_mss": h_mss,
+        "q_lps": q_m3h / 3.6,
+        "p_hid_kw": p_hid_kw,
+        "p_mil_kw": p_mil_kw,
+        "p_elektrik_kw": p_elektrik_kw,
+        "motor_secim_kw": motor_secim,
+        "pompa_verimi": pompa_verimi,
+        "motor_verimi": motor_verimi,
+    }
+
+def pompa_secim_egrisi(q_m3h, h_mss):
+    """
+    Gerçek üretici pompa eğrisi yerine, poz aralığını ve çalışma noktasını
+    gösteren tasarım/seçim eğrisi üretir. Üretici katalog eğrisi ayrıca
+    sisteme tanımlanırsa bu fonksiyon onunla değiştirilebilir.
+    """
+    poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
+
+    if durum == "UYGUN":
+        kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
+        q0 = kayit["qmin"]
+        q1 = kayit["qmax"]
+        h0 = kayit["hmax"]
+        h1 = kayit["hmin"]
+        # Basit lineer seçim zarfı; katalog üretici eğrisi değildir.
+        q_egrisi = [q0 + (q1 - q0) * i / 100 for i in range(101)]
+        h_egrisi = [h0 + (h1 - h0) * ((q - q0) / (q1 - q0)) for q in q_egrisi]
+        baslik = f"{poz} seçim zarfı"
     else:
-      poz = "25.360.1303"
-      tanim = (
-          "Debisi 5.0-10 m3/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-  elif v <= 15.0:
-    if h <= 10.0:
-      poz = "25.360.1304"
-      tanim = (
-          "Debisi 10-15 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-    elif h <= 15.0:
-      poz = "25.360.1305"
-      tanim = (
-          "Debisi 10-15 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-    else:
-      poz = "25.360.1305"
-      tanim = (
-          "Debisi 10-15 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-  else:
-    if h <= 10.0:
-      poz = "25.360.1306"
-      tanim = (
-          "Debisi 15-20 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-    elif h <= 15.0:
-      poz = "25.360.1307"
-      tanim = (
-          "Debisi 15-20 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
-    else:
-      poz = "25.360.1308"
-      tanim = (
-          "Debisi 15-20 m3/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
-          " tip pis su pompası"
-      )
+        q_egrisi = [5 + 15 * i / 100 for i in range(101)]
+        h_egrisi = [20 - 15 * i / 100 for i in range(101)]
+        baslik = "25.360.1301–25.360.1308 genel seçim zarfı"
 
-  return str(guc_val), poz, tanim
+    return q_egrisi, h_egrisi, baslik
 
+secilen_psp_listesi = st.multiselect(
+    "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
+    [f"PSP-{i:02d}" for i in range(1, 11)],
+    default=["PSP-01"],
+)
 
 psp_parametreleri = {}
+
 if secilen_psp_listesi:
-  st.write(
-      "Seçilen Terfi Pompalarına ait teknik değerleri girin (Güç ve Poz No"
-      " otomatik hesaplanır):"
-  )
-  for psp in secilen_psp_listesi:
-    with st.expander(f"⚙️ {psp} Teknik Parametreleri"):
-      c1, c2 = st.columns(2)
-      with c1:
-        v_val = st.text_input(f"{psp} Debi (V) [m3/h]", "10", key=f"{psp}_v")
-        h_val = st.text_input(
-            f"{psp} Basma Yüksekliği (H) [mSS]", "12", key=f"{psp}_h"
-        )
+    st.write(
+        "Seçilen terfi pompalarının debi ve basma yüksekliğini girin. "
+        "Elektrik gücü ve Bakanlık poz numarası otomatik hesaplanır."
+    )
 
-      # Otomatik Hesaplama Çağrısı
-      hesaplanan_guc, hesaplanan_poz, hesaplanan_tanim = (
-          otomatik_poz_ve_guc_hesapla(v_val, h_val)
-      )
+    for psp in secilen_psp_listesi:
+        with st.expander(f"⚙️ {psp} Teknik Parametreleri", expanded=True):
+            c1, c2 = st.columns(2)
 
-      with c2:
-        guc_val = st.text_input(
-            f"{psp} Motor Gücü (kW) [Hesaplanan]",
-            hesaplanan_guc,
-            key=f"{psp}_guc",
-        )
-        poz_val = st.text_input(
-            f"{psp} Cihaz Poz No [Otomatik Seçilen]",
-            hesaplanan_poz,
-            key=f"{psp}_poz",
-        )
+            with c1:
+                v_val = st.number_input(
+                    f"{psp} Debi (Q) [m³/h]",
+                    min_value=0.0,
+                    value=10.0,
+                    step=0.5,
+                    key=f"{psp}_v_num",
+                )
+                h_val = st.number_input(
+                    f"{psp} Basma Yüksekliği (H) [mSS]",
+                    min_value=0.0,
+                    value=12.0,
+                    step=0.5,
+                    key=f"{psp}_h_num",
+                )
+                pompa_eta = st.number_input(
+                    f"{psp} Pompa Verimi ηp [%]",
+                    min_value=1.0,
+                    max_value=100.0,
+                    value=60.0,
+                    step=1.0,
+                    key=f"{psp}_eta_p",
+                )
+                motor_eta = st.number_input(
+                    f"{psp} Motor Verimi ηm [%]",
+                    min_value=1.0,
+                    max_value=100.0,
+                    value=90.0,
+                    step=1.0,
+                    key=f"{psp}_eta_m",
+                )
 
-      adet_val = st.text_input(
-          f"{psp} Adet", "2 (1 Aktif + 1 Yedek)", key=f"{psp}_adet"
-      )
-      tip_val = st.text_input(
-          f"{psp} Tip",
-          (
-              "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su Terfi"
-              " Pompası"
-          ),
-          key=f"{psp}_tip",
-      )
+            hesap = pompa_hidrolik_hesap(
+                v_val, h_val, pompa_eta / 100.0, motor_eta / 100.0
+            )
+            hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(v_val, h_val)
+            q_egrisi, h_egrisi, egrisi_basligi = pompa_secim_egrisi(v_val, h_val)
 
-      st.info(f"📌 Seçilen Bakanlık Poz Tanımı: _{hesaplanan_tanim}_")
+            with c2:
+                st.metric("Hidrolik Güç", f"{hesap['p_hid_kw']:.2f} kW")
+                st.metric("Pompa Mil Gücü", f"{hesap['p_mil_kw']:.2f} kW")
+                st.metric("Elektrik Giriş Gücü", f"{hesap['p_elektrik_kw']:.2f} kW")
+                st.metric("Önerilen Motor Gücü", f"{hesap['motor_secim_kw']:.2f} kW")
 
-      psp_parametreleri[psp] = {
-          "v": v_val,
-          "h": h_val,
-          "guc": guc_val,
-          "adet": adet_val,
-          "tip": tip_val,
-          "poz": poz_val,
-      }
+                if poz_durumu == "UYGUN":
+                    st.success(f"✅ Otomatik Poz: **{hesaplanan_poz}**")
+                else:
+                    st.error("⚠️ Girilen çalışma noktası 25.360.1301–25.360.1308 aralığı dışında.")
 
+            st.info(
+                f"**Poz tanımı:** {hesaplanan_tanim}\n\n"
+                f"Q = {v_val:.2f} m³/h = {hesap['q_lps']:.2f} L/s | "
+                f"H = {h_val:.2f} mSS | "
+                f"ηp = {pompa_eta:.0f}% | ηm = {motor_eta:.0f}%"
+            )
+
+            # Program ekranında seçim eğrisi
+            fig, ax = plt.subplots(figsize=(8, 4.8))
+            ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi)
+            ax.scatter([v_val], [h_val], s=60, label="Çalışma noktası")
+            ax.axvline(v_val, linestyle="--", linewidth=0.8)
+            ax.axhline(h_val, linestyle="--", linewidth=0.8)
+            ax.set_xlabel("Debi Q [m³/h]")
+            ax.set_ylabel("Basma yüksekliği H [mSS]")
+            ax.set_title(f"{psp} – Pompa Seçim Eğrisi / Çalışma Noktası")
+            ax.grid(True, alpha=0.25)
+            ax.legend()
+            fig.tight_layout()
+            st.pyplot(fig, clear_figure=True)
+
+            st.caption(
+                "Not: Bu grafik pozun debi/basma yüksekliği aralığını ve girilen "
+                "çalışma noktasını gösteren seçim zarfıdır; gerçek üretici pompa "
+                "performans eğrisi değildir. Üretici/model seçildiğinde katalog "
+                "Q-H eğrisi ayrıca eklenebilir."
+            )
+
+            adet_val = st.text_input(
+                f"{psp} Adet",
+                "2 (1 Aktif + 1 Yedek)",
+                key=f"{psp}_adet",
+            )
+            tip_val = st.text_input(
+                f"{psp} Tip",
+                "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su Terfi Pompası",
+                key=f"{psp}_tip",
+            )
+
+            psp_parametreleri[psp] = {
+                "v": float(v_val),
+                "h": float(h_val),
+                "q_lps": hesap["q_lps"],
+                "guc": hesap["p_elektrik_kw"],
+                "hidrolik_guc": hesap["p_hid_kw"],
+                "mil_gucu": hesap["p_mil_kw"],
+                "motor_secim_kw": hesap["motor_secim_kw"],
+                "pompa_verimi": pompa_eta / 100.0,
+                "motor_verimi": motor_eta / 100.0,
+                "adet": adet_val,
+                "tip": tip_val,
+                "poz": hesaplanan_poz,
+                "poz_durumu": poz_durumu,
+                "poz_tanim": hesaplanan_tanim,
+                "q_egrisi": q_egrisi,
+                "h_egrisi": h_egrisi,
+                "egrisi_basligi": egrisi_basligi,
+            }
+
+# Toplu seçim: mevcut rapor mantığı korunarak
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
 _toplu_secim_butonlari(terfi_keys)
 
 terfi_sec_1 = st.checkbox(
-    "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli, parçalayıcı"
-    " bıçaklı pis su atık su terfi pompaları seçilmiştir.",
+    "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli, parçalayıcı "
+    "bıçaklı pis su atık su terfi pompaları seçilmiştir.",
     key="terfi_sec_1",
     value=True,
 )
 terfi_sec_2 = st.checkbox(
-    "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona"
-    " bağlanacaktır.",
+    "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona "
+    "bağlanacaktır.",
     key="terfi_sec_2",
     value=True,
 )
 terfi_sec_3 = st.checkbox(
-    "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
-    " seviyesine göre pompalar otomatik devreye girip çıkacaktır.",
+    "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su "
+    "seviyesine göre pompalar otomatik devreye girip çıkacaktır.",
     key="terfi_sec_3",
     value=True,
 )
 terfi_sec_4 = st.checkbox(
-    "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım kolaylığı"
-    " için sürgülü/kelebek vana kullanılacaktır.",
+    "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım kolaylığı "
+    "için sürgülü/kelebek vana kullanılacaktır.",
     key="terfi_sec_4",
     value=True,
 )
-
 ek_terfi_notu = st.text_area(
     "İlave Pis Su Terfi Pompası Genel Esasları (Her satıra bir tane)",
     "",
@@ -1279,6 +1370,75 @@ if st.button("Raporu Oluştur (.docx)"):
       f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m."
   )
   doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
+
+
+  # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
+  if psp_parametreleri:
+    doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+    doc.add_paragraph(
+        "Pis su terfi pompalarının çalışma noktaları için debi, basma yüksekliği, "
+        "hidrolik güç, pompa mil gücü ve elektrik giriş gücü hesaplanmış; "
+        "25.360.1301–25.360.1308 pozları arasından uygun poz otomatik olarak "
+        "belirlenmiştir."
+    )
+
+    for psp, pp in psp_parametreleri.items():
+        doc.add_heading(f"{psp} – Pompa Seçim ve Güç Hesabı", level=3)
+
+        tablo = doc.add_table(rows=1, cols=2)
+        tablo.style = "Table Grid"
+        tablo.rows[0].cells[0].text = "Parametre"
+        tablo.rows[0].cells[1].text = "Değer"
+
+        rapor_satirlari = [
+            ("Debi Q", f"{pp['v']:.2f} m³/h ({pp['q_lps']:.2f} L/s)"),
+            ("Basma yüksekliği H", f"{pp['h']:.2f} mSS"),
+            ("Hidrolik güç", f"{pp['hidrolik_guc']:.2f} kW"),
+            ("Pompa mil gücü", f"{pp['mil_gucu']:.2f} kW"),
+            ("Elektrik giriş gücü", f"{pp['guc']:.2f} kW"),
+            ("Önerilen motor gücü", f"{pp['motor_secim_kw']:.2f} kW"),
+            ("Pompa verimi", f"{pp['pompa_verimi']*100:.0f} %"),
+            ("Motor verimi", f"{pp['motor_verimi']*100:.0f} %"),
+            ("Poz No", pp["poz"]),
+            ("Poz tanımı", pp["poz_tanim"]),
+            ("Adet", pp["adet"]),
+            ("Tip", pp["tip"]),
+        ]
+        for baslik, deger in rapor_satirlari:
+            row = tablo.add_row().cells
+            row[0].text = baslik
+            row[1].text = str(deger)
+
+        # Çalışma noktası ve seçim eğrisi görseli
+        try:
+            fig_rapor, ax_rapor = plt.subplots(figsize=(7.2, 4.2))
+            ax_rapor.plot(
+                pp["q_egrisi"],
+                pp["h_egrisi"],
+                label=pp["egrisi_basligi"],
+            )
+            ax_rapor.scatter(
+                [pp["v"]],
+                [pp["h"]],
+                s=60,
+                label="Çalışma noktası",
+            )
+            ax_rapor.set_xlabel("Debi Q [m³/h]")
+            ax_rapor.set_ylabel("Basma yüksekliği H [mSS]")
+            ax_rapor.set_title(f"{psp} – Pompa Seçim Eğrisi")
+            ax_rapor.grid(True, alpha=0.25)
+            ax_rapor.legend()
+            fig_rapor.tight_layout()
+
+            img_buffer = io.BytesIO()
+            fig_rapor.savefig(img_buffer, format="png", dpi=160, bbox_inches="tight")
+            plt.close(fig_rapor)
+            img_buffer.seek(0)
+            doc.add_picture(img_buffer, width=Inches(6.5))
+        except Exception:
+            doc.add_paragraph(
+                "Pompa seçim eğrisi görseli oluşturulamadı; hesap tablosu yukarıda verilmiştir."
+            )
 
   # --- 6. SIHHİ TESİSAT ---
   doc.add_heading("6. SIHHİ TESİSAT", level=1)
