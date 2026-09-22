@@ -1081,25 +1081,19 @@ if st.button("Raporu Oluştur (.docx)"):
       " koşulları aşağıdaki gibidir:"
   )
   doc.add_paragraph(
-      f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
-      f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)",
-      style="List Bullet",
+      f"KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
+      f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)"
   )
   doc.add_paragraph(
-      f"• YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
-      f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)",
-      style="List Bullet",
+      f"YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
+      f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)"
   )
-  doc.add_paragraph(f"• Enlem: {iklim_veri['enlem']}", style="List Bullet")
-  doc.add_paragraph(f"• Boylam: {iklim_veri['boylam']}", style="List Bullet")
+  doc.add_paragraph(f"Enlem: {iklim_veri['enlem']}")
+  doc.add_paragraph(f"Boylam: {iklim_veri['boylam']}")
   doc.add_paragraph(
-      f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m.",
-      style="List Bullet",
+      f"Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m."
   )
-  doc.add_paragraph(
-      f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C",
-      style="List Bullet",
-  )
+  doc.add_paragraph(f"Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
 
   # --- 6. SIHHİ TESİSAT ---
   doc.add_heading("6. SIHHİ TESİSAT", level=1)
@@ -1448,8 +1442,8 @@ if st.button("Raporu Oluştur (.docx)"):
 
   doc.add_paragraph()
   doc.add_paragraph(
-      "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø 50,her tuvalet çıkışı Ø100"
-      " olacaktır."
+      "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+      " 50,her tuvalet çıkışı Ø100 olacaktır."
   )
 
   # Hafızada dosya oluşturma
@@ -1457,7 +1451,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.2.1 notu güncellenerek rapor hazırlandı!")
+  st.success("5.1 bölümü ve diğer tüm kısımlar güncellenerek rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
