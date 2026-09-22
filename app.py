@@ -746,7 +746,24 @@ ek_pissu_on_bilgi = st.text_area(
 st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
 # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ---
-st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ESASLARI")
+st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ")
+secilen_psp_listesi = st.multiselect(
+    "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
+    [
+        "PSP-01",
+        "PSP-02",
+        "PSP-03",
+        "PSP-04",
+        "PSP-05",
+        "PSP-06",
+        "PSP-07",
+        "PSP-08",
+        "PSP-09",
+        "PSP-10",
+    ],
+    default=["PSP-01"],
+)
+
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
 _toplu_secim_butonlari(terfi_keys)
 
@@ -776,7 +793,9 @@ terfi_sec_4 = st.checkbox(
 )
 
 ek_terfi_notu = st.text_area(
-    "İlave Pis Su Terfi Pompası Maddesi (Her satıra bir tane)", "", height=80
+    "İlave Pis Su Terfi Pompası Genel Esasları (Her satıra bir tane)",
+    "",
+    height=80,
 )
 
 
@@ -1514,12 +1533,22 @@ if st.button("Raporu Oluştur (.docx)"):
   for tm in terfi_maddeleri:
     doc.add_paragraph(tm, style="List Bullet")
 
+  # Dinamik PSP Alt Başlıkları (6.2.2.1, 6.2.2.2 vb.)
+  if secilen_psp_listesi:
+    for idx, psp_isim in enumerate(secilen_psp_listesi, start=1):
+      doc.add_heading(f"6.2.2.{idx} {psp_isim}", level=3)
+      doc.add_paragraph(
+          f"Projede belirlenen {psp_isim} terfi pompası ve çukuru için gerekli"
+          " debi, basma yüksekliği ve ekipman seçim kriterleri proje"
+          " hesaplarına uygun olarak sağlanmıştır."
+      )
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.2.2 Pis Su Terfi Pompaları Seçimi eklenerek rapor hazırlandı!")
+  st.success("Dinamik PSP alt başlıklarıyla rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
