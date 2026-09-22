@@ -798,6 +798,126 @@ def ust_yarim_kw(deger):
     return math.ceil((deger - 1e-12) * 2.0) / 2.0
 
 
+
+# ---------------------------------------------------------------------------
+# WILO REXA PRO-S03 KATALOG SEÇİM VERİLERİ
+# Kaynak: Wilo-Rexa PRO-S resmi ürün/katalog sayfaları ve Wilo performans
+# eğrisi dokümanları. Ara noktalar, üretici yayınındaki Q-H eğrisinden
+# dijitalleştirilmiş yaklaşık seçim noktalarıdır; kesin saha seçimi üretici
+# seçim yazılımı/katalog çıktısı ile teyit edilmelidir.
+# ---------------------------------------------------------------------------
+WILO_REXA_PRO_S_KATALOG = [
+    {
+        "model": "Wilo Rexa PRO-S03-112A/21T011X540/O",
+        "artikel": "6098421",
+        "p2_kw": 1.1,
+        "qmax": 18.5,
+        "hmax": 28.0,
+        "q_points": [0, 5, 10, 15, 18.5],
+        "h_points": [28.0, 24.5, 20.0, 15.0, 10.0],
+        "poz_uyumu": ["25.360.1301", "25.360.1302", "25.360.1303",
+                      "25.360.1304", "25.360.1305"],
+    },
+    {
+        "model": "Wilo Rexa PRO-S03-123A/21T015X540/O",
+        "artikel": "6098424",
+        "p2_kw": 1.5,
+        "qmax": 19.8,
+        "hmax": 32.0,
+        "q_points": [0, 5, 10, 15, 19.8],
+        "h_points": [32.0, 28.5, 24.0, 19.0, 13.5],
+        "poz_uyumu": ["25.360.1301", "25.360.1302", "25.360.1303",
+                      "25.360.1304", "25.360.1305"],
+    },
+    {
+        "model": "Wilo Rexa PRO-S03-224A/21T025X540/O",
+        "artikel": "6098426",
+        "p2_kw": 2.5,
+        "qmax": 20.2,
+        "hmax": 43.0,
+        "q_points": [0, 5, 10, 15, 20.2],
+        "h_points": [43.0, 39.0, 34.0, 27.5, 19.0],
+        "poz_uyumu": ["25.360.1302", "25.360.1303", "25.360.1305",
+                      "25.360.1307", "25.360.1308"],
+    },
+    {
+        "model": "Wilo Rexa PRO-S03-324A/21T039X540/O",
+        "artikel": "6098428",
+        "p2_kw": 3.9,
+        "qmax": 25.2,
+        "hmax": 47.5,
+        "q_points": [0, 5, 10, 15, 20, 25.2],
+        "h_points": [47.5, 44.0, 39.5, 34.0, 28.5, 21.0],
+        "poz_uyumu": ["25.360.1306", "25.360.1307", "25.360.1308"],
+    },
+    {
+        "model": "Wilo Rexa PRO-S03-326A/21T050X540/O",
+        "artikel": "6098430",
+        "p2_kw": 5.0,
+        "qmax": 29.9,
+        "hmax": 57.0,
+        "q_points": [0, 5, 10, 15, 20, 25, 29.9],
+        "h_points": [57.0, 53.0, 49.0, 44.0, 38.0, 31.0, 23.0],
+        "poz_uyumu": ["25.360.1306", "25.360.1307", "25.360.1308"],
+    },
+]
+
+WILO_KATALOG_KAYNAK = (
+    "Wilo-Rexa PRO-S resmi ürün/katalog performans eğrileri; "
+    "Wilo ürün kodları 6098421, 6098424, 6098426, 6098428 ve 6098430."
+)
+
+def _lineer_egriden_h(model, q_m3h):
+    """Üretici eğrisinin dijitalleştirilmiş Q-H noktaları arasında lineer enterpolasyon."""
+    if q_m3h < 0 or q_m3h > model["qmax"]:
+        return None
+    qs = model["q_points"]
+    hs = model["h_points"]
+    for i in range(len(qs) - 1):
+        if qs[i] <= q_m3h <= qs[i + 1]:
+            q0, q1 = qs[i], qs[i + 1]
+            h0, h1 = hs[i], hs[i + 1]
+            if q1 == q0:
+                return h0
+            return h0 + (h1 - h0) * ((q_m3h - q0) / (q1 - q0))
+    return hs[-1]
+
+def wilo_pompa_sec(q_m3h, h_mss):
+    """
+    Girilen çalışma noktasını Wilo Rexa PRO-S03 üretici eğrileri üzerinde
+    kontrol eder. Çalışma noktasında H_katalog >= H_tasarım olan ve
+    gereksiz büyük olmayan ilk modeli seçer.
+    """
+    adaylar = []
+    for model in WILO_REXA_PRO_S_KATALOG:
+        h_katalog = _lineer_egriden_h(model, q_m3h)
+        if h_katalog is not None and h_katalog >= h_mss:
+            margin = h_katalog - h_mss
+            adaylar.append((margin, model, h_katalog))
+
+    if not adaylar:
+        return None, None, None, "UYGUN WILO MODELİ BULUNAMADI"
+
+    adaylar.sort(key=lambda x: (x[0], x[1]["p2_kw"]))
+    _, secilen, h_katalog = adaylar[0]
+    return secilen, h_katalog, _lineer_egriden_h, "UYGUN"
+
+def wilo_model_egrisi(model):
+    """Katalogda yayınlanan model eğrisinin dijitalleştirilmiş çizim verisi."""
+    q0 = model["q_points"]
+    h0 = model["h_points"]
+    q_e = []
+    h_e = []
+    for i in range(len(q0) - 1):
+        for j in range(20):
+            q = q0[i] + (q0[i + 1] - q0[i]) * j / 20.0
+            h = h0[i] + (h0[i + 1] - h0[i]) * j / 20.0
+            q_e.append(q)
+            h_e.append(h)
+    q_e.append(q0[-1])
+    h_e.append(h0[-1])
+    return q_e, h_e
+
 def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
     """
     Q: m³/h
@@ -831,28 +951,29 @@ def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
 
 def pompa_secim_egrisi(q_m3h, h_mss):
     """
-    Üretici katalog verisi girilmemiş durumda poz aralığını ve çalışma noktasını
-    gösteren tasarım/seçim zarfı üretir. Üretici katalog eğrisi ayrıca
-    sisteme tanımlanırsa bu fonksiyon onunla değiştirilebilir.
+    Önce Wilo Rexa PRO-S03 üretici eğrisinden model seçer.
+    Model bulunamazsa Bakanlık poz aralığı seçim zarfını gösterir.
     """
-    poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
+    wilo_model, h_katalog, _, wilo_durum = wilo_pompa_sec(q_m3h, h_mss)
 
+    if wilo_durum == "UYGUN":
+        q_egrisi, h_egrisi = wilo_model_egrisi(wilo_model)
+        baslik = f"{wilo_model['model']} – Wilo katalog Q-H eğrisi"
+        return q_egrisi, h_egrisi, baslik, wilo_model, h_katalog
+
+    poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
     if durum == "UYGUN":
         kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
-        q0 = kayit["qmin"]
-        q1 = kayit["qmax"]
-        h0 = kayit["hmax"]
-        h1 = kayit["hmin"]
-        # Basit lineer seçim zarfı; katalog üretici eğrisi değildir.
-        q_egrisi = [q0 + (q1 - q0) * i / 100 for i in range(101)]
-        h_egrisi = [h0 + (h1 - h0) * ((q - q0) / (q1 - q0)) for q in q_egrisi]
-        baslik = f"{poz} seçim zarfı"
+        q0, q1 = kayit["qmin"], kayit["qmax"]
+        h0, h1 = kayit["hmax"], kayit["hmin"]
+        q_egrisi = [q0 + (q1-q0)*i/100 for i in range(101)]
+        h_egrisi = [h0 + (h1-h0)*((q-q0)/(q1-q0)) for q in q_egrisi]
+        baslik = f"{poz} seçim zarfı – Wilo katalog modeli bulunamadı"
     else:
-        q_egrisi = [5 + 15 * i / 100 for i in range(101)]
-        h_egrisi = [20 - 15 * i / 100 for i in range(101)]
+        q_egrisi = [5 + 15*i/100 for i in range(101)]
+        h_egrisi = [20 - 15*i/100 for i in range(101)]
         baslik = "25.360.1301–25.360.1308 genel seçim zarfı"
-
-    return q_egrisi, h_egrisi, baslik
+    return q_egrisi, h_egrisi, baslik, None, None
 
 secilen_psp_listesi = st.multiselect(
     "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
@@ -909,7 +1030,7 @@ if secilen_psp_listesi:
                 v_val, h_val, pompa_eta / 100.0, motor_eta / 100.0
             )
             hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(v_val, h_val)
-            q_egrisi, h_egrisi, egrisi_basligi = pompa_secim_egrisi(v_val, h_val)
+            q_egrisi, h_egrisi, egrisi_basligi, wilo_model, h_katalog = pompa_secim_egrisi(v_val, h_val)
 
             with c2:
                 st.metric("Hidrolik Güç", f"{ust_yarim_kw(hesap['p_hid_kw']):.2f} kW")
@@ -921,6 +1042,18 @@ if secilen_psp_listesi:
                     st.success(f"✅ Otomatik Poz: **{hesaplanan_poz}**")
                 else:
                     st.error("⚠️ Girilen çalışma noktası 25.360.1301–25.360.1308 aralığı dışında.")
+
+                if wilo_model is not None:
+                    st.success(
+                        f"🔧 Wilo otomatik model: **{wilo_model['model']}** | "
+                        f"P₂ = {wilo_model['p2_kw']:.1f} kW | "
+                        f"Katalogda Q={v_val:.2f} m³/h için H≈{h_katalog:.2f} mSS"
+                    )
+                else:
+                    st.warning(
+                        "Wilo Rexa PRO-S03 katalog eğrilerinde bu çalışma noktasını "
+                        "karşılayan model bulunamadı. Poz seçimi gösterilmeye devam ediyor."
+                    )
 
             st.info(
                 f"**Poz tanımı:** {hesaplanan_tanim}\n\n"
@@ -943,12 +1076,16 @@ if secilen_psp_listesi:
             fig.tight_layout()
             st.pyplot(fig, clear_figure=True)
 
-            st.caption(
-                "Not: Bu grafik pozun debi/basma yüksekliği aralığını ve girilen "
-                "çalışma noktasını gösteren seçim zarfıdır; gerçek üretici pompa "
-                "performans eğrisi değildir. Üretici/model seçildiğinde katalog "
-                "Q-H eğrisi ayrıca eklenebilir."
-            )
+            if wilo_model is not None:
+                st.caption(
+                    "Grafik: Wilo Rexa PRO-S03 üretici katalog Q-H eğrisinin "
+                    "dijitalleştirilmiş gösterimidir. Çalışma noktası ayrıca işaretlenmiştir."
+                )
+            else:
+                st.caption(
+                    "Wilo katalog eğrilerinde uygun model bulunamadığından "
+                    "poz seçim zarfı gösterilmektedir."
+                )
 
             adet_val = st.text_input(
                 f"{psp} Adet",
@@ -982,6 +1119,11 @@ if secilen_psp_listesi:
                 "q_egrisi": q_egrisi,
                 "h_egrisi": h_egrisi,
                 "egrisi_basligi": egrisi_basligi,
+                "wilo_model": wilo_model["model"] if wilo_model else "",
+                "wilo_artikel": wilo_model["artikel"] if wilo_model else "",
+                "wilo_p2_kw": wilo_model["p2_kw"] if wilo_model else "",
+                "wilo_h_katalog": h_katalog if h_katalog is not None else "",
+                "wilo_katalog_kaynagi": WILO_KATALOG_KAYNAK,
             }
 
 # Toplu seçim: mevcut rapor mantığı korunarak
@@ -2051,6 +2193,9 @@ if st.button("Raporu Oluştur (.docx)"):
                   " Terfi Pompası"
               ),
               "poz": "25.360.1302",
+              "wilo_model": "",
+              "wilo_artikel": "",
+              "wilo_h_katalog": "",
           },
       )
 
@@ -2063,12 +2208,22 @@ if st.button("Raporu Oluştur (.docx)"):
       doc.add_paragraph(f"Adet      = {p_vals['adet']}")
       doc.add_paragraph(f"Tip       = {p_vals['tip']}")
       doc.add_paragraph(f"Cihaz Poz No: {p_vals['poz']}")
+      if p_vals.get("wilo_model"):
+        doc.add_paragraph(f"Wilo Otomatik Seçilen Model: {p_vals['wilo_model']}")
+        doc.add_paragraph(f"Wilo Ürün Kodu: {p_vals.get('wilo_artikel', '')}")
+        doc.add_paragraph(
+            f"Wilo katalog çalışma noktasındaki yaklaşık basma yüksekliği: "
+            f"{p_vals.get('wilo_h_katalog', '')} mSS"
+        )
 
       # Poz numarasından hemen sonra pompa seçim eğrisi.
       try:
         q_grafik = p_vals.get("q_egrisi")
         h_grafik = p_vals.get("h_egrisi")
-        egrisi_basligi = p_vals.get("egrisi_basligi", "Pompa seçim eğrisi")
+        egrisi_basligi = p_vals.get(
+            "egrisi_basligi",
+            "Wilo katalog Q-H eğrisi" if p_vals.get("wilo_model") else "Pompa seçim eğrisi"
+        )
 
         if not q_grafik or not h_grafik:
           q_grafik, h_grafik, egrisi_basligi = pompa_secim_egrisi(
@@ -2113,8 +2268,17 @@ if st.button("Raporu Oluştur (.docx)"):
         img_buffer.seek(0)
         doc.add_picture(img_buffer, width=Inches(6.5))
         doc.add_paragraph(
-            "Şekil: Pompanın debi-basma yüksekliği seçim eğrisi ve tasarım çalışma noktası."
+            "Şekil: Üretici katalog Q-H eğrisi ve tasarım çalışma noktası."
+            if p_vals.get("wilo_model")
+            else "Şekil: Pompa seçim eğrisi ve tasarım çalışma noktası."
         )
+        if p_vals.get("wilo_model"):
+            doc.add_paragraph(
+                "Kaynak: Wilo-Rexa PRO-S resmi ürün/katalog performans eğrileri. "
+                "Eğri üzerindeki ara noktalar katalog grafiğinden dijitalleştirilmiş "
+                "seçim verileridir; nihai sipariş öncesi Wilo seçim yazılımı/katalog "
+                "çıktısı ile teyit edilmelidir."
+            )
       except Exception:
         doc.add_paragraph(
             "Pompa seçim eğrisi oluşturulamadı; pompa çalışma noktası ve poz bilgileri yukarıda verilmiştir."
