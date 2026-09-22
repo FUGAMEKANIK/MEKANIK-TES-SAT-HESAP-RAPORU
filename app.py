@@ -1129,7 +1129,6 @@ if secilen_psp_listesi:
       )
       emniyet_katsayisi = emniyet_secenekleri[emniyet_etiket]
 
-      # Net debi üzerine seçilen emniyet katsayısı uygulanır
       emniyetli_hesaplanan_q_m3h = round(hesaplanan_q_m3h * emniyet_katsayisi, 2)
 
       v_key = f"{psp}_v_num"
@@ -1991,14 +1990,16 @@ if st.button("Raporu Oluştur (.docx)"):
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
 
-        # Raporda emniyet faktörünün gösterimi ve formül
+        # Raporda emniyet faktörünün tam istediğiniz formatta gösterimi
         if pp["emniyet_katsayisi"] > 1.0:
+          yuzde_str = pp["emniyet_etiket"].split(" ")[
+              0
+          ]  # Örn: "%15" kısmını alır
           doc.add_paragraph(
-              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B * (Emniyet Katsayısı"
-              f" {pp['emniyet_katsayisi']}) ="
-              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} *"
-              f" {pp['emniyet_katsayisi']} = {pp['v_toplam']:.2f} m³/h"
-              f" ({pp['q_lps_toplam']:.2f} L/s) [{pp['emniyet_etiket']}]"
+              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
+              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
+              f" {pp['v_toplam']:.2f} m³/h ({pp['q_lps_toplam']:.2f} L/s)"
+              f" ({yuzde_str} Emniyet Oranı Alınmıştır.)"
           )
         else:
           doc.add_paragraph(
