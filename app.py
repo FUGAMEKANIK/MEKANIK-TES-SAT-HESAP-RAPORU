@@ -1015,6 +1015,7 @@ if secilen_psp_listesi:
       else:
         k_varsayilan = 1.2
 
+      # İstediğiniz gibi k değeri otomatik olarak atanıp state üzerinden güncelleniyor
       k_katsayisi = st.number_input(
           f"{psp} Eşzamanlık Katsayısı (k)",
           min_value=0.1,
@@ -1103,8 +1104,9 @@ if secilen_psp_listesi:
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
       st.markdown("---")
+      # Vitrifiye değiştikçe debi otomatik yansır, ayrıca manuel olarak da yuvarlanabilir/düzenlenebilir
       toplam_v_val = st.number_input(
-          f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
+          f"{psp} Toplam Debi (Q_toplam) [m³/h]",
           min_value=1.0,
           max_value=100.0,
           value=max(1.0, hesaplanan_q_m3h),
@@ -1923,7 +1925,6 @@ if st.button("Raporu Oluştur (.docx)"):
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-        # 1. İstediğiniz başlık formatı (6.2.2.1 PSP-01 TERFİ POMPASI SEÇİMİ)
         doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
         doc.add_paragraph(
@@ -1952,14 +1953,14 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_paragraph(
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
-        # 3. İstediğiniz formül formatı (Q_toplam = k * √Y.B =)
+        # Formül gösterimi (Q_toplam = k * √Y.B =)
         doc.add_paragraph(
             f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
             f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
             f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
         )
 
-        # 2. İstediğiniz sonuç satırları ve '-Seçilen Pompa:' başlığı formatı
+        # Sonuç bloğu ve başlığı (-Seçilen Pompa:)
         doc.add_heading(f"-Seçilen Pompa: {psp}", level=4)
         doc.add_paragraph(
             f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
