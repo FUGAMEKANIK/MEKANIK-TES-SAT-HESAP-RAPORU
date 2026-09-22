@@ -1448,7 +1448,8 @@ if st.button("Raporu Oluştur (.docx)"):
 
   doc.add_paragraph()
   doc.add_paragraph(
-      "NOT: Lavabolar Ø70, her tuvalet çıkışı Ø 100, Lavabolar iniş Ø 50"
+      "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø 50,her tuvalet çıkışı Ø100"
+      " olacaktır."
   )
 
   # Hafızada dosya oluşturma
@@ -1456,10 +1457,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(
-      "6.2.1 Pis Su Yükleme Birimleri, tablolar ve güncel NOT ile rapor"
-      " hazırlandı!"
-  )
+  st.success("6.2.1 notu güncellenerek rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
