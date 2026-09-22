@@ -1958,12 +1958,48 @@ if st.button("Raporu Oluştur (.docx)"):
     # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
     if psp_parametreleri:
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+
+      # 6.2.2 Başlığının hemen altında Genel Esaslar ve Notlar yer alıyor
+      doc.add_paragraph(
+          "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
+      )
+      terfi_maddeleri = []
+      if terfi_sec_1:
+        terfi_maddeleri.append(
+            "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
+            " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
+        )
+      if terfi_sec_2:
+        terfi_maddeleri.append(
+            "Pompalar yedekli çalışacak şekilde otomasyona bağlanacaktır."
+        )
+      if terfi_sec_3:
+        terfi_maddeleri.append(
+            "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
+            " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
+        )
+      if terfi_sec_4:
+        terfi_maddeleri.append(
+            "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
+            " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
+        )
+
+      if ek_terfi_notu.strip():
+        for etn in ek_terfi_notu.split("\n"):
+          if etn.strip():
+            terfi_maddeleri.append(etn.strip())
+
+      if terfi_maddeleri:
+        for tm in terfi_maddeleri:
+          doc.add_paragraph(tm, style="List Bullet")
+
       doc.add_paragraph(
           "Pis su terfi pompalarının çalışma noktaları; bina kullanım türü,"
           " armatür yükleme birimleri ve asıl pompa sayılarına göre ayrı ayrı"
           " hesaplanmıştır."
       )
 
+      # Ardından her bir pompa seçimi alt başlıklarla sıralanıyor
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
         doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
@@ -2019,44 +2055,6 @@ if st.button("Raporu Oluştur (.docx)"):
         )
         if poz_rapora_eklensin_mi:
           doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
-
-      # 6.2.2 Maddesinin Altına Eklenen Genel Esaslar ve Notlar
-      doc.add_paragraph()
-      doc.add_heading("Pis Su Terfi Pompası Genel Esasları", level=3)
-      terfi_maddeleri = []
-      if terfi_sec_1:
-        terfi_maddeleri.append(
-            "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
-            " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
-        )
-      if terfi_sec_2:
-        terfi_maddeleri.append(
-            "Pompalar yedekli çalışacak şekilde otomasyona bağlanacaktır."
-        )
-      if terfi_sec_3:
-        terfi_maddeleri.append(
-            "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
-            " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
-        )
-      if terfi_sec_4:
-        terfi_maddeleri.append(
-            "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
-            " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
-        )
-
-      if ek_terfi_notu.strip():
-        for etn in ek_terfi_notu.split("\n"):
-          if etn.strip():
-            terfi_maddeleri.append(etn.strip())
-
-      if terfi_maddeleri:
-        for tm in terfi_maddeleri:
-          doc.add_paragraph(tm, style="List Bullet")
-      else:
-        doc.add_paragraph(
-            "Herhangi bir terfi pompası genel esas maddesi seçilmemiştir.",
-            style="Italic",
-        )
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
