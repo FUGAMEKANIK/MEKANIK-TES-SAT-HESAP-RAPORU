@@ -1130,7 +1130,7 @@ if secilen_psp_listesi:
       )
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
-      # Kullanıcının otomatik gelen debiyi isterse manuel düzenleyebilmesi/yuvarlayabilmesi için number_input
+      # Debi girdisi c1 / c2 akışından bağımsız olarak burada tanımlandı
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
           min_value=1.0,
@@ -1206,7 +1206,6 @@ if secilen_psp_listesi:
           " Pompası"
       )
 
-      # Seçilen armatür listesini kaydetme
       armatur_listesi = []
       if adet_hela > 0:
         armatur_listesi.append(f"Hela / Klozet: {adet_hela} Adet")
@@ -1786,8 +1785,8 @@ if st.button("Raporu Oluştur (.docx)"):
           " hasadı tesisatı yapılmıştır."
       )
 
-    if ek_pissu_on_bilgi.strip():
-      for es in ek_pissu_on_bilgi.split("\n"):
+    if ek_sihhi_on_bilgi.strip():
+      for es in ek_sihhi_on_bilgi.split("\n"):
         if es.strip():
           sihhi_maddeler.append(es.strip())
 
@@ -1847,7 +1846,7 @@ if st.button("Raporu Oluştur (.docx)"):
         gecis_s = pis_su_gecisler[0].lower()
       else:
         gecis_s = (
-            f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
+            f"{', '.join([g.lower() for g in pis_su_gecisler[-1]])} ve"
             f" {pis_su_gecisler[-1].lower()}"
         )
 
@@ -1975,7 +1974,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("Armatür listeleri ve hesap formülleri eklenerek rapor hazırlandı!")
+    st.success("Rapor başarıyla hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
