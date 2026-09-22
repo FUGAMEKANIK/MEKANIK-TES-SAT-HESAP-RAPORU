@@ -1103,7 +1103,6 @@ if secilen_psp_listesi:
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
       st.markdown("---")
-      # Düzenli alt alta sıralı girdiler (çakışma önlendi)
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
           min_value=1.0,
@@ -1129,7 +1128,6 @@ if secilen_psp_listesi:
           f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
       )
 
-      # Pompa başına düşen debi (Asıl pompa sayısına bölünür)
       pompa_basina_v = toplam_v_val / asil_adedi
 
       hesap = pompa_hidrolik_hesap(pompa_basina_v, h_val, 0.60, 0.90)
@@ -1155,7 +1153,6 @@ if secilen_psp_listesi:
 
       st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
 
-      # Yalnızca program içinde görünen seçim eğrisi grafiği
       fig, ax = plt.subplots(figsize=(6, 3))
       ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
       p_renk = "green" if poz_durumu == "UYGUN" else "red"
@@ -1926,8 +1923,8 @@ if st.button("Raporu Oluştur (.docx)"):
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-        # İSTEDİĞİNİZ BAŞLIK FORMATI
-        doc.add_heading(f"-Seçilen Pompa: {psp}", level=3)
+        # 1. İstediğiniz başlık formatı (6.2.2.1 PSP-01 TERFİ POMPASI SEÇİMİ)
+        doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
         doc.add_paragraph(
             f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
@@ -1955,12 +1952,15 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_paragraph(
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
+        # 3. İstediğiniz formül formatı (Q_toplam = k * √Y.B =)
         doc.add_paragraph(
-            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B."
-            f" ({pp['k_katsayisi']} * √{pp['toplam_yb']}) ="
+            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
+            f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
             f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
         )
 
+        # 2. İstediğiniz sonuç satırları ve '-Seçilen Pompa:' başlığı formatı
+        doc.add_heading(f"-Seçilen Pompa: {psp}", level=4)
         doc.add_paragraph(
             f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
         )
