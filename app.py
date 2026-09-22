@@ -745,6 +745,40 @@ ek_pissu_on_bilgi = st.text_area(
 # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
 st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
+# --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ---
+st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ESASLARI")
+terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
+_toplu_secim_butonlari(terfi_keys)
+
+terfi_sec_1 = st.checkbox(
+    "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli, parçalayıcı"
+    " bıçaklı pis su atık su terfi pompaları seçilmiştir.",
+    key="terfi_sec_1",
+    value=True,
+)
+terfi_sec_2 = st.checkbox(
+    "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona"
+    " bağlanacaktır.",
+    key="terfi_sec_2",
+    value=True,
+)
+terfi_sec_3 = st.checkbox(
+    "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
+    " seviyesine göre pompalar otomatik devreye girip çıkacaktır.",
+    key="terfi_sec_3",
+    value=True,
+)
+terfi_sec_4 = st.checkbox(
+    "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım kolaylığı"
+    " için sürgülü/kelebek vana kullanılacaktır.",
+    key="terfi_sec_4",
+    value=True,
+)
+
+ek_terfi_notu = st.text_area(
+    "İlave Pis Su Terfi Pompası Maddesi (Her satıra bir tane)", "", height=80
+)
+
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
@@ -1446,12 +1480,46 @@ if st.button("Raporu Oluştur (.docx)"):
       " 50,her tuvalet çıkışı Ø100 olacaktır."
   )
 
+  # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ---
+  doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+
+  terfi_maddeleri = []
+
+  if terfi_sec_1:
+    terfi_maddeleri.append(
+        "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
+        " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
+    )
+  if terfi_sec_2:
+    terfi_maddeleri.append(
+        "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona"
+        " bağlanacaktır."
+    )
+  if terfi_sec_3:
+    terfi_maddeleri.append(
+        "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
+        " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
+    )
+  if terfi_sec_4:
+    terfi_maddeleri.append(
+        "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
+        " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
+    )
+
+  if ek_terfi_notu.strip():
+    for et in ek_terfi_notu.split("\n"):
+      if et.strip():
+        terfi_maddeleri.append(et.strip())
+
+  for tm in terfi_maddeleri:
+    doc.add_paragraph(tm, style="List Bullet")
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Rapor başarıyla güncellendi ve hazırlandı!")
+  st.success("6.2.2 Pis Su Terfi Pompaları Seçimi eklenerek rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
