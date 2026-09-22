@@ -670,9 +670,6 @@ ek_sihhi_on_bilgi = st.text_area(
     "İlave Sıhhi Tesisat Ön Bilgi Maddesi (Her satıra bir tane)", "", height=80
 )
 
-# --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
-
 
 # --- 6.2 PİS SU TESİSATI ---
 st.subheader("6.2 PİS SU TESİSATI ESASLARI")
@@ -743,8 +740,10 @@ ek_pissu_on_bilgi = st.text_area(
     "İlave Pis Su Tesisatı Maddesi (Her satıra bir tane)", "", height=80
 )
 
-# --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
+# ---------------------------------------------------------------------------
+# 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (TABLOLAR GERİ GETİRİLDİ)
+# ---------------------------------------------------------------------------
+st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 
 
 # ---------------------------------------------------------------------------
@@ -921,12 +920,17 @@ secilen_psp_listesi = st.multiselect(
     key="secilen_psp_listesi",
 )
 
+# Poz numarasını rapora aktarıp aktarmama seçeneği
+poz_rapora_eklensin_mi = st.checkbox(
+    "Cihaz Poz Numarasını Rapora Aktar", value=True, key="poz_aktar_chk"
+)
+
 psp_parametreleri = {}
 
 if secilen_psp_listesi:
   st.write(
       "Seçilen terfi pompalarının toplam debisini, basma yüksekliğini ve asıl"
-      " pompa adetlerini girin:"
+      " pompa adetlerini girin (Varsayılan: 1 Asıl + 1 Yedek):"
   )
 
   for psp in secilen_psp_listesi:
@@ -1729,6 +1733,66 @@ if st.button("Raporu Oluştur (.docx)"):
     for psm in pis_su_maddeleri:
       doc.add_paragraph(psm, style="List Bullet")
 
+    # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+    doc.add_heading(
+        "6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
+    )
+    doc.add_paragraph(
+        "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+        " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+    )
+
+    # Tablo 1: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli
+    doc.add_paragraph(
+        "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+    )
+    pissu_t1_data = [
+        ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
+        ("Alaturka veya alafranga hela (rezervuarlı)", "8"),
+        ("Küvet, duş", "7"),
+        ("Basınçlı Yıkayıcı", "10"),
+        ("Evye Sifon Çapı 32 mm", "2"),
+        ("Evye Sifon Çapı 40 mm", "4"),
+        ("Evye Sifon Çapı 50 mm", "6"),
+        ("Yer Süzgeci Sifon Çapı 32 mm", "2"),
+        ("Yer Süzgeci Sifon Çapı 40 mm", "4"),
+        ("Yer Süzgeci Sifon Çapı 50 mm", "6"),
+        ("Pisuar", "1"),
+        ("Lavabo", "2"),
+        ("Bide", "2"),
+        ("Çamaşır-Bulaşık Makinası", "10"),
+    ]
+    t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+    t_pissu1.style = "Table Grid"
+    for r_idx, row in enumerate(pissu_t1_data):
+      for c_idx, val in enumerate(row):
+        t_pissu1.cell(r_idx, c_idx).text = val
+
+    doc.add_paragraph()  # Boşluk
+
+    # Tablo 2: Yükleme Birimi - %1 Eğim - Boru Çapı
+    doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
+    pissu_t2_data = [
+        ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
+        ("0-7", "", "50"),
+        ("7-25", "", "70"),
+        ("25-120", "", "100"),
+        ("120-270", "", "125"),
+        ("270-600", "", "150"),
+        ("600-2400", "", "200"),
+    ]
+    t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+    t_pissu2.style = "Table Grid"
+    for r_idx, row in enumerate(pissu_t2_data):
+      for c_idx, val in enumerate(row):
+        t_pissu2.cell(r_idx, c_idx).text = val
+
+    doc.add_paragraph()
+    doc.add_paragraph(
+        "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+        " 50,her tuvalet çıkışı Ø100 olacaktır."
+    )
+
     # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
     if psp_parametreleri:
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
@@ -1750,7 +1814,8 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_paragraph(f"Güç         = {pp['guc']:.2f} kW")
         doc.add_paragraph(f"Adet        = {pp['adet_str']}")
         doc.add_paragraph(f"Tip         = {pp['tip']}")
-        doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
+        if poz_rapora_eklensin_mi:
+          doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
