@@ -744,6 +744,7 @@ ek_pissu_on_bilgi = st.text_area(
     "İlave Pis Su Tesisatı Maddesi (Her satıra bir tane)", "", height=80
 )
 
+
 # ---------------------------------------------------------------------------
 # 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (ORİJİNAL TABLOLAR)
 # ---------------------------------------------------------------------------
@@ -1127,8 +1128,20 @@ if secilen_psp_listesi:
       hesaplanan_q_lps = (
           k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
       )
-      toplam_v_val = round(hesaplanan_q_lps * 3.6, 2)
-      pompa_basina_v = round(toplam_v_val / asil_adedi, 2)
+      hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
+
+      # Kullanıcının otomatik gelen debiyi isterse manuel düzenleyebilmesi/yuvarlayabilmesi için number_input
+      toplam_v_val = st.number_input(
+          f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
+          min_value=1.0,
+          max_value=100.0,
+          value=max(1.0, hesaplanan_q_m3h),
+          step=0.5,
+          key=f"{psp}_v_num",
+      )
+
+      # Pompa başına düşen debi (Asıl pompa sayısına bölünür)
+      pompa_basina_v = toplam_v_val / asil_adedi
 
       hesap = pompa_hidrolik_hesap(pompa_basina_v, h_val, 0.60, 0.90)
       hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(
@@ -1138,22 +1151,27 @@ if secilen_psp_listesi:
           pompa_basina_v, h_val
       )
 
-      st.markdown(
-          f"📊 **{psp} Hesap Adımları:** $\\sum Y.B. = {toplam_yb}$ | "
-          f"$Q_{{toplam}} = {k_katsayisi} \\times \\sqrt{{{toplam_yb}}} ="
-          f" {hesaplanan_q_lps:.2f}$ L/s ($ {toplam_v_val} $ m³/h) | "
-          f"**Tek Pompa (Asıla Bölünen):** {pompa_basina_v:.2f} m³/h"
-      )
-
-      if poz_durumu == "UYGUN":
-        st.success(f"✅ Uygun Poz: **{hesaplanan_poz}**")
-      else:
-        st.error(
-            "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
-            " dışındadır! Asıl pompa sayısını artırın."
+      with c2:
+        st.metric(
+            "Tek Pompa Debisi (Asıla Bölünen)", f"{pompa_basina_v:.2f} m³/h"
+        )
+        st.metric(
+            "Tek Pompa Elektrik Gücü", f"{hesap['motor_secim_kw']:.2f} kW"
         )
 
-      # Program İçi Grafik Önizlemesi
+        if poz_durumu == "UYGUN":
+          st.success(
+              f"✅ Uygun Poz: **{hesaplanan_poz}** (Eğri Sınırları İçinde)"
+          )
+        else:
+          st.error(
+              "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
+              " dışındadır! Asıl pompa sayısını artırın."
+          )
+
+      st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
+
+      # Yalnızca program içinde görünen seçim eğrisi grafiği
       fig, ax = plt.subplots(figsize=(6, 3))
       ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
       p_renk = "green" if poz_durumu == "UYGUN" else "red"
@@ -1169,7 +1187,9 @@ if secilen_psp_listesi:
       ax.set_ylim(2, 22)
       ax.set_xlabel("Debi Q [m³/h]")
       ax.set_ylabel("Basma Yüksekliği H [mSS]")
-      ax.set_title(f"{psp} Program İçi Sınır Kontrolü", fontsize=9)
+      ax.set_title(
+          f"{psp} Program İçi Pompa Seçim ve Sınır Kontrolü", fontsize=9
+      )
       ax.grid(True, alpha=0.3)
       ax.legend(fontsize=7)
       fig.tight_layout()
@@ -1185,6 +1205,27 @@ if secilen_psp_listesi:
           "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su Terfi"
           " Pompası"
       )
+
+      # Seçilen armatür listesini kaydetme
+      armatur_listesi = []
+      if adet_hela > 0:
+        armatur_listesi.append(f"Hela / Klozet: {adet_hela} Adet")
+      if adet_lavabo > 0:
+        armatur_listesi.append(f"Lavabo / Bide: {adet_lavabo} Adet")
+      if adet_banyo > 0:
+        armatur_listesi.append(f"Küvet / Duş: {adet_banyo} Adet")
+      if adet_evye > 0:
+        armatur_listesi.append(f"Eviye: {adet_evye} Adet")
+      if adet_suzgec > 0:
+        armatur_listesi.append(f"Yer Süzgeci: {adet_suzgec} Adet")
+      if adet_otopark > 0:
+        armatur_listesi.append(f"Otopark Süzgeci: {adet_otopark} Adet")
+      if adet_basincli > 0:
+        armatur_listesi.append(f"Basınçlı Yıkayıcı: {adet_basincli} Adet")
+      if adet_camasir > 0:
+        armatur_listesi.append(f"Çamaşır/Bulaşık Makinası: {adet_camasir} Adet")
+      if adet_pisuvar > 0:
+        armatur_listesi.append(f"Pisuar: {adet_pisuvar} Adet")
 
       psp_parametreleri[psp] = {
           "bina_tipi": bina_tipi,
@@ -1202,6 +1243,7 @@ if secilen_psp_listesi:
           "poz": hesaplanan_poz,
           "poz_durumu": poz_durumu,
           "poz_tanim": hesaplanan_tanim,
+          "armatur_listesi": armatur_listesi,
       }
 
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
@@ -1246,7 +1288,8 @@ if st.button("Raporu Oluştur (.docx)"):
   if gecersiz_var:
     st.error(
         "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
-        " tek pompa debisi poz sınırları dışındadır."
+        " tek pompa debisi poz sınırları dışındadır. Lütfen asıl pompa sayısını"
+        " veya debiyi kontrol edin."
     )
   else:
     if not is_adi:
@@ -1743,8 +1786,8 @@ if st.button("Raporu Oluştur (.docx)"):
           " hasadı tesisatı yapılmıştır."
       )
 
-    if ek_sihhi_on_bilgi.strip():
-      for es in ek_sihhi_on_bilgi.split("\n"):
+    if ek_pissu_on_bilgi.strip():
+      for es in ek_pissu_on_bilgi.split("\n"):
         if es.strip():
           sihhi_maddeler.append(es.strip())
 
@@ -1893,8 +1936,8 @@ if st.button("Raporu Oluştur (.docx)"):
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
       doc.add_paragraph(
           "Pis su terfi pompalarının çalışma noktaları; bina kullanım türü,"
-          " armatür yükleme birimleri ve eşzamanlılık katsayıları dikkate"
-          " alınarak ayrı ayrı hesaplanmıştır."
+          " armatür yükleme birimleri ve asıl pompa sayılarına göre ayrı ayrı"
+          " hesaplanmıştır."
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
@@ -1903,15 +1946,20 @@ if st.button("Raporu Oluştur (.docx)"):
         )
 
         doc.add_paragraph(
+            f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
+            f" {pp['k_katsayisi']})"
+        )
+        doc.add_paragraph("• Seçilen Armatür Adetleri ve Yükleme Birimleri:")
+        for arm in pp["armatur_listesi"]:
+          doc.add_paragraph(f"  - {arm}", style="List Bullet")
+        doc.add_paragraph(
             f"• Toplam Yükleme Birimi (Y.B.) = {pp['toplam_yb']} Y.B."
         )
         doc.add_paragraph(
-            f"• Eşzamanlık Faktörü (k) = {pp['k_katsayisi']} ({pp['bina_tipi']})"
+            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B. ="
+            f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
         )
-        doc.add_paragraph(
-            f"• Toplam Debi Q_toplam = k * √Y.B. ="
-            f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m3/h)"
-        )
+
         doc.add_paragraph(
             f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
         )
@@ -1927,7 +1975,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("Özel hesaplamalı ve formüllü rapor başarıyla hazırlandı!")
+    st.success("Armatür listeleri ve hesap formülleri eklenerek rapor hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
