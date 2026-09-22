@@ -1398,13 +1398,12 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
   doc.add_paragraph(
       "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-      " tayinlerinde aşağıdaki tablolar esas alınmıştır[cite: 3]:"
+      " tayinlerinde aşağıdaki tablolar esas alınmıştır."
   )
 
   # Tablo 1: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli
   doc.add_paragraph(
       "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-      "[cite: 3]"
   )
   pissu_t1_data = [
       ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
@@ -1431,7 +1430,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.add_paragraph()  # Boşluk
 
   # Tablo 2: Yükleme Birimi - %1 Eğim - Boru Çapı
-  doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları[cite: 3]")
+  doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
   pissu_t2_data = [
       ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
       ("0-7", "", "50"),
@@ -1449,7 +1448,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
   doc.add_paragraph()
   doc.add_paragraph(
-      "NOT: Lavabolar Ø70 her tuvalet çıkışı Ø 100 lavabolar iniş Ø 32"
+      "NOT: Lavabolar Ø70, her tuvalet çıkışı Ø 100, Lavabolar iniş Ø 50"
   )
 
   # Hafızada dosya oluşturma
@@ -1457,7 +1456,10 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.2.1 Pis Su Yükleme Birimleri ve Tablolarıyla rapor hazırlandı!")
+  st.success(
+      "6.2.1 Pis Su Yükleme Birimleri, tablolar ve güncel NOT ile rapor"
+      " hazırlandı!"
+  )
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
