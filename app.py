@@ -983,31 +983,46 @@ if secilen_psp_listesi:
     with st.expander(
         f"⚙️ {psp} Özel Debi ve Güç Hesap Modülü", expanded=True
     ):
-      sc1, sc2 = st.columns(2)
-      with sc1:
-        bina_tipi = st.selectbox(
-            f"{psp} Bina Kullanım Türü",
-            [
-                "Konut / Ev",
-                "İş Yeri / Ofis",
-                "Otel / Konaklama",
-                "Hastane / Sağlık",
-                "Okul / Eğitim",
-            ],
-            key=f"{psp}_bina",
-        )
-      with sc2:
-        k_varsayilan = (
-            0.5 if bina_tipi in ["Konut / Ev", "Okul / Eğitim"] else 0.7
-        )
-        k_katsayisi = st.number_input(
-            f"{psp} Eşzamanlık Katsayısı (k)",
-            min_value=0.1,
-            max_value=1.0,
-            value=k_varsayilan,
-            step=0.05,
-            key=f"{psp}_k",
-        )
+      bina_tipi = st.selectbox(
+          f"{psp} Bina Kullanım Türü",
+          [
+              (
+                  "Evler, restoranlar, misafir evleri, oteller, ofis binaları"
+                  " (Düzensiz kullanım) [k=0.5]"
+              ),
+              (
+                  "Hastaneler, geniş gıda tesisleri, oteller vb. [k=0.7]"
+              ),
+              (
+                  "Okullar, çamaşırhaneler, umumi tuvaletler ve duşlar"
+                  " (Düzenli/Sık kullanım) [k=1.0]"
+              ),
+              (
+                  "Endüstriyel laboratuvarlar vb. özel kullanım tesisleri"
+                  " [k=1.2]"
+              ),
+          ],
+          key=f"{psp}_bina",
+      )
+
+      # Otomatik k katsayısı atama mantığı
+      if "Düzensiz" in bina_tipi:
+        k_varsayilan = 0.5
+      elif "Hastaneler" in bina_tipi:
+        k_varsayilan = 0.7
+      elif "Okullar" in bina_tipi:
+        k_varsayilan = 1.0
+      else:
+        k_varsayilan = 1.2
+
+      k_katsayisi = st.number_input(
+          f"{psp} Eşzamanlık Katsayısı (k)",
+          min_value=0.1,
+          max_value=2.0,
+          value=k_varsayilan,
+          step=0.05,
+          key=f"{psp}_k",
+      )
 
       st.write(f"**{psp} için Armatür Adetleri:**")
       ac1, ac2, ac3 = st.columns(3)
@@ -1039,7 +1054,7 @@ if secilen_psp_listesi:
             key=f"{psp}_oto",
         )
 
-      ac4, ac5 = st.columns(2)
+      ac4, ac5, ac6 = st.columns(3)
       with ac4:
         adet_basincli = st.number_input(
             f"{psp} Basınçlı Yıkayıcı (10 Y.B.)",
@@ -1047,46 +1062,39 @@ if secilen_psp_listesi:
             value=0,
             key=f"{psp}_bas",
         )
+      with ac5:
         adet_camasir = st.number_input(
             f"{psp} Çamaşır/Bulaşık (10 Y.B.)",
             min_value=0,
             value=1,
             key=f"{psp}_cam",
         )
-      with ac5:
+      with ac6:
         adet_pisuvar = st.number_input(
             f"{psp} Pisuar (1 Y.B.)", min_value=0, value=0, key=f"{psp}_pis"
         )
-        h_val = st.number_input(
-            f"{psp} Basma Yüksekliği (H) [mSS]",
-            min_value=1.0,
-            max_value=30.0,
-            value=12.0,
-            step=0.5,
-            key=f"{psp}_h_num",
-        )
-
-      bc1, bc2 = st.columns(2)
-      with bc1:
-        asil_adedi = st.selectbox(
-            f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=0, key=f"{psp}_asil"
-        )
-      with bc2:
-        yedek_adedi = st.selectbox(
-            f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
-        )
 
       # Yükleme Birimi ve Eşzamanlı Debi Formülasyonu
+      yb_hela = adet_hela * 8
+      yb_lavabo = adet_lavabo * 2
+      yb_banyo = adet_banyo * 7
+      yb_evye = adet_evye * 4
+      yb_suzgec = adet_suzgec * 2
+      yb_otopark = adet_otopark * 6
+      yb_basincli = adet_basincli * 10
+      yb_camasir = adet_camasir * 10
+      yb_pisuvar = adet_pisuvar * 1
+
       toplam_yb = (
-          (adet_hela * 8)
-          + (adet_lavabo * 2)
-          + (adet_banyo * 7)
-          + (adet_evye * 4)
-          + (adet_suzgec * 2)
-          + (adet_otopark * 6)
-          + (adet_basincli * 10)
-          + (adet_camasir * 10)
-          + (adet_pisuvar * 1)
+          yb_hela
+          + yb_lavabo
+          + yb_banyo
+          + yb_evye
+          + yb_suzgec
+          + yb_otopark
+          + yb_basincli
+          + yb_camasir
+          + yb_pisuvar
       )
 
       hesaplanan_q_lps = (
@@ -1094,7 +1102,8 @@ if secilen_psp_listesi:
       )
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
-      # Debi girdisi
+      st.markdown("---")
+      # DÜZGÜN SIRALI GİRDİLER (İç içe geçme önlendi, alt alta düzgün sıra)
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
           min_value=1.0,
@@ -1102,6 +1111,22 @@ if secilen_psp_listesi:
           value=max(1.0, hesaplanan_q_m3h),
           step=0.5,
           key=f"{psp}_v_num",
+      )
+
+      h_val = st.number_input(
+          f"{psp} Basma Yüksekliği (H) [mSS]",
+          min_value=1.0,
+          max_value=30.0,
+          value=12.0,
+          step=0.5,
+          key=f"{psp}_h_num",
+      )
+
+      asil_adedi = st.selectbox(
+          f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=0, key=f"{psp}_asil"
+      )
+      yedek_adedi = st.selectbox(
+          f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
       )
 
       # Pompa başına düşen debi (Asıl pompa sayısına bölünür)
@@ -1130,7 +1155,7 @@ if secilen_psp_listesi:
 
       st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
 
-      # Yalnızca program içinde görünen seçim eğrisi grafiği
+      # Program İçi Grafik Önizlemesi
       fig, ax = plt.subplots(figsize=(6, 3))
       ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
       p_renk = "green" if poz_durumu == "UYGUN" else "red"
@@ -1165,25 +1190,30 @@ if secilen_psp_listesi:
           " Pompası"
       )
 
-      armatur_listesi = []
+      # Rapor için armatür veri listesi (Cinsi, Y.B, Adet, Çarpım)
+      tablo_satirlari = []
       if adet_hela > 0:
-        armatur_listesi.append(f"Hela / Klozet: {adet_hela} Adet")
+        tablo_satirlari.append(("Hela / Klozet", 8, adet_hela, yb_hela))
       if adet_lavabo > 0:
-        armatur_listesi.append(f"Lavabo / Bide: {adet_lavabo} Adet")
+        tablo_satirlari.append(("Lavabo / Bide", 2, adet_lavabo, yb_lavabo))
       if adet_banyo > 0:
-        armatur_listesi.append(f"Küvet / Duş: {adet_banyo} Adet")
+        tablo_satirlari.append(("Küvet / Duş", 7, adet_banyo, yb_banyo))
       if adet_evye > 0:
-        armatur_listesi.append(f"Eviye: {adet_evye} Adet")
+        tablo_satirlari.append(("Eviye", 4, adet_evye, yb_evye))
       if adet_suzgec > 0:
-        armatur_listesi.append(f"Yer Süzgeci: {adet_suzgec} Adet")
+        tablo_satirlari.append(("Yer Süzgeci", 2, adet_suzgec, yb_suzgec))
       if adet_otopark > 0:
-        armatur_listesi.append(f"Otopark Süzgeci: {adet_otopark} Adet")
+        tablo_satirlari.append(("Otopark Süzgeci", 6, adet_otopark, yb_otopark))
       if adet_basincli > 0:
-        armatur_listesi.append(f"Basınçlı Yıkayıcı: {adet_basincli} Adet")
+        tablo_satirlari.append(
+            ("Basınçlı Yıkayıcı", 10, adet_basincli, yb_basincli)
+        )
       if adet_camasir > 0:
-        armatur_listesi.append(f"Çamaşır/Bulaşık Makinası: {adet_camasir} Adet")
+        tablo_satirlari.append(
+            ("Çamaşır/Bulaşık Makinası", 10, adet_camasir, yb_camasir)
+        )
       if adet_pisuvar > 0:
-        armatur_listesi.append(f"Pisuar: {adet_pisuvar} Adet")
+        tablo_satirlari.append(("Pisuar", 1, adet_pisuvar, yb_pisuvar))
 
       psp_parametreleri[psp] = {
           "bina_tipi": bina_tipi,
@@ -1201,7 +1231,7 @@ if secilen_psp_listesi:
           "poz": hesaplanan_poz,
           "poz_durumu": poz_durumu,
           "poz_tanim": hesaplanan_tanim,
-          "armatur_listesi": armatur_listesi,
+          "tablo_satirlari": tablo_satirlari,
       }
 
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
@@ -1858,12 +1888,7 @@ if st.button("Raporu Oluştur (.docx)"):
       doc.add_paragraph(psm, style="List Bullet")
 
     # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-    doc.add_heading(
-        "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini"
-        if False
-        else "6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini",
-        level=2,
-    )
+    doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri", level=2)
     doc.add_paragraph(
         "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
         " tayinlerinde aşağıdaki tablolar esas alınmıştır."
@@ -1902,22 +1927,55 @@ if st.button("Raporu Oluştur (.docx)"):
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
+        # İstediğiniz gibi başlık önüne '-Seçilen Pompa:' eklendi
         doc.add_heading(
-            f"6.2.2.{idx} {psp} PİS SU TERFİ POMPA SEÇİMİ", level=3
+            f"6.2.2.{idx} -Seçilen Pompa: {psp} PİS SU TERFİ POMPA SEÇİMİ",
+            level=3,
         )
 
         doc.add_paragraph(
             f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
             f" {pp['k_katsayisi']})"
         )
-        doc.add_paragraph("• Seçilen Armatür Adetleri ve Yükleme Birimleri:")
-        for arm in pp["armatur_listesi"]:
-          doc.add_paragraph(f"  - {arm}", style="List Bullet")
+        doc.add_paragraph(
+            "• Seçilen Armatür Adetleri ve Yükleme Birimleri (Tablo):"
+        )
+
+        # Armatürleri detaylı tablo olarak rapora ekleme (Armatür Cinsi, Y.B., Adet, Çarpım)
+        arm_tablo = doc.add_table(rows=1, cols=4)
+        arm_tablo.style = "Table Grid"
+        arm_tablo.rows[0].cells[0].text = "Armatür Cinsi"
+        arm_tablo.rows[0].cells[1].text = "Yükleme Birimi (Y.B.)"
+        arm_tablo.rows[0].cells[2].text = "Adet"
+        arm_tablo.rows[0].cells[3].text = "Toplam Çarpım (Y.B.)"
+
+        # Birim eşleştirmeleri sözlüğü
+        yb_degerleri = {
+            "Hela / Klozet": 8,
+            "Lavabo / Bide": 2,
+            "Küvet / Duş": 7,
+            "Eviye": 4,
+            "Yer Süzgeci": 2,
+            "Otopark Süzgeci": 6,
+            "Basınçlı Yıkayıcı": 10,
+            "Çamaşır/Bulaşık Makinası": 10,
+            "Pisuar": 1,
+        }
+
+        for satirlik in pp["tablo_satirlari"]:
+          cinsi, birim_yb, adet_sayisi, carpim_yb = satirlik
+          row_cells = arm_tablo.add_row().cells
+          row_cells[0].text = cinsi
+          row_cells[1].text = str(birim_yb)
+          row_cells[2].text = str(adet_sayisi)
+          row_cells[3].text = str(carpim_yb)
+
         doc.add_paragraph(
             f"• Toplam Yükleme Birimi (Y.B.) = {pp['toplam_yb']} Y.B."
         )
         doc.add_paragraph(
-            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B. ="
+            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B."
+            f" ({pp['k_katsayisi']} * √{pp['toplam_yb']}) ="
             f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
         )
 
