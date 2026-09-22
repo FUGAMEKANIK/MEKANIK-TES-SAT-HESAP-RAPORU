@@ -7,6 +7,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+import matplotlib.pyplot as plt
 import streamlit as st
 
 # Türkçe ay isimleri için sözlük
@@ -763,17 +764,112 @@ secilen_psp_listesi = st.multiselect(
     default=["PSP-01"],
 )
 
+
+def otomatik_poz_ve_guc_belirle(v_degeri, h_degeri):
+  try:
+    v = float(v_degeri)
+    h = float(h_degeri)
+  except ValueError:
+    v, h = 10.0, 12.0
+
+  # Elektrik Motor Gücü Hesabı (kW)
+  # N = (V * H * 1000 * 9.81) / (3600 * 1000 * eta) * Güvenlik Katsayısı (1.2)
+  # Su yoğunluğu ~1000 kg/m3, Pompa hidrolik verimi ~0.55
+  eta = 0.55
+  guc_kW = (v * h * 9.81 * 1.2) / (3600 * eta)
+  guc_kW = max(0.75, round(guc_kW, 2))  # Minimum 0.75 kW
+
+  # Otomatik Poz Belirleme (25.360.1301 - 25.360.1308 arası)
+  if v <= 10.0:
+    if h <= 10.0:
+      poz_no = "25.360.1301"
+      poz_tanim = (
+          "Debisi 5.0-10 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    elif h <= 15.0:
+      poz_no = "25.360.1302"
+      poz_tanim = (
+          "Debisi 5.0-10 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    else:
+      poz_no = "25.360.1303"
+      poz_tanim = (
+          "Debisi 5.0-10 m3/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+  elif v <= 15.0:
+    if h <= 10.0:
+      poz_no = "25.360.1304"
+      poz_tanim = (
+          "Debisi 10-15 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    elif h <= 15.0:
+      poz_no = "25.360.1305"
+      poz_tanim = (
+          "Debisi 10-15 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    else:
+      poz_no = "25.360.1305"
+      poz_tanim = (
+          "Debisi 10-15 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+  else:
+    if h <= 10.0:
+      poz_no = "25.360.1306"
+      poz_tanim = (
+          "Debisi 15-20 m3/h, basıncı 5.0-10 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    elif h <= 15.0:
+      poz_no = "25.360.1307"
+      poz_tanim = (
+          "Debisi 15-20 m3/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+    else:
+      poz_no = "25.360.1308"
+      poz_tanim = (
+          "Debisi 15-20 m3/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
+          " tip pis su pompası"
+      )
+
+  return str(guc_kW), poz_no, poz_tanim
+
+
 psp_parametreleri = {}
 if secilen_psp_listesi:
   st.write(
-      "Seçilen Terfi Pompalarına ait teknik değerleri (V, H, Güç vb.)"
-      " düzenleyin:"
+      "Seçilen Terfi Pompalarına ait teknik değerleri girin (Güç ve Poz No"
+      " otomatik hesaplanır):"
   )
   for psp in secilen_psp_listesi:
-    with st.expander(f"⚙️ {psp} Teknik Parametreleri"):
-      v_val = st.text_input(f"{psp} Debi (V)", "10", key=f"{psp}_v")
-      h_val = st.text_input(f"{psp} Basma Yüksekliği (H)", "12", key=f"{psp}_h")
-      guc_val = st.text_input(f"{psp} Motor Gücü", "1.5", key=f"{psp}_guc")
+    with st.expander(f"⚙️ {psp} Teknik Parametreleri ve Seçim Eğrisi"):
+      c_col1, c_col2 = st.columns(2)
+      with c_col1:
+        v_val = st.text_input(f"{psp} Debi (V) [m3/h]", "10", key=f"{psp}_v")
+        h_val = st.text_input(
+            f"{psp} Basma Yüksekliği (H) [mSS]", "12", key=f"{psp}_h"
+        )
+
+      otomatik_guc, otomatik_poz, otomatik_tanim = otomatik_poz_ve_guc_belirle(
+          v_val, h_val
+      )
+
+      with c_col2:
+        guc_val = st.text_input(
+            f"{psp} Motor Gücü (kW) [Otomatik]",
+            otomatik_guc,
+            key=f"{psp}_guc",
+        )
+        poz_val = st.text_input(
+            f"{psp} Cihaz Poz No [Otomatik]", otomatik_poz, key=f"{psp}_poz"
+        )
+
       adet_val = st.text_input(
           f"{psp} Adet", "2 (1 Aktif + 1 Yedek)", key=f"{psp}_adet"
       )
@@ -785,9 +881,46 @@ if secilen_psp_listesi:
           ),
           key=f"{psp}_tip",
       )
-      poz_val = st.text_input(
-          f"{psp} Cihaz Poz No", "25.450.1200", key=f"{psp}_poz"
-      )
+
+      st.info(f"📌 Seçilen Bakanlık Poz Tanımı: _{otomatik_tanim}_")
+
+      # Program içinde canlı Pompa Karakteristik Eğrisi Gösterimi
+      try:
+        v_num = float(v_val)
+        h_num = float(h_val)
+        fig, ax = plt.subplots(figsize=(6, 3))
+        # Örnek pompa eğrisi simülasyonu
+        q_arr = [0, v_num * 0.5, v_num, v_num * 1.5, v_num * 2.0]
+        h_arr = [
+            h_num * 1.3,
+            h_num * 1.15,
+            h_num,
+            h_num * 0.7,
+            h_num * 0.3,
+        ]
+        ax.plot(
+            q_arr,
+            h_arr,
+            color="blue",
+            linewidth=2,
+            label="Pompa Karakteristik Eğrisi",
+        )
+        ax.plot(
+            [v_num],
+            [h_num],
+            marker="ro",
+            markersize=8,
+            label=f"Çalışma Noktası ({v_num} m3/h, {h_num} mSS)",
+        )
+        ax.set_title(f"{psp} Seçim ve Performans Eğrisi")
+        ax.set_xlabel("Debi (m3/h)")
+        ax.set_ylabel("Basma Yüksekliği (mSS)")
+        ax.grid(True, linestyle="--", alpha=0.6)
+        ax.legend(fontsize=8)
+        st.pyplot(fig)
+      except ValueError:
+        pass
+
       psp_parametreleri[psp] = {
           "v": v_val,
           "h": h_val,
@@ -1566,7 +1699,7 @@ if st.button("Raporu Oluştur (.docx)"):
   for tm in terfi_maddeleri:
     doc.add_paragraph(tm, style="List Bullet")
 
-  # Dinamik PSP Alt Başlıkları ve İstenen Parametre Formatı
+  # Dinamik PSP Alt Başlıkları ve Eşleşen Pozlar
   if secilen_psp_listesi:
     for idx, psp_isim in enumerate(secilen_psp_listesi, start=1):
       p_vals = psp_parametreleri.get(
@@ -1580,7 +1713,7 @@ if st.button("Raporu Oluştur (.docx)"):
                   "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su"
                   " Terfi Pompası"
               ),
-              "poz": "25.450.1200",
+              "poz": "25.360.1302",
           },
       )
 
@@ -1599,7 +1732,9 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Tekrarlar temizlendi ve rapor hatasız olarak hazırlandı!")
+  st.success(
+      "Otomatik güç hesabı ve poz tayini ile rapor hatasız hazırlandı!"
+  )
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
