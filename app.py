@@ -1,6 +1,7 @@
 from datetime import datetime
 import io
 import json
+import math
 import os
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -744,33 +745,76 @@ ek_pissu_on_bilgi = st.text_area(
 )
 
 # ---------------------------------------------------------------------------
-# 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (ORİJİNAL TABLOLAR)
+# 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (ORİJİNAL TABLOLAR)
 # ---------------------------------------------------------------------------
-st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
+st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 st.write(
-    "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-    " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+    "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
+    " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır."
 )
 
+t1_data = [
+    ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+    ("15", "Ø20", '1/2"', "(0-3.0)"),
+    ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+    ("25", "Ø32", '1"', "(8.0-20.0)"),
+    ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+    ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+    ("50", "Ø63", '2"', "(50.0-144.0)"),
+    ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+    ("80", "Ø90", '3"', "(368.0-1156.0)"),
+    ("100", "Ø125", '4"', "(1156-4900)"),
+    ("125", "-", '5"', "(4.900-14.400)"),
+    ("150", "-", '6"', "(14.400-40.000)"),
+    ("200", "-", '8"', "(40.000-484.000)"),
+    ("250", "-", '10"', "(484.000-518.400)"),
+    ("300", "-", '12"', "(518.400-1.440.000)"),
+]
+
+t2_data = [
+    ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
+    ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
+    ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
+    ("Bide Rezervuarı", "0.13", "0.25"),
+    ("Bulaşık Makinası", "0.40", "2.50"),
+    ("Çamaşır Makinası", "0.40", "2.50"),
+    ("Duş", "0.40", "2.50"),
+    ("1 Gözlü Eviye", "0.25", "1.00"),
+    ("2 Gözlü Eviye", "0.31", "1.50"),
+    ("Hela Rezervuarı", "0.13", "0.25"),
+    ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
+    ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
+    ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
+    ("Kurna", "0.40", "2.50"),
+    ("Lavabo", "0.18", "0.50"),
+    ("DN15 mm musluk", "0.31", "1.50"),
+    ("DN20 mm musluk", "0.71", "8.00"),
+    ("DN25 mm musluk", "1.06", "18.00"),
+    ("Pisuvar", "0.13", "0.25"),
+    ("Şofben (10lt/dk)", "0.18", "0.50"),
+    ("Şofben (16lt/dk)", "0.25", "1.00"),
+    ("Şofben (26lt/dk)", "0.43", "3.00"),
+    ("Taharet Musluğu", "0.13", "0.25"),
+    ("Termosifon", "0.40", "2.50"),
+]
+
+
+# ---------------------------------------------------------------------------
+# 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ (TS 826 TABLOLARI)
+# ---------------------------------------------------------------------------
+st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 pissu_t1_data = [
     ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
-    ("Alaturka veya alafranga hela (rezervuarlı)", "8"),
-    ("Küvet, duş", "7"),
+    ("Hela / Klozet", "8"),
+    ("Küvet / Duş", "7"),
+    ("Lavabo / Bide", "2"),
+    ("Eviye", "4"),
+    ("Yer Süzgeci", "2"),
+    ("Otopark Süzgeci", "6"),
     ("Basınçlı Yıkayıcı", "10"),
-    ("Evye Sifon Çapı 32 mm", "2"),
-    ("Evye Sifon Çapı 40 mm", "4"),
-    ("Evye Sifon Çapı 50 mm", "6"),
-    ("Yer Süzgeci Sifon Çapı 32 mm", "2"),
-    ("Yer Süzgeci Sifon Çapı 40 mm", "4"),
-    ("Yer Süzgeci Sifon Çapı 50 mm", "6"),
-    ("Pisuar", "1"),
-    ("Lavabo", "2"),
-    ("Bide", "2"),
     ("Çamaşır-Bulaşık Makinası", "10"),
+    ("Pisuar", "1"),
 ]
-# Görüntüleme için st.table kullanabiliriz
-st.markdown("**Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli**")
-
 pissu_t2_data = [
     ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
     ("0-7", "", "50"),
@@ -783,81 +827,11 @@ pissu_t2_data = [
 
 
 # ---------------------------------------------------------------------------
-# YENİ EKLENEN: 6.2.2 PİS SU TERFİ POMPASI DEBİ HESAPLAYICI SEKME / GİRDİLERİ
+# 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
 # ---------------------------------------------------------------------------
 st.subheader(
-    "6.2.2 Pis Su Terfi Pompası Debi Hesabı ve Otomatik Seçim Modülü"
+    "6.2.2 Her Bir Terfi Pompası İçin Özel Debi ve Güç Hesap Modülü"
 )
-
-col_h1, col_h2 = st.columns(2)
-with col_h1:
-  bina_tipi = st.selectbox(
-      "Bina Kullanım Türü (Eşzamanlık katsayısı için):",
-      [
-          "Konut / Ev",
-          "İş Yeri / Ofis",
-          "Otel / Konaklama",
-          "Hastane / Sağlık",
-          "Okul / Eğitim",
-      ],
-      index=0,
-  )
-with col_h2:
-  # Bina tipine göre standart eşzamanlık katsayısı (k) önerisi
-  k_varsayilan = (
-      0.5 if bina_tipi in ["Konut / Ev", "Okul / Eğitim"] else 0.7
-  )
-  k_katsayisi = st.number_input(
-      "Eşzamanlık Katsayısı (k)",
-      min_value=0.1,
-      max_value=1.0,
-      value=k_varsayilan,
-      step=0.05,
-  )
-
-st.write("Terfi çukuruna atık su bırakan armatür ve süzgeç adetleri:")
-col_arm1, col_arm2, col_arm3 = st.columns(3)
-with col_arm1:
-  adet_lavabo = st.number_input("Lavabo Adeti (2 Y.B.)", min_value=0, value=10)
-  adet_evye = st.number_input("Eviye Adeti (4 Y.B.)", min_value=0, value=2)
-with col_arm2:
-  adet_banyo = st.number_input("Banyo / Duş Adeti (7 Y.B.)", min_value=0, value=4)
-  adet_suzgec = st.number_input(
-      "Yer Süzgeci Adeti (4 Y.B.)", min_value=0, value=6
-  )
-with col_arm3:
-  adet_otopark = st.number_input(
-      "Otopark Süzgeci Adeti (10 Y.B.)", min_value=0, value=2
-  )
-  adet_hela = st.number_input("Hela / Klozet Adeti (8 Y.B.)", min_value=0, value=6)
-
-# Yükleme Birimi (Y.B.) Toplam Hesaplama (TS 826 Değerleri Baz Alınmıştır)
-toplam_yb = (
-    (adet_lavabo * 2)
-    + (adet_evye * 4)
-    + (adet_banyo * 7)
-    + (adet_suzgec * 4)
-    + (adet_otopark * 10)
-    + (adet_hela * 8)
-)
-
-# Hesaplanan Debiler: Q = k * sqrt(Y.B.) [lt/sn] -> m3/h cinsine çevrim (3.6 ile çarpım)
-import math
-
-hesaplanan_q_lps = k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
-hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
-
-st.markdown(
-    f"📊 **Hesap Özeti:** Toplam Yükleme Birimi = **{toplam_yb} Y.B.** |"
-    f" Hesaplanan Eşzamanlı Debi = **{hesaplanan_q_lps:.2f} L/s** (**"
-    f" {hesaplanan_q_m3h} m³/h**)"
-)
-
-
-# ---------------------------------------------------------------------------
-# 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ
-# ---------------------------------------------------------------------------
-st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ")
 
 POZ_POMPA_TABLOSU = [
     {
@@ -1028,7 +1002,6 @@ secilen_psp_listesi = st.multiselect(
     key="secilen_psp_listesi",
 )
 
-# Poz numarasını rapora aktarıp aktarmama seçeneği
 poz_rapora_eklensin_mi = st.checkbox(
     "Cihaz Poz Numarasını Rapora Aktar", value=True, key="poz_aktar_chk"
 )
@@ -1037,26 +1010,87 @@ psp_parametreleri = {}
 
 if secilen_psp_listesi:
   st.write(
-      "Yukarıda hesaplanan toplam debi otomatik aktarılmıştır. İsterseniz"
-      " debiyi, yüksekliği ve adetleri manuel olarak"
-      " değiştirebilirsiniz/yuvarlayabilirsiniz:"
+      "Her bir terfi pompası çukuru için bina tipi, armatürler, k katsayısı ve"
+      " asıl/yedek adetlerini ayrı ayrı girin:"
   )
 
   for psp in secilen_psp_listesi:
     with st.expander(
-        f"⚙️ {psp} Teknik Parametreleri ve Eğri Kontrolü", expanded=True
+        f"⚙️ {psp} Özel Debi ve Güç Hesap Modülü", expanded=True
     ):
-      c1, c2 = st.columns(2)
+      sc1, sc2 = st.columns(2)
+      with sc1:
+        bina_tipi = st.selectbox(
+            f"{psp} Bina Kullanım Türü",
+            [
+                "Konut / Ev",
+                "İş Yeri / Ofis",
+                "Otel / Konaklama",
+                "Hastane / Sağlık",
+                "Okul / Eğitim",
+            ],
+            key=f"{psp}_bina",
+        )
+      with sc2:
+        k_varsayilan = (
+            0.5 if bina_tipi in ["Konut / Ev", "Okul / Eğitim"] else 0.7
+        )
+        k_katsayisi = st.number_input(
+            f"{psp} Eşzamanlık Katsayısı (k)",
+            min_value=0.1,
+            max_value=1.0,
+            value=k_varsayilan,
+            step=0.05,
+            key=f"{psp}_k",
+        )
 
-      with c1:
-        # Hesaplanan toplam debi varsayılan olarak verilir, kullanıcı elle düzeltebilir/yuvarlayabilir
-        toplam_v_val = st.number_input(
-            f"{psp} Toplam Debi (Q_toplam) [m³/h]",
-            min_value=1.0,
-            max_value=100.0,
-            value=max(1.0, hesaplanan_q_m3h),
-            step=0.5,
-            key=f"{psp}_v_num",
+      st.write(f"**{psp} için Armatür Adetleri:**")
+      ac1, ac2, ac3 = st.columns(3)
+      with ac1:
+        adet_hela = st.number_input(
+            f"{psp} Hela/Klozet (8 Y.B.)", min_value=0, value=4, key=f"{psp}_hela"
+        )
+        adet_lavabo = st.number_input(
+            f"{psp} Lavabo/Bide (2 Y.B.)",
+            min_value=0,
+            value=6,
+            key=f"{psp}_lav",
+        )
+      with ac2:
+        adet_banyo = st.number_input(
+            f"{psp} Küvet/Duş (7 Y.B.)", min_value=0, value=2, key=f"{psp}_ban"
+        )
+        adet_evye = st.number_input(
+            f"{psp} Eviye (4 Y.B.)", min_value=0, value=1, key=f"{psp}_evy"
+        )
+      with ac3:
+        adet_suzgec = st.number_input(
+            f"{psp} Yer Süzgeci (2 Y.B.)", min_value=0, value=4, key=f"{psp}_suz"
+        )
+        adet_otopark = st.number_input(
+            f"{psp} Otopark Süzgeci (6 Y.B.)",
+            min_value=0,
+            value=2,
+            key=f"{psp}_oto",
+        )
+
+      ac4, ac5 = st.columns(2)
+      with ac4:
+        adet_basincli = st.number_input(
+            f"{psp} Basınçlı Yıkayıcı (10 Y.B.)",
+            min_value=0,
+            value=0,
+            key=f"{psp}_bas",
+        )
+        adet_camasir = st.number_input(
+            f"{psp} Çamaşır/Bulaşık (10 Y.B.)",
+            min_value=0,
+            value=1,
+            key=f"{psp}_cam",
+        )
+      with ac5:
+        adet_pisuvar = st.number_input(
+            f"{psp} Pisuar (1 Y.B.)", min_value=0, value=0, key=f"{psp}_pis"
         )
         h_val = st.number_input(
             f"{psp} Basma Yüksekliği (H) [mSS]",
@@ -1066,15 +1100,35 @@ if secilen_psp_listesi:
             step=0.5,
             key=f"{psp}_h_num",
         )
+
+      bc1, bc2 = st.columns(2)
+      with bc1:
         asil_adedi = st.selectbox(
             f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=0, key=f"{psp}_asil"
         )
+      with bc2:
         yedek_adedi = st.selectbox(
             f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
         )
 
-      # Pompa başına düşen debi (Asıl pompa sayısına bölünür)
-      pompa_basina_v = toplam_v_val / asil_adedi
+      # Yükleme Birimi ve Eşzamanlı Debi Formülasyonu
+      toplam_yb = (
+          (adet_hela * 8)
+          + (adet_lavabo * 2)
+          + (adet_banyo * 7)
+          + (adet_evye * 4)
+          + (adet_suzgec * 2)
+          + (adet_otopark * 6)
+          + (adet_basincli * 10)
+          + (adet_camasir * 10)
+          + (adet_pisuvar * 1)
+      )
+
+      hesaplanan_q_lps = (
+          k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
+      )
+      toplam_v_val = round(hesaplanan_q_lps * 3.6, 2)
+      pompa_basina_v = round(toplam_v_val / asil_adedi, 2)
 
       hesap = pompa_hidrolik_hesap(pompa_basina_v, h_val, 0.60, 0.90)
       hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(
@@ -1084,28 +1138,22 @@ if secilen_psp_listesi:
           pompa_basina_v, h_val
       )
 
-      with c2:
-        st.metric(
-            "Tek Pompa Debisi (Asıla Bölünen)", f"{pompa_basina_v:.2f} m³/h"
+      st.markdown(
+          f"📊 **{psp} Hesap Adımları:** $\\sum Y.B. = {toplam_yb}$ | "
+          f"$Q_{{toplam}} = {k_katsayisi} \\times \\sqrt{{{toplam_yb}}} ="
+          f" {hesaplanan_q_lps:.2f}$ L/s ($ {toplam_v_val} $ m³/h) | "
+          f"**Tek Pompa (Asıla Bölünen):** {pompa_basina_v:.2f} m³/h"
+      )
+
+      if poz_durumu == "UYGUN":
+        st.success(f"✅ Uygun Poz: **{hesaplanan_poz}**")
+      else:
+        st.error(
+            "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
+            " dışındadır! Asıl pompa sayısını artırın."
         )
-        st.metric(
-            "Tek Pompa Elektrik Gücü", f"{hesap['motor_secim_kw']:.2f} kW"
-        )
 
-        if poz_durumu == "UYGUN":
-          st.success(
-              f"✅ Uygun Poz: **{hesaplanan_poz}** (Eğri Sınırları İçinde)"
-          )
-        else:
-          st.error(
-              "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
-              " dışındadır! Asıl pompa sayısını artırın veya debiyi"
-              " yuvarlayın/düşürün."
-          )
-
-      st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
-
-      # Yalnızca program içinde görünen seçim eğrisi grafiği
+      # Program İçi Grafik Önizlemesi
       fig, ax = plt.subplots(figsize=(6, 3))
       ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
       p_renk = "green" if poz_durumu == "UYGUN" else "red"
@@ -1121,9 +1169,7 @@ if secilen_psp_listesi:
       ax.set_ylim(2, 22)
       ax.set_xlabel("Debi Q [m³/h]")
       ax.set_ylabel("Basma Yüksekliği H [mSS]")
-      ax.set_title(
-          f"{psp} Program İçi Pompa Seçim ve Sınır Kontrolü", fontsize=9
-      )
+      ax.set_title(f"{psp} Program İçi Sınır Kontrolü", fontsize=9)
       ax.grid(True, alpha=0.3)
       ax.legend(fontsize=7)
       fig.tight_layout()
@@ -1141,10 +1187,16 @@ if secilen_psp_listesi:
       )
 
       psp_parametreleri[psp] = {
+          "bina_tipi": bina_tipi,
+          "k_katsayisi": k_katsayisi,
+          "toplam_yb": toplam_yb,
+          "q_lps_toplam": hesaplanan_q_lps,
+          "v_toplam": toplam_v_val,
           "v_tek": pompa_basina_v,
-          "q_lps": hesap["q_lps"],
+          "q_lps_tek": hesap["q_lps"],
           "h": h_val,
           "guc": hesap["motor_secim_kw"],
+          "asil_adedi": asil_adedi,
           "adet_str": adet_metin,
           "tip": tip_metin,
           "poz": hesaplanan_poz,
@@ -1194,8 +1246,7 @@ if st.button("Raporu Oluştur (.docx)"):
   if gecersiz_var:
     st.error(
         "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
-        " tek pompa debisi poz sınırları dışındadır. Lütfen asıl pompa sayısını"
-        " veya debiyi kontrol edin."
+        " tek pompa debisi poz sınırları dışındadır."
     )
   else:
     if not is_adi:
@@ -1710,8 +1761,6 @@ if st.button("Raporu Oluştur (.docx)"):
         " alınmıştır."
     )
 
-    # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
-    doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti")
     t1_data = [
         ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
         ("15", "Ø20", '1/2"', "(0-3.0)"),
@@ -1735,44 +1784,7 @@ if st.button("Raporu Oluştur (.docx)"):
       for c_idx, val in enumerate(row):
         t1.cell(r_idx, c_idx).text = val
 
-    doc.add_paragraph()  # Boşluk
-
-    # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
-    doc.add_paragraph(
-        "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
-        " Yükleri (TS 1285)"
-    )
-    t2_data = [
-        ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
-        ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
-        ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
-        ("Bide Rezervuarı", "0.13", "0.25"),
-        ("Bulaşık Makinası", "0.40", "2.50"),
-        ("Çamaşır Makinası", "0.40", "2.50"),
-        ("Duş", "0.40", "2.50"),
-        ("1 Gözlü Eviye", "0.25", "1.00"),
-        ("2 Gözlü Eviye", "0.31", "1.50"),
-        ("Hela Rezervuarı", "0.13", "0.25"),
-        ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
-        ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
-        ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
-        ("Kurna", "0.40", "2.50"),
-        ("Lavabo", "0.18", "0.50"),
-        ("DN15 mm musluk", "0.31", "1.50"),
-        ("DN20 mm musluk", "0.71", "8.00"),
-        ("DN25 mm musluk", "1.06", "18.00"),
-        ("Pisuvar", "0.13", "0.25"),
-        ("Şofben (10lt/dk)", "0.18", "0.50"),
-        ("Şofben (16lt/dk)", "0.25", "1.00"),
-        ("Şofben (26lt/dk)", "0.43", "3.00"),
-        ("Taharet Musluğu", "0.13", "0.25"),
-        ("Termosifon", "0.40", "2.50"),
-    ]
-    t2 = doc.add_table(rows=len(t2_data), cols=3)
-    t2.style = "Table Grid"
-    for r_idx, row in enumerate(t2_data):
-      for c_idx, val in enumerate(row):
-        t2.cell(r_idx, c_idx).text = val
+    doc.add_paragraph()
 
     # --- 6.2 PİS SU TESİSATI ---
     doc.add_heading("6.2 PİS SU TESİSATI", level=2)
@@ -1880,9 +1892,9 @@ if st.button("Raporu Oluştur (.docx)"):
     if psp_parametreleri:
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
       doc.add_paragraph(
-          "Pis su terfi pompalarının çalışma noktaları için asıl pompa sayısına"
-          " göre bölünen debi, basma yüksekliği ve motor güçleri"
-          " hesaplanmıştır."
+          "Pis su terfi pompalarının çalışma noktaları; bina kullanım türü,"
+          " armatür yükleme birimleri ve eşzamanlılık katsayıları dikkate"
+          " alınarak ayrı ayrı hesaplanmıştır."
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
@@ -1891,7 +1903,17 @@ if st.button("Raporu Oluştur (.docx)"):
         )
 
         doc.add_paragraph(
-            f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps']:.2f} L/s"
+            f"• Toplam Yükleme Birimi (Y.B.) = {pp['toplam_yb']} Y.B."
+        )
+        doc.add_paragraph(
+            f"• Eşzamanlık Faktörü (k) = {pp['k_katsayisi']} ({pp['bina_tipi']})"
+        )
+        doc.add_paragraph(
+            f"• Toplam Debi Q_toplam = k * √Y.B. ="
+            f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m3/h)"
+        )
+        doc.add_paragraph(
+            f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
         )
         doc.add_paragraph(f"H           = {pp['h']:.2f} mSS")
         doc.add_paragraph(f"Güç         = {pp['guc']:.2f} kW")
@@ -1905,7 +1927,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("Rapor başarıyla hazırlandı!")
+    st.success("Özel hesaplamalı ve formüllü rapor başarıyla hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
