@@ -953,7 +953,7 @@ if secilen_psp_listesi:
             key=f"{psp}_h_num",
         )
         asil_adedi = st.selectbox(
-            f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=1, key=f"{psp}_asil"
+            f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=0, key=f"{psp}_asil"
         )
         yedek_adedi = st.selectbox(
             f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
@@ -1735,8 +1735,7 @@ if st.button("Raporu Oluştur (.docx)"):
       doc.add_paragraph(
           "Pis su terfi pompalarının çalışma noktaları için asıl pompa sayısına"
           " göre bölünen debi, basma yüksekliği ve motor güçleri"
-          " hesaplanmıştır; 25.360.1301–25.360.1308 pozları arasından uygun"
-          " pozlar otomatik olarak belirlenmiştir."
+          " hesaplanmıştır."
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
