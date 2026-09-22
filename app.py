@@ -1,15 +1,15 @@
 from datetime import datetime
 import io
-import math
 import json
+import math
 import os
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
-import streamlit as st
 import matplotlib.pyplot as plt
+import streamlit as st
 
 # Türkçe ay isimleri için sözlük
 aylar = {
@@ -674,6 +674,7 @@ ek_sihhi_on_bilgi = st.text_area(
 # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
 st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
+
 # --- 6.2 PİS SU TESİSATI ---
 st.subheader("6.2 PİS SU TESİSATI ESASLARI")
 pissu_keys = [
@@ -743,237 +744,221 @@ ek_pissu_on_bilgi = st.text_area(
     "İlave Pis Su Tesisatı Maddesi (Her satıra bir tane)", "", height=80
 )
 
-# --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
 # ---------------------------------------------------------------------------
-# 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ
+# 6.1.1 & 6.2.1 TABLOLAR
 # ---------------------------------------------------------------------------
-st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ")
-
-POZ_POMPA_TABLOSU = [
-    {"poz": "25.360.1301", "qmin": 5.0, "qmax": 10.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Debisi 5,0-10 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1302", "qmin": 5.0, "qmax": 10.0, "hmin": 10.0, "hmax": 15.0,
-     "tanim": "Debisi 5,0-10 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1303", "qmin": 5.0, "qmax": 10.0, "hmin": 15.0, "hmax": 20.0,
-     "tanim": "Debisi 5,0-10 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1304", "qmin": 10.0, "qmax": 15.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Debisi 10-15 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1305", "qmin": 10.0, "qmax": 15.0, "hmin": 10.0, "hmax": 15.0,
-     "tanim": "Debisi 10-15 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1306", "qmin": 15.0, "qmax": 20.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Debisi 15-20 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1307", "qmin": 15.0, "qmax": 20.0, "hmin": 10.0, "hmax": 15.0,
-     "tanim": "Debisi 15-20 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
-    {"poz": "25.360.1308", "qmin": 15.0, "qmax": 20.0, "hmin": 15.0, "hmax": 20.0,
-     "tanim": "Debisi 15-20 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç tip pis su pompası"},
+st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
+t1_data = [
+    ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+    ("15", "Ø20", '1/2"', "(0-3.0)"),
+    ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+    ("25", "Ø32", '1"', "(8.0-20.0)"),
+    ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+    ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+    ("50", "Ø63", '2"', "(50.0-144.0)"),
+    ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+    ("80", "Ø90", '3"', "(368.0-1156.0)"),
+    ("100", "Ø125", '4"', "(1156-4900)"),
+    ("125", "-", '5"', "(4.900-14.400)"),
+    ("150", "-", '6"', "(14.400-40.000)"),
+    ("200", "-", '8"', "(40.000-484.000)"),
+    ("250", "-", '10"', "(484.000-518.400)"),
+    ("300", "-", '12"', "(518.400-1.440.000)"),
 ]
 
-def _float_girdi(deger, varsayilan=0.0):
-    try:
-        return float(str(deger).replace(",", "."))
-    except (ValueError, TypeError):
-        return float(varsayilan)
-
-def pompa_pozu_sec(q_m3h, h_mss):
-    """Debi ve basma yüksekliğine göre 25.360.1301–1308 arasından poz seçer."""
-    for kayit in POZ_POMPA_TABLOSU:
-        q_uygun = kayit["qmin"] <= q_m3h <= kayit["qmax"]
-        h_uygun = kayit["hmin"] <= h_mss <= kayit["hmax"]
-        if q_uygun and h_uygun:
-            return kayit["poz"], kayit["tanim"], "UYGUN"
-    return "-", "Girilen debi/basma yüksekliği 25.360.1301–25.360.1308 poz aralığı dışında.", "POZ DIŞI"
-
-def ust_yarim_kw(deger):
-    """Güç değerini hesaplamayı değiştirmeden, gösterimde 0,50 kW üst katına yuvarlar.
-    Örnek: 1,47 -> 1,50 kW; 2,01 -> 2,50 kW.
-    """
-    try:
-        deger = float(deger)
-    except (TypeError, ValueError):
-        return 0.0
-    if deger <= 0:
-        return 0.0
-    return math.ceil((deger - 1e-12) * 2.0) / 2.0
-
-
-
-# ---------------------------------------------------------------------------
-# WILO REXA PRO-S03 KATALOG SEÇİM VERİLERİ
-# Kaynak: Wilo-Rexa PRO-S resmi ürün/katalog sayfaları ve Wilo performans
-# eğrisi dokümanları. Ara noktalar, üretici yayınındaki Q-H eğrisinden
-# dijitalleştirilmiş yaklaşık seçim noktalarıdır; kesin saha seçimi üretici
-# seçim yazılımı/katalog çıktısı ile teyit edilmelidir.
-# ---------------------------------------------------------------------------
-WILO_REXA_PRO_S_KATALOG = [
-    {
-        "model": "Wilo Rexa PRO-S03-112A/21T011X540/O",
-        "artikel": "6098421",
-        "p2_kw": 1.1,
-        "qmax": 18.5,
-        "hmax": 28.0,
-        "q_points": [0, 5, 10, 15, 18.5],
-        "h_points": [28.0, 24.5, 20.0, 15.0, 10.0],
-        "poz_uyumu": ["25.360.1301", "25.360.1302", "25.360.1303",
-                      "25.360.1304", "25.360.1305"],
-    },
-    {
-        "model": "Wilo Rexa PRO-S03-123A/21T015X540/O",
-        "artikel": "6098424",
-        "p2_kw": 1.5,
-        "qmax": 19.8,
-        "hmax": 32.0,
-        "q_points": [0, 5, 10, 15, 19.8],
-        "h_points": [32.0, 28.5, 24.0, 19.0, 13.5],
-        "poz_uyumu": ["25.360.1301", "25.360.1302", "25.360.1303",
-                      "25.360.1304", "25.360.1305"],
-    },
-    {
-        "model": "Wilo Rexa PRO-S03-224A/21T025X540/O",
-        "artikel": "6098426",
-        "p2_kw": 2.5,
-        "qmax": 20.2,
-        "hmax": 43.0,
-        "q_points": [0, 5, 10, 15, 20.2],
-        "h_points": [43.0, 39.0, 34.0, 27.5, 19.0],
-        "poz_uyumu": ["25.360.1302", "25.360.1303", "25.360.1305",
-                      "25.360.1307", "25.360.1308"],
-    },
-    {
-        "model": "Wilo Rexa PRO-S03-324A/21T039X540/O",
-        "artikel": "6098428",
-        "p2_kw": 3.9,
-        "qmax": 25.2,
-        "hmax": 47.5,
-        "q_points": [0, 5, 10, 15, 20, 25.2],
-        "h_points": [47.5, 44.0, 39.5, 34.0, 28.5, 21.0],
-        "poz_uyumu": ["25.360.1306", "25.360.1307", "25.360.1308"],
-    },
-    {
-        "model": "Wilo Rexa PRO-S03-326A/21T050X540/O",
-        "artikel": "6098430",
-        "p2_kw": 5.0,
-        "qmax": 29.9,
-        "hmax": 57.0,
-        "q_points": [0, 5, 10, 15, 20, 25, 29.9],
-        "h_points": [57.0, 53.0, 49.0, 44.0, 38.0, 31.0, 23.0],
-        "poz_uyumu": ["25.360.1306", "25.360.1307", "25.360.1308"],
-    },
+st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
+pissu_t1_data = [
+    ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
+    ("Hela / Klozet", "8"),
+    ("Küvet / Duş", "7"),
+    ("Lavabo / Bide", "2"),
+    ("Eviye", "4"),
+    ("Yer Süzgeci", "2"),
+    ("Otopark Süzgeci", "6"),
+    ("Basınçlı Yıkayıcı", "10"),
+    ("Çamaşır-Bulaşık Makinası", "10"),
+    ("Pisuar", "1"),
+]
+pissu_t2_data = [
+    ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
+    ("0-7", "", "50"),
+    ("7-25", "", "70"),
+    ("25-120", "", "100"),
+    ("120-270", "", "125"),
+    ("270-600", "", "150"),
+    ("600-2400", "", "200"),
 ]
 
-WILO_KATALOG_KAYNAK = (
-    "Wilo-Rexa PRO-S resmi ürün/katalog performans eğrileri; "
-    "Wilo ürün kodları 6098421, 6098424, 6098426, 6098428 ve 6098430."
+
+# ---------------------------------------------------------------------------
+# 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
+# ---------------------------------------------------------------------------
+st.subheader(
+    "6.2.2 Her Bir Terfi Pompası İçin Özel Debi ve Güç Hesap Modülü"
 )
 
-def _lineer_egriden_h(model, q_m3h):
-    """Üretici eğrisinin dijitalleştirilmiş Q-H noktaları arasında lineer enterpolasyon."""
-    if q_m3h < 0 or q_m3h > model["qmax"]:
-        return None
-    qs = model["q_points"]
-    hs = model["h_points"]
-    for i in range(len(qs) - 1):
-        if qs[i] <= q_m3h <= qs[i + 1]:
-            q0, q1 = qs[i], qs[i + 1]
-            h0, h1 = hs[i], hs[i + 1]
-            if q1 == q0:
-                return h0
-            return h0 + (h1 - h0) * ((q_m3h - q0) / (q1 - q0))
-    return hs[-1]
+POZ_POMPA_TABLOSU = [
+    {
+        "poz": "25.360.1301",
+        "qmin": 5.0,
+        "qmax": 10.0,
+        "hmin": 5.0,
+        "hmax": 10.0,
+        "tanim": (
+            "Debisi 5,0-10 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1302",
+        "qmin": 5.0,
+        "qmax": 10.0,
+        "hmin": 10.0,
+        "hmax": 15.0,
+        "tanim": (
+            "Debisi 5,0-10 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1303",
+        "qmin": 5.0,
+        "qmax": 10.0,
+        "hmin": 15.0,
+        "hmax": 20.0,
+        "tanim": (
+            "Debisi 5,0-10 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1304",
+        "qmin": 10.0,
+        "qmax": 15.0,
+        "hmin": 5.0,
+        "hmax": 10.0,
+        "tanim": (
+            "Debisi 10-15 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1305",
+        "qmin": 10.0,
+        "qmax": 15.0,
+        "hmin": 10.0,
+        "hmax": 15.0,
+        "tanim": (
+            "Debisi 10-15 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1306",
+        "qmin": 15.0,
+        "qmax": 20.0,
+        "hmin": 5.0,
+        "hmax": 10.0,
+        "tanim": (
+            "Debisi 15-20 m³/h, basıncı 5,0-10 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1307",
+        "qmin": 15.0,
+        "qmax": 20.0,
+        "hmin": 10.0,
+        "hmax": 15.0,
+        "tanim": (
+            "Debisi 15-20 m³/h, basıncı 10-15 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+    {
+        "poz": "25.360.1308",
+        "qmin": 15.0,
+        "qmax": 20.0,
+        "hmin": 15.0,
+        "hmax": 20.0,
+        "tanim": (
+            "Debisi 15-20 m³/h, basıncı 15-20 mSS parçalayıcı bıçaklı dalgıç"
+            " tip pis su pompası"
+        ),
+    },
+]
 
-def wilo_pompa_sec(q_m3h, h_mss):
-    """
-    Girilen çalışma noktasını Wilo Rexa PRO-S03 üretici eğrileri üzerinde
-    kontrol eder. Çalışma noktasında H_katalog >= H_tasarım olan ve
-    gereksiz büyük olmayan ilk modeli seçer.
-    """
-    adaylar = []
-    for model in WILO_REXA_PRO_S_KATALOG:
-        h_katalog = _lineer_egriden_h(model, q_m3h)
-        if h_katalog is not None and h_katalog >= h_mss:
-            margin = h_katalog - h_mss
-            adaylar.append((margin, model, h_katalog))
 
-    if not adaylar:
-        return None, None, None, "UYGUN WILO MODELİ BULUNAMADI"
+def pompa_pozu_sec(q_m3h, h_mss):
+  for kayit in POZ_POMPA_TABLOSU:
+    if (kayit["qmin"] <= q_m3h <= kayit["qmax"]) and (
+        kayit["hmin"] <= h_mss <= kayit["hmax"]
+    ):
+      return kayit["poz"], kayit["tanim"], "UYGUN"
+  return (
+      "SINIR DIŞI",
+      (
+          "Girilen tek pompa çalışma noktası 25.360.1301–1308 poz kapasite"
+          " sınırları dışındadır!"
+      ),
+      "GECERSIZ",
+  )
 
-    adaylar.sort(key=lambda x: (x[0], x[1]["p2_kw"]))
-    _, secilen, h_katalog = adaylar[0]
-    return secilen, h_katalog, _lineer_egriden_h, "UYGUN"
-
-def wilo_model_egrisi(model):
-    """Katalogda yayınlanan model eğrisinin dijitalleştirilmiş çizim verisi."""
-    q0 = model["q_points"]
-    h0 = model["h_points"]
-    q_e = []
-    h_e = []
-    for i in range(len(q0) - 1):
-        for j in range(20):
-            q = q0[i] + (q0[i + 1] - q0[i]) * j / 20.0
-            h = h0[i] + (h0[i + 1] - h0[i]) * j / 20.0
-            q_e.append(q)
-            h_e.append(h)
-    q_e.append(q0[-1])
-    h_e.append(h0[-1])
-    return q_e, h_e
 
 def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
-    """
-    Q: m³/h
-    H: mSS
-    Hidrolik güç = rho*g*Q*H
-    Pompa mil gücü = hidrolik güç / pompa verimi
-    Elektrik giriş gücü = mil gücü / motor verimi
-    """
-    rho = 1000.0
-    g = 9.81
-    q_m3s = q_m3h / 3600.0
-    p_hid_kw = rho * g * q_m3s * h_mss / 1000.0
-    p_mil_kw = p_hid_kw / pompa_verimi if pompa_verimi > 0 else 0.0
-    p_elektrik_kw = p_mil_kw / motor_verimi if motor_verimi > 0 else 0.0
+  rho = 1000.0
+  g = 9.81
+  q_m3s = q_m3h / 3600.0
+  p_hid_kw = rho * g * q_m3s * h_mss / 1000.0
+  p_mil_kw = p_hid_kw / pompa_verimi if pompa_verimi > 0 else 0.0
+  p_elektrik_kw = p_mil_kw / motor_verimi if motor_verimi > 0 else 0.0
 
-    # Standart motor seçiminde bir üst nominal güç kademesi.
-    motor_kademeleri = [0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0]
-    motor_secim = next((x for x in motor_kademeleri if x >= p_elektrik_kw), motor_kademeleri[-1])
+  motor_kademeleri = [
+      0.75,
+      1.1,
+      1.5,
+      2.2,
+      3.0,
+      4.0,
+      5.5,
+      7.5,
+      11.0,
+      15.0,
+      18.5,
+      22.0,
+      30.0,
+  ]
+  motor_secim = next(
+      (x for x in motor_kademeleri if x >= p_elektrik_kw), motor_kademeleri[-1]
+  )
 
-    return {
-        "q_m3h": q_m3h,
-        "h_mss": h_mss,
-        "q_lps": q_m3h / 3.6,
-        "p_hid_kw": p_hid_kw,
-        "p_mil_kw": p_mil_kw,
-        "p_elektrik_kw": p_elektrik_kw,
-        "motor_secim_kw": motor_secim,
-        "pompa_verimi": pompa_verimi,
-        "motor_verimi": motor_verimi,
-    }
+  return {
+      "q_m3h": q_m3h,
+      "h_mss": h_mss,
+      "q_lps": q_m3h / 3.6,
+      "p_hid_kw": p_hid_kw,
+      "p_mil_kw": p_mil_kw,
+      "p_elektrik_kw": p_elektrik_kw,
+      "motor_secim_kw": motor_secim,
+  }
+
 
 def pompa_secim_egrisi(q_m3h, h_mss):
-    """
-    Önce Wilo Rexa PRO-S03 üretici eğrisinden model seçer.
-    Model bulunamazsa Bakanlık poz aralığı seçim zarfını gösterir.
-    """
-    wilo_model, h_katalog, _, wilo_durum = wilo_pompa_sec(q_m3h, h_mss)
+  poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
+  if durum == "UYGUN":
+    kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
+    q0, q1 = kayit["qmin"], kayit["qmax"]
+    h0, h1 = kayit["hmax"], kayit["hmin"]
+    q_egrisi = [q0 + (q1 - q0) * i / 100 for i in range(101)]
+    h_egrisi = [h0 + (h1 - h0) * ((q - q0) / (q1 - q0)) for q in q_egrisi]
+    baslik = f"Poz {poz} Sınır Zarfı (Uygun)"
+  else:
+    q_egrisi = [2, 22]
+    h_egrisi = [22, 2]
+    baslik = "Sınır Dışı Çalışma Noktası!"
+  return q_egrisi, h_egrisi, baslik
 
-    if wilo_durum == "UYGUN":
-        q_egrisi, h_egrisi = wilo_model_egrisi(wilo_model)
-        baslik = f"{wilo_model['model']} – Wilo katalog Q-H eğrisi"
-        return q_egrisi, h_egrisi, baslik, wilo_model, h_katalog
-
-    poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
-    if durum == "UYGUN":
-        kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
-        q0, q1 = kayit["qmin"], kayit["qmax"]
-        h0, h1 = kayit["hmax"], kayit["hmin"]
-        q_egrisi = [q0 + (q1-q0)*i/100 for i in range(101)]
-        h_egrisi = [h0 + (h1-h0)*((q-q0)/(q1-q0)) for q in q_egrisi]
-        baslik = f"{poz} seçim zarfı – Wilo katalog modeli bulunamadı"
-    else:
-        q_egrisi = [5 + 15*i/100 for i in range(101)]
-        h_egrisi = [20 - 15*i/100 for i in range(101)]
-        baslik = "25.360.1301–25.360.1308 genel seçim zarfı"
-    return q_egrisi, h_egrisi, baslik, None, None
 
 secilen_psp_listesi = st.multiselect(
     "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
@@ -982,178 +967,270 @@ secilen_psp_listesi = st.multiselect(
     key="secilen_psp_listesi",
 )
 
+poz_rapora_eklensin_mi = st.checkbox(
+    "Cihaz Poz Numarasını Rapora Aktar", value=True, key="poz_aktar_chk"
+)
+
 psp_parametreleri = {}
 
 if secilen_psp_listesi:
-    st.write(
-        "Seçilen terfi pompalarının debi ve basma yüksekliğini girin. "
-        "Elektrik gücü ve Bakanlık poz numarası otomatik hesaplanır."
-    )
+  st.write(
+      "Her bir terfi pompası çukuru için bina tipi, armatürler, k katsayısı ve"
+      " asıl/yedek adetlerini ayrı ayrı girin:"
+  )
 
-    for psp in secilen_psp_listesi:
-        with st.expander(f"⚙️ {psp} Teknik Parametreleri", expanded=True):
-            c1, c2 = st.columns(2)
+  for psp in secilen_psp_listesi:
+    with st.expander(
+        f"⚙️ {psp} Özel Debi ve Güç Hesap Modülü", expanded=True
+    ):
+      sc1, sc2 = st.columns(2)
+      with sc1:
+        bina_tipi = st.selectbox(
+            f"{psp} Bina Kullanım Türü",
+            [
+                "Konut / Ev",
+                "İş Yeri / Ofis",
+                "Otel / Konaklama",
+                "Hastane / Sağlık",
+                "Okul / Eğitim",
+            ],
+            key=f"{psp}_bina",
+        )
+      with sc2:
+        k_varsayilan = (
+            0.5 if bina_tipi in ["Konut / Ev", "Okul / Eğitim"] else 0.7
+        )
+        k_katsayisi = st.number_input(
+            f"{psp} Eşzamanlık Katsayısı (k)",
+            min_value=0.1,
+            max_value=1.0,
+            value=k_varsayilan,
+            step=0.05,
+            key=f"{psp}_k",
+        )
 
-            with c1:
-                v_val = st.number_input(
-                    f"{psp} Debi (Q) [m³/h]",
-                    min_value=0.0,
-                    value=10.0,
-                    step=0.5,
-                    key=f"{psp}_v_num",
-                )
-                h_val = st.number_input(
-                    f"{psp} Basma Yüksekliği (H) [mSS]",
-                    min_value=0.0,
-                    value=12.0,
-                    step=0.5,
-                    key=f"{psp}_h_num",
-                )
-                pompa_eta = st.number_input(
-                    f"{psp} Pompa Verimi ηp [%]",
-                    min_value=1.0,
-                    max_value=100.0,
-                    value=60.0,
-                    step=1.0,
-                    key=f"{psp}_eta_p",
-                )
-                motor_eta = st.number_input(
-                    f"{psp} Motor Verimi ηm [%]",
-                    min_value=1.0,
-                    max_value=100.0,
-                    value=90.0,
-                    step=1.0,
-                    key=f"{psp}_eta_m",
-                )
+      st.write(f"**{psp} için Armatür Adetleri:**")
+      ac1, ac2, ac3 = st.columns(3)
+      with ac1:
+        adet_hela = st.number_input(
+            f"{psp} Hela/Klozet (8 Y.B.)", min_value=0, value=4, key=f"{psp}_hela"
+        )
+        adet_lavabo = st.number_input(
+            f"{psp} Lavabo/Bide (2 Y.B.)",
+            min_value=0,
+            value=6,
+            key=f"{psp}_lav",
+        )
+      with ac2:
+        adet_banyo = st.number_input(
+            f"{psp} Küvet/Duş (7 Y.B.)", min_value=0, value=2, key=f"{psp}_ban"
+        )
+        adet_evye = st.number_input(
+            f"{psp} Eviye (4 Y.B.)", min_value=0, value=1, key=f"{psp}_evy"
+        )
+      with ac3:
+        adet_suzgec = st.number_input(
+            f"{psp} Yer Süzgeci (2 Y.B.)", min_value=0, value=4, key=f"{psp}_suz"
+        )
+        adet_otopark = st.number_input(
+            f"{psp} Otopark Süzgeci (6 Y.B.)",
+            min_value=0,
+            value=2,
+            key=f"{psp}_oto",
+        )
 
-            hesap = pompa_hidrolik_hesap(
-                v_val, h_val, pompa_eta / 100.0, motor_eta / 100.0
-            )
-            hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(v_val, h_val)
-            q_egrisi, h_egrisi, egrisi_basligi, wilo_model, h_katalog = pompa_secim_egrisi(v_val, h_val)
+      ac4, ac5 = st.columns(2)
+      with ac4:
+        adet_basincli = st.number_input(
+            f"{psp} Basınçlı Yıkayıcı (10 Y.B.)",
+            min_value=0,
+            value=0,
+            key=f"{psp}_bas",
+        )
+        adet_camasir = st.number_input(
+            f"{psp} Çamaşır/Bulaşık (10 Y.B.)",
+            min_value=0,
+            value=1,
+            key=f"{psp}_cam",
+        )
+      with ac5:
+        adet_pisuvar = st.number_input(
+            f"{psp} Pisuar (1 Y.B.)", min_value=0, value=0, key=f"{psp}_pis"
+        )
+        h_val = st.number_input(
+            f"{psp} Basma Yüksekliği (H) [mSS]",
+            min_value=1.0,
+            max_value=30.0,
+            value=12.0,
+            step=0.5,
+            key=f"{psp}_h_num",
+        )
 
-            with c2:
-                st.metric("Hidrolik Güç", f"{ust_yarim_kw(hesap['p_hid_kw']):.2f} kW")
-                st.metric("Pompa Mil Gücü", f"{ust_yarim_kw(hesap['p_mil_kw']):.2f} kW")
-                st.metric("Elektrik Giriş Gücü", f"{ust_yarim_kw(hesap['p_elektrik_kw']):.2f} kW")
-                st.metric("Önerilen Motor Gücü", f"{hesap['motor_secim_kw']:.2f} kW")
+      bc1, bc2 = st.columns(2)
+      with bc1:
+        asil_adedi = st.selectbox(
+            f"{psp} Asıl Pompa Adedi", [1, 2, 3], index=0, key=f"{psp}_asil"
+        )
+      with bc2:
+        yedek_adedi = st.selectbox(
+            f"{psp} Yedek Pompa Adedi", [1, 2], index=0, key=f"{psp}_yedek"
+        )
 
-                if poz_durumu == "UYGUN":
-                    st.success(f"✅ Otomatik Poz: **{hesaplanan_poz}**")
-                else:
-                    st.error("⚠️ Girilen çalışma noktası 25.360.1301–25.360.1308 aralığı dışında.")
+      # Yükleme Birimi ve Eşzamanlı Debi Formülasyonu
+      toplam_yb = (
+          (adet_hela * 8)
+          + (adet_lavabo * 2)
+          + (adet_banyo * 7)
+          + (adet_evye * 4)
+          + (adet_suzgec * 2)
+          + (adet_otopark * 6)
+          + (adet_basincli * 10)
+          + (adet_camasir * 10)
+          + (adet_pisuvar * 1)
+      )
 
-                if wilo_model is not None:
-                    st.success(
-                        f"🔧 Wilo otomatik model: **{wilo_model['model']}** | "
-                        f"P₂ = {wilo_model['p2_kw']:.1f} kW | "
-                        f"Katalogda Q={v_val:.2f} m³/h için H≈{h_katalog:.2f} mSS"
-                    )
-                else:
-                    st.warning(
-                        "Wilo Rexa PRO-S03 katalog eğrilerinde bu çalışma noktasını "
-                        "karşılayan model bulunamadı. Poz seçimi gösterilmeye devam ediyor."
-                    )
+      hesaplanan_q_lps = (
+          k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
+      )
+      hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
-            st.info(
-                f"**Poz tanımı:** {hesaplanan_tanim}\n\n"
-                f"Q = {v_val:.2f} m³/h = {hesap['q_lps']:.2f} L/s | "
-                f"H = {h_val:.2f} mSS | "
-                f"ηp = {pompa_eta:.0f}% | ηm = {motor_eta:.0f}%"
-            )
+      # Debi girdisi
+      toplam_v_val = st.number_input(
+          f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
+          min_value=1.0,
+          max_value=100.0,
+          value=max(1.0, hesaplanan_q_m3h),
+          step=0.5,
+          key=f"{psp}_v_num",
+      )
 
-            # Program ekranında seçim eğrisi
-            fig, ax = plt.subplots(figsize=(8, 4.8))
-            ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi)
-            ax.scatter([v_val], [h_val], s=60, label="Çalışma noktası")
-            ax.axvline(v_val, linestyle="--", linewidth=0.8)
-            ax.axhline(h_val, linestyle="--", linewidth=0.8)
-            ax.set_xlabel("Debi Q [m³/h]")
-            ax.set_ylabel("Basma yüksekliği H [mSS]")
-            ax.set_title(f"{psp} – Pompa Seçim Eğrisi / Çalışma Noktası")
-            ax.grid(True, alpha=0.25)
-            ax.legend()
-            fig.tight_layout()
-            st.pyplot(fig, clear_figure=True)
+      # Pompa başına düşen debi (Asıl pompa sayısına bölünür)
+      pompa_basina_v = toplam_v_val / asil_adedi
 
-            if wilo_model is not None:
-                st.caption(
-                    "Grafik: Wilo Rexa PRO-S03 üretici katalog Q-H eğrisinin "
-                    "dijitalleştirilmiş gösterimidir. Çalışma noktası ayrıca işaretlenmiştir."
-                )
-            else:
-                st.caption(
-                    "Wilo katalog eğrilerinde uygun model bulunamadığından "
-                    "poz seçim zarfı gösterilmektedir."
-                )
+      hesap = pompa_hidrolik_hesap(pompa_basina_v, h_val, 0.60, 0.90)
+      hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(
+          pompa_basina_v, h_val
+      )
+      q_egrisi, h_egrisi, egrisi_basligi = pompa_secim_egrisi(
+          pompa_basina_v, h_val
+      )
 
-            adet_val = st.text_input(
-                f"{psp} Adet",
-                "2 (1 Aktif + 1 Yedek)",
-                key=f"{psp}_adet",
-            )
-            tip_val = st.text_input(
-                f"{psp} Tip",
-                "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su Terfi Pompası",
-                key=f"{psp}_tip",
-            )
+      st.metric(
+          "Tek Pompa Debisi (Asıla Bölünen)", f"{pompa_basina_v:.2f} m³/h"
+      )
+      st.metric("Tek Pompa Elektrik Gücü", f"{hesap['motor_secim_kw']:.2f} kW")
 
-            psp_parametreleri[psp] = {
-                "v": float(v_val),
-                "h": float(h_val),
-                "q_lps": hesap["q_lps"],
-                "guc": ust_yarim_kw(hesap["p_elektrik_kw"]),
-                "guc_ham": hesap["p_elektrik_kw"],
-                "hidrolik_guc": ust_yarim_kw(hesap["p_hid_kw"]),
-                "hidrolik_guc_ham": hesap["p_hid_kw"],
-                "mil_gucu": ust_yarim_kw(hesap["p_mil_kw"]),
-                "mil_gucu_ham": hesap["p_mil_kw"],
-                "motor_secim_kw": ust_yarim_kw(hesap["motor_secim_kw"]),
-                "pompa_verimi": pompa_eta / 100.0,
-                "motor_verimi": motor_eta / 100.0,
-                "adet": adet_val,
-                "tip": tip_val,
-                "poz": hesaplanan_poz,
-                "poz_durumu": poz_durumu,
-                "poz_tanim": hesaplanan_tanim,
-                "q_egrisi": q_egrisi,
-                "h_egrisi": h_egrisi,
-                "egrisi_basligi": egrisi_basligi,
-                "wilo_model": wilo_model["model"] if wilo_model else "",
-                "wilo_artikel": wilo_model["artikel"] if wilo_model else "",
-                "wilo_p2_kw": wilo_model["p2_kw"] if wilo_model else "",
-                "wilo_h_katalog": h_katalog if h_katalog is not None else "",
-                "wilo_katalog_kaynagi": WILO_KATALOG_KAYNAK,
-            }
+      if poz_durumu == "UYGUN":
+        st.success(f"✅ Uygun Poz: **{hesaplanan_poz}** (Eğri Sınırları İçinde)")
+      else:
+        st.error(
+            "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
+            " dışındadır! Asıl pompa sayısını artırın."
+        )
 
-# Toplu seçim: mevcut rapor mantığı korunarak
+      st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
+
+      # Yalnızca program içinde görünen seçim eğrisi grafiği
+      fig, ax = plt.subplots(figsize=(6, 3))
+      ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
+      p_renk = "green" if poz_durumu == "UYGUN" else "red"
+      ax.scatter(
+          [pompa_basina_v],
+          [h_val],
+          s=70,
+          color=p_renk,
+          zorder=5,
+          label=f"Çalışma Noktası ({pompa_basina_v:.1f} m³/h, {h_val} mSS)",
+      )
+      ax.set_xlim(2, 22)
+      ax.set_ylim(2, 22)
+      ax.set_xlabel("Debi Q [m³/h]")
+      ax.set_ylabel("Basma Yüksekliği H [mSS]")
+      ax.set_title(
+          f"{psp} Program İçi Pompa Seçim ve Sınır Kontrolü", fontsize=9
+      )
+      ax.grid(True, alpha=0.3)
+      ax.legend(fontsize=7)
+      fig.tight_layout()
+      st.pyplot(fig)
+      plt.close(fig)
+
+      toplam_adet = asil_adedi + yedek_adedi
+      adet_metin = (
+          f"{toplam_adet} ({asil_adedi} Asıl"
+          f" {'+ ' + str(yedek_adedi) + ' Yedek' if yedek_adedi > 0 else ''})"
+      )
+      tip_metin = (
+          "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su Terfi"
+          " Pompası"
+      )
+
+      armatur_listesi = []
+      if adet_hela > 0:
+        armatur_listesi.append(f"Hela / Klozet: {adet_hela} Adet")
+      if adet_lavabo > 0:
+        armatur_listesi.append(f"Lavabo / Bide: {adet_lavabo} Adet")
+      if adet_banyo > 0:
+        armatur_listesi.append(f"Küvet / Duş: {adet_banyo} Adet")
+      if adet_evye > 0:
+        armatur_listesi.append(f"Eviye: {adet_evye} Adet")
+      if adet_suzgec > 0:
+        armatur_listesi.append(f"Yer Süzgeci: {adet_suzgec} Adet")
+      if adet_otopark > 0:
+        armatur_listesi.append(f"Otopark Süzgeci: {adet_otopark} Adet")
+      if adet_basincli > 0:
+        armatur_listesi.append(f"Basınçlı Yıkayıcı: {adet_basincli} Adet")
+      if adet_camasir > 0:
+        armatur_listesi.append(f"Çamaşır/Bulaşık Makinası: {adet_camasir} Adet")
+      if adet_pisuvar > 0:
+        armatur_listesi.append(f"Pisuar: {adet_pisuvar} Adet")
+
+      psp_parametreleri[psp] = {
+          "bina_tipi": bina_tipi,
+          "k_katsayisi": k_katsayisi,
+          "toplam_yb": toplam_yb,
+          "q_lps_toplam": hesaplanan_q_lps,
+          "v_toplam": toplam_v_val,
+          "v_tek": pompa_basina_v,
+          "q_lps_tek": hesap["q_lps"],
+          "h": h_val,
+          "guc": hesap["motor_secim_kw"],
+          "asil_adedi": asil_adedi,
+          "adet_str": adet_metin,
+          "tip": tip_metin,
+          "poz": hesaplanan_poz,
+          "poz_durumu": poz_durumu,
+          "poz_tanim": hesaplanan_tanim,
+          "armatur_listesi": armatur_listesi,
+      }
+
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
 _toplu_secim_butonlari(terfi_keys)
 
 terfi_sec_1 = st.checkbox(
-    "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli, parçalayıcı "
-    "bıçaklı pis su atık su terfi pompaları seçilmiştir.",
+    "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli, parçalayıcı"
+    " bıçaklı pis su atık su terfi pompaları seçilmiştir.",
     key="terfi_sec_1",
     value=True,
 )
 terfi_sec_2 = st.checkbox(
-    "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona "
-    "bağlanacaktır.",
+    "Pompalar yedekli çalışacak şekilde otomasyona bağlanacaktır.",
     key="terfi_sec_2",
     value=True,
 )
 terfi_sec_3 = st.checkbox(
-    "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su "
-    "seviyesine göre pompalar otomatik devreye girip çıkacaktır.",
+    "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
+    " seviyesine göre pompalar otomatik devreye girip çıkacaktır.",
     key="terfi_sec_3",
     value=True,
 )
 terfi_sec_4 = st.checkbox(
-    "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım kolaylığı "
-    "için sürgülü/kelebek vana kullanılacaktır.",
+    "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım kolaylığı"
+    " için sürgülü/kelebek vana kullanılacaktır.",
     key="terfi_sec_4",
     value=True,
 )
+
 ek_terfi_notu = st.text_area(
     "İlave Pis Su Terfi Pompası Genel Esasları (Her satıra bir tane)",
     "",
@@ -1163,1145 +1240,715 @@ ek_terfi_notu = st.text_area(
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
-  if not is_adi:
-    st.warning(
-        "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
-        " ancak kapak başlığı boş bırakılacak."
-    )
-
-  aktif_sirket = (
-      sirket_adi
-      if sirket_adi
-      else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
+  gecersiz_var = any(
+      p["poz_durumu"] != "UYGUN" for p in psp_parametreleri.values()
   )
-  aktif_is = is_adi if is_adi else ""
+  if gecersiz_var:
+    st.error(
+        "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
+        " tek pompa debisi poz sınırları dışındadır. Lütfen asıl pompa sayısını"
+        " veya debiyi kontrol edin."
+    )
+  else:
+    if not is_adi:
+      st.warning(
+          "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
+          " ancak kapak başlığı boş bırakılacak."
+      )
 
-  doc = Document()
+    aktif_sirket = (
+        sirket_adi
+        if sirket_adi
+        else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
+    )
+    aktif_is = is_adi if is_adi else ""
 
-  # Sayfa boşlukları
-  cover_section = doc.sections[0]
-  cover_section.top_margin = Inches(1.5)
-  cover_section.bottom_margin = Inches(1.5)
-  cover_section.left_margin = Inches(1.2)
-  cover_section.right_margin = Inches(1.2)
+    doc = Document()
 
-  # ==========================================
-  # 1. SAYFA: KAPAK SAYFASI
-  # ==========================================
-  p_sirket = doc.add_paragraph()
-  p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  run_sirket = p_sirket.add_run(aktif_sirket.upper())
-  run_sirket.font.size = Pt(13)
-  run_sirket.font.bold = True
-  run_sirket.font.name = "Arial"
+    # Sayfa boşlukları
+    cover_section = doc.sections[0]
+    cover_section.top_margin = Inches(1.5)
+    cover_section.bottom_margin = Inches(1.5)
+    cover_section.left_margin = Inches(1.2)
+    cover_section.right_margin = Inches(1.2)
 
-  doc.add_paragraph()
-  doc.add_paragraph()
-
-  if aktif_is:
-    p_is = doc.add_paragraph()
-    p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_is_baslik = p_is.add_run("PROJE ADI:\n")
-    run_is_baslik.font.size = Pt(11)
-    run_is_baslik.font.name = "Arial"
-
-    run_is = p_is.add_run(aktif_is)
-    run_is.font.size = Pt(16)
-    run_is.font.bold = True
-    run_is.font.name = "Arial"
+    # ==========================================
+    # 1. SAYFA: KAPAK SAYFASI
+    # ==========================================
+    p_sirket = doc.add_paragraph()
+    p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_sirket = p_sirket.add_run(aktif_sirket.upper())
+    run_sirket.font.size = Pt(13)
+    run_sirket.font.bold = True
+    run_sirket.font.name = "Arial"
 
     doc.add_paragraph()
-
-  p_tur = doc.add_paragraph()
-  p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  run_tur = p_tur.add_run(rapor_turu.upper())
-  run_tur.font.size = Pt(14)
-  run_tur.font.bold = True
-  run_tur.font.name = "Arial"
-
-  for _ in range(4):
     doc.add_paragraph()
 
-  p_alt = doc.add_paragraph()
-  p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-  run_hazirlayan = p_alt.add_run(
-      f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
-      f" {mmo_no}\n\nTarih:\n{tarih}"
-  )
-  run_hazirlayan.font.size = Pt(11)
-  run_hazirlayan.font.name = "Arial"
+    if aktif_is:
+      p_is = doc.add_paragraph()
+      p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
+      run_is_baslik = p_is.add_run("PROJE ADI:\n")
+      run_is_baslik.font.size = Pt(11)
+      run_is_baslik.font.name = "Arial"
 
-  # ==========================================
-  # 2. SAYFA: İÇİNDEKİLER SAYFASI
-  # ==========================================
-  doc.add_page_break()
+      run_is = p_is.add_run(aktif_is)
+      run_is.font.size = Pt(16)
+      run_is.font.bold = True
+      run_is.font.name = "Arial"
 
-  doc.add_heading("İÇİNDEKİLER", level=1)
+      doc.add_paragraph()
 
-  p_toc = doc.add_paragraph()
-  add_toc(p_toc)
+    p_tur = doc.add_paragraph()
+    p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_tur = p_tur.add_run(rapor_turu.upper())
+    run_tur.font.size = Pt(14)
+    run_tur.font.bold = True
+    run_tur.font.name = "Arial"
 
-  p_bilgi_notu = doc.add_paragraph()
-  run_not = p_bilgi_notu.add_run(
-      "(Not: Belgeyi Word'de açtığınızda üstüne sağ tıklayıp 'Alanı Güncelle'"
-      " diyerek başlıkları ve sayfa numaralarını güncelleyebilirsiniz.)"
-  )
-  run_not.font.size = Pt(9)
-  run_not.font.italic = True
-  run_not.font.color.rgb = RGBColor(128, 128, 128)
+    for _ in range(4):
+      doc.add_paragraph()
 
-  # ==========================================
-  # 3. SAYFA: GÖVDE VE RAPOR İÇERİĞİ
-  # ==========================================
-  doc.add_page_break()
+    p_alt = doc.add_paragraph()
+    p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_hazirlayan = p_alt.add_run(
+        f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
+        f" {mmo_no}\n\nTarih:\n{tarih}"
+    )
+    run_hazirlayan.font.size = Pt(11)
+    run_hazirlayan.font.name = "Arial"
 
-  body_section = doc.add_section()
-  body_section.top_margin = Inches(1.2)
-  body_section.bottom_margin = Inches(1.2)
-  body_section.left_margin = Inches(1.2)
-  body_section.right_margin = Inches(1.2)
+    # ==========================================
+    # 2. SAYFA: İÇİNDEKİLER SAYFASI
+    # ==========================================
+    doc.add_page_break()
 
-  # --- 1. GENEL BİLGİLER ---
-  doc.add_heading("1. GENEL BİLGİLER", level=1)
-  proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
-  giris_metni = (
-      f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
-      " açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden"
-      " tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit"
-      " edilmiştir."
-  )
-  doc.add_paragraph(giris_metni)
-  yapi_metni = (
-      f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
-  )
-  doc.add_paragraph(yapi_metni)
+    doc.add_heading("İÇİNDEKİLER", level=1)
 
-  # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
-  doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
-  standart_giris = (
-      "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
-      " standartlar ile yönetmelikler esas alınmıştır:"
-  )
-  doc.add_paragraph(standart_giris)
+    p_toc = doc.add_paragraph()
+    add_toc(p_toc)
 
-  secilen_standartlar = []
-  if std_ts_825:
-    secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
-  if std_yangin:
-    secilen_standartlar.append(
-        '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
-        ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"'
+    p_bilgi_notu = doc.add_paragraph()
+    run_not = p_bilgi_notu.add_run(
+        "(Not: Belgeyi Word'de açtığınızda üstüne sağ tıklayıp 'Alanı Güncelle'"
+        " diyerek başlıkları ve sayfa numaralarını güncelleyebilirsiniz.)"
     )
-  if std_bep_2008_2010:
-    secilen_standartlar.append(
-        "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
-        " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı"
-        " resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”"
-    )
-  if std_ts_1258:
-    secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
-  if std_ts_826:
-    secilen_standartlar.append(
-        "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI"
-    )
-  if std_ts_2164:
-    secilen_standartlar.append(
-        "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI"
-    )
-  if std_ts_3419:
-    secilen_standartlar.append(
-        "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
-        " KURALLARI"
-    )
-  if std_ts_en_12056_2:
-    secilen_standartlar.append(
-        "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE"
-        " HESAPLAMA"
-    )
-  if std_ts_en_12845:
-    secilen_standartlar.append(
-        "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
-        " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM"
-    )
-  if std_mmo_84:
-    secilen_standartlar.append(
-        "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)"
-    )
-  if std_mmo_352_5:
-    secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
-  if std_mmo_122:
-    secilen_standartlar.append(
-        "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)"
-    )
-  if std_mmo_133:
-    secilen_standartlar.append(
-        "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)"
-    )
-  if std_mmo_155:
-    secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
-  if std_ashrae:
-    secilen_standartlar.append("ASHRAE Standartları")
-  if std_su:
-    secilen_standartlar.append(
-        "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları"
-    )
-  if std_klima:
-    secilen_standartlar.append(
-        "Klima ve Havalandırma Tesisatı Yönetmelikleri"
-    )
-  if std_tesisat:
-    secilen_standartlar.append(
-        "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
-        " Paylaştırılmasına İlişkin Yönetmelik"
-    )
-  if std_kanal:
-    secilen_standartlar.append(
-        "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar"
-    )
-  if std_asansor:
-    secilen_standartlar.append(
-        "Asansör Yönetmeliği ve İlgili Standartlar"
-    )
-  if std_deprem:
-    secilen_standartlar.append(
-        "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)"
-    )
-  if std_akustik:
-    secilen_standartlar.append(
-        "Binaların Gürültüye Karşı Korunması Yönetmeliği"
-    )
-  if std_isg:
-    secilen_standartlar.append(
-        "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler"
-    )
+    run_not.font.size = Pt(9)
+    run_not.font.italic = True
+    run_not.font.color.rgb = RGBColor(128, 128, 128)
 
-  if ek_standartlar.strip():
-    for ek in ek_standartlar.split("\n"):
-      if ek.strip():
-        secilen_standartlar.append(ek.strip())
+    # ==========================================
+    # 3. SAYFA: GÖVDE VE RAPOR İÇERİĞİ
+    # ==========================================
+    doc.add_page_break()
 
-  secilen_standartlar.sort()
+    body_section = doc.add_section()
+    body_section.top_margin = Inches(1.2)
+    body_section.bottom_margin = Inches(1.2)
+    body_section.left_margin = Inches(1.2)
+    body_section.right_margin = Inches(1.2)
 
-  if secilen_standartlar:
-    for std in secilen_standartlar:
-      doc.add_paragraph(std, style="List Bullet")
-  else:
-    doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style="Italic")
-
-  # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
-  doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
-  doc.add_paragraph("Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır.")
-
-  secilen_kapsam = []
-  if kapsam_isitma:
-    secilen_kapsam.append("Isıtma tesisatı,")
-  if kapsam_sogutma:
-    secilen_kapsam.append("Soğutma tesisatı,")
-  if kapsam_soguk_su:
-    secilen_kapsam.append("Kullanma soğuk suyu tesisatı,")
-  if kapsam_sicak_su:
-    secilen_kapsam.append("Kullanma sıcak suyu tesisatı,")
-  if kapsam_yangin_depo:
-    secilen_kapsam.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
-  if kapsam_atik_su:
-    secilen_kapsam.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
-  if kapsam_yangin_dagitim:
-    secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
-  if kapsam_kazan_dairesi:
-    secilen_kapsam.append(
-        "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,"
+    # --- 1. GENEL BİLGİLER ---
+    doc.add_heading("1. GENEL BİLGİLER", level=1)
+    proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
+    giris_metni = (
+        f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
+        " açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden"
+        " tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit"
+        " edilmiştir."
     )
-  if kapsam_havalandirma:
-    secilen_kapsam.append("Havalandırma Tesisatı")
-  if kapsam_basinc_hava:
-    secilen_kapsam.append("Basınçlı hava tesisatı,")
-  if kapsam_medikal_gaz:
-    secilen_kapsam.append("Medikal gaz tesisatı")
-  if kapsam_otomatik:
-    secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
+    doc.add_paragraph(giris_metni)
+    yapi_metni = (
+        f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
+    )
+    doc.add_paragraph(yapi_metni)
 
-  if ek_kapsam.strip():
-    for ekk in ek_kapsam.split("\n"):
-      if ekk.strip():
-        secilen_kapsam.append(ekk.strip())
+    # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
+    doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
+    standart_giris = (
+        "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
+        " standartlar ile yönetmelikler esas alınmıştır:"
+    )
+    doc.add_paragraph(standart_giris)
 
-  if secilen_kapsam:
-    for k in secilen_kapsam:
-      doc.add_paragraph(k, style="List Bullet")
-  else:
+    secilen_standartlar = []
+    if std_ts_825:
+      secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
+    if std_yangin:
+      secilen_standartlar.append(
+          '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
+          ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"'
+      )
+    if std_bep_2008_2010:
+      secilen_standartlar.append(
+          "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
+          " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı"
+          " resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”"
+      )
+    if std_ts_1258:
+      secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
+    if std_ts_826:
+      secilen_standartlar.append(
+          "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI"
+      )
+    if std_ts_2164:
+      secilen_standartlar.append(
+          "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI"
+      )
+    if std_ts_3419:
+      secilen_standartlar.append(
+          "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
+          " KURALLARI"
+      )
+    if std_ts_en_12056_2:
+      secilen_standartlar.append(
+          "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE"
+          " HESAPLAMA"
+      )
+    if std_ts_en_12845:
+      secilen_standartlar.append(
+          "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
+          " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM"
+      )
+    if std_mmo_84:
+      secilen_standartlar.append(
+          "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)"
+      )
+    if std_mmo_352_5:
+      secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
+    if std_mmo_122:
+      secilen_standartlar.append(
+          "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)"
+      )
+    if std_mmo_133:
+      secilen_standartlar.append(
+          "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)"
+      )
+    if std_mmo_155:
+      secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
+    if std_ashrae:
+      secilen_standartlar.append("ASHRAE Standartları")
+    if std_su:
+      secilen_standartlar.append(
+          "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları"
+      )
+    if std_klima:
+      secilen_standartlar.append(
+          "Klima ve Havalandırma Tesisatı Yönetmelikleri"
+      )
+    if std_tesisat:
+      secilen_standartlar.append(
+          "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
+          " Paylaştırılmasına İlişkin Yönetmelik"
+      )
+    if std_kanal:
+      secilen_standartlar.append(
+          "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar"
+      )
+    if std_asansor:
+      secilen_standartlar.append(
+          "Asansör Yönetmeliği ve İlgili Standartlar"
+      )
+    if std_deprem:
+      secilen_standartlar.append(
+          "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)"
+      )
+    if std_akustik:
+      secilen_standartlar.append(
+          "Binaların Gürültüye Karşı Korunması Yönetmeliği"
+      )
+    if std_isg:
+      secilen_standartlar.append(
+          "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler"
+      )
+
+    if ek_standartlar.strip():
+      for ek in ek_standartlar.split("\n"):
+        if ek.strip():
+          secilen_standartlar.append(ek.strip())
+
+    secilen_standartlar.sort()
+
+    if secilen_standartlar:
+      for std in secilen_standartlar:
+        doc.add_paragraph(std, style="List Bullet")
+    else:
+      doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style="Italic")
+
+    # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
+    doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
     doc.add_paragraph(
-        "Herhangi bir proje kapsam maddesi seçilmemiştir.", style="Italic"
+        "Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır."
     )
 
-  # --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
-  doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
-  doc.add_paragraph(
-      "Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık"
-      " rejimleri kullanılacaktır:"
-  )
+    secilen_kapsam = []
+    if kapsam_isitma:
+      secilen_kapsam.append("Isıtma tesisatı,")
+    if kapsam_sogutma:
+      secilen_kapsam.append("Soğutma tesisatı,")
+    if kapsam_soguk_su:
+      secilen_kapsam.append("Kullanma soğuk suyu tesisatı,")
+    if kapsam_sicak_su:
+      secilen_kapsam.append("Kullanma sıcak suyu tesisatı,")
+    if kapsam_yangin_depo:
+      secilen_kapsam.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
+    if kapsam_atik_su:
+      secilen_kapsam.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
+    if kapsam_yangin_dagitim:
+      secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
+    if kapsam_kazan_dairesi:
+      secilen_kapsam.append(
+          "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,"
+      )
+    if kapsam_havalandirma:
+      secilen_kapsam.append("Havalandırma Tesisatı")
+    if kapsam_basinc_hava:
+      secilen_kapsam.append("Basınçlı hava tesisatı,")
+    if kapsam_medikal_gaz:
+      secilen_kapsam.append("Medikal gaz tesisatı")
+    if kapsam_otomatik:
+      secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
 
-  akiskan_maddeleri = []
-  if chk_kalorifer:
-    akiskan_maddeleri.append(
-        f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
-    )
-  if chk_fco_ist:
-    akiskan_maddeleri.append(
-        f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su."
-    )
-  if chk_fco_sog:
-    akiskan_maddeleri.append(
-        f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
-    )
-  if chk_ks_ist:
-    akiskan_maddeleri.append(
-        f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
-    )
-  if chk_ks_sog:
-    akiskan_maddeleri.append(
-        f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
-    )
-  if chk_boyler:
-    akiskan_maddeleri.append(
-        f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
-    )
-  if chk_k_sicak:
-    akiskan_maddeleri.append(
-        f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
-    )
-  if chk_doseme:
-    akiskan_maddeleri.append(
-        f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
-    )
-  if chk_buhar:
-    akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
-  if chk_kizgin:
-    akiskan_maddeleri.append(
-        f"Kızgın su tesisatında {rej_kizgin} °C sıcak su."
-    )
+    if ek_kapsam.strip():
+      for ekk in ek_kapsam.split("\n"):
+        if ekk.strip():
+          secilen_kapsam.append(ekk.strip())
 
-  if akiskan_maddeleri:
-    for akiskan in akiskan_maddeleri:
-      doc.add_paragraph(akiskan, style="List Bullet")
-  else:
+    if secilen_kapsam:
+      for k in secilen_kapsam:
+        doc.add_paragraph(k, style="List Bullet")
+    else:
+      doc.add_paragraph(
+          "Herhangi bir proje kapsam maddesi seçilmemiştir.", style="Italic"
+      )
+
+    # --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
+    doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
     doc.add_paragraph(
-        "Herhangi bir ısı iletim akışkanı seçilmemiştir.", style="Italic"
+        "Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık"
+        " rejimleri kullanılacaktır:"
     )
 
-  # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
-  doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
-  doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
-  doc.add_paragraph(
-      f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
-      " koşulları aşağıdaki gibidir:"
-  )
-  doc.add_paragraph(
-      f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
-      f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)"
-  )
-  doc.add_paragraph(
-      f"• YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
-      f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)"
-  )
-  doc.add_paragraph(f"• Enlem: {iklim_veri['enlem']}")
-  doc.add_paragraph(f"• Boylam: {iklim_veri['boylam']}")
-  doc.add_paragraph(
-      f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m."
-  )
-  doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
-
-
-  # --- 6. SIHHİ TESİSAT ---
-  doc.add_heading("6. SIHHİ TESİSAT", level=1)
-  doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
-
-  sihhi_maddeler = []
-  if sih_sec_1:
-    sihhi_maddeler.append(
-        "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden"
-        " sağlanacaktır."
-    )
-  if sih_sec_2:
-    sihhi_maddeler.append(
-        "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
-        " hattından sağlanacaktır."
-    )
-  if sih_sec_3:
-    sihhi_maddeler.append(
-        "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
-        " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak alınacaktır."
-        " Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
-    )
-
-  if sih_sec_4 and sih_depo_konumlari:
-    if len(sih_depo_konumlari) == 1:
-      konum_str = sih_depo_konumlari[0].lower()
-    elif len(sih_depo_konumlari) == 2:
-      konum_str = (
-          f"{sih_depo_konumlari[0].lower()} ve {sih_depo_konumlari[1].lower()}"
+    akiskan_maddeleri = []
+    if chk_kalorifer:
+      akiskan_maddeleri.append(
+          f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
       )
-    else:
-      ilkler = ", ".join([k.lower() for k in sih_depo_konumlari[:-1]])
-      son = sih_depo_konumlari[-1].lower()
-      konum_str = f"{ilkler} ve {son}"
-
-    sihhi_maddeler.append(
-        f"Bütün binanın kullanma soğuk su ihtiyacı {konum_str} soğuk"
-        " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
-        " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
-        " ilgili standartlar esas alınacaktır."
-    )
-
-  if sih_sec_depo_tipi and sih_depo_tipleri:
-    if len(sih_depo_tipleri) == 1:
-      tip_str = sih_depo_tipleri[0].lower()
-    elif len(sih_depo_tipleri) == 2:
-      tip_str = (
-          f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
+    if chk_fco_ist:
+      akiskan_maddeleri.append(
+          f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su."
       )
-    else:
-      ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
-      son = sih_depo_tipleri[-1].lower()
-      tip_str = f"{ilkler} ve {son}"
-
-    sihhi_maddeler.append(
-        "Binada kullanım soğuk su depolaması için "
-        f"{tip_str} tipinde su deposu kullanılmıştır."
-    )
-
-  if sih_sec_5:
-    sihhi_maddeler.append(
-        "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
-        " vitrifiye seramik olacaktır."
-    )
-  if sih_sec_6:
-    sihhi_maddeler.append(
-        "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari projede"
-        " belirtilen yerlere techiz edilecektir."
-    )
-
-  if sih_sec_7 and sih_sicak_su_yontemleri:
-    if len(sih_sicak_su_yontemleri) == 1:
-      secilenler_str = sih_sicak_su_yontemleri[0].lower()
-    elif len(sih_sicak_su_yontemleri) == 2:
-      secilenler_str = (
-          f"{sih_sicak_su_yontemleri[0].lower()} ve"
-          f" {sih_sicak_su_yontemleri[1].lower()}"
+    if chk_fco_sog:
+      akiskan_maddeleri.append(
+          f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
       )
+    if chk_ks_ist:
+      akiskan_maddeleri.append(
+          f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
+      )
+    if chk_ks_sog:
+      akiskan_maddeleri.append(
+          f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
+      )
+    if chk_boyler:
+      akiskan_maddeleri.append(
+          f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
+      )
+    if chk_k_sicak:
+      akiskan_maddeleri.append(
+          f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
+      )
+    if chk_doseme:
+      akiskan_maddeleri.append(
+          f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
+      )
+    if chk_buhar:
+      akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
+    if chk_kizgin:
+      akiskan_maddeleri.append(
+          f"Kızgın su tesisatında {rej_kizgin} °C sıcak su."
+      )
+
+    if akiskan_maddeleri:
+      for akiskan in akiskan_maddeleri:
+        doc.add_paragraph(akiskan, style="List Bullet")
     else:
-      ilkler = ", ".join([y.lower() for y in sih_sicak_su_yontemleri[:-1]])
-      son = sih_sicak_su_yontemleri[-1].lower()
-      secilenler_str = f"{ilkler} ve {son}"
+      doc.add_paragraph(
+          "Herhangi bir ısı iletim akışkanı seçilmemiştir.", style="Italic"
+      )
 
-    sihhi_maddeler.append(
-        "Kullanma Sıcak suyu üretimi ısı merkezindeki "
-        f"{secilenler_str} vasıtasıyla yapılacaktır."
+    # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+    doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
+    doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
+    doc.add_paragraph(
+        f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
+        " koşulları aşağıdaki gibidir:"
     )
-
-  if sih_sec_8:
-    sihhi_maddeler.append(
-        "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
-        " dağıtım boruları PPRC tipte seçilecektir."
+    doc.add_paragraph(
+        f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
+        f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)"
     )
+    doc.add_paragraph(
+        f"• YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
+        f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)"
+    )
+    doc.add_paragraph(f"• Enlem: {iklim_veri['enlem']}")
+    doc.add_paragraph(f"• Boylam: {iklim_veri['boylam']}")
+    doc.add_paragraph(
+        f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m."
+    )
+    doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
 
-  if sih_sec_9:
-    secilen_mahaller = [
-        m.lower() for m in sih_yumusak_su_mahalleri if m != "Diğer"
-    ]
-    if sih_yumusak_su_diger.strip():
-      secilen_mahaller.append(sih_yumusak_su_diger.strip().lower())
+    # --- 6. SIHHİ TESİSAT ---
+    doc.add_heading("6. SIHHİ TESİSAT", level=1)
+    doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
 
-    if secilen_mahaller:
-      if len(secilen_mahaller) == 1:
-        mahal_str = secilen_mahaller[0]
-      elif len(secilen_mahaller) == 2:
-        mahal_str = f"{secilen_mahaller[0]} ve {secilen_mahaller[1]}"
+    sihhi_maddeler = []
+    if sih_sec_1:
+      sihhi_maddeler.append(
+          "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden"
+          " sağlanacaktır."
+      )
+    if sih_sec_2:
+      sihhi_maddeler.append(
+          "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
+          " hattından sağlanacaktır."
+      )
+    if sih_sec_3:
+      sihhi_maddeler.append(
+          "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
+          " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak"
+          " alınacaktır. Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
+      )
+
+    if sih_sec_4 and sih_depo_konumlari:
+      if len(sih_depo_konumlari) == 1:
+        konum_str = sih_depo_konumlari[0].lower()
+      elif len(sih_depo_konumlari) == 2:
+        konum_str = (
+            f"{sih_depo_konumlari[0].lower()} ve"
+            f" {sih_depo_konumlari[1].lower()}"
+        )
       else:
-        ilkler = ", ".join(secilen_mahaller[:-1])
-        son = secilen_mahaller[-1]
-        mahal_str = f"{ilkler} ve {son}"
+        ilkler = ", ".join([k.lower() for k in sih_depo_konumlari[:-1]])
+        son = sih_depo_konumlari[-1].lower()
+        konum_str = f"{ilkler} ve {son}"
 
       sihhi_maddeler.append(
-          f"{mahal_str.capitalize()} mahallerinde yumuşak su kullanılacaktır."
+          f"Bütün binanın kullanma soğuk su ihtiyacı {konum_str} soğuk"
+          " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
+          " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
+          " ilgili standartlar esas alınacaktır."
       )
 
-  if sih_sec_10 and sih_sicak_su_isitma_sistemleri:
-    if len(sih_sicak_su_isitma_sistemleri) == 1:
-      isitma_str = sih_sicak_su_isitma_sistemleri[0].lower()
-    elif len(sih_sicak_su_isitma_sistemleri) == 2:
-      isitma_str = (
-          f"{sih_sicak_su_isitma_sistemleri[0].lower()} ve"
-          f" {sih_sicak_su_isitma_sistemleri[1].lower()}"
-      )
-    else:
-      ilkler = ", ".join(
-          [s.lower() for s in sih_sicak_su_isitma_sistemleri[:-1]]
-      )
-      son = sih_sicak_su_isitma_sistemleri[-1].lower()
-      isitma_str = f"{ilkler} ve {son}"
+    if sih_sec_depo_tipi and sih_depo_tipleri:
+      if len(sih_depo_tipleri) == 1:
+        tip_str = sih_depo_tipleri[0].lower()
+      elif len(sih_depo_tipleri) == 2:
+        tip_str = (
+            f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
+        )
+      else:
+        ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
+        son = sih_depo_tipleri[-1].lower()
+        tip_str = f"{ilkler} ve {son}"
 
-    sihhi_maddeler.append(
-        f"Kullanım sıcak suyunun ısıtılması {isitma_str} vasıtasıyla"
-        " yapılacaktır."
-    )
-
-  if sih_sec_12:
-    sihhi_maddeler.append(
-        "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
-        " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
-        " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
-        " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur suyu"
-        " toplama sistemi' yapılması zorunluluğu getirildiği için yağmur hasadı"
-        " tesisatı yapılmıştır."
-    )
-
-  if ek_sihhi_on_bilgi.strip():
-    for es in ek_sihhi_on_bilgi.split("\n"):
-      if es.strip():
-        sihhi_maddeler.append(es.strip())
-
-  for sm in sihhi_maddeler:
-    doc.add_paragraph(sm, style="List Bullet")
-
-  # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-  doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
-  doc.add_paragraph(
-      "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
-      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır."
-  )
-
-  # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
-  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti")
-  t1_data = [
-      ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-      ("15", "Ø20", '1/2"', "(0-3.0)"),
-      ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-      ("25", "Ø32", '1"', "(8.0-20.0)"),
-      ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-      ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-      ("50", "Ø63", '2"', "(50.0-144.0)"),
-      ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-      ("80", "Ø90", '3"', "(368.0-1156.0)"),
-      ("100", "Ø125", '4"', "(1156-4900)"),
-      ("125", "-", '5"', "(4.900-14.400)"),
-      ("150", "-", '6"', "(14.400-40.000)"),
-      ("200", "-", '8"', "(40.000-484.000)"),
-      ("250", "-", '10"', "(484.000-518.400)"),
-      ("300", "-", '12"', "(518.400-1.440.000)"),
-  ]
-  t1 = doc.add_table(rows=len(t1_data), cols=4)
-  t1.style = "Table Grid"
-  for r_idx, row in enumerate(t1_data):
-    for c_idx, val in enumerate(row):
-      t1.cell(r_idx, c_idx).text = val
-
-  doc.add_paragraph()  # Boşluk
-
-  # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
-  doc.add_paragraph(
-      "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
-      " Yükleri (TS 1285)"
-  )
-  t2_data = [
-      ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
-      ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
-      ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
-      ("Bide Rezervuarı", "0.13", "0.25"),
-      ("Bulaşık Makinası", "0.40", "2.50"),
-      ("Çamaşır Makinası", "0.40", "2.50"),
-      ("Duş", "0.40", "2.50"),
-      ("1 Gözlü Eviye", "0.25", "1.00"),
-      ("2 Gözlü Eviye", "0.31", "1.50"),
-      ("Hela Rezervuarı", "0.13", "0.25"),
-      ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
-      ("Kurna", "0.40", "2.50"),
-      ("Lavabo", "0.18", "0.50"),
-      ("DN15 mm musluk", "0.31", "1.50"),
-      ("DN20 mm musluk", "0.71", "8.00"),
-      ("DN25 mm musluk", "1.06", "18.00"),
-      ("Pisuvar", "0.13", "0.25"),
-      ("Şofben (10lt/dk)", "0.18", "0.50"),
-      ("Şofben (16lt/dk)", "0.25", "1.00"),
-      ("Şofben (26lt/dk)", "0.43", "3.00"),
-      ("Taharet Musluğu", "0.13", "0.25"),
-      ("Termosifon", "0.40", "2.50"),
-  ]
-  t2 = doc.add_table(rows=len(t2_data), cols=3)
-  t2.style = "Table Grid"
-  for r_idx, row in enumerate(t2_data):
-    for c_idx, val in enumerate(row):
-      t2.cell(r_idx, c_idx).text = val
-
-  # --- 6.2 PİS SU TESİSATI ---
-  doc.add_heading("6.2 PİS SU TESİSATI", level=2)
-
-  pis_su_maddeleri = []
-
-  if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
-    if len(pis_su_konumlari) == 1:
-      konum_s = pis_su_konumlari[0].lower()
-    else:
-      konum_s = (
-          f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
-          f" {pis_su_konumlari[-1].lower()}"
+      sihhi_maddeler.append(
+          "Binada kullanım soğuk su depolaması için "
+          f"{tip_str} tipinde su deposu kullanılmıştır."
       )
 
-    if len(pis_su_gecisler) == 1:
-      gecis_s = pis_su_gecisler[0].lower()
-    else:
-      gecis_s = (
-          f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
-          f" {pis_su_gecisler[-1].lower()}"
+    if sih_sec_5:
+      sihhi_maddeler.append(
+          "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
+          " vitrifiye seramik olacaktır."
+      )
+    if sih_sec_6:
+      sihhi_maddeler.append(
+          "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari"
+          " projede belirtilen yerlere techiz edilecektir."
       )
 
-    pis_su_maddeleri.append(
-        f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
-        f" {gecis_s} rögarlara iletilecektir."
-    )
+    if sih_sec_7 and sih_sicak_su_yontemleri:
+      if len(sih_sicak_su_yontemleri) == 1:
+        secilenler_str = sih_sicak_su_yontemleri[0].lower()
+      elif len(sih_sicak_su_yontemleri) == 2:
+        secilenler_str = (
+            f"{sih_sicak_su_yontemleri[0].lower()} ve"
+            f" {sih_sicak_su_yontemleri[1].lower()}"
+        )
+      else:
+        ilkler = ", ".join([y.lower() for y in sih_sicak_su_yontemleri[:-1]])
+        son = sih_sicak_su_yontemleri[-1].lower()
+        secilenler_str = f"{ilkler} ve {son}"
 
-  if pissu_sec_2:
-    pis_su_maddeleri.append(
-        "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
-        " yerleştirilmiştir."
-    )
-
-  if pissu_sec_3:
-    pis_su_maddeleri.append(
-        "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
-        " yapılacaktır."
-    )
-
-  if pissu_sec_4:
-    pis_su_maddeleri.append(
-        "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
-        " kullanılacaktır."
-    )
-
-  if pissu_sec_5:
-    pis_su_maddeleri.append(
-        "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
-    )
-
-  if pissu_sec_6:
-    pis_su_maddeleri.append(
-        "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
-        " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
-    )
-
-  if pissu_sec_7:
-    pis_su_maddeleri.append(
-        "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
-        " pis su kanalına bağlanacaktır."
-    )
-
-  if ek_pissu_on_bilgi.strip():
-    for ep in ek_pissu_on_bilgi.split("\n"):
-      if ep.strip():
-        pis_su_maddeleri.append(ep.strip())
-
-  for psm in pis_su_maddeleri:
-    doc.add_paragraph(psm, style="List Bullet")
-
-  # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-  doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
-  doc.add_paragraph(
-      "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
-      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır."
-  )
-
-  # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
-  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti")
-  t1_data = [
-      ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-      ("15", "Ø20", '1/2"', "(0-3.0)"),
-      ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-      ("25", "Ø32", '1"', "(8.0-20.0)"),
-      ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-      ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-      ("50", "Ø63", '2"', "(50.0-144.0)"),
-      ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-      ("80", "Ø90", '3"', "(368.0-1156.0)"),
-      ("100", "Ø125", '4"', "(1156-4900)"),
-      ("125", "-", '5"', "(4.900-14.400)"),
-      ("150", "-", '6"', "(14.400-40.000)"),
-      ("200", "-", '8"', "(40.000-484.000)"),
-      ("250", "-", '10"', "(484.000-518.400)"),
-      ("300", "-", '12"', "(518.400-1.440.000)"),
-  ]
-  t1 = doc.add_table(rows=len(t1_data), cols=4)
-  t1.style = "Table Grid"
-  for r_idx, row in enumerate(t1_data):
-    for c_idx, val in enumerate(row):
-      t1.cell(r_idx, c_idx).text = val
-
-  doc.add_paragraph()  # Boşluk
-
-  # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
-  doc.add_paragraph(
-      "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
-      " Yükleri (TS 1285)"
-  )
-  t2_data = [
-      ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
-      ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
-      ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
-      ("Bide Rezervuarı", "0.13", "0.25"),
-      ("Bulaşık Makinası", "0.40", "2.50"),
-      ("Çamaşır Makinası", "0.40", "2.50"),
-      ("Duş", "0.40", "2.50"),
-      ("1 Gözlü Eviye", "0.25", "1.00"),
-      ("2 Gözlü Eviye", "0.31", "1.50"),
-      ("Hela Rezervuarı", "0.13", "0.25"),
-      ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
-      ("Kurna", "0.40", "2.50"),
-      ("Lavabo", "0.18", "0.50"),
-      ("DN15 mm musluk", "0.31", "1.50"),
-      ("DN20 mm musluk", "0.71", "8.00"),
-      ("DN25 mm musluk", "1.06", "18.00"),
-      ("Pisuvar", "0.13", "0.25"),
-      ("Şofben (10lt/dk)", "0.18", "0.50"),
-      ("Şofben (16lt/dk)", "0.25", "1.00"),
-      ("Şofben (26lt/dk)", "0.43", "3.00"),
-      ("Taharet Musluğu", "0.13", "0.25"),
-      ("Termosifon", "0.40", "2.50"),
-  ]
-  t2 = doc.add_table(rows=len(t2_data), cols=3)
-  t2.style = "Table Grid"
-  for r_idx, row in enumerate(t2_data):
-    for c_idx, val in enumerate(row):
-      t2.cell(r_idx, c_idx).text = val
-
-  # --- 6.2 PİS SU TESİSATI ---
-  doc.add_heading("6.2 PİS SU TESİSATI", level=2)
-
-  pis_su_maddeleri = []
-
-  if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
-    if len(pis_su_konumlari) == 1:
-      konum_s = pis_su_konumlari[0].lower()
-    else:
-      konum_s = (
-          f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
-          f" {pis_su_konumlari[-1].lower()}"
+      sihhi_maddeler.append(
+          "Kullanma Sıcak suyu üretimi ısı merkezindeki "
+          f"{secilenler_str} vasıtasıyla yapılacaktır."
       )
 
-    if len(pis_su_gecisler) == 1:
-      gecis_s = pis_su_gecisler[0].lower()
-    else:
-      gecis_s = (
-          f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
-          f" {pis_su_gecisler[-1].lower()}"
+    if sih_sec_8:
+      sihhi_maddeler.append(
+          "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal"
+          " içi dağıtım boruları PPRC tipte seçilecektir."
       )
 
-    pis_su_maddeleri.append(
-        f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
-        f" {gecis_s} rögarlara iletilecektir."
-    )
+    if sih_sec_9:
+      secilen_mahaller = [
+          m.lower() for m in sih_yumusak_su_mahalleri if m != "Diğer"
+      ]
+      if sih_yumusak_su_diger.strip():
+        secilen_mahaller.append(sih_yumusak_su_diger.strip().lower())
 
-  if pissu_sec_2:
-    pis_su_maddeleri.append(
-        "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
-        " yerleştirilmiştir."
-    )
+      if secilen_mahaller:
+        if len(secilen_mahaller) == 1:
+          mahal_str = secilen_mahaller[0]
+        elif len(secilen_mahaller) == 2:
+          mahal_str = f"{secilen_mahaller[0]} ve {secilen_mahaller[1]}"
+        else:
+          ilkler = ", ".join(secilen_mahaller[:-1])
+          son = secilen_mahaller[-1]
+          mahal_str = f"{ilkler} ve {son}"
 
-  if pissu_sec_3:
-    pis_su_maddeleri.append(
-        "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
-        " yapılacaktır."
-    )
+        sihhi_maddeler.append(
+            f"{mahal_str.capitalize()} mahallerinde yumuşak su kullanılacaktır."
+        )
 
-  if pissu_sec_4:
-    pis_su_maddeleri.append(
-        "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
-        " kullanılacaktır."
-    )
+    if sih_sec_10 and sih_sicak_su_isitma_sistemleri:
+      if len(sih_sicak_su_isitma_sistemleri) == 1:
+        isitma_str = sih_sicak_su_isitma_sistemleri[0].lower()
+      elif len(sih_sicak_su_isitma_sistemleri) == 2:
+        isitma_str = (
+            f"{sih_sicak_su_isitma_sistemleri[0].lower()} ve"
+            f" {sih_sicak_su_isitma_sistemleri[1].lower()}"
+        )
+      else:
+        ilkler = ", ".join(
+            [s.lower() for s in sih_sicak_su_isitma_sistemleri[:-1]]
+        )
+        son = sih_sicak_su_isitma_sistemleri[-1].lower()
+        isitma_str = f"{ilkler} ve {son}"
 
-  if pissu_sec_5:
-    pis_su_maddeleri.append(
-        "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
-    )
-
-  if pissu_sec_6:
-    pis_su_maddeleri.append(
-        "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
-        " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
-    )
-
-  if pissu_sec_7:
-    pis_su_maddeleri.append(
-        "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
-        " pis su kanalına bağlanacaktır."
-    )
-
-  if ek_pissu_on_bilgi.strip():
-    for ep in ek_pissu_on_bilgi.split("\n"):
-      if ep.strip():
-        pis_su_maddeleri.append(ep.strip())
-
-  for psm in pis_su_maddeleri:
-    doc.add_paragraph(psm, style="List Bullet")
-
-  # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-  doc.add_heading("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
-  doc.add_paragraph(
-      "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait yükleme"
-      " birimleri ile debi değerlerinde aşağıdaki tablolar esas alınmıştır."
-  )
-
-  # Tablo 1: Sıhhi Tesisat Boru Çaplarının Tespiti
-  doc.add_paragraph("Tablo: Sıhhi Tesisat Boru Çaplarının Tespiti")
-  t1_data = [
-      ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-      ("15", "Ø20", '1/2"', "(0-3.0)"),
-      ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-      ("25", "Ø32", '1"', "(8.0-20.0)"),
-      ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-      ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-      ("50", "Ø63", '2"', "(50.0-144.0)"),
-      ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-      ("80", "Ø90", '3"', "(368.0-1156.0)"),
-      ("100", "Ø125", '4"', "(1156-4900)"),
-      ("125", "-", '5"', "(4.900-14.400)"),
-      ("150", "-", '6"', "(14.400-40.000)"),
-      ("200", "-", '8"', "(40.000-484.000)"),
-      ("250", "-", '10"', "(484.000-518.400)"),
-      ("300", "-", '12"', "(518.400-1.440.000)"),
-  ]
-  t1 = doc.add_table(rows=len(t1_data), cols=4)
-  t1.style = "Table Grid"
-  for r_idx, row in enumerate(t1_data):
-    for c_idx, val in enumerate(row):
-      t1.cell(r_idx, c_idx).text = val
-
-  doc.add_paragraph()  # Boşluk
-
-  # Tablo 2: Belirli Kullanma Yerleri İçin Yükleme Birimleri (TS 1285)
-  doc.add_paragraph(
-      "Tablo: Belirli Kullanma Yerleri İçin Yükleme Birimleri ve Aparat"
-      " Yükleri (TS 1285)"
-  )
-  t2_data = [
-      ("KULLANMA YERİ", "DEBİ (lt/sn)", "YÜKLEME BİRİMİ"),
-      ("Küvetli Banyo (DN15 mm)", "0.40", "2.50"),
-      ("Banyo, Jakuzili (DN15)", "1.00", "16.00"),
-      ("Bide Rezervuarı", "0.13", "0.25"),
-      ("Bulaşık Makinası", "0.40", "2.50"),
-      ("Çamaşır Makinası", "0.40", "2.50"),
-      ("Duş", "0.40", "2.50"),
-      ("1 Gözlü Eviye", "0.25", "1.00"),
-      ("2 Gözlü Eviye", "0.31", "1.50"),
-      ("Hela Rezervuarı", "0.13", "0.25"),
-      ("Basınçlı Hela Yıkayıcısı (DN15 mm)", "0.61", "6.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN20 mm)", "0.83", "11.00"),
-      ("Basınçlı Hela Yıkayıcısı (DN25 mm)", "1.30", "27.00"),
-      ("Kurna", "0.40", "2.50"),
-      ("Lavabo", "0.18", "0.50"),
-      ("DN15 mm musluk", "0.31", "1.50"),
-      ("DN20 mm musluk", "0.71", "8.00"),
-      ("DN25 mm musluk", "1.06", "18.00"),
-      ("Pisuvar", "0.13", "0.25"),
-      ("Şofben (10lt/dk)", "0.18", "0.50"),
-      ("Şofben (16lt/dk)", "0.25", "1.00"),
-      ("Şofben (26lt/dk)", "0.43", "3.00"),
-      ("Taharet Musluğu", "0.13", "0.25"),
-      ("Termosifon", "0.40", "2.50"),
-  ]
-  t2 = doc.add_table(rows=len(t2_data), cols=3)
-  t2.style = "Table Grid"
-  for r_idx, row in enumerate(t2_data):
-    for c_idx, val in enumerate(row):
-      t2.cell(r_idx, c_idx).text = val
-
-  # --- 6.2 PİS SU TESİSATI ---
-  doc.add_heading("6.2 PİS SU TESİSATI", level=2)
-
-  pis_su_maddeleri = []
-
-  if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
-    if len(pis_su_konumlari) == 1:
-      konum_s = pis_su_konumlari[0].lower()
-    else:
-      konum_s = (
-          f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
-          f" {pis_su_konumlari[-1].lower()}"
+      sihhi_maddeler.append(
+          f"Kullanım sıcak suyunun ısıtılması {isitma_str} vasıtasıyla"
+          " yapılacaktır."
       )
 
-    if len(pis_su_gecisler) == 1:
-      gecis_s = pis_su_gecisler[0].lower()
-    else:
-      gecis_s = (
-          f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
-          f" {pis_su_gecisler[-1].lower()}"
+    if sih_sec_12:
+      sihhi_maddeler.append(
+          "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
+          " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
+          " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
+          " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur"
+          " suyu toplama sistemi' yapılması zorunluluğu getirildiği için yağmur"
+          " hasadı tesisatı yapılmıştır."
       )
 
-    pis_su_maddeleri.append(
-        f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
-        f" {gecis_s} rögarlara iletilecektir."
+    if ek_sihhi_on_bilgi.strip():
+      for es in ek_sihhi_on_bilgi.split("\n"):
+        if es.strip():
+          sihhi_maddeler.append(es.strip())
+
+    for sm in sihhi_maddeler:
+      doc.add_paragraph(sm, style="List Bullet")
+
+    # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+    doc.add_heading(
+        "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
+    )
+    doc.add_paragraph(
+        "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
+        " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
+        " alınmıştır."
     )
 
-  if pissu_sec_2:
-    pis_su_maddeleri.append(
-        "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
-        " yerleştirilmiştir."
-    )
+    t1_data = [
+        ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+        ("15", "Ø20", '1/2"', "(0-3.0)"),
+        ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+        ("25", "Ø32", '1"', "(8.0-20.0)"),
+        ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+        ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+        ("50", "Ø63", '2"', "(50.0-144.0)"),
+        ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+        ("80", "Ø90", '3"', "(368.0-1156.0)"),
+        ("100", "Ø125", '4"', "(1156-4900)"),
+        ("125", "-", '5"', "(4.900-14.400)"),
+        ("150", "-", '6"', "(14.400-40.000)"),
+        ("200", "-", '8"', "(40.000-484.000)"),
+        ("250", "-", '10"', "(484.000-518.400)"),
+        ("300", "-", '12"', "(518.400-1.440.000)"),
+    ]
+    t1 = doc.add_table(rows=len(t1_data), cols=4)
+    t1.style = "Table Grid"
+    for r_idx, row in enumerate(t1_data):
+      for c_idx, val in enumerate(row):
+        t1.cell(r_idx, c_idx).text = val
 
-  if pissu_sec_3:
-    pis_su_maddeleri.append(
-        "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
-        " yapılacaktır."
-    )
+    doc.add_paragraph()
 
-  if pissu_sec_4:
-    pis_su_maddeleri.append(
-        "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
-        " kullanılacaktır."
-    )
+    # --- 6.2 PİS SU TESİSATI ---
+    doc.add_heading("6.2 PİS SU TESİSATI", level=2)
 
-  if pissu_sec_5:
-    pis_su_maddeleri.append(
-        "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
-    )
+    pis_su_maddeleri = []
 
-  if pissu_sec_6:
-    pis_su_maddeleri.append(
-        "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
-        " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
-    )
+    if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
+      if len(pis_su_konumlari) == 1:
+        konum_s = pis_su_konumlari[0].lower()
+      else:
+        konum_s = (
+            f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
+            f" {pis_su_konumlari[-1].lower()}"
+        )
 
-  if pissu_sec_7:
-    pis_su_maddeleri.append(
-        "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
-        " pis su kanalına bağlanacaktır."
-    )
+      if len(pis_su_gecisler) == 1:
+        gecis_s = pis_su_gecisler[0].lower()
+      else:
+        gecis_s = (
+            f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
+            f" {pis_su_gecisler[-1].lower()}"
+        )
 
-  if ek_pissu_on_bilgi.strip():
-    for ep in ek_pissu_on_bilgi.split("\n"):
-      if ep.strip():
-        pis_su_maddeleri.append(ep.strip())
-
-  for psm in pis_su_maddeleri:
-    doc.add_paragraph(psm, style="List Bullet")
-
-  # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-  doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
-  doc.add_paragraph(
-      "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-      " tayinlerinde aşağıdaki tablolar esas alınmıştır."
-  )
-
-  # Tablo 1: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli
-  doc.add_paragraph(
-      "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-  )
-  pissu_t1_data = [
-      ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
-      ("Alaturka veya alafranga hela (rezervuarlı)", "8"),
-      ("Küvet, duş", "7"),
-      ("Basınçlı Yıkayıcı", "10"),
-      ("Evye Sifon Çapı 32 mm", "2"),
-      ("Evye Sifon Çapı 40 mm", "4"),
-      ("Evye Sifon Çapı 50 mm", "6"),
-      ("Yer Süzgeci Sifon Çapı 32 mm", "2"),
-      ("Yer Süzgeci Sifon Çapı 40 mm", "4"),
-      ("Yer Süzgeci Sifon Çapı 50 mm", "6"),
-      ("Pisuar", "1"),
-      ("Lavabo", "2"),
-      ("Bide", "2"),
-      ("Çamaşır-Bulaşık Makinası", "10"),
-  ]
-  t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
-  t_pissu1.style = "Table Grid"
-  for r_idx, row in enumerate(pissu_t1_data):
-    for c_idx, val in enumerate(row):
-      t_pissu1.cell(r_idx, c_idx).text = val
-
-  doc.add_paragraph()  # Boşluk
-
-  # Tablo 2: Yükleme Birimi - %1 Eğim - Boru Çapı
-  doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
-  pissu_t2_data = [
-      ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
-      ("0-7", "", "50"),
-      ("7-25", "", "70"),
-      ("25-120", "", "100"),
-      ("120-270", "", "125"),
-      ("270-600", "", "150"),
-      ("600-2400", "", "200"),
-  ]
-  t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
-  t_pissu2.style = "Table Grid"
-  for r_idx, row in enumerate(pissu_t2_data):
-    for c_idx, val in enumerate(row):
-      t_pissu2.cell(r_idx, c_idx).text = val
-
-  doc.add_paragraph()
-  doc.add_paragraph(
-      "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
-      " 50,her tuvalet çıkışı Ø100 olacaktır."
-  )
-
-  # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ---
-  doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
-
-  terfi_maddeleri = []
-
-  if terfi_sec_1:
-    terfi_maddeleri.append(
-        "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
-        " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
-    )
-  if terfi_sec_2:
-    terfi_maddeleri.append(
-        "Pompalar yedekli (1 aktif + 1 yedek) çalışacak şekilde otomasyona"
-        " bağlanacaktır."
-    )
-  if terfi_sec_3:
-    terfi_maddeleri.append(
-        "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
-        " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
-    )
-  if terfi_sec_4:
-    terfi_maddeleri.append(
-        "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
-        " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
-    )
-
-  if ek_terfi_notu.strip():
-    for et in ek_terfi_notu.split("\n"):
-      if et.strip():
-        terfi_maddeleri.append(et.strip())
-
-  for tm in terfi_maddeleri:
-    doc.add_paragraph(tm, style="List Bullet")
-
-  # Dinamik PSP Alt Başlıkları ve Eşleşen Pozlar
-  if secilen_psp_listesi:
-    for idx, psp_isim in enumerate(secilen_psp_listesi, start=1):
-      p_vals = psp_parametreleri.get(
-          psp_isim,
-          {
-              "v": "10",
-              "h": "12",
-              "guc": "1.50",
-              "adet": "2 (1 Aktif + 1 Yedek)",
-              "tip": (
-                  "Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli Pis Su"
-                  " Terfi Pompası"
-              ),
-              "poz": "25.360.1302",
-              "wilo_model": "",
-              "wilo_artikel": "",
-              "wilo_h_katalog": "",
-          },
+      pis_su_maddeleri.append(
+          f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
+          f" {gecis_s} rögarlara iletilecektir."
       )
 
-      doc.add_heading(
-          f"6.2.2.{idx} {psp_isim} PİS SU TERFİ POMPA SEÇİMİ", level=3
+    if pissu_sec_2:
+      pis_su_maddeleri.append(
+          "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
+          " yerleştirilmiştir."
       )
-      doc.add_paragraph(f"V         = {p_vals['v']} m3/h")
-      doc.add_paragraph(f"H         = {p_vals['h']} mSS")
-      doc.add_paragraph(f"Güç       = {p_vals['guc']} kW")
-      doc.add_paragraph(f"Adet      = {p_vals['adet']}")
-      doc.add_paragraph(f"Tip       = {p_vals['tip']}")
-      doc.add_paragraph(f"Cihaz Poz No: {p_vals['poz']}")
-      if p_vals.get("wilo_model"):
-        doc.add_paragraph(f"Wilo Otomatik Seçilen Model: {p_vals['wilo_model']}")
-        doc.add_paragraph(f"Wilo Ürün Kodu: {p_vals.get('wilo_artikel', '')}")
+
+    if pissu_sec_3:
+      pis_su_maddeleri.append(
+          "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
+          " yapılacaktır."
+      )
+
+    if pissu_sec_4:
+      pis_su_maddeleri.append(
+          "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
+          " kullanılacaktır."
+      )
+
+    if pissu_sec_5:
+      pis_su_maddeleri.append(
+          "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
+      )
+
+    if pissu_sec_6:
+      pis_su_maddeleri.append(
+          "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
+          " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
+      )
+
+    if pissu_sec_7:
+      pis_su_maddeleri.append(
+          "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
+          " pis su kanalına bağlanacaktır."
+      )
+
+    if ek_pissu_on_bilgi.strip():
+      for ep in ek_pissu_on_bilgi.split("\n"):
+        if ep.strip():
+          pis_su_maddeleri.append(ep.strip())
+
+    for psm in pis_su_maddeleri:
+      doc.add_paragraph(psm, style="List Bullet")
+
+    # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+    doc.add_heading(
+        "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini"
+        if False
+        else "6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini",
+        level=2,
+    )
+    doc.add_paragraph(
+        "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+        " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+    )
+
+    doc.add_paragraph(
+        "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+    )
+    t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+    t_pissu1.style = "Table Grid"
+    for r_idx, row in enumerate(pissu_t1_data):
+      for c_idx, val in enumerate(row):
+        t_pissu1.cell(r_idx, c_idx).text = val
+
+    doc.add_paragraph()
+    doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
+    t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+    t_pissu2.style = "Table Grid"
+    for r_idx, row in enumerate(pissu_t2_data):
+      for c_idx, val in enumerate(row):
+        t_pissu2.cell(r_idx, c_idx).text = val
+
+    doc.add_paragraph()
+    doc.add_paragraph(
+        "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+        " 50,her tuvalet çıkışı Ø100 olacaktır."
+    )
+
+    # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
+    if psp_parametreleri:
+      doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+      doc.add_paragraph(
+          "Pis su terfi pompalarının çalışma noktaları; bina kullanım türü,"
+          " armatür yükleme birimleri ve asıl pompa sayılarına göre ayrı ayrı"
+          " hesaplanmıştır."
+      )
+
+      for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
+        doc.add_heading(
+            f"6.2.2.{idx} {psp} PİS SU TERFİ POMPA SEÇİMİ", level=3
+        )
+
         doc.add_paragraph(
-            f"Wilo katalog çalışma noktasındaki yaklaşık basma yüksekliği: "
-            f"{p_vals.get('wilo_h_katalog', '')} mSS"
+            f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
+            f" {pp['k_katsayisi']})"
         )
-
-      # Poz numarasından hemen sonra pompa seçim eğrisi.
-      try:
-        q_grafik = p_vals.get("q_egrisi")
-        h_grafik = p_vals.get("h_egrisi")
-        egrisi_basligi = p_vals.get(
-            "egrisi_basligi",
-            "Wilo katalog Q-H eğrisi" if p_vals.get("wilo_model") else "Pompa seçim eğrisi"
-        )
-
-        if not q_grafik or not h_grafik:
-          q_grafik, h_grafik, egrisi_basligi = pompa_secim_egrisi(
-              float(p_vals["v"]), float(p_vals["h"])
-          )
-
-        fig_rapor, ax_rapor = plt.subplots(figsize=(7.2, 4.2))
-        ax_rapor.plot(
-            q_grafik,
-            h_grafik,
-            linewidth=2.0,
-            label=egrisi_basligi,
-        )
-        ax_rapor.scatter(
-            [float(p_vals["v"])],
-            [float(p_vals["h"])],
-            s=65,
-            zorder=5,
-            label="Çalışma noktası",
-        )
-        ax_rapor.annotate(
-            f"Q={float(p_vals['v']):.2f} m³/h, H={float(p_vals['h']):.2f} mSS",
-            (float(p_vals["v"]), float(p_vals["h"])),
-            xytext=(8, 8),
-            textcoords="offset points",
-        )
-        ax_rapor.set_xlabel("Debi Q [m³/h]")
-        ax_rapor.set_ylabel("Basma yüksekliği H [mSS]")
-        ax_rapor.set_title(f"{psp_isim} – Pompa Seçim Eğrisi")
-        ax_rapor.grid(True, alpha=0.25)
-        ax_rapor.legend()
-        fig_rapor.tight_layout()
-
-        img_buffer = io.BytesIO()
-        fig_rapor.savefig(
-            img_buffer,
-            format="png",
-            dpi=180,
-            bbox_inches="tight",
-        )
-        plt.close(fig_rapor)
-        img_buffer.seek(0)
-        doc.add_picture(img_buffer, width=Inches(6.5))
+        doc.add_paragraph("• Seçilen Armatür Adetleri ve Yükleme Birimleri:")
+        for arm in pp["armatur_listesi"]:
+          doc.add_paragraph(f"  - {arm}", style="List Bullet")
         doc.add_paragraph(
-            "Şekil: Üretici katalog Q-H eğrisi ve tasarım çalışma noktası."
-            if p_vals.get("wilo_model")
-            else "Şekil: Pompa seçim eğrisi ve tasarım çalışma noktası."
+            f"• Toplam Yükleme Birimi (Y.B.) = {pp['toplam_yb']} Y.B."
         )
-        if p_vals.get("wilo_model"):
-            doc.add_paragraph(
-                "Kaynak: Wilo-Rexa PRO-S resmi ürün/katalog performans eğrileri. "
-                "Eğri üzerindeki ara noktalar katalog grafiğinden dijitalleştirilmiş "
-                "seçim verileridir; nihai sipariş öncesi Wilo seçim yazılımı/katalog "
-                "çıktısı ile teyit edilmelidir."
-            )
-      except Exception:
         doc.add_paragraph(
-            "Pompa seçim eğrisi oluşturulamadı; pompa çalışma noktası ve poz bilgileri yukarıda verilmiştir."
+            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B. ="
+            f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
         )
 
-  # Hafızada dosya oluşturma
-  buffer = io.BytesIO()
-  doc.save(buffer)
-  buffer.seek(0)
+        doc.add_paragraph(
+            f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
+        )
+        doc.add_paragraph(f"H           = {pp['h']:.2f} mSS")
+        doc.add_paragraph(f"Güç         = {pp['guc']:.2f} kW")
+        doc.add_paragraph(f"Adet        = {pp['adet_str']}")
+        doc.add_paragraph(f"Tip         = {pp['tip']}")
+        if poz_rapora_eklensin_mi:
+          doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
 
-  st.success("Otomatik güç hesabı ve poz tayini ile rapor hazırlandı!")
+    # Hafızada dosya oluşturma
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
 
-  dosya_adi = (
-      f"{aktif_is.replace(' ', '_')}_Rapor.docx"
-      if is_adi
-      else "Mekanik_Uygulama_Raporu.docx"
-  )
+    st.success("Rapor başarıyla hazırlandı!")
 
-  st.download_button(
-      label="📥 Word Dosyasını İndir (.docx)",
-      data=buffer,
-      file_name=dosya_adi,
-      mime=(
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ),
-  )
+    dosya_adi = (
+        f"{aktif_is.replace(' ', '_')}_Rapor.docx"
+        if is_adi
+        else "Mekanik_Uygulama_Raporu.docx"
+    )
+
+    st.download_button(
+        label="📥 Word Dosyasını İndir (.docx)",
+        data=buffer,
+        file_name=dosya_adi,
+        mime=(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ),
+    )
