@@ -1533,10 +1533,12 @@ if st.button("Raporu Oluştur (.docx)"):
   for tm in terfi_maddeleri:
     doc.add_paragraph(tm, style="List Bullet")
 
-  # Dinamik PSP Alt Başlıkları (6.2.2.1, 6.2.2.2 vb.)
+  # Dinamik PSP Alt Başlıkları (6.2.2.1 PSP-01 PİS SU TERFİ POMPA SEÇİMİ vb.)
   if secilen_psp_listesi:
     for idx, psp_isim in enumerate(secilen_psp_listesi, start=1):
-      doc.add_heading(f"6.2.2.{idx} {psp_isim}", level=3)
+      doc.add_heading(
+          f"6.2.2.{idx} {psp_isim} PİS SU TERFİ POMPA SEÇİMİ", level=3
+      )
       doc.add_paragraph(
           f"Projede belirlenen {psp_isim} terfi pompası ve çukuru için gerekli"
           " debi, basma yüksekliği ve ekipman seçim kriterleri proje"
@@ -1548,7 +1550,7 @@ if st.button("Raporu Oluştur (.docx)"):
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("Dinamik PSP alt başlıklarıyla rapor hazırlandı!")
+  st.success("PSP başlıkları istenen formata göre güncellenerek hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
