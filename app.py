@@ -745,27 +745,6 @@ ek_pissu_on_bilgi = st.text_area(
 # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
 st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
-# --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ ---
-st.subheader("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ")
-secilen_psp_listesi = st.multiselect(
-    "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
-    [
-        "PSP-01",
-        "PSP-02",
-        "PSP-03",
-        "PSP-04",
-        "PSP-05",
-        "PSP-06",
-        "PSP-07",
-        "PSP-08",
-        "PSP-09",
-        "PSP-10",
-    ],
-    default=["PSP-01"],
-)
-
-
-
 # ---------------------------------------------------------------------------
 # 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ
 # ---------------------------------------------------------------------------
@@ -865,6 +844,7 @@ secilen_psp_listesi = st.multiselect(
     "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
     [f"PSP-{i:02d}" for i in range(1, 11)],
     default=["PSP-01"],
+    key="secilen_psp_listesi",
 )
 
 psp_parametreleri = {}
