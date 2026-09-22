@@ -742,6 +742,9 @@ ek_pissu_on_bilgi = st.text_area(
     "İlave Pis Su Tesisatı Maddesi (Her satıra bir tane)", "", height=80
 )
 
+# --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
+
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
@@ -1391,12 +1394,70 @@ if st.button("Raporu Oluştur (.docx)"):
   for psm in pis_su_maddeleri:
     doc.add_paragraph(psm, style="List Bullet")
 
+  # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+  doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2)
+  doc.add_paragraph(
+      "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+      " tayinlerinde aşağıdaki tablolar esas alınmıştır[cite: 3]:"
+  )
+
+  # Tablo 1: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli
+  doc.add_paragraph(
+      "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+      "[cite: 3]"
+  )
+  pissu_t1_data = [
+      ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
+      ("Alaturka veya alafranga hela (rezervuarlı)", "8"),
+      ("Küvet, duş", "7"),
+      ("Basınçlı Yıkayıcı", "10"),
+      ("Evye Sifon Çapı 32 mm", "2"),
+      ("Evye Sifon Çapı 40 mm", "4"),
+      ("Evye Sifon Çapı 50 mm", "6"),
+      ("Yer Süzgeci Sifon Çapı 32 mm", "2"),
+      ("Yer Süzgeci Sifon Çapı 40 mm", "4"),
+      ("Yer Süzgeci Sifon Çapı 50 mm", "6"),
+      ("Pisuar", "1"),
+      ("Lavabo", "2"),
+      ("Bide", "2"),
+      ("Çamaşır-Bulaşık Makinası", "10"),
+  ]
+  t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+  t_pissu1.style = "Table Grid"
+  for r_idx, row in enumerate(pissu_t1_data):
+    for c_idx, val in enumerate(row):
+      t_pissu1.cell(r_idx, c_idx).text = val
+
+  doc.add_paragraph()  # Boşluk
+
+  # Tablo 2: Yükleme Birimi - %1 Eğim - Boru Çapı
+  doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları[cite: 3]")
+  pissu_t2_data = [
+      ("YÜKLEME BİRİMİ", "% 1 EĞİM", "BORU ÇAPI"),
+      ("0-7", "", "50"),
+      ("7-25", "", "70"),
+      ("25-120", "", "100"),
+      ("120-270", "", "125"),
+      ("270-600", "", "150"),
+      ("600-2400", "", "200"),
+  ]
+  t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+  t_pissu2.style = "Table Grid"
+  for r_idx, row in enumerate(pissu_t2_data):
+    for c_idx, val in enumerate(row):
+      t_pissu2.cell(r_idx, c_idx).text = val
+
+  doc.add_paragraph()
+  doc.add_paragraph(
+      "NOT: Lavabolar Ø70 her tuvalet çıkışı Ø 100 lavabolar iniş Ø 32"
+  )
+
   # Hafızada dosya oluşturma
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success("6.2 Pis Su Tesisatı seçimli maddeleriyle rapor hazırlandı!")
+  st.success("6.2.1 Pis Su Yükleme Birimleri ve Tablolarıyla rapor hazırlandı!")
 
   dosya_adi = (
       f"{aktif_is.replace(' ', '_')}_Rapor.docx"
