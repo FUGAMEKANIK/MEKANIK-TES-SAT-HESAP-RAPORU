@@ -975,8 +975,8 @@ psp_parametreleri = {}
 
 if secilen_psp_listesi:
   st.write(
-      "Her bir terfi pompası çukuru için bina tipi, armatürler ve asıl/yedek"
-      " adetlerini ayrı ayrı girin:"
+      "Her bir terfi pompası çukuru için bina tipi, armatürler, emniyet"
+      " faktörleri ve asıl/yedek adetlerini ayrı ayrı girin:"
   )
 
   for psp in secilen_psp_listesi:
@@ -1015,7 +1015,6 @@ if secilen_psp_listesi:
       else:
         k_varsayilan = 1.2
 
-      # 1. İstek: Bina türü seçilince k değeri otomatik olarak session state / input kutusuna işleniyor
       k_key = f"{psp}_k"
       if k_key not in st.session_state or st.session_state.get(
           f"{psp}_bina_eski"
@@ -1112,14 +1111,35 @@ if secilen_psp_listesi:
 
       st.markdown("---")
 
-      # 2. İstek: Vitrifiye sayıları değiştikçe hesaplanan debi otomatik olarak debi sayı kutusuna yansır
+      # İsteğe Bağlı Debi Emniyet Faktörü Seçimi
+      emniyet_secenekleri = {
+          "Emniyet Ekleme (1.0)": 1.0,
+          "%10 Emniyet (1.10)": 1.10,
+          "%15 Emniyet (1.15)": 1.15,
+          "%20 Emniyet (1.20)": 1.20,
+          "%25 Emniyet (1.25)": 1.25,
+          "%30 Emniyet (1.30)": 1.30,
+          "%40 Emniyet (1.40)": 1.40,
+          "%50 Emniyet (1.50)": 1.50,
+      }
+      emniyet_etiket = st.selectbox(
+          f"{psp} Debi Emniyet Oranı",
+          list(emniyet_secenekleri.keys()),
+          key=f"{psp}_emniyet_secim",
+      )
+      emniyet_katsayisi = emniyet_secenekleri[emniyet_etiket]
+
+      # Net debi üzerine seçilen emniyet katsayısı uygulanır
+      emniyetli_hesaplanan_q_m3h = round(hesaplanan_q_m3h * emniyet_katsayisi, 2)
+
       v_key = f"{psp}_v_num"
       if v_key not in st.session_state or st.session_state.get(
           f"{psp}_yb_eski"
-      ) != toplam_yb or st.session_state.get(f"{psp}_k_eski") != k_katsayisi:
-        st.session_state[v_key] = max(1.0, hesaplanan_q_m3h)
+      ) != toplam_yb or st.session_state.get(f"{psp}_k_eski") != k_katsayisi or st.session_state.get(f"{psp}_emniyet_eski") != emniyet_katsayisi:
+        st.session_state[v_key] = max(1.0, emniyetli_hesaplanan_q_m3h)
         st.session_state[f"{psp}_yb_eski"] = toplam_yb
         st.session_state[f"{psp}_k_eski"] = k_katsayisi
+        st.session_state[f"{psp}_emniyet_eski"] = emniyet_katsayisi
 
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h]",
@@ -1232,8 +1252,12 @@ if secilen_psp_listesi:
       psp_parametreleri[psp] = {
           "bina_tipi": bina_tipi,
           "k_katsayisi": k_katsayisi,
+          "emniyet_etiket": emniyet_etiket,
+          "emniyet_katsayisi": emniyet_katsayisi,
+          "net_q_lps": hesaplanan_q_lps,
+          "net_q_m3h": hesaplanan_q_m3h,
           "toplam_yb": toplam_yb,
-          "q_lps_toplam": hesaplanan_q_lps,
+          "q_lps_toplam": (toplam_v_val / 3.6),
           "v_toplam": toplam_v_val,
           "v_tek": pompa_basina_v,
           "q_lps_tek": hesap["q_lps"],
@@ -1849,7 +1873,7 @@ if st.button("Raporu Oluştur (.docx)"):
         gecis_s = pis_su_gecisler[0].lower()
       else:
         gecis_s = (
-            f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
+            f"{', '.join([g.lower() for g in pis_su_gecisler[-1]])} ve"
             f" {pis_su_gecisler[-1].lower()}"
         )
 
@@ -1966,14 +1990,23 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_paragraph(
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
-        # Formül gösterimi (Q_toplam = k * √Y.B =)
-        doc.add_paragraph(
-            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
-            f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
-            f" {pp['q_lps_toplam']:.2f} L/s ({pp['v_toplam']:.2f} m³/h)"
-        )
 
-        # Sonuç bloğu ve başlığı (-Seçilen Pompa:)
+        # Raporda emniyet faktörünün gösterimi ve formül
+        if pp["emniyet_katsayisi"] > 1.0:
+          doc.add_paragraph(
+              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B * (Emniyet Katsayısı"
+              f" {pp['emniyet_katsayisi']}) ="
+              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} *"
+              f" {pp['emniyet_katsayisi']} = {pp['v_toplam']:.2f} m³/h"
+              f" ({pp['q_lps_toplam']:.2f} L/s) [{pp['emniyet_etiket']}]"
+          )
+        else:
+          doc.add_paragraph(
+              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
+              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
+              f" {pp['v_toplam']:.2f} m³/h ({pp['q_lps_toplam']:.2f} L/s)"
+          )
+
         doc.add_heading(f"-Seçilen Pompa: {psp}", level=4)
         doc.add_paragraph(
             f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
