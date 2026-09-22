@@ -1015,14 +1015,21 @@ if secilen_psp_listesi:
       else:
         k_varsayilan = 1.2
 
-      # İstediğiniz gibi k değeri otomatik olarak atanıp state üzerinden güncelleniyor
+      # 1. İstek: Bina türü seçilince k değeri otomatik olarak session state / input kutusuna işleniyor
+      k_key = f"{psp}_k"
+      if k_key not in st.session_state or st.session_state.get(
+          f"{psp}_bina_eski"
+      ) != bina_tipi:
+        st.session_state[k_key] = k_varsayilan
+        st.session_state[f"{psp}_bina_eski"] = bina_tipi
+
       k_katsayisi = st.number_input(
           f"{psp} Eşzamanlık Katsayısı (k)",
           min_value=0.1,
           max_value=2.0,
-          value=k_varsayilan,
+          value=st.session_state[k_key],
           step=0.05,
-          key=f"{psp}_k",
+          key=k_key,
       )
 
       st.write(f"**{psp} için Armatür Adetleri:**")
@@ -1104,14 +1111,23 @@ if secilen_psp_listesi:
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
       st.markdown("---")
-      # Vitrifiye değiştikçe debi otomatik yansır, ayrıca manuel olarak da yuvarlanabilir/düzenlenebilir
+
+      # 2. İstek: Vitrifiye sayıları değiştikçe hesaplanan debi otomatik olarak debi sayı kutusuna yansır
+      v_key = f"{psp}_v_num"
+      if v_key not in st.session_state or st.session_state.get(
+          f"{psp}_yb_eski"
+      ) != toplam_yb or st.session_state.get(f"{psp}_k_eski") != k_katsayisi:
+        st.session_state[v_key] = max(1.0, hesaplanan_q_m3h)
+        st.session_state[f"{psp}_yb_eski"] = toplam_yb
+        st.session_state[f"{psp}_k_eski"] = k_katsayisi
+
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h]",
           min_value=1.0,
           max_value=100.0,
-          value=max(1.0, hesaplanan_q_m3h),
+          value=st.session_state[v_key],
           step=0.5,
-          key=f"{psp}_v_num",
+          key=v_key,
       )
 
       h_val = st.number_input(
@@ -1927,10 +1943,7 @@ if st.button("Raporu Oluştur (.docx)"):
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
         doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
-        doc.add_paragraph(
-            f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
-            f" {pp['k_katsayisi']})"
-        )
+        doc.add_paragraph(f"• Bina Kullanım Türü: {pp['bina_tipi']}")
         doc.add_paragraph(
             "• Seçilen Armatür Adetleri ve Yükleme Birimleri (Tablo):"
         )
