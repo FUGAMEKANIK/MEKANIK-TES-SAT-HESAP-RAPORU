@@ -975,8 +975,8 @@ psp_parametreleri = {}
 
 if secilen_psp_listesi:
   st.write(
-      "Her bir terfi pompası çukuru için bina tipi, armatürler, k katsayısı ve"
-      " asıl/yedek adetlerini ayrı ayrı girin:"
+      "Her bir terfi pompası çukuru için bina tipi, armatürler ve asıl/yedek"
+      " adetlerini ayrı ayrı girin:"
   )
 
   for psp in secilen_psp_listesi:
@@ -1103,7 +1103,7 @@ if secilen_psp_listesi:
       hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
 
       st.markdown("---")
-      # DÜZGÜN SIRALI GİRDİLER (İç içe geçme önlendi, alt alta düzgün sıra)
+      # Düzenli alt alta sıralı girdiler (çakışma önlendi)
       toplam_v_val = st.number_input(
           f"{psp} Toplam Debi (Q_toplam) [m³/h] (Hesaplanan: {hesaplanan_q_m3h})",
           min_value=1.0,
@@ -1155,7 +1155,7 @@ if secilen_psp_listesi:
 
       st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
 
-      # Program İçi Grafik Önizlemesi
+      # Yalnızca program içinde görünen seçim eğrisi grafiği
       fig, ax = plt.subplots(figsize=(6, 3))
       ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
       p_renk = "green" if poz_durumu == "UYGUN" else "red"
@@ -1190,7 +1190,6 @@ if secilen_psp_listesi:
           " Pompası"
       )
 
-      # Rapor için armatür veri listesi (Cinsi, Y.B, Adet, Çarpım)
       tablo_satirlari = []
       if adet_hela > 0:
         tablo_satirlari.append(("Hela / Klozet", 8, adet_hela, yb_hela))
@@ -1927,11 +1926,8 @@ if st.button("Raporu Oluştur (.docx)"):
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-        # İstediğiniz gibi başlık önüne '-Seçilen Pompa:' eklendi
-        doc.add_heading(
-            f"6.2.2.{idx} -Seçilen Pompa: {psp} PİS SU TERFİ POMPA SEÇİMİ",
-            level=3,
-        )
+        # İSTEDİĞİNİZ BAŞLIK FORMATI
+        doc.add_heading(f"-Seçilen Pompa: {psp}", level=3)
 
         doc.add_paragraph(
             f"• Bina Kullanım Türü: {pp['bina_tipi']} (Eşzamanlık katsayısı k ="
@@ -1941,26 +1937,12 @@ if st.button("Raporu Oluştur (.docx)"):
             "• Seçilen Armatür Adetleri ve Yükleme Birimleri (Tablo):"
         )
 
-        # Armatürleri detaylı tablo olarak rapora ekleme (Armatür Cinsi, Y.B., Adet, Çarpım)
         arm_tablo = doc.add_table(rows=1, cols=4)
         arm_tablo.style = "Table Grid"
         arm_tablo.rows[0].cells[0].text = "Armatür Cinsi"
         arm_tablo.rows[0].cells[1].text = "Yükleme Birimi (Y.B.)"
         arm_tablo.rows[0].cells[2].text = "Adet"
         arm_tablo.rows[0].cells[3].text = "Toplam Çarpım (Y.B.)"
-
-        # Birim eşleştirmeleri sözlüğü
-        yb_degerleri = {
-            "Hela / Klozet": 8,
-            "Lavabo / Bide": 2,
-            "Küvet / Duş": 7,
-            "Eviye": 4,
-            "Yer Süzgeci": 2,
-            "Otopark Süzgeci": 6,
-            "Basınçlı Yıkayıcı": 10,
-            "Çamaşır/Bulaşık Makinası": 10,
-            "Pisuar": 1,
-        }
 
         for satirlik in pp["tablo_satirlari"]:
           cinsi, birim_yb, adet_sayisi, carpim_yb = satirlik
@@ -1971,7 +1953,7 @@ if st.button("Raporu Oluştur (.docx)"):
           row_cells[3].text = str(carpim_yb)
 
         doc.add_paragraph(
-            f"• Toplam Yükleme Birimi (Y.B.) = {pp['toplam_yb']} Y.B."
+            f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
         doc.add_paragraph(
             f"• Toplam Sistem Debisi Q_toplam = k * √Y.B."
@@ -1985,7 +1967,10 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_paragraph(f"H           = {pp['h']:.2f} mSS")
         doc.add_paragraph(f"Güç         = {pp['guc']:.2f} kW")
         doc.add_paragraph(f"Adet        = {pp['adet_str']}")
-        doc.add_paragraph(f"Tip         = {pp['tip']}")
+        doc.add_paragraph(
+            f"Tip         = Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli"
+            " Pis Su Terfi Pompası"
+        )
         if poz_rapora_eklensin_mi:
           doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
 
