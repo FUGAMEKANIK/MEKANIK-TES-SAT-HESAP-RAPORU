@@ -1271,6 +1271,7 @@ if secilen_psp_listesi:
           "tablo_satirlari": tablo_satirlari,
       }
 
+st.subheader("Pis Su Terfi Pompası Genel Esasları ve Notlar")
 terfi_keys = ["terfi_sec_1", "terfi_sec_2", "terfi_sec_3", "terfi_sec_4"]
 _toplu_secim_butonlari(terfi_keys)
 
@@ -1872,7 +1873,7 @@ if st.button("Raporu Oluştur (.docx)"):
         gecis_s = pis_su_gecisler[0].lower()
       else:
         gecis_s = (
-            f"{', '.join([g.lower() for g in pis_su_gecisler[-1]])} ve"
+            f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
             f" {pis_su_gecisler[-1].lower()}"
         )
 
@@ -1990,11 +1991,8 @@ if st.button("Raporu Oluştur (.docx)"):
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
 
-        # Raporda emniyet faktörünün tam istediğiniz formatta gösterimi
         if pp["emniyet_katsayisi"] > 1.0:
-          yuzde_str = pp["emniyet_etiket"].split(" ")[
-              0
-          ]  # Örn: "%15" kısmını alır
+          yuzde_str = pp["emniyet_etiket"].split(" ")[0]
           doc.add_paragraph(
               f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
               f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
@@ -2021,6 +2019,44 @@ if st.button("Raporu Oluştur (.docx)"):
         )
         if poz_rapora_eklensin_mi:
           doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
+
+      # 6.2.2 Maddesinin Altına Eklenen Genel Esaslar ve Notlar
+      doc.add_paragraph()
+      doc.add_heading("Pis Su Terfi Pompası Genel Esasları", level=3)
+      terfi_maddeleri = []
+      if terfi_sec_1:
+        terfi_maddeleri.append(
+            "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
+            " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
+        )
+      if terfi_sec_2:
+        terfi_maddeleri.append(
+            "Pompalar yedekli çalışacak şekilde otomasyona bağlanacaktır."
+        )
+      if terfi_sec_3:
+        terfi_maddeleri.append(
+            "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
+            " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
+        )
+      if terfi_sec_4:
+        terfi_maddeleri.append(
+            "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
+            " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
+        )
+
+      if ek_terfi_notu.strip():
+        for etn in ek_terfi_notu.split("\n"):
+          if etn.strip():
+            terfi_maddeleri.append(etn.strip())
+
+      if terfi_maddeleri:
+        for tm in terfi_maddeleri:
+          doc.add_paragraph(tm, style="List Bullet")
+      else:
+        doc.add_paragraph(
+            "Herhangi bir terfi pompası genel esas maddesi seçilmemiştir.",
+            style="Italic",
+        )
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
