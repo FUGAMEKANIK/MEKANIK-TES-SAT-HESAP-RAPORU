@@ -8,7 +8,6 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.style import WD_STYLE_TYPE
 import matplotlib.pyplot as plt
 import streamlit as st
 
@@ -945,16 +944,6 @@ def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
   }
 
 
-# ---------------------------------------------------------------------------
-# ÜRETİCİ POMPA VERİ TABANI
-# ---------------------------------------------------------------------------
-# Not: Aşağıdaki Q-H noktaları, üretici katalog grafiklerinin program içinde
-# kullanılabilmesi için sayısallaştırılmış yaklaşık grafik noktalarıdır.
-# Üretici katalogları sürüm/model/konfigürasyona göre değişebileceğinden,
-# nihai satın alma/ihale aşamasında üretici onayı alınmalıdır.
-# Programın çalışma mantığı bu veri tabanından bağımsız olarak mevcut poz
-# kontrolünü korur.
-
 URETICI_POMPA_VERITABANI = [
     {
         "marka": "Grundfos",
@@ -1054,7 +1043,6 @@ def pompa_uretici_sec(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
     h_egri = _egri_degeri(pompa["curve"], q_m3h)
     if h_egri is None or h_egri < h_mss:
       continue
-    # Gereken basınca en yakın ve mümkün olduğunca küçük güçte modeli seç.
     adaylar.append((h_egri - h_mss, pompa["p2_kw"], pompa))
 
   if not adaylar:
@@ -1075,7 +1063,6 @@ def pompa_secim_egrisi(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
       baslik = f"{model['marka']} {model['model']} - Üretici Q-H Eğrisi"
       return q_egrisi, h_egrisi, baslik, model
 
-    # Üretici veri tabanında uygun model yoksa mevcut poz sınır zarfı korunur.
     kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
     q0, q1 = kayit["qmin"], kayit["qmax"]
     h0, h1 = kayit["hmax"], kayit["hmin"]
@@ -1123,7 +1110,6 @@ pompa_marka_secimi = st.selectbox(
     ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
     index=0,
     key="pompa_marka_secimi",
-    help="Program içindeki seçim ve Q-H eğrisi için üretici filtresidir. Rapor grafiğinde marka/model gösterilmez.",
 )
 
 if secilen_psp_listesi:
@@ -1158,7 +1144,6 @@ if secilen_psp_listesi:
           key=f"{psp}_bina",
       )
 
-      # Otomatik k katsayısı atama mantığı
       if "Düzensiz" in bina_tipi:
         k_varsayilan = 0.5
       elif "Hastaneler" in bina_tipi:
@@ -1234,7 +1219,6 @@ if secilen_psp_listesi:
             f"{psp} Pisuar (1 Y.B.)", min_value=0, value=0, key=f"{psp}_pis"
         )
 
-      # Yükleme Birimi ve Eşzamanlı Net Debi Formülasyonu
       yb_hela = adet_hela * 8
       yb_lavabo = adet_lavabo * 2
       yb_banyo = adet_banyo * 7
@@ -1257,7 +1241,6 @@ if secilen_psp_listesi:
           + yb_pisuvar
       )
 
-      # Önce sade/net hesap
       net_q_lps = (
           k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
       )
@@ -1265,7 +1248,6 @@ if secilen_psp_listesi:
 
       st.markdown("---")
 
-      # İsteğe Bağlı Debi Emniyet Faktörü Seçimi
       emniyet_secenekleri = {
           "Emniyet Ekleme (1.0)": 1.0,
           "%10 Emniyet (1.10)": 1.10,
@@ -1283,7 +1265,6 @@ if secilen_psp_listesi:
       )
       emniyet_katsayisi = emniyet_secenekleri[emniyet_etiket]
 
-      # Ardından net sonuç emniyetle çarpılarak emniyetli sonuç elde edilir
       emniyetli_q_m3h = round(net_q_m3h * emniyet_katsayisi, 2)
 
       v_key = f"{psp}_v_num"
@@ -1336,12 +1317,9 @@ if secilen_psp_listesi:
       st.metric("Tek Pompa Elektrik Gücü", f"{hesap['motor_secim_kw']:.2f} kW")
 
       if poz_durumu == "UYGUN":
-        st.success(f"✅ Uygun Poz: **{hesaplanan_poz}** (Eğri Sınırları İçinde)")
+        st.success(f"✅ Uygun Poz: **{hesaplanan_poz}**")
       else:
-        st.error(
-            "❌ HATA: Tek pompa debi/basıncı 25.360.1301–1308 sınırları"
-            " dışındadır! Asıl pompa sayısını artırın."
-        )
+        st.error("❌ HATA: Tek pompa debi/basıncı sınır dışındadır!")
 
       st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
 
@@ -1349,15 +1327,6 @@ if secilen_psp_listesi:
           q_egrisi, h_egrisi, pompa_basina_v, h_val, egrisi_basligi, anonim=False
       )
       st.image(program_grafik, caption=egrisi_basligi, use_container_width=True)
-
-      if secilen_uretici_pompa:
-        st.success(
-            f"🔧 Program içi otomatik seçim: **{secilen_uretici_pompa['marka']} {secilen_uretici_pompa['model']}** | "
-            f"Q-H noktası: {pompa_basina_v:.2f} m³/h / {h_val:.2f} mSS | "
-            f"Eğri üzerindeki H: {secilen_uretici_pompa['h_calisma']:.2f} mSS"
-        )
-      else:
-        st.warning("Üretici veri tabanında bu çalışma noktası için uygun model bulunamadı; mevcut poz sınır eğrisi kullanılıyor.")
 
       toplam_adet = asil_adedi + yedek_adedi
       adet_metin = (
@@ -1457,11 +1426,20 @@ ek_terfi_notu = st.text_area(
 )
 
 
-# ---------------------------------------------------------------------------
-# WORD RAPOR STİLİ
-# ---------------------------------------------------------------------------
+# --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
+st.subheader("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ Girdileri")
+st.write("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi ve Kriterleri")
+depo_hacim_orani = st.number_input(
+    "Depo Kapasitesi Katsayısı (Günlük tüketimin katı veya kişi başı lt):",
+    min_value=0.1,
+    max_value=5.0,
+    value=1.0,
+    step=0.1,
+    key="depo_hacim_orani",
+)
+
+
 def rapor_word_stillerini_uygula(doc):
-  # Normal metin ve listeler
   for style_name in ["Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"]:
     try:
       stl = doc.styles[style_name]
@@ -1471,7 +1449,6 @@ def rapor_word_stillerini_uygula(doc):
     except KeyError:
       pass
 
-  # Ana başlıklar: 14 punto ve her zaman yeni sayfadan
   h1 = doc.styles["Heading 1"]
   h1.font.name = "Times New Roman"
   h1._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
@@ -1479,7 +1456,6 @@ def rapor_word_stillerini_uygula(doc):
   h1.font.bold = True
   h1.paragraph_format.page_break_before = True
 
-  # Alt başlıklar: 12 punto, kalın
   for level in [2, 3, 4]:
     h = doc.styles[f"Heading {level}"]
     h.font.name = "Times New Roman"
@@ -1487,7 +1463,6 @@ def rapor_word_stillerini_uygula(doc):
     h.font.size = Pt(12)
     h.font.bold = True
 
-  # Belge içindeki tüm mevcut run'ları kesin olarak TNR yap.
   for paragraph in doc.paragraphs:
     for run in paragraph.runs:
       run.font.name = "Times New Roman"
@@ -1501,7 +1476,6 @@ def rapor_word_stillerini_uygula(doc):
       elif run.font.size is None:
         run.font.size = Pt(12)
 
-  # Tablolar
   for table in doc.tables:
     for row in table.rows:
       for cell in row.cells:
@@ -1520,8 +1494,7 @@ if st.button("Raporu Oluştur (.docx)"):
   if gecersiz_var:
     st.error(
         "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
-        " tek pompa debisi poz sınırları dışındadır. Lütfen asıl pompa sayısını"
-        " veya debiyi kontrol edin."
+        " tek pompa debisi poz sınırları dışındadır."
     )
   else:
     if not is_adi:
@@ -1539,16 +1512,13 @@ if st.button("Raporu Oluştur (.docx)"):
 
     doc = Document()
 
-    # Sayfa boşlukları
     cover_section = doc.sections[0]
     cover_section.top_margin = Inches(1.5)
     cover_section.bottom_margin = Inches(1.5)
     cover_section.left_margin = Inches(1.2)
     cover_section.right_margin = Inches(1.2)
 
-    # ==========================================
     # 1. SAYFA: KAPAK SAYFASI
-    # ==========================================
     p_sirket = doc.add_paragraph()
     p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_sirket = p_sirket.add_run(aktif_sirket.upper())
@@ -1592,12 +1562,8 @@ if st.button("Raporu Oluştur (.docx)"):
     run_hazirlayan.font.size = Pt(11)
     run_hazirlayan.font.name = "Arial"
 
-    # ==========================================
-    # 2. SAYFA: İÇİNDEKİLER SAYFASI
-    # ==========================================
-    # Heading 1 stili ana başlıkları otomatik olarak yeni sayfadan başlatır.
+    # 2. SAYFA: İÇİNDEKİLER
     doc.add_heading("İÇİNDEKİLER", level=1)
-
     p_toc = doc.add_paragraph()
     add_toc(p_toc)
 
@@ -1610,9 +1576,7 @@ if st.button("Raporu Oluştur (.docx)"):
     run_not.font.italic = True
     run_not.font.color.rgb = RGBColor(128, 128, 128)
 
-    # ==========================================
-    # 3. SAYFA: GÖVDE VE RAPOR İÇERİĞİ
-    # ==========================================
+    # 3. SAYFA: GÖVDE
     body_section = doc.add_section()
     body_section.top_margin = Inches(1.2)
     body_section.bottom_margin = Inches(1.2)
@@ -2162,7 +2126,6 @@ if st.button("Raporu Oluştur (.docx)"):
     if psp_parametreleri:
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
 
-      # Genel Esaslar ve Notlar 6.2.2 başlığının hemen altında yer alıyor
       doc.add_paragraph(
           "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
       )
@@ -2229,7 +2192,6 @@ if st.button("Raporu Oluştur (.docx)"):
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
 
-        # 1. Adım: Önce net hesap yazılır
         net_satir = (
             f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
             f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
@@ -2237,7 +2199,6 @@ if st.button("Raporu Oluştur (.docx)"):
         )
         doc.add_paragraph(net_satir)
 
-        # 2. Adım: Eğer emniyet seçildiyse emniyetli sonuç ve oran alt satırda belirtilir
         if pp["emniyet_katsayisi"] > 1.0:
           yuzde_str = pp["emniyet_etiket"].split(" ")[0]
           emniyet_satir = (
@@ -2262,8 +2223,6 @@ if st.button("Raporu Oluştur (.docx)"):
         if poz_rapora_eklensin_mi:
           doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
 
-        # Programda marka/model görünür; rapor grafiğinde marka/model bilinçli
-        # olarak çıkarılır. Aynı Q-H verisi anonim başlıkla rapora aktarılır.
         curve = pp.get("pompa_curve", [])
         if curve:
           q_curve = [p[0] for p in curve]
@@ -2277,15 +2236,23 @@ if st.button("Raporu Oluştur (.docx)"):
           doc.add_picture(grafik_buf, width=Inches(6.2))
           doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Belge genel yazı karakteri ve sayfa düzeni
+    # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
+    doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
+    doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
+    doc.add_paragraph(
+        "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
+        " karşı güvence altına alınması amacıyla modüler su deposu"
+        " tasarlanmıştır. Depo kapasitesi hesaplamalarında günlük su tüketim"
+        " katsayısı ve eşzamanlılık faktörleri göz önüne alınmıştır."
+    )
+
     rapor_word_stillerini_uygula(doc)
 
-    # Hafızada dosya oluşturma
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("Rapor başarıyla hazırlandı!")
+    st.success("6.3 ve 6.3.1 başlıklarıyla rapor hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
