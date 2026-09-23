@@ -8,6 +8,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+from docx.enum.style import WD_STYLE_TYPE
 import matplotlib.pyplot as plt
 import streamlit as st
 
@@ -944,20 +945,164 @@ def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
   }
 
 
-def pompa_secim_egrisi(q_m3h, h_mss):
+# ---------------------------------------------------------------------------
+# ÜRETİCİ POMPA VERİ TABANI
+# ---------------------------------------------------------------------------
+# Not: Aşağıdaki Q-H noktaları, üretici katalog grafiklerinin program içinde
+# kullanılabilmesi için sayısallaştırılmış yaklaşık grafik noktalarıdır.
+# Üretici katalogları sürüm/model/konfigürasyona göre değişebileceğinden,
+# nihai satın alma/ihale aşamasında üretici onayı alınmalıdır.
+# Programın çalışma mantığı bu veri tabanından bağımsız olarak mevcut poz
+# kontrolünü korur.
+
+URETICI_POMPA_VERITABANI = [
+    {
+        "marka": "Grundfos",
+        "seri": "SEG",
+        "model": "SEG.40.15.1",
+        "q_min": 0.0, "q_max": 5.2, "h_max": 26.0,
+        "p2_kw": 1.5,
+        "curve": [(0.0,26.0),(1.0,24.0),(2.0,21.0),(3.0,17.0),(4.0,13.0),(5.0,9.0),(5.2,8.0)],
+        "kaynak": "Grundfos SEG 50 Hz performans eğrisi / ISO 9906"
+    },
+    {
+        "marka": "Grundfos",
+        "seri": "SEG",
+        "model": "SEG.40.26.3",
+        "q_min": 0.0, "q_max": 5.2, "h_max": 40.0,
+        "p2_kw": 2.6,
+        "curve": [(0.0,40.0),(1.0,36.0),(2.0,31.0),(3.0,25.0),(4.0,18.0),(5.0,11.0),(5.2,9.0)],
+        "kaynak": "Grundfos SEG 50 Hz performans eğrisi / ISO 9906"
+    },
+    {
+        "marka": "Grundfos",
+        "seri": "SEG",
+        "model": "SEG.40.31.3",
+        "q_min": 0.0, "q_max": 5.2, "h_max": 45.0,
+        "p2_kw": 3.1,
+        "curve": [(0.0,45.0),(1.0,41.0),(2.0,35.0),(3.0,29.0),(4.0,21.0),(5.0,13.0),(5.2,11.0)],
+        "kaynak": "Grundfos SEG 50 Hz performans eğrisi / ISO 9906"
+    },
+    {
+        "marka": "Wilo",
+        "seri": "Rexa CUT",
+        "model": "Rexa CUT GI03.20",
+        "q_min": 0.0, "q_max": 20.0, "h_max": 20.0,
+        "p2_kw": 1.1,
+        "curve": [(0.0,20.0),(4.0,18.0),(8.0,15.0),(12.0,11.5),(16.0,7.5),(20.0,3.0)],
+        "kaynak": "Wilo Rexa CUT katalog performans grafiği"
+    },
+    {
+        "marka": "Wilo",
+        "seri": "Rexa CUT",
+        "model": "Rexa CUT GI03.25",
+        "q_min": 0.0, "q_max": 20.0, "h_max": 25.0,
+        "p2_kw": 2.5,
+        "curve": [(0.0,25.0),(4.0,23.0),(8.0,20.0),(12.0,16.0),(16.0,11.0),(20.0,6.0)],
+        "kaynak": "Wilo Rexa CUT katalog performans grafiği"
+    },
+    {
+        "marka": "Wilo",
+        "seri": "Rexa CUT",
+        "model": "Rexa CUT GI03.29",
+        "q_min": 0.0, "q_max": 20.0, "h_max": 29.0,
+        "p2_kw": 1.5,
+        "curve": [(0.0,29.0),(4.0,27.0),(8.0,24.0),(12.0,20.0),(16.0,14.0),(20.0,8.0)],
+        "kaynak": "Wilo Rexa CUT katalog performans grafiği"
+    },
+    {
+        "marka": "Wilo",
+        "seri": "Rexa CUT",
+        "model": "Rexa CUT GI03.34",
+        "q_min": 0.0, "q_max": 20.0, "h_max": 34.0,
+        "p2_kw": 2.5,
+        "curve": [(0.0,34.0),(4.0,31.0),(8.0,27.0),(12.0,23.0),(16.0,17.0),(20.0,10.0)],
+        "kaynak": "Wilo Rexa CUT katalog performans grafiği"
+    },
+    {
+        "marka": "Wilo",
+        "seri": "Rexa CUT",
+        "model": "Rexa CUT GI03.41",
+        "q_min": 0.0, "q_max": 20.0, "h_max": 41.0,
+        "p2_kw": 3.9,
+        "curve": [(0.0,41.0),(4.0,38.0),(8.0,34.0),(12.0,29.0),(16.0,22.0),(20.0,14.0)],
+        "kaynak": "Wilo Rexa CUT katalog performans grafiği"
+    },
+]
+
+def _egri_degeri(curve, q):
+  if not curve or q < curve[0][0] or q > curve[-1][0]:
+    return None
+  for i in range(len(curve) - 1):
+    q0, h0 = curve[i]
+    q1, h1 = curve[i + 1]
+    if q0 <= q <= q1:
+      if q1 == q0:
+        return h0
+      oran = (q - q0) / (q1 - q0)
+      return h0 + oran * (h1 - h0)
+  return curve[-1][1]
+
+
+def pompa_uretici_sec(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
+  adaylar = []
+  for pompa in URETICI_POMPA_VERITABANI:
+    if marka_secimi == "Wilo" and pompa["marka"] != "Wilo":
+      continue
+    if marka_secimi == "Grundfos" and pompa["marka"] != "Grundfos":
+      continue
+    h_egri = _egri_degeri(pompa["curve"], q_m3h)
+    if h_egri is None or h_egri < h_mss:
+      continue
+    # Gereken basınca en yakın ve mümkün olduğunca küçük güçte modeli seç.
+    adaylar.append((h_egri - h_mss, pompa["p2_kw"], pompa))
+
+  if not adaylar:
+    return None
+  adaylar.sort(key=lambda x: (x[0], x[1]))
+  secilen = dict(adaylar[0][2])
+  secilen["h_calisma"] = _egri_degeri(secilen["curve"], q_m3h)
+  return secilen
+
+
+def pompa_secim_egrisi(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
   poz, _, durum = pompa_pozu_sec(q_m3h, h_mss)
   if durum == "UYGUN":
+    model = pompa_uretici_sec(q_m3h, h_mss, marka_secimi)
+    if model:
+      q_egrisi = [p[0] for p in model["curve"]]
+      h_egrisi = [p[1] for p in model["curve"]]
+      baslik = f"{model['marka']} {model['model']} - Üretici Q-H Eğrisi"
+      return q_egrisi, h_egrisi, baslik, model
+
+    # Üretici veri tabanında uygun model yoksa mevcut poz sınır zarfı korunur.
     kayit = next(x for x in POZ_POMPA_TABLOSU if x["poz"] == poz)
     q0, q1 = kayit["qmin"], kayit["qmax"]
     h0, h1 = kayit["hmax"], kayit["hmin"]
     q_egrisi = [q0 + (q1 - q0) * i / 100 for i in range(101)]
     h_egrisi = [h0 + (h1 - h0) * ((q - q0) / (q1 - q0)) for q in q_egrisi]
-    baslik = f"Poz {poz} Sınır Zarfı (Uygun)"
-  else:
-    q_egrisi = [2, 22]
-    h_egrisi = [22, 2]
-    baslik = "Sınır Dışı Çalışma Noktası!"
-  return q_egrisi, h_egrisi, baslik
+    return q_egrisi, h_egrisi, f"Poz {poz} Sınır Zarfı - Üretici modeli bulunamadı", None
+
+  q_egrisi = [2, 22]
+  h_egrisi = [22, 2]
+  return q_egrisi, h_egrisi, "Sınır Dışı Çalışma Noktası!", None
+
+
+def pompa_grafigi_png(q_egrisi, h_egrisi, q_calisma, h_calisma, baslik, anonim=False):
+  fig, ax = plt.subplots(figsize=(7.0, 3.8))
+  ax.plot(q_egrisi, h_egrisi, linewidth=2.0, label=("Pompa Performans Eğrisi" if anonim else baslik))
+  ax.scatter([q_calisma], [h_calisma], s=65, zorder=5, label=f"Çalışma Noktası ({q_calisma:.2f} m³/h, {h_calisma:.2f} mSS)")
+  ax.set_xlabel("Debi Q [m³/h]")
+  ax.set_ylabel("Basma Yüksekliği H [mSS]")
+  ax.set_title("Pompa Performans Eğrisi" if anonim else baslik, fontsize=11)
+  ax.grid(True, alpha=0.3)
+  ax.legend(fontsize=8)
+  fig.tight_layout()
+  buf = io.BytesIO()
+  fig.savefig(buf, format="png", dpi=180, bbox_inches="tight")
+  plt.close(fig)
+  buf.seek(0)
+  return buf
 
 
 secilen_psp_listesi = st.multiselect(
@@ -972,6 +1117,14 @@ poz_rapora_eklensin_mi = st.checkbox(
 )
 
 psp_parametreleri = {}
+
+pompa_marka_secimi = st.selectbox(
+    "Pompa üreticisi / seçim modu",
+    ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
+    index=0,
+    key="pompa_marka_secimi",
+    help="Program içindeki seçim ve Q-H eğrisi için üretici filtresidir. Rapor grafiğinde marka/model gösterilmez.",
+)
 
 if secilen_psp_listesi:
   st.write(
@@ -1173,8 +1326,8 @@ if secilen_psp_listesi:
       hesaplanan_poz, hesaplanan_tanim, poz_durumu = pompa_pozu_sec(
           pompa_basina_v, h_val
       )
-      q_egrisi, h_egrisi, egrisi_basligi = pompa_secim_egrisi(
-          pompa_basina_v, h_val
+      q_egrisi, h_egrisi, egrisi_basligi, secilen_uretici_pompa = pompa_secim_egrisi(
+          pompa_basina_v, h_val, pompa_marka_secimi
       )
 
       st.metric(
@@ -1192,29 +1345,19 @@ if secilen_psp_listesi:
 
       st.info(f"📌 **Poz Tanımı:** {hesaplanan_tanim}")
 
-      fig, ax = plt.subplots(figsize=(6, 3))
-      ax.plot(q_egrisi, h_egrisi, label=egrisi_basligi, color="blue")
-      p_renk = "green" if poz_durumu == "UYGUN" else "red"
-      ax.scatter(
-          [pompa_basina_v],
-          [h_val],
-          s=70,
-          color=p_renk,
-          zorder=5,
-          label=f"Çalışma Noktası ({pompa_basina_v:.1f} m³/h, {h_val} mSS)",
+      program_grafik = pompa_grafigi_png(
+          q_egrisi, h_egrisi, pompa_basina_v, h_val, egrisi_basligi, anonim=False
       )
-      ax.set_xlim(2, 22)
-      ax.set_ylim(2, 22)
-      ax.set_xlabel("Debi Q [m³/h]")
-      ax.set_ylabel("Basma Yüksekliği H [mSS]")
-      ax.set_title(
-          f"{psp} Program İçi Pompa Seçim ve Sınır Kontrolü", fontsize=9
-      )
-      ax.grid(True, alpha=0.3)
-      ax.legend(fontsize=7)
-      fig.tight_layout()
-      st.pyplot(fig)
-      plt.close(fig)
+      st.image(program_grafik, caption=egrisi_basligi, use_container_width=True)
+
+      if secilen_uretici_pompa:
+        st.success(
+            f"🔧 Program içi otomatik seçim: **{secilen_uretici_pompa['marka']} {secilen_uretici_pompa['model']}** | "
+            f"Q-H noktası: {pompa_basina_v:.2f} m³/h / {h_val:.2f} mSS | "
+            f"Eğri üzerindeki H: {secilen_uretici_pompa['h_calisma']:.2f} mSS"
+        )
+      else:
+        st.warning("Üretici veri tabanında bu çalışma noktası için uygun model bulunamadı; mevcut poz sınır eğrisi kullanılıyor.")
 
       toplam_adet = asil_adedi + yedek_adedi
       adet_metin = (
@@ -1270,6 +1413,12 @@ if secilen_psp_listesi:
           "poz": hesaplanan_poz,
           "poz_durumu": poz_durumu,
           "poz_tanim": hesaplanan_tanim,
+          "pompa_markasi": secilen_uretici_pompa["marka"] if secilen_uretici_pompa else "",
+          "pompa_modeli": secilen_uretici_pompa["model"] if secilen_uretici_pompa else "",
+          "pompa_curve": secilen_uretici_pompa["curve"] if secilen_uretici_pompa else list(zip(q_egrisi, h_egrisi)),
+          "pompa_egrisi_basligi": egrisi_basligi,
+          "pompa_h_egrisi_calisma": secilen_uretici_pompa["h_calisma"] if secilen_uretici_pompa else h_val,
+          "pompa_kaynak": secilen_uretici_pompa["kaynak"] if secilen_uretici_pompa else "Poz sınır eğrisi",
           "tablo_satirlari": tablo_satirlari,
       }
 
@@ -1306,6 +1455,61 @@ ek_terfi_notu = st.text_area(
     "",
     height=80,
 )
+
+
+# ---------------------------------------------------------------------------
+# WORD RAPOR STİLİ
+# ---------------------------------------------------------------------------
+def rapor_word_stillerini_uygula(doc):
+  # Normal metin ve listeler
+  for style_name in ["Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"]:
+    try:
+      stl = doc.styles[style_name]
+      stl.font.name = "Times New Roman"
+      stl._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+      stl.font.size = Pt(12)
+    except KeyError:
+      pass
+
+  # Ana başlıklar: 14 punto ve her zaman yeni sayfadan
+  h1 = doc.styles["Heading 1"]
+  h1.font.name = "Times New Roman"
+  h1._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+  h1.font.size = Pt(14)
+  h1.font.bold = True
+  h1.paragraph_format.page_break_before = True
+
+  # Alt başlıklar: 12 punto, kalın
+  for level in [2, 3, 4]:
+    h = doc.styles[f"Heading {level}"]
+    h.font.name = "Times New Roman"
+    h._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    h.font.size = Pt(12)
+    h.font.bold = True
+
+  # Belge içindeki tüm mevcut run'ları kesin olarak TNR yap.
+  for paragraph in doc.paragraphs:
+    for run in paragraph.runs:
+      run.font.name = "Times New Roman"
+      run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+      if paragraph.style and paragraph.style.name.startswith("Heading 1"):
+        run.font.size = Pt(14)
+        run.font.bold = True
+      elif paragraph.style and paragraph.style.name.startswith("Heading"):
+        run.font.size = Pt(12)
+        run.font.bold = True
+      elif run.font.size is None:
+        run.font.size = Pt(12)
+
+  # Tablolar
+  for table in doc.tables:
+    for row in table.rows:
+      for cell in row.cells:
+        for paragraph in cell.paragraphs:
+          for run in paragraph.runs:
+            run.font.name = "Times New Roman"
+            run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+            run.font.size = Pt(12)
 
 
 # Rapor Oluştur Butonu
@@ -1391,8 +1595,7 @@ if st.button("Raporu Oluştur (.docx)"):
     # ==========================================
     # 2. SAYFA: İÇİNDEKİLER SAYFASI
     # ==========================================
-    doc.add_page_break()
-
+    # Heading 1 stili ana başlıkları otomatik olarak yeni sayfadan başlatır.
     doc.add_heading("İÇİNDEKİLER", level=1)
 
     p_toc = doc.add_paragraph()
@@ -1410,8 +1613,6 @@ if st.button("Raporu Oluştur (.docx)"):
     # ==========================================
     # 3. SAYFA: GÖVDE VE RAPOR İÇERİĞİ
     # ==========================================
-    doc.add_page_break()
-
     body_section = doc.add_section()
     body_section.top_margin = Inches(1.2)
     body_section.bottom_margin = Inches(1.2)
@@ -2060,6 +2261,24 @@ if st.button("Raporu Oluştur (.docx)"):
         )
         if poz_rapora_eklensin_mi:
           doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
+
+        # Programda marka/model görünür; rapor grafiğinde marka/model bilinçli
+        # olarak çıkarılır. Aynı Q-H verisi anonim başlıkla rapora aktarılır.
+        curve = pp.get("pompa_curve", [])
+        if curve:
+          q_curve = [p[0] for p in curve]
+          h_curve = [p[1] for p in curve]
+          grafik_buf = pompa_grafigi_png(
+              q_curve, h_curve, pp["v_tek"], pp["h"],
+              pp.get("pompa_egrisi_basligi", "Pompa Performans Eğrisi"),
+              anonim=True,
+          )
+          doc.add_paragraph("Pompa Performans Eğrisi:")
+          doc.add_picture(grafik_buf, width=Inches(6.2))
+          doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Belge genel yazı karakteri ve sayfa düzeni
+    rapor_word_stillerini_uygula(doc)
 
     # Hafızada dosya oluşturma
     buffer = io.BytesIO()
