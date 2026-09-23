@@ -1430,31 +1430,26 @@ ek_terfi_notu = st.text_area(
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3", "depo_sec_4"]
+depo_keys = ["depo_sec_1", "depo_sec_2"]
 _toplu_secim_butonlari(depo_keys)
 
 depo_sec_1 = st.checkbox(
-    "Binanın kullanma soğuk su deposu hacmi, günlük toplam su tüketimi esas"
+    "Binanın kullanma soğuk su deposu hacmi, kişi başı günlük su tüketim"
+    " miktarı, kişi sayısı ve binanın kullanım amacı faktörleri göz önüne"
     " alınarak tasarlanmıştır.",
     key="depo_sec_1",
     value=True,
 )
 depo_sec_2 = st.checkbox(
-    "Su deposu modüler tipte seçilmiş olup, paslanmaz çelik / GRP / galvaniz"
-    " malzemeden imal edilecektir.",
+    "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+    " önlenmesi için bölme perdeleri yer alacaktır.",
     key="depo_sec_2",
     value=True,
 )
 depo_sec_3 = st.checkbox(
-    "Depo içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-    " önlenmesi için bölme perdeleri yer alacaktır.",
+    "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+    " için adam geçiş kapağı (manhole) bulunacaktır.",
     key="depo_sec_3",
-    value=True,
-)
-depo_sec_4 = st.checkbox(
-    "Depoda taşma, deşarj, havalandırma boruları ile bakım ve temizlik için"
-    " adam geçiş kapağı (manhole) bulunacaktır.",
-    key="depo_sec_4",
     value=True,
 )
 
@@ -2272,25 +2267,44 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
     doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
 
+    # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
+    if sih_sec_depo_tipi and sih_depo_tipleri:
+      if len(sih_depo_tipleri) == 1:
+        dinamik_tip_str = sih_depo_tipleri[0].lower()
+      elif len(sih_depo_tipleri) == 2:
+        dinamik_tip_str = (
+            f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
+        )
+      else:
+        ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
+        son = sih_depo_tipleri[-1].lower()
+        dinamik_tip_str = f"{ilkler} ve {son}"
+    else:
+      dinamik_tip_str = "modüler su deposu"
+
     depo_maddeleri = []
+
+    # Dinamik Cümle
+    depo_maddeleri.append(
+        "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
+        f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
+        " tasarlanmıştır."
+    )
+
     if depo_sec_1:
       depo_maddeleri.append(
-          "Binanın kullanma soğuk su deposu hacmi, günlük toplam su tüketimi"
-          " esas alınarak tasarlanmıştır."
+          "Su deposu kapasitesi hesaplamalarında kişi başı günlük su tüketim"
+          " miktarı, kişi sayısı ve binanın kullanım amacı faktörleri göz önüne"
+          " alınmıştır."
       )
     if depo_sec_2:
       depo_maddeleri.append(
-          "Su deposu modüler tipte seçilmiş olup, paslanmaz çelik / GRP /"
-          " galvaniz malzemeden imal edilecektir."
+          "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+          " önlenmesi için bölme perdeleri yer alacaktır."
       )
     if depo_sec_3:
       depo_maddeleri.append(
-          "Depo içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-          " önlenmesi için bölme perdeleri yer alacaktır."
-      )
-    if depo_sec_4:
-      depo_maddeleri.append(
-          "Depoda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+          "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
           " için adam geçiş kapağı (manhole) bulunacaktır."
       )
 
@@ -2308,7 +2322,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("6.3.1 Kullanma Soğuk Suyu Deposu seçmeli maddeleriyle hazırlandı!")
+    st.success("6.3.1 Kullanma Soğuk Suyu Deposu raporu başarıyla hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
