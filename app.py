@@ -1427,20 +1427,52 @@ ek_terfi_notu = st.text_area(
 
 
 # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-st.subheader("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ Girdileri")
-st.write("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi ve Kriterleri")
-depo_hacim_orani = st.number_input(
-    "Depo Kapasitesi Katsayısı (Günlük tüketimin katı veya kişi başı lt):",
-    min_value=0.1,
-    max_value=5.0,
-    value=1.0,
-    step=0.1,
-    key="depo_hacim_orani",
+st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
+st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
+
+depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3", "depo_sec_4"]
+_toplu_secim_butonlari(depo_keys)
+
+depo_sec_1 = st.checkbox(
+    "Binanın kullanma soğuk su deposu hacmi, günlük toplam su tüketimi esas"
+    " alınarak tasarlanmıştır.",
+    key="depo_sec_1",
+    value=True,
+)
+depo_sec_2 = st.checkbox(
+    "Su deposu modüler tipte seçilmiş olup, paslanmaz çelik / GRP / galvaniz"
+    " malzemeden imal edilecektir.",
+    key="depo_sec_2",
+    value=True,
+)
+depo_sec_3 = st.checkbox(
+    "Depo içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+    " önlenmesi için bölme perdeleri yer alacaktır.",
+    key="depo_sec_3",
+    value=True,
+)
+depo_sec_4 = st.checkbox(
+    "Depoda taşma, deşarj, havalandırma boruları ile bakım ve temizlik için"
+    " adam geçiş kapağı (manhole) bulunacaktır.",
+    key="depo_sec_4",
+    value=True,
+)
+
+ek_depo_notu = st.text_area(
+    "İlave Kullanma Soğuk Suyu Deposu Seçim Maddesi (Her satıra bir tane)",
+    "",
+    height=80,
 )
 
 
 def rapor_word_stillerini_uygula(doc):
-  for style_name in ["Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"]:
+  for style_name in [
+      "Normal",
+      "Body Text",
+      "List Paragraph",
+      "List Bullet",
+      "List Number",
+  ]:
     try:
       stl = doc.styles[style_name]
       stl.font.name = "Times New Roman"
@@ -2239,12 +2271,36 @@ if st.button("Raporu Oluştur (.docx)"):
     # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
     doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
     doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
-    doc.add_paragraph(
-        "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
-        " karşı güvence altına alınması amacıyla modüler su deposu"
-        " tasarlanmıştır. Depo kapasitesi hesaplamalarında günlük su tüketim"
-        " katsayısı ve eşzamanlılık faktörleri göz önüne alınmıştır."
-    )
+
+    depo_maddeleri = []
+    if depo_sec_1:
+      depo_maddeleri.append(
+          "Binanın kullanma soğuk su deposu hacmi, günlük toplam su tüketimi"
+          " esas alınarak tasarlanmıştır."
+      )
+    if depo_sec_2:
+      depo_maddeleri.append(
+          "Su deposu modüler tipte seçilmiş olup, paslanmaz çelik / GRP /"
+          " galvaniz malzemeden imal edilecektir."
+      )
+    if depo_sec_3:
+      depo_maddeleri.append(
+          "Depo içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+          " önlenmesi için bölme perdeleri yer alacaktır."
+      )
+    if depo_sec_4:
+      depo_maddeleri.append(
+          "Depoda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+          " için adam geçiş kapağı (manhole) bulunacaktır."
+      )
+
+    if ek_depo_notu.strip():
+      for ed in ek_depo_notu.split("\n"):
+        if ed.strip():
+          depo_maddeleri.append(ed.strip())
+
+    for dm in depo_maddeleri:
+      doc.add_paragraph(dm, style="List Bullet")
 
     rapor_word_stillerini_uygula(doc)
 
@@ -2252,7 +2308,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("6.3 ve 6.3.1 başlıklarıyla rapor hazırlandı!")
+    st.success("6.3.1 Kullanma Soğuk Suyu Deposu seçmeli maddeleriyle hazırlandı!")
 
     dosya_adi = (
         f"{aktif_is.replace(' ', '_')}_Rapor.docx"
