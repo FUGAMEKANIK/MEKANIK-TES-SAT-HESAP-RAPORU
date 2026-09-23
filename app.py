@@ -1081,7 +1081,7 @@ if secilen_psp_listesi:
             f"{psp} Pisuar (1 Y.B.)", min_value=0, value=0, key=f"{psp}_pis"
         )
 
-      # Yükleme Birimi ve Eşzamanlı Debi Formülasyonu
+      # Yükleme Birimi ve Eşzamanlı Net Debi Formülasyonu
       yb_hela = adet_hela * 8
       yb_lavabo = adet_lavabo * 2
       yb_banyo = adet_banyo * 7
@@ -1104,10 +1104,11 @@ if secilen_psp_listesi:
           + yb_pisuvar
       )
 
-      hesaplanan_q_lps = (
+      # Önce sade/net hesap
+      net_q_lps = (
           k_katsayisi * math.sqrt(toplam_yb) if toplam_yb > 0 else 0.0
       )
-      hesaplanan_q_m3h = round(hesaplanan_q_lps * 3.6, 2)
+      net_q_m3h = round(net_q_lps * 3.6, 2)
 
       st.markdown("---")
 
@@ -1129,19 +1130,20 @@ if secilen_psp_listesi:
       )
       emniyet_katsayisi = emniyet_secenekleri[emniyet_etiket]
 
-      emniyetli_hesaplanan_q_m3h = round(hesaplanan_q_m3h * emniyet_katsayisi, 2)
+      # Ardından net sonuç emniyetle çarpılarak emniyetli sonuç elde edilir
+      emniyetli_q_m3h = round(net_q_m3h * emniyet_katsayisi, 2)
 
       v_key = f"{psp}_v_num"
       if v_key not in st.session_state or st.session_state.get(
           f"{psp}_yb_eski"
       ) != toplam_yb or st.session_state.get(f"{psp}_k_eski") != k_katsayisi or st.session_state.get(f"{psp}_emniyet_eski") != emniyet_katsayisi:
-        st.session_state[v_key] = max(1.0, emniyetli_hesaplanan_q_m3h)
+        st.session_state[v_key] = max(1.0, emniyetli_q_m3h)
         st.session_state[f"{psp}_yb_eski"] = toplam_yb
         st.session_state[f"{psp}_k_eski"] = k_katsayisi
         st.session_state[f"{psp}_emniyet_eski"] = emniyet_katsayisi
 
       toplam_v_val = st.number_input(
-          f"{psp} Toplam Debi (Q_toplam) [m³/h]",
+          f"{psp} Toplam Debi (Q_toplam) [m³/h] (Emniyetli)",
           min_value=1.0,
           max_value=100.0,
           value=st.session_state[v_key],
@@ -1253,8 +1255,8 @@ if secilen_psp_listesi:
           "k_katsayisi": k_katsayisi,
           "emniyet_etiket": emniyet_etiket,
           "emniyet_katsayisi": emniyet_katsayisi,
-          "net_q_lps": hesaplanan_q_lps,
-          "net_q_m3h": hesaplanan_q_m3h,
+          "net_q_lps": net_q_lps,
+          "net_q_m3h": net_q_m3h,
           "toplam_yb": toplam_yb,
           "q_lps_toplam": (toplam_v_val / 3.6),
           "v_toplam": toplam_v_val,
@@ -1959,7 +1961,7 @@ if st.button("Raporu Oluştur (.docx)"):
     if psp_parametreleri:
       doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
 
-      # 6.2.2 Başlığının hemen altında Genel Esaslar ve Notlar yer alıyor
+      # Genel Esaslar ve Notlar 6.2.2 başlığının hemen altında yer alıyor
       doc.add_paragraph(
           "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
       )
@@ -1999,7 +2001,6 @@ if st.button("Raporu Oluştur (.docx)"):
           " hesaplanmıştır."
       )
 
-      # Ardından her bir pompa seçimi alt başlıklarla sıralanıyor
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
         doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
@@ -2027,20 +2028,24 @@ if st.button("Raporu Oluştur (.docx)"):
             f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
         )
 
+        # 1. Adım: Önce net hesap yazılır
+        net_satir = (
+            f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
+            f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
+            f" {pp['net_q_m3h']:.2f} m³/h ({pp['net_q_lps']:.2f} L/s)"
+        )
+        doc.add_paragraph(net_satir)
+
+        # 2. Adım: Eğer emniyet seçildiyse emniyetli sonuç ve oran alt satırda belirtilir
         if pp["emniyet_katsayisi"] > 1.0:
           yuzde_str = pp["emniyet_etiket"].split(" ")[0]
-          doc.add_paragraph(
-              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
-              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
-              f" {pp['v_toplam']:.2f} m³/h ({pp['q_lps_toplam']:.2f} L/s)"
-              f" ({yuzde_str} Emniyet Oranı Alınmıştır.)"
+          emniyet_satir = (
+              f"  (%{yuzde_str.replace('%','')} Emniyet Oranı Alınmıştır."
+              f" Emniyetli Toplam Debi = {pp['v_toplam']:.2f} m³/h"
+              f" [{pp['q_lps_toplam']:.2f} L/s])"
           )
-        else:
-          doc.add_paragraph(
-              f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
-              f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
-              f" {pp['v_toplam']:.2f} m³/h ({pp['q_lps_toplam']:.2f} L/s)"
-          )
+          p_emn = doc.add_paragraph(emniyet_satir)
+          p_emn.runs[0].font.italic = True
 
         doc.add_heading(f"-Seçilen Pompa: {psp}", level=4)
         doc.add_paragraph(
