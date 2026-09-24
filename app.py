@@ -99,136 +99,8 @@ def add_toc(paragraph):
   r.append(fldChar3)
 
 
-def _json_uyumlu_deger(deger):
-  """Değeri güvenli ve JSON'a uyumlu hâle getirir."""
-  try:
-    json.dumps(deger, ensure_ascii=False)
-    return deger
-  except (TypeError, ValueError, OverflowError):
-    return None
-
-
-def _kaydedilebilir_anahtar(anahtar):
-  """Streamlit'in dahili ve yükleme ile ilgili anahtarlarını dışarıda bırakır."""
-  if not isinstance(anahtar, str) or not anahtar.strip():
-    return False
-  dislanan_baslangiclar = (
-      "proje_",
-      "FormSubmitter:",
-      "st_",
-      "_",
-  )
-  return not anahtar.startswith(dislanan_baslangiclar)
-
-
-def _proje_ayarlari_paketi_olustur():
-  ayarlar = {}
-  for anahtar, deger in st.session_state.items():
-    if not _kaydedilebilir_anahtar(anahtar):
-      continue
-    json_deger = _json_uyumlu_deger(deger)
-    if json_deger is not None:
-      ayarlar[anahtar] = json_deger
-  return {
-      "format": "muhendislik_proje_ayarlari",
-      "surum": 2,
-      "olusturma_zamani": datetime.now().isoformat(timespec="seconds"),
-      "ayarlar": ayarlar,
-  }
-
-
-def _guvenli_ayar_degeri(deger):
-  """Yalnızca JSON temel tiplerini kabul eder; bozuk nesneleri atlar."""
-  if deger is None or isinstance(deger, (str, int, float, bool)):
-    return deger
-  if isinstance(deger, list):
-    temiz_liste = []
-    for oge in deger:
-      temiz = _guvenli_ayar_degeri(oge)
-      if temiz is not _GEcersiz:
-        temiz_liste.append(temiz)
-    return temiz_liste
-  if isinstance(deger, dict):
-    temiz_sozluk = {}
-    for anahtar, oge in deger.items():
-      if not isinstance(anahtar, str):
-        continue
-      temiz = _guvenli_ayar_degeri(oge)
-      if temiz is not _GEcersiz:
-        temiz_sozluk[anahtar] = temiz
-    return temiz_sozluk
-  return _GEcersiz
-
-
-_GEcersiz = object()
-
-
-# Kayıtlı proje ayarlarını, widget'lar oluşturulmadan önce yükle.
-st.sidebar.header("💾 Proje Kaydet / Yükle")
-proje_yukleme_dosyasi = st.sidebar.file_uploader(
-    "Kayıtlı proje ayarlarını yükle (.json)",
-    type=["json"],
-    key="proje_ayar_yukleme_dosyasi",
-)
-
-if proje_yukleme_dosyasi is not None:
-  yukleme_imzasi = (
-      proje_yukleme_dosyasi.name,
-      getattr(proje_yukleme_dosyasi, "size", None),
-  )
-  if st.session_state.get("proje_son_yukleme_imzasi") != yukleme_imzasi:
-    try:
-      proje_yukleme_dosyasi.seek(0)
-      paket = json.load(proje_yukleme_dosyasi)
-      if not isinstance(paket, dict):
-        raise ValueError("JSON kök yapısı bir sözlük olmalıdır.")
-      ayarlar = paket.get("ayarlar", paket)
-      if not isinstance(ayarlar, dict):
-        raise ValueError("JSON içinde 'ayarlar' sözlüğü bulunamadı.")
-
-      yuklenen_sayi = 0
-      atlanan_sayi = 0
-      for anahtar, deger in ayarlar.items():
-        if not _kaydedilebilir_anahtar(anahtar):
-          atlanan_sayi += 1
-          continue
-        temiz_deger = _guvenli_ayar_degeri(deger)
-        if temiz_deger is _GEcersiz:
-          atlanan_sayi += 1
-          continue
-        st.session_state[anahtar] = temiz_deger
-        yuklenen_sayi += 1
-
-      st.session_state["proje_son_yukleme_imzasi"] = yukleme_imzasi
-      st.session_state["proje_yukleme_bildirimi"] = (
-          f"{yuklenen_sayi} ayar yüklendi."
-          + (f" {atlanan_sayi} kayıt atlandı." if atlanan_sayi else "")
-      )
-      st.rerun()
-    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, TypeError) as hata:
-      st.sidebar.error(f"Ayar dosyası okunamadı: {hata}")
-    except Exception as hata:
-      st.sidebar.error(f"Ayar dosyası yüklenirken beklenmeyen hata oluştu: {hata}")
-
-# Yüklenen / girilen proje bilgilerinin yan menüde dinamik özeti
-with st.sidebar.expander("📋 Proje Bilgileri Özeti", expanded=True):
-    st.caption("Ana ekrandaki bilgiler burada otomatik olarak gösterilir.")
-    st.markdown(f"**Şirket / Kuruluş:** {st.session_state.get('sirket_adi', '') or '—'}")
-    st.markdown(f"**İşin Adı / Proje Başlığı:** {st.session_state.get('is_adi', '') or '—'}")
-    st.markdown(f"**Rapor Türü:** {st.session_state.get('rapor_turu', '') or '—'}")
-    st.markdown(f"**Hazırlayan:** {st.session_state.get('hazirlayan', '') or '—'}")
-    st.markdown(f"**MMO Oda No:** {st.session_state.get('mmo_no', '') or '—'}")
-    st.markdown(f"**Rapor Tarihi:** {st.session_state.get('tarih', '') or '—'}")
-
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
-
-with st.sidebar.expander("ℹ️ Nasıl kullanılır?", expanded=False):
-    st.write("1. Önce proje bilgilerini ana ekrandaki alanlara girin.")
-    st.write("2. Aşağıdaki butonla ayarları JSON olarak indirin.")
-    st.write("3. Daha sonra JSON dosyasını bu menüden yükleyin.")
-    st.write("4. Yüklenen bilgiler ana ekrandaki alanlara aktarılır.")
-
 
 
 def _toplu_checkbox_ayarla(anahtarlar, durum):
@@ -263,17 +135,14 @@ st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input(
     "Şirket / Kuruluş İsmi",
     "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ",
-    key="sirket_adi",
 )
-is_adi = st.text_input("İşin Adı / Proje Başlığı", "", key="is_adi")
+is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
 rapor_turu = st.text_input(
-    "Rapor Türü",
-    "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU",
-    key="rapor_turu",
+    "Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU"
 )
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük", key="hazirlayan")
-mmo_no = st.text_input("MMO Oda No", "109913", key="mmo_no")
-tarih = st.text_input("Rapor Tarihi", bugun_ay_yil, key="tarih")
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
+mmo_no = st.text_input("MMO Oda No", "109913")
+tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
@@ -1557,44 +1426,19 @@ ek_terfi_notu = st.text_area(
 )
 
 
-
-# Tüm form alanları oluşturulduktan sonra güncel ayarları indir.
-def _dosya_adi_icin_temizle(metin):
-  """İş adını güvenli bir dosya adına dönüştürür."""
-  metin = str(metin or "").strip()
-  if not metin:
-    return "proje_ayarlari"
-  yasakli_karakterler = '<>:/\\|?*\"'
-  for karakter in yasakli_karakterler:
-    metin = metin.replace(karakter, "_")
-  metin = "_".join(metin.split())
-  metin = metin.strip("._ ")
-  return metin[:150] or "proje_ayarlari"
-
-proje_ayar_paketi = _proje_ayarlari_paketi_olustur()
-proje_ayar_json = json.dumps(proje_ayar_paketi, ensure_ascii=False, indent=2)
-is_adi_dosya = _dosya_adi_icin_temizle(st.session_state.get("is_adi", ""))
-json_dosya_adi = f"{is_adi_dosya}.json"
-st.sidebar.caption(f"İndirme dosya adı: **{json_dosya_adi}**")
-st.sidebar.download_button(
-    label="📥 Proje ayarlarını indir (.json)",
-    data=proje_ayar_json,
-    file_name=json_dosya_adi,
-    mime="application/json",
-    key="proje_ayar_indirme_butonu",
-)
-
 # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-depo_keys = ["depo_sec_1", "depo_sec_2"]
+depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
 _toplu_secim_butonlari(depo_keys)
 
 depo_sec_1 = st.checkbox(
-    "Binanın kullanma soğuk su deposu hacmi, kişi başı günlük su tüketim"
-    " miktarı, kişi sayısı ve binanın kullanım amacı faktörleri göz önüne"
-    " alınarak tasarlanmıştır.",
+    "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
+    "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
+    "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
+    "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
+    "su rezervi sağlayacak şekilde tasarlanacaktır.",
     key="depo_sec_1",
     value=True,
 )
@@ -2451,9 +2295,11 @@ if st.button("Raporu Oluştur (.docx)"):
 
     if depo_sec_1:
       depo_maddeleri.append(
-          "Su deposu kapasitesi hesaplamalarında kişi başı günlük su tüketim"
-          " miktarı, kişi sayısı ve binanın kullanım amacı faktörleri göz önüne"
-          " alınmıştır."
+          "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
+          "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
+          "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
+          "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
+          "su rezervi sağlayacak şekilde tasarlanacaktır."
       )
     if depo_sec_2:
       depo_maddeleri.append(
