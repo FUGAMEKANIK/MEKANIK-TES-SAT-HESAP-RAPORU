@@ -2338,3 +2338,49 @@ if st.button("Raporu Oluştur (.docx)"):
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ),
     )
+
+# ---------------------------------------------------------------------------
+# EK MODÜL: PROJE AYARLARINI KAYDETME (TEST SÜRÜMÜ)
+# Mevcut rapor oluşturma akışına müdahale etmez.
+# ---------------------------------------------------------------------------
+st.divider()
+st.header("💾 Proje Ayarlarını Kaydet")
+st.write(
+    "Formda seçtiğiniz proje bilgilerini ve ayarlarını daha sonra tekrar "
+    "kullanmak üzere JSON dosyası olarak indirebilirsiniz."
+)
+
+
+def _json_uyumlu_deger(deger):
+    """Session state içindeki temel veri tiplerini JSON'a uygun hale getirir."""
+    if deger is None or isinstance(deger, (str, int, float, bool)):
+        return deger
+    if isinstance(deger, (list, tuple)):
+        return [_json_uyumlu_deger(item) for item in deger]
+    if isinstance(deger, dict):
+        return {
+            str(key): _json_uyumlu_deger(value)
+            for key, value in deger.items()
+        }
+    return str(deger)
+
+
+proje_ayarlari = {
+    str(anahtar): _json_uyumlu_deger(deger)
+    for anahtar, deger in st.session_state.items()
+    if not str(anahtar).startswith("FormSubmitter:")
+}
+
+proje_json_metni = json.dumps(
+    proje_ayarlari,
+    ensure_ascii=False,
+    indent=2,
+)
+
+st.download_button(
+    label="📥 Proje Ayarlarını İndir (.json)",
+    data=proje_json_metni.encode("utf-8"),
+    file_name="proje_ayarlari.json",
+    mime="application/json",
+    key="proje_ayarlari_json_indir",
+)
