@@ -2404,4 +2404,3 @@ if st.button("Raporu Oluştur (.docx)"):
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ),
     )
-
