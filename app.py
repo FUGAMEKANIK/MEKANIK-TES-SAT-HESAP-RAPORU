@@ -1528,9 +1528,9 @@ with genel_bilgiler_tab:
         if secilen_depo_tipi_metni
         else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
     )
-    # Kapasiteye göre otomatik poz seçimi. Her poz grubunda ilk uygun üst kapasite seçilir.
-    # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı poz/kapasite kayıtları esas alınmıştır.
-    # Seçim mantığı: hesaplanan hacme eşit veya daha büyük ilk standart kapasite.
+    # Kapasiteye göre otomatik poz seçimi. Hesaplanan hacme en yakın standart kapasite seçilir.
+    # Böylece kapasite her zaman zorunlu olarak bir üst değere yuvarlanmaz; alt kapasite
+    # hesaplanan değere daha yakınsa alt kapasite seçilebilir. Son karar kullanıcıdadır.
     depo_poz_kapasiteleri = {
         "Paslanmaz Çelik Modüler su deposu": [
             (1.25, "25.150.1201"), (2.50, "25.150.1202"), (3.75, "25.150.1203"),
@@ -1564,45 +1564,66 @@ with genel_bilgiler_tab:
     }
 
     otomatik_poz_kayitlari = []
-    # Her depo tipi için kapasite elle değiştirilebilir; kapasite değişince poz otomatik yenilenir.
-    # Poz numarası da kullanıcı tarafından ayrıca elle düzenlenebilir.
+
+    def en_yakin_kapasite_kaydi(kayitlar, hedef_m3):
+        if not kayitlar:
+            return None
+        return min(kayitlar, key=lambda kayit: abs(kayit[0] - hedef_m3))
+
+    # Her depo tipi için otomatik başlangıç kapasitesi gösterilir. Kullanıcı isterse
+    # kapasiteyi değiştirebilir; son kullanıcı değeri rapora aktarılır.
     for depo_index, depo_tipi in enumerate(sih_depo_tipleri if sih_sec_depo_tipi else []):
         kayitlar = depo_poz_kapasiteleri.get(depo_tipi, [])
-        uygun = next((kayit for kayit in kayitlar if kayit[0] >= depo_gerekli_hacim_m3), None)
+        uygun = en_yakin_kapasite_kaydi(kayitlar, depo_gerekli_hacim_m3)
         if uygun:
             otomatik_kapasite, otomatik_poz = uygun
             kapasite_key = f"manuel_depo_kapasitesi_{depo_index}"
+            onceki_otomatik_key = f"onceki_otomatik_depo_kapasitesi_{depo_index}"
             poz_key = f"manuel_depo_pozu_{depo_index}"
             poz_elle_key = f"depo_pozunu_elle_duzenle_{depo_index}"
+
+            # Hesap sonucu değiştiğinde, kullanıcı daha önce elle müdahale etmediyse
+            # giriş alanı yeni otomatik kapasiteyle güncellenir. Elle değiştirilmiş
+            # değerler korunur.
+            mevcut_kapasite = st.session_state.get(kapasite_key)
+            onceki_otomatik = st.session_state.get(onceki_otomatik_key)
+            if mevcut_kapasite is None or mevcut_kapasite == onceki_otomatik:
+                st.session_state[kapasite_key] = float(otomatik_kapasite)
+            st.session_state[onceki_otomatik_key] = float(otomatik_kapasite)
+
             manuel_kapasite = st.number_input(
                 f"{depo_tipi} için seçilen depo kapasitesi (m³)",
                 min_value=0.001,
-                value=float(otomatik_kapasite),
                 step=0.5,
                 key=kapasite_key,
+                help="Otomatik seçilen kapasiteyi isterseniz elle değiştirebilirsiniz.",
             )
-            kapasiteye_uygun_poz = next(
-                (kayit[1] for kayit in kayitlar if kayit[0] >= manuel_kapasite),
-                "",
-            )
+
+            kapasiteye_uygun_kayit = en_yakin_kapasite_kaydi(kayitlar, manuel_kapasite)
+            kapasiteye_uygun_poz = kapasiteye_uygun_kayit[1] if kapasiteye_uygun_kayit else ""
+
             poz_elle_duzenle = st.checkbox(
                 f"{depo_tipi} poz numarasını elle düzenle",
                 value=False,
                 key=poz_elle_key,
             )
             if poz_elle_duzenle:
+                if poz_key not in st.session_state:
+                    st.session_state[poz_key] = kapasiteye_uygun_poz
                 manuel_poz = st.text_input(
                     f"{depo_tipi} için seçilen poz numarası",
-                    value=kapasiteye_uygun_poz,
                     key=poz_key,
                 )
                 kullanilacak_poz = manuel_poz.strip()
             else:
-                st.caption(f"Kapasiteye göre otomatik seçilen poz: {kapasiteye_uygun_poz}")
+                # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
+                # standart kapasiteye göre otomatik olarak yeniden belirlenir.
                 kullanilacak_poz = kapasiteye_uygun_poz
+                st.caption(f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz}")
+
             otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
         else:
-            st.warning(f"{depo_tipi} için hesaplanan hacmin üzerinde tanımlı kapasite bulunamadı.")
+            st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
 
     if poz_gosterilsin_mi and otomatik_poz_kayitlari:
         for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
@@ -2612,9 +2633,4 @@ if st.button("Raporu Oluştur (.docx)"):
 
     st.download_button(
         label="📥 Word Dosyasını İndir (.docx)",
-        data=buffer,
-        file_name=dosya_adi,
-        mime=(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ),
-    )
+        
