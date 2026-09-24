@@ -1430,7 +1430,7 @@ ek_terfi_notu = st.text_area(
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-genel_bilgiler_tab = st.tabs(["Genel Bilgiler"])[0]
+genel_bilgiler_tab, poz_numarasi_tab = st.tabs(["Genel Bilgiler", "Poz Numarası Tercihi"])
 with genel_bilgiler_tab:
     st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
@@ -1553,6 +1553,29 @@ with genel_bilgiler_tab:
     su_birim = "-"
     su_birim_degeri = 0.0
     su_miktari = 0.0
+
+# POZ NUMARASI TERCİHİ
+with poz_numarasi_tab:
+    st.markdown("#### 6.3.1.2 POZ NUMARASI TERCİHİ")
+    poz_tipi_secenekleri = {
+        "Modüler paslanmaz çelik su deposu": list(range(251501201, 251501227)),
+        "Modüler galvaniz çelik su deposu": list(range(251501301, 251501327)),
+        "GRP modüler su deposu": list(range(251501601, 251501626)),
+    }
+    poz_tipi = st.selectbox(
+        "Poz numarası için depo tipi",
+        list(poz_tipi_secenekleri.keys()),
+        key="poz_tipi",
+    )
+    poz_numarasi = st.selectbox(
+        "Poz numarası tercihi",
+        [f"{n // 10000000:02d}.{(n // 10000) % 1000:03d}.{n % 10000:04d}" for n in poz_tipi_secenekleri[poz_tipi]],
+        key="poz_numarasi",
+    )
+    st.caption(
+        "Poz numarası listeleri kullanıcı tarafından verilen aralıklara göre oluşturulmuştur. "
+        "Kapasiteye karşılık gelen kesin poz seçimi, ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
+    )
 
 depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
 _toplu_secim_butonlari(depo_keys)
@@ -2496,6 +2519,13 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph(
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+    )
+    doc.add_heading("6.3.1.2 POZ NUMARASI TERCİHİ", level=4)
+    doc.add_paragraph(f"Poz numarası için depo tipi: {poz_tipi}")
+    doc.add_paragraph(f"Seçilen poz numarası: {poz_numarasi}")
+    doc.add_paragraph(
+        "Not: Poz numarası aralıkları kullanıcı tarafından belirtilen listelere göre oluşturulmuştur; "
+        "kapasite-poz eşleştirmesi ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
     )
     doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
