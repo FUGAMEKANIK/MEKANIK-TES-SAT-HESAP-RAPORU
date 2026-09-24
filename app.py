@@ -1523,9 +1523,25 @@ with genel_bilgiler_tab:
     )
     depo_gerekli_hacim_m3 = su_gunluk_ihtiyac_m3 * depo_sure_gun
     depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
-    st.metric(
-        "Gerekli su deposu hacmi",
-        f"{depo_gerekli_hacim_m3:,.2f} m³".replace(",", "X").replace(".", ",").replace("X", "."),
+    if sih_sec_depo_tipi and sih_depo_tipleri:
+        secilen_depo_tipi_metni = ", ".join(sih_depo_tipleri)
+    else:
+        secilen_depo_tipi_metni = ""
+
+    depo_hacmi_basligi = (
+        f'Gerekli "{secilen_depo_tipi_metni}" su deposu hacmi'
+        if secilen_depo_tipi_metni
+        else "Gerekli su deposu hacmi"
+    )
+    depo_hacmi_degeri = (
+        f"{depo_gerekli_hacim_litre:,.0f} L "
+        f"({depo_gerekli_hacim_m3:,.3f} m³)"
+    ).replace(",", "X").replace(".", ",").replace("X", ".")
+    st.markdown(
+        f'<div style="font-size:1.05rem; color:#000000;">'
+        f'{depo_hacmi_basligi}: <strong style="color:#000000;">{depo_hacmi_degeri}</strong>'
+        f'</div>',
+        unsafe_allow_html=True,
     )
     st.caption(
         f"Hesap: {su_gunluk_ihtiyac_m3:g} m³/gün × {depo_sure_gun:g} gün "
@@ -2483,10 +2499,18 @@ if st.button("Raporu Oluştur (.docx)"):
     )
     doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
-    doc.add_paragraph(
-        f"Gerekli su deposu hacmi: {depo_gerekli_hacim_litre:g} L "
-        f"({depo_gerekli_hacim_m3:g} m³)"
+    depo_hacmi_paragrafi = doc.add_paragraph()
+    depo_hacmi_paragrafi.add_run(
+        f'Gerekli "{secilen_depo_tipi_metni}" su deposu hacmi: '
+        if secilen_depo_tipi_metni
+        else "Gerekli su deposu hacmi: "
     )
+    depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
+        f"{depo_gerekli_hacim_litre:g} L ({depo_gerekli_hacim_m3:g} m³)"
+    )
+    depo_hacmi_kalin.bold = True
+    for run in depo_hacmi_paragrafi.runs:
+        run.font.color.rgb = RGBColor(0, 0, 0)
     doc.add_paragraph(
         "Hesap yöntemi: Günlük toplam su ihtiyacı × seçilen depolama süresi (gün). "
         "Nihai depo hacmi, proje kriterleri ve ilgili mevzuat/standartlar ayrıca değerlendirilerek kesinleştirilmelidir."
