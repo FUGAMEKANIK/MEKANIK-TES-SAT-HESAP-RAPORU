@@ -522,6 +522,15 @@ with c_2:
 
 # --- 6. BÖLÜM: SIHHİ TESİSAT ---
 st.header("6. SIHHİ TESİSAT")
+
+st.markdown("### Rapor Bölümleri Seçimi")
+st.caption("İşareti kaldırılan bölüm rapora eklenmez; 6.2 alt bölüm numaraları otomatik güncellenir.")
+bolum_611_aktif = st.checkbox("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", value=True, key="bolum_611_aktif")
+bolum_621_aktif = st.checkbox("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", value=True, key="bolum_621_aktif")
+bolum_622_aktif = st.checkbox("6.2.2 Pis Su Terfi Pompaları Seçimi", value=True, key="bolum_622_aktif")
+bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value=True, key="bolum_631_aktif")
+num_621 = 1 if bolum_621_aktif else None
+num_622 = (2 if bolum_621_aktif else 1) if bolum_622_aktif else None
 st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
 st.write(
     "Raporun 6.1 maddesinde yer almasını istediğiniz ön bilgi esaslarını"
@@ -2352,40 +2361,41 @@ if st.button("Raporu Oluştur (.docx)"):
     for sm in sihhi_maddeler:
       doc.add_paragraph(sm, style="List Bullet")
 
-    # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-    doc.add_heading(
-        "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
-    )
-    doc.add_paragraph(
-        "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
-        " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
-        " alınmıştır."
-    )
+    if bolum_611_aktif:
+        # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+        doc.add_heading(
+            "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
+        )
+        doc.add_paragraph(
+            "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
+            " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
+            " alınmıştır."
+        )
 
-    t1_data = [
-        ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-        ("15", "Ø20", '1/2"', "(0-3.0)"),
-        ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-        ("25", "Ø32", '1"', "(8.0-20.0)"),
-        ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-        ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-        ("50", "Ø63", '2"', "(50.0-144.0)"),
-        ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-        ("80", "Ø90", '3"', "(368.0-1156.0)"),
-        ("100", "Ø125", '4"', "(1156-4900)"),
-        ("125", "-", '5"', "(4.900-14.400)"),
-        ("150", "-", '6"', "(14.400-40.000)"),
-        ("200", "-", '8"', "(40.000-484.000)"),
-        ("250", "-", '10"', "(484.000-518.400)"),
-        ("300", "-", '12"', "(518.400-1.440.000)"),
-    ]
-    t1 = doc.add_table(rows=len(t1_data), cols=4)
-    t1.style = "Table Grid"
-    for r_idx, row in enumerate(t1_data):
-      for c_idx, val in enumerate(row):
-        t1.cell(r_idx, c_idx).text = val
+        t1_data = [
+            ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+            ("15", "Ø20", '1/2"', "(0-3.0)"),
+            ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+            ("25", "Ø32", '1"', "(8.0-20.0)"),
+            ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+            ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+            ("50", "Ø63", '2"', "(50.0-144.0)"),
+            ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+            ("80", "Ø90", '3"', "(368.0-1156.0)"),
+            ("100", "Ø125", '4"', "(1156-4900)"),
+            ("125", "-", '5"', "(4.900-14.400)"),
+            ("150", "-", '6"', "(14.400-40.000)"),
+            ("200", "-", '8"', "(40.000-484.000)"),
+            ("250", "-", '10"', "(484.000-518.400)"),
+            ("300", "-", '12"', "(518.400-1.440.000)"),
+        ]
+        t1 = doc.add_table(rows=len(t1_data), cols=4)
+        t1.style = "Table Grid"
+        for r_idx, row in enumerate(t1_data):
+          for c_idx, val in enumerate(row):
+            t1.cell(r_idx, c_idx).text = val
 
-    doc.add_paragraph()
+        doc.add_paragraph()
 
     # --- 6.2 PİS SU TESİSATI ---
     doc.add_heading("6.2 PİS SU TESİSATI", level=2)
@@ -2457,39 +2467,40 @@ if st.button("Raporu Oluştur (.docx)"):
     for psm in pis_su_maddeleri:
       doc.add_paragraph(psm, style="List Bullet")
 
-    # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-    doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri", level=2)
-    doc.add_paragraph(
-        "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-        " tayinlerinde aşağıdaki tablolar esas alınmıştır."
-    )
+    if bolum_621_aktif:
+        # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+        doc.add_heading(f"6.2.{num_621} Pis Su Sarfiyat Yükleme Birimleri", level=2)
+        doc.add_paragraph(
+            "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+            " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+        )
 
-    doc.add_paragraph(
-        "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-    )
-    t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
-    t_pissu1.style = "Table Grid"
-    for r_idx, row in enumerate(pissu_t1_data):
-      for c_idx, val in enumerate(row):
-        t_pissu1.cell(r_idx, c_idx).text = val
+        doc.add_paragraph(
+            "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+        )
+        t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+        t_pissu1.style = "Table Grid"
+        for r_idx, row in enumerate(pissu_t1_data):
+          for c_idx, val in enumerate(row):
+            t_pissu1.cell(r_idx, c_idx).text = val
 
-    doc.add_paragraph()
-    doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
-    t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
-    t_pissu2.style = "Table Grid"
-    for r_idx, row in enumerate(pissu_t2_data):
-      for c_idx, val in enumerate(row):
-        t_pissu2.cell(r_idx, c_idx).text = val
+        doc.add_paragraph()
+        doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
+        t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+        t_pissu2.style = "Table Grid"
+        for r_idx, row in enumerate(pissu_t2_data):
+          for c_idx, val in enumerate(row):
+            t_pissu2.cell(r_idx, c_idx).text = val
 
-    doc.add_paragraph()
-    doc.add_paragraph(
-        "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
-        " 50,her tuvalet çıkışı Ø100 olacaktır."
-    )
+        doc.add_paragraph()
+        doc.add_paragraph(
+            "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+            " 50,her tuvalet çıkışı Ø100 olacaktır."
+        )
 
     # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
-    if psp_parametreleri:
-      doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+    if bolum_622_aktif and psp_parametreleri:
+      doc.add_heading(f"6.2.{num_622} PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
 
       doc.add_paragraph(
           "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
@@ -2531,7 +2542,7 @@ if st.button("Raporu Oluştur (.docx)"):
       )
 
       for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-        doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
+        doc.add_heading(f"6.2.{num_622}.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
 
         doc.add_paragraph(f"• Bina Kullanım Türü: {pp['bina_tipi']}")
         doc.add_paragraph(
@@ -2601,161 +2612,162 @@ if st.button("Raporu Oluştur (.docx)"):
           doc.add_picture(grafik_buf, width=Inches(6.2))
           doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-    doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
-    doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
-    doc.add_heading("Genel Bilgiler", level=3)
+    if bolum_631_aktif:
+        # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
+        doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
+        doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
+        doc.add_heading("Genel Bilgiler", level=3)
 
-    # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
-    if sih_sec_depo_tipi and sih_depo_tipleri:
-      if len(sih_depo_tipleri) == 1:
-        dinamik_tip_str = sih_depo_tipleri[0].lower()
-      elif len(sih_depo_tipleri) == 2:
-        dinamik_tip_str = (
-            f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
-        )
-      else:
-        ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
-        son = sih_depo_tipleri[-1].lower()
-        dinamik_tip_str = f"{ilkler} ve {son}"
-    else:
-      dinamik_tip_str = "modüler su deposu"
-
-    depo_maddeleri = []
-
-    # Dinamik Cümle
-    depo_maddeleri.append(
-        "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
-        f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
-        " tasarlanmıştır."
-    )
-
-    if depo_sec_1:
-      depo_maddeleri.append(
-          "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
-          "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
-          "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
-          "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
-          "su rezervi sağlayacak şekilde tasarlanacaktır."
-      )
-    if depo_sec_2:
-      depo_maddeleri.append(
-          "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-          " önlenmesi için bölme perdeleri yer alacaktır."
-      )
-    if depo_sec_3:
-      depo_maddeleri.append(
-          "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
-          " için adam geçiş kapağı (manhole) bulunacaktır."
-      )
-
-    if ek_depo_notu.strip():
-      for ed in ek_depo_notu.split("\n"):
-        if ed.strip():
-          depo_maddeleri.append(ed.strip())
-
-    # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
-    for dm in depo_maddeleri:
-      doc.add_paragraph(dm, style="List Bullet")
-
-    # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
-    doc.add_heading(
-        "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
-        level=3,
-    )
-    doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
-    su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
-    su_tuketim_word_tablosu.style = "Table Grid"
-    baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
-    baslik_hucreleri[0].text = "Kullanım amacı"
-    baslik_hucreleri[1].text = "Birim"
-    baslik_hucreleri[2].text = "Birim tüketim değeri"
-    for kategori, (birim, deger) in su_tuketim_secenekleri.items():
-        hucreler = su_tuketim_word_tablosu.add_row().cells
-        hucreler[0].text = kategori
-        hucreler[1].text = birim
-        hucreler[2].text = f"{deger:g} L/{birim}/gün"
-
-    doc.add_paragraph(
-        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-        "uygulamaya aktarılmıştır."
-    )
-
-    doc.add_heading("Su İhtiyacı Hesabı", level=4)
-    doc.add_paragraph(
-        "Kullanım amacı / su tüketim kategorileri: "
-        f"{su_tuketim_tipi}"
-    )
-    if su_hesap_detaylari:
-        konut_raporu_mu = hesap_modu == "Konutlar"
-        hastane_raporu_mu = hesap_modu == "Hastaneler"
-        hesap_tablosu = doc.add_table(
-            rows=1,
-            cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
-        )
-        hesap_tablosu.style = "Table Grid"
-        hesap_basliklari = hesap_tablosu.rows[0].cells
-        if konut_raporu_mu:
-            basliklar = [
-                "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
-                "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
-            ]
-        elif hastane_raporu_mu:
-            basliklar = [
-                "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
-                "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
-            ]
+        # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
+        if sih_sec_depo_tipi and sih_depo_tipleri:
+          if len(sih_depo_tipleri) == 1:
+            dinamik_tip_str = sih_depo_tipleri[0].lower()
+          elif len(sih_depo_tipleri) == 2:
+            dinamik_tip_str = (
+                f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
+            )
+          else:
+            ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
+            son = sih_depo_tipleri[-1].lower()
+            dinamik_tip_str = f"{ilkler} ve {son}"
         else:
-            basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
-        for i, baslik in enumerate(basliklar):
-            hesap_basliklari[i].text = baslik
+          dinamik_tip_str = "modüler su deposu"
 
-        for detay in su_hesap_detaylari:
-            hucreler = hesap_tablosu.add_row().cells
-            hucreler[0].text = detay["kategori"]
+        depo_maddeleri = []
+
+        # Dinamik Cümle
+        depo_maddeleri.append(
+            "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
+            f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
+            " tasarlanmıştır."
+        )
+
+        if depo_sec_1:
+          depo_maddeleri.append(
+              "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
+              "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
+              "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
+              "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
+              "su rezervi sağlayacak şekilde tasarlanacaktır."
+          )
+        if depo_sec_2:
+          depo_maddeleri.append(
+              "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+              " önlenmesi için bölme perdeleri yer alacaktır."
+          )
+        if depo_sec_3:
+          depo_maddeleri.append(
+              "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+              " için adam geçiş kapağı (manhole) bulunacaktır."
+          )
+
+        if ek_depo_notu.strip():
+          for ed in ek_depo_notu.split("\n"):
+            if ed.strip():
+              depo_maddeleri.append(ed.strip())
+
+        # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
+        for dm in depo_maddeleri:
+          doc.add_paragraph(dm, style="List Bullet")
+
+        # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
+        doc.add_heading(
+            "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
+            level=3,
+        )
+        doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
+        su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
+        su_tuketim_word_tablosu.style = "Table Grid"
+        baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
+        baslik_hucreleri[0].text = "Kullanım amacı"
+        baslik_hucreleri[1].text = "Birim"
+        baslik_hucreleri[2].text = "Birim tüketim değeri"
+        for kategori, (birim, deger) in su_tuketim_secenekleri.items():
+            hucreler = su_tuketim_word_tablosu.add_row().cells
+            hucreler[0].text = kategori
+            hucreler[1].text = birim
+            hucreler[2].text = f"{deger:g} L/{birim}/gün"
+
+        doc.add_paragraph(
+            "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+            "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+            "uygulamaya aktarılmıştır."
+        )
+
+        doc.add_heading("Su İhtiyacı Hesabı", level=4)
+        doc.add_paragraph(
+            "Kullanım amacı / su tüketim kategorileri: "
+            f"{su_tuketim_tipi}"
+        )
+        if su_hesap_detaylari:
+            konut_raporu_mu = hesap_modu == "Konutlar"
+            hastane_raporu_mu = hesap_modu == "Hastaneler"
+            hesap_tablosu = doc.add_table(
+                rows=1,
+                cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
+            )
+            hesap_tablosu.style = "Table Grid"
+            hesap_basliklari = hesap_tablosu.rows[0].cells
             if konut_raporu_mu:
-                hucreler[1].text = f"{hane_kisi_sayisi:g}"
-                hucreler[2].text = f"{toplam_hane_sayisi:g}"
-                hucreler[3].text = f"{toplam_kisi_sayisi:g}"
-                hucreler[4].text = detay["birim"]
-                hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
-                hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
+                basliklar = [
+                    "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
+                    "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
+                ]
             elif hastane_raporu_mu:
-                hucreler[1].text = f"{detay['yatak_sayisi']:g}"
-                hucreler[2].text = f"{detay['katsayi']:g}"
-                hucreler[3].text = f"{detay['miktar']:g}"
-                hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
-                hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                basliklar = [
+                    "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
+                    "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
+                ]
             else:
-                hucreler[1].text = f"{detay['miktar']:g}"
-                hucreler[2].text = detay["birim"]
-                hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
+            for i, baslik in enumerate(basliklar):
+                hesap_basliklari[i].text = baslik
 
-        if hastane_raporu_mu:
-            toplam_hucreler = hesap_tablosu.add_row().cells
-            toplam_hucreler[0].text = "GENEL TOPLAM"
-            toplam_hucreler[1].text = ""
-            toplam_hucreler[2].text = ""
-            toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
-            toplam_hucreler[4].text = ""
-            toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
-    else:
-        doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
-    doc.add_paragraph(
-        f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
-        f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
-    )
-    doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
-    doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
-    depo_hacmi_paragrafi = doc.add_paragraph()
-    depo_hacmi_paragrafi.add_run(
-        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
-        if secilen_depo_tipi_metni
-        else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
-    )
+            for detay in su_hesap_detaylari:
+                hucreler = hesap_tablosu.add_row().cells
+                hucreler[0].text = detay["kategori"]
+                if konut_raporu_mu:
+                    hucreler[1].text = f"{hane_kisi_sayisi:g}"
+                    hucreler[2].text = f"{toplam_hane_sayisi:g}"
+                    hucreler[3].text = f"{toplam_kisi_sayisi:g}"
+                    hucreler[4].text = detay["birim"]
+                    hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
+                    hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                    hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
+                elif hastane_raporu_mu:
+                    hucreler[1].text = f"{detay['yatak_sayisi']:g}"
+                    hucreler[2].text = f"{detay['katsayi']:g}"
+                    hucreler[3].text = f"{detay['miktar']:g}"
+                    hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
+                    hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                else:
+                    hucreler[1].text = f"{detay['miktar']:g}"
+                    hucreler[2].text = detay["birim"]
+                    hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
+                    hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
+
+            if hastane_raporu_mu:
+                toplam_hucreler = hesap_tablosu.add_row().cells
+                toplam_hucreler[0].text = "GENEL TOPLAM"
+                toplam_hucreler[1].text = ""
+                toplam_hucreler[2].text = ""
+                toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
+                toplam_hucreler[4].text = ""
+                toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
+        else:
+            doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
+        doc.add_paragraph(
+            f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
+            f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+        )
+        doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
+        doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
+        depo_hacmi_paragrafi = doc.add_paragraph()
+        depo_hacmi_paragrafi.add_run(
+            f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
+            if secilen_depo_tipi_metni
+            else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
+        )
     rapor_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
     rapor_kapasite_litre = rapor_kapasite_m3 * 1000.0
     depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
