@@ -2632,5 +2632,4 @@ if st.button("Raporu Oluştur (.docx)"):
     )
 
     st.download_button(
-        label="📥 Word Dosyasını İndir (.docx)",
-        
+     
