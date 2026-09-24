@@ -1449,6 +1449,18 @@ with genel_bilgiler_tab:
         "Binek otosu": ("Adet", 100.0),
     }
 
+    st.markdown("##### Su Tüketim Değerleri Tablosu")
+    su_tuketim_tablosu = [
+        {
+            "Kullanım amacı": kategori,
+            "Birim": birim,
+            "Birim tüketim değeri": f"{deger:g} L/{birim}/gün",
+        }
+        for kategori, (birim, deger) in su_tuketim_secenekleri.items()
+    ]
+    st.table(su_tuketim_tablosu)
+
+    st.markdown("##### Su İhtiyacı Hesabı")
     su_tuketim_tipi = st.selectbox(
         "Kullanım amacı / su tüketim kategorisi",
         list(su_tuketim_secenekleri.keys()),
@@ -2373,6 +2385,20 @@ if st.button("Raporu Oluştur (.docx)"):
         "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
         level=3,
     )
+    doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
+    su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
+    su_tuketim_word_tablosu.style = "Table Grid"
+    baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
+    baslik_hucreleri[0].text = "Kullanım amacı"
+    baslik_hucreleri[1].text = "Birim"
+    baslik_hucreleri[2].text = "Birim tüketim değeri"
+    for kategori, (birim, deger) in su_tuketim_secenekleri.items():
+        hucreler = su_tuketim_word_tablosu.add_row().cells
+        hucreler[0].text = kategori
+        hucreler[1].text = birim
+        hucreler[2].text = f"{deger:g} L/{birim}/gün"
+
+    doc.add_heading("Su İhtiyacı Hesabı", level=4)
     doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
     doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
     doc.add_paragraph(f"Birim su tüketimi: {su_birim_degeri:g} L/{su_birim}/gün")
