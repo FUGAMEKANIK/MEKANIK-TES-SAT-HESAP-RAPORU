@@ -1431,17 +1431,51 @@ st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
 st.markdown("### Genel Bilgiler")
+st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
-depo_keys = [
-    "depo_sec_1",
-    "depo_sec_2",
-    "depo_sec_3",
-    "depo_sec_4",
-    "depo_sec_5",
-    "depo_sec_6",
-    "depo_sec_7",
-    "depo_sec_8",
-]
+# SU TÜKETİMİ HESABI
+su_tuketim_secenekleri = {
+    "Fabrikalar": ("Kişi", 45.0),
+    "Görev başındakiler": ("Kişi", 45.0),
+    "Hemşireler": ("Kişi", 135.0),
+    "Duşlu oteller": ("Kişi", 90.0),
+    "Küvetli oteller": ("Kişi", 150.0),
+    "Bürolar": ("Kişi", 45.0),
+    "Lokantalar": ("Kişi", 7.0),
+    "Okullar - Gündüzlü": ("Kişi", 45.0),
+    "Okullar - Diğer": ("Kişi", 135.0),
+    "Bahçe sulama": ("m²", 1.5),
+    "Binek otosu": ("Adet", 100.0),
+}
+
+su_tuketim_tipi = st.selectbox(
+    "Kullanım amacı / su tüketim kategorisi",
+    list(su_tuketim_secenekleri.keys()),
+    key="su_tuketim_tipi",
+)
+su_birim, su_birim_degeri = su_tuketim_secenekleri[su_tuketim_tipi]
+
+su_miktari = st.number_input(
+    f"Miktar ({su_birim})",
+    min_value=0.0,
+    value=1.0,
+    step=1.0,
+    key="su_miktari",
+)
+
+su_gunluk_ihtiyac_litre = su_miktari * su_birim_degeri
+su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+
+st.metric(
+    "Günlük toplam su ihtiyacı",
+    f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
+)
+st.caption(
+    f"Hesap: {su_miktari:g} {su_birim} × {su_birim_degeri:g} L/{su_birim}/gün "
+    f"= {su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
+)
+
+depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
 _toplu_secim_butonlari(depo_keys)
 
 depo_sec_1 = st.checkbox(
@@ -1463,42 +1497,6 @@ depo_sec_3 = st.checkbox(
     "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
     " için adam geçiş kapağı (manhole) bulunacaktır.",
     key="depo_sec_3",
-    value=True,
-)
-depo_sec_4 = st.checkbox(
-    "Su deposu, içme ve kullanma suyuyla temasa uygun, korozyona dayanıklı, "
-    "hijyenik ve uzun ömürlü malzemeden seçilecektir. Depo malzemesi, suyun "
-    "fiziksel ve kimyasal özelliklerini olumsuz yönde etkilemeyecektir.",
-    key="depo_sec_4",
-    value=True,
-)
-depo_sec_5 = st.checkbox(
-    "Su deposu; doğrudan güneş ışığına, aşırı sıcaklık değişimlerine ve "
-    "donma riskine karşı korunacak şekilde konumlandırılacaktır. Gerekli "
-    "durumlarda ısı yalıtımı ve uygun koruyucu önlemler alınacaktır.",
-    key="depo_sec_5",
-    value=True,
-)
-depo_sec_6 = st.checkbox(
-    "Su deposu, periyodik temizlik, dezenfeksiyon, kontrol ve bakım "
-    "işlemlerinin kolaylıkla yapılabileceği şekilde tasarlanacaktır. Depoya "
-    "erişim için yeterli bakım alanı ve uygun büyüklükte erişim kapağı "
-    "bulunacaktır.",
-    key="depo_sec_6",
-    value=True,
-)
-depo_sec_7 = st.checkbox(
-    "Depo; toz, kir, haşere, yabancı maddeler ve dış ortamdan gelebilecek "
-    "kirleticilerin girişini önleyecek şekilde kapalı ve korunaklı olacaktır. "
-    "Depo kapağı sızdırmaz ve güvenli biçimde tasarlanacaktır.",
-    key="depo_sec_7",
-    value=True,
-)
-depo_sec_8 = st.checkbox(
-    "Su deposunun yerleşimi; yapının taşıyıcı sistemi, depo dolu durumdaki "
-    "toplam ağırlığı, bakım erişimi ve tesisat bağlantıları dikkate alınarak "
-    "belirlenecektir.",
-    key="depo_sec_8",
     value=True,
 )
 
@@ -2316,6 +2314,22 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
     doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
     doc.add_heading("Genel Bilgiler", level=3)
+    doc.add_heading(
+        "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
+        level=3,
+    )
+    doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
+    doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
+    doc.add_paragraph(f"Birim su tüketimi: {su_birim_degeri:g} L/{su_birim}/gün")
+    doc.add_paragraph(
+        f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
+        f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+    )
+    doc.add_paragraph(
+        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+        "uygulamaya aktarılmıştır."
+    )
 
     # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
     if sih_sec_depo_tipi and sih_depo_tipleri:
@@ -2358,37 +2372,6 @@ if st.button("Raporu Oluştur (.docx)"):
       depo_maddeleri.append(
           "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
           " için adam geçiş kapağı (manhole) bulunacaktır."
-      )
-    if depo_sec_4:
-      depo_maddeleri.append(
-          "Su deposu, içme ve kullanma suyuyla temasa uygun, korozyona dayanıklı, "
-          "hijyenik ve uzun ömürlü malzemeden seçilecektir. Depo malzemesi, suyun "
-          "fiziksel ve kimyasal özelliklerini olumsuz yönde etkilemeyecektir."
-      )
-    if depo_sec_5:
-      depo_maddeleri.append(
-          "Su deposu; doğrudan güneş ışığına, aşırı sıcaklık değişimlerine ve "
-          "donma riskine karşı korunacak şekilde konumlandırılacaktır. Gerekli "
-          "durumlarda ısı yalıtımı ve uygun koruyucu önlemler alınacaktır."
-      )
-    if depo_sec_6:
-      depo_maddeleri.append(
-          "Su deposu, periyodik temizlik, dezenfeksiyon, kontrol ve bakım "
-          "işlemlerinin kolaylıkla yapılabileceği şekilde tasarlanacaktır. Depoya "
-          "erişim için yeterli bakım alanı ve uygun büyüklükte erişim kapağı "
-          "bulunacaktır."
-      )
-    if depo_sec_7:
-      depo_maddeleri.append(
-          "Depo; toz, kir, haşere, yabancı maddeler ve dış ortamdan gelebilecek "
-          "kirleticilerin girişini önleyecek şekilde kapalı ve korunaklı olacaktır. "
-          "Depo kapağı sızdırmaz ve güvenli biçimde tasarlanacaktır."
-      )
-    if depo_sec_8:
-      depo_maddeleri.append(
-          "Su deposunun yerleşimi; yapının taşıyıcı sistemi, depo dolu durumdaki "
-          "toplam ağırlığı, bakım erişimi ve tesisat bağlantıları dikkate alınarak "
-          "belirlenecektir."
       )
 
     if ek_depo_notu.strip():
