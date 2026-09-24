@@ -99,8 +99,61 @@ def add_toc(paragraph):
   r.append(fldChar3)
 
 
+def _json_uyumlu_deger(deger):
+  """Session state içindeki JSON'a çevrilebilen değerleri ayıklar."""
+  try:
+    json.dumps(deger, ensure_ascii=False)
+    return deger
+  except (TypeError, ValueError):
+    return None
+
+
+def _proje_ayarlari_paketi_olustur():
+  ayarlar = {}
+  for anahtar, deger in st.session_state.items():
+    if anahtar.startswith("proje_"):
+      continue
+    json_deger = _json_uyumlu_deger(deger)
+    if json_deger is not None:
+      ayarlar[anahtar] = json_deger
+  return {
+      "format": "muhendislik_proje_ayarlari",
+      "surum": 1,
+      "olusturma_zamani": datetime.now().isoformat(timespec="seconds"),
+      "ayarlar": ayarlar,
+  }
+
+
+# Kayıtlı proje ayarlarını, widget'lar oluşturulmadan önce yükle.
+st.sidebar.header("💾 Proje Kaydet / Yükle")
+proje_yukleme_dosyasi = st.sidebar.file_uploader(
+    "Kayıtlı proje ayarlarını yükle (.json)",
+    type=["json"],
+    key="proje_ayar_yukleme_dosyasi",
+)
+
+if proje_yukleme_dosyasi is not None:
+  yukleme_imzasi = (
+      proje_yukleme_dosyasi.name,
+      getattr(proje_yukleme_dosyasi, "size", None),
+  )
+  if st.session_state.get("proje_son_yukleme_imzasi") != yukleme_imzasi:
+    try:
+      paket = json.load(proje_yukleme_dosyasi)
+      ayarlar = paket.get("ayarlar", paket)
+      if not isinstance(ayarlar, dict):
+        raise ValueError("JSON içinde 'ayarlar' sözlüğü bulunamadı.")
+      for anahtar, deger in ayarlar.items():
+        if anahtar not in {"proje_ayar_yukleme_dosyasi", "proje_son_yukleme_imzasi"}:
+          st.session_state[anahtar] = deger
+      st.session_state["proje_son_yukleme_imzasi"] = yukleme_imzasi
+      st.sidebar.success("Proje ayarları yüklendi. Alanlar güncellendi.")
+    except Exception as hata:
+      st.sidebar.error(f"Ayar dosyası yüklenemedi: {hata}")
+
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
+
 
 
 def _toplu_checkbox_ayarla(anahtarlar, durum):
@@ -1426,6 +1479,18 @@ ek_terfi_notu = st.text_area(
 )
 
 
+
+# Tüm form alanları oluşturulduktan sonra güncel ayarları indir.
+proje_ayar_paketi = _proje_ayarlari_paketi_olustur()
+proje_ayar_json = json.dumps(proje_ayar_paketi, ensure_ascii=False, indent=2)
+st.sidebar.download_button(
+    label="📥 Proje ayarlarını indir (.json)",
+    data=proje_ayar_json,
+    file_name="proje_ayarlari.json",
+    mime="application/json",
+    key="proje_ayar_indirme_butonu",
+)
+
 # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
@@ -2338,49 +2403,3 @@ if st.button("Raporu Oluştur (.docx)"):
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ),
     )
-
-# ---------------------------------------------------------------------------
-# EK MODÜL: PROJE AYARLARINI KAYDETME (TEST SÜRÜMÜ)
-# Mevcut rapor oluşturma akışına müdahale etmez.
-# ---------------------------------------------------------------------------
-st.divider()
-st.header("💾 Proje Ayarlarını Kaydet")
-st.write(
-    "Formda seçtiğiniz proje bilgilerini ve ayarlarını daha sonra tekrar "
-    "kullanmak üzere JSON dosyası olarak indirebilirsiniz."
-)
-
-
-def _json_uyumlu_deger(deger):
-    """Session state içindeki temel veri tiplerini JSON'a uygun hale getirir."""
-    if deger is None or isinstance(deger, (str, int, float, bool)):
-        return deger
-    if isinstance(deger, (list, tuple)):
-        return [_json_uyumlu_deger(item) for item in deger]
-    if isinstance(deger, dict):
-        return {
-            str(key): _json_uyumlu_deger(value)
-            for key, value in deger.items()
-        }
-    return str(deger)
-
-
-proje_ayarlari = {
-    str(anahtar): _json_uyumlu_deger(deger)
-    for anahtar, deger in st.session_state.items()
-    if not str(anahtar).startswith("FormSubmitter:")
-}
-
-proje_json_metni = json.dumps(
-    proje_ayarlari,
-    ensure_ascii=False,
-    indent=2,
-)
-
-st.download_button(
-    label="📥 Proje Ayarlarını İndir (.json)",
-    data=proje_json_metni.encode("utf-8"),
-    file_name="proje_ayarlari.json",
-    mime="application/json",
-    key="proje_ayarlari_json_indir",
-)
