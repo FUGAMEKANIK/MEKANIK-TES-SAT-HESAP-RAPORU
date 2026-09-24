@@ -1512,6 +1512,26 @@ with genel_bilgiler_tab:
         su_gunluk_ihtiyac_m3 = 0.0
         st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
 
+    st.markdown("##### Su Deposu Depolama Süresi ve Gerekli Hacim")
+    depo_sure_gun = st.number_input(
+        "Kaç günlük su ihtiyacı için depo seçilecek?",
+        min_value=1.0,
+        value=1.0,
+        step=1.0,
+        key="depo_sure_gun",
+        help="Depo hacmi, günlük toplam su ihtiyacı ile seçilen gün sayısının çarpımıyla hesaplanır.",
+    )
+    depo_gerekli_hacim_m3 = su_gunluk_ihtiyac_m3 * depo_sure_gun
+    depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
+    st.metric(
+        "Gerekli su deposu hacmi",
+        f"{depo_gerekli_hacim_m3:,.2f} m³".replace(",", "X").replace(".", ",").replace("X", "."),
+    )
+    st.caption(
+        f"Hesap: {su_gunluk_ihtiyac_m3:g} m³/gün × {depo_sure_gun:g} gün "
+        f"= {depo_gerekli_hacim_m3:g} m³ ({depo_gerekli_hacim_litre:g} L)"
+    )
+
     # Word raporunda kullanılacak özet değerler
     su_tuketim_tipi = ", ".join(secilen_su_kategorileri) if secilen_su_kategorileri else "Seçim yapılmadı"
     su_birim = "-"
@@ -2460,6 +2480,16 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph(
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+    )
+    doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
+    doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
+    doc.add_paragraph(
+        f"Gerekli su deposu hacmi: {depo_gerekli_hacim_litre:g} L "
+        f"({depo_gerekli_hacim_m3:g} m³)"
+    )
+    doc.add_paragraph(
+        "Hesap yöntemi: Günlük toplam su ihtiyacı × seçilen depolama süresi (gün). "
+        "Nihai depo hacmi, proje kriterleri ve ilgili mevzuat/standartlar ayrıca değerlendirilerek kesinleştirilmelidir."
     )
     rapor_word_stillerini_uygula(doc)
 
