@@ -1441,95 +1441,114 @@ with genel_bilgiler_tab:
     st.markdown("#### Genel Bilgiler")
     st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
-    # SU TÜKETİMİ HESABI
-    # Kullanıcının ilettiği güncel tablo değerleri esas alınmıştır.
-    # Aralık verilen Kışlalar değeri (60 / 80) hesaplama seçeneğine
-    # tek bir sayıya dönüştürülmeden yalnızca tabloda gösterilir.
-    su_tuketim_secenekleri = {
-        "Fabrikalar": ("Kişi", 45.0),
-        "Bürolar": ("Kişi", 45.0),
-        "Okullar - Gündüzlü": ("Kişi", 45.0),
-        "Okullar - Yatılı": ("Kişi", 135.0),
-        "Bahçe sulama": ("m²", 1.5),
-        "Konutlar - Lavabolu": ("Kişi", 70.0),
-        "Konutlar - Duşlu": ("Kişi", 90.0),
-        "Konutlar - Küvetli": ("Kişi", 160.0),
-        "Oteller - Duşlu": ("Kişi", 100.0),
-        "Oteller - Küvetli": ("Kişi", 175.0),
-        "Çocuk Yuvaları": ("Kişi", 125.0),
-        "Kreşler": ("Kişi", 125.0),
-        "Lokantalar (kaynak tablosu)": ("Kişi", 75.0),
-        "Oto Yıkama - Temizlik": ("Gün", 100.0),
-        "Askeri binalar - Yatılı": ("Kişi", 135.0),
-        "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
-    }
-
-    st.markdown("##### Su Tüketim Değerleri Tablosu")
-    su_tuketim_tablosu = [
-        {"Kullanım amacı": "Fabrikalar", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
-        {"Kullanım amacı": "Bürolar", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
-        {"Kullanım amacı": "Okullar - Gündüzlü", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
-        {"Kullanım amacı": "Okullar - Yatılı", "Birim": "Kişi", "Birim tüketim değeri": "135 L/Kişi/gün"},
-        {"Kullanım amacı": "Bahçe sulama", "Birim": "m²", "Birim tüketim değeri": "1.5 L/m²/gün"},
-        {"Kullanım amacı": "Konutlar - Lavabolu", "Birim": "Kişi", "Birim tüketim değeri": "70 L/Kişi-gün"},
-        {"Kullanım amacı": "Konutlar - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "90 L/Kişi-gün"},
-        {"Kullanım amacı": "Konutlar - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "160 L/Kişi-gün"},
-        {"Kullanım amacı": "Oteller - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "100 L/Kişi-gün"},
-        {"Kullanım amacı": "Oteller - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "175 L/Kişi-gün"},
-        {"Kullanım amacı": "Çocuk Yuvaları", "Birim": "Kişi", "Birim tüketim değeri": "125 L/Kişi-gün"},
-        {"Kullanım amacı": "Kreşler", "Birim": "Kişi", "Birim tüketim değeri": "125 L/Kişi-gün"},
-        {"Kullanım amacı": "Kışlalar", "Birim": "Kişi", "Birim tüketim değeri": "60 / 80 L/Kişi-gün"},
-        {"Kullanım amacı": "Lokantalar (kaynak tablosu)", "Birim": "Kişi", "Birim tüketim değeri": "75 L/Kişi-gün"},
-        {"Kullanım amacı": "Oto Yıkama - Temizlik", "Birim": "Gün", "Birim tüketim değeri": "100 L/Gün"},
-        {"Kullanım amacı": "Askeri binalar - Yatılı", "Birim": "Kişi", "Birim tüketim değeri": "135 L/Kişi/gün"},
-        {"Kullanım amacı": "Askeri binalar - Yatılı olmayan", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
-    ]
-    st.table(su_tuketim_tablosu)
-    st.caption(
-        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-        "uygulamaya aktarılmıştır."
-    )
-
-    st.markdown("##### Su İhtiyacı Hesabı")
-    secilen_su_kategorileri = st.multiselect(
-        "Kullanım amacı / su tüketim kategorileri (birden fazla seçilebilir)",
-        options=list(su_tuketim_secenekleri.keys()),
-        key="secilen_su_kategorileri",
+    hesap_modu = st.radio(
+        "Su ihtiyacı hesabı türü",
+        ["Genel Su Tüketimi", "Konutlar", "Hastaneler"],
+        horizontal=True,
+        key="su_hesap_modu",
     )
 
     su_hesap_detaylari = []
+    secilen_su_kategorileri = []
     su_gunluk_ihtiyac_litre = 0.0
-    if secilen_su_kategorileri:
-        st.markdown("**Seçilen kategoriler için miktarları giriniz:**")
-        for sira, kategori in enumerate(secilen_su_kategorileri):
-            su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
-            su_miktari = st.number_input(
-                f"{kategori} miktarı ({su_birim})",
-                min_value=0.0,
-                value=1.0,
-                step=1.0,
-                key=f"su_miktari_{sira}",
-            )
-            kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
-            su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
-            su_hesap_detaylari.append({
-                "kategori": kategori, "birim": su_birim,
-                "birim_degeri": su_birim_degeri, "miktar": su_miktari,
-                "ihtiyac_litre": kategori_ihtiyaci_litre,
+
+    if hesap_modu == "Hastaneler":
+        st.markdown("##### Hastane Su İhtiyacı Hesabı")
+        yatak_sayisi = st.number_input(
+            "Yatak sayısı", min_value=0, value=100, step=1, key="hastane_yatak_sayisi"
+        )
+        hastane_satirlari = [
+            ("Hasta", 2.0, 135.0),
+            ("Personel", 3.0, 45.0),
+            ("Geçici hasta", 4.0, 15.0),
+        ]
+        hastane_tablo = []
+        for cihaz, katsayi, tuketim in hastane_satirlari:
+            toplam_sayi = yatak_sayisi * katsayi
+            toplam_litre = toplam_sayi * tuketim
+            hastane_tablo.append({
+                "CİHAZ": cihaz,
+                "Yatak Sayısı": yatak_sayisi,
+                "katsayı": katsayi,
+                "TOPLAM sayısı": toplam_sayi,
+                "Tüketim [lt/gün]": tuketim,
+                "TOPLAM [lt/gün]": toplam_litre,
             })
+            su_gunluk_ihtiyac_litre += toplam_litre
+            su_hesap_detaylari.append({
+                "kategori": cihaz, "birim": "Kişi",
+                "birim_degeri": tuketim, "miktar": toplam_sayi,
+                "ihtiyac_litre": toplam_litre,
+            })
+        hastane_tablo.append({
+            "CİHAZ": "GENEL TOPLAM",
+            "Yatak Sayısı": "", "katsayı": "",
+            "TOPLAM sayısı": sum(r["TOPLAM sayısı"] for r in hastane_tablo),
+            "Tüketim [lt/gün]": "",
+            "TOPLAM [lt/gün]": su_gunluk_ihtiyac_litre,
+        })
+        st.table(hastane_tablo)
         su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
-        st.metric(
-            "Günlük toplam su ihtiyacı",
-            f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
-        )
-        st.caption(
-            f"Seçilen {len(secilen_su_kategorileri)} kategori için toplam: "
-            f"{su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
-        )
+        st.metric("Hastane günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.0f} L/gün".replace(",", "."))
+        st.caption(f"{su_gunluk_ihtiyac_m3:g} m³/gün")
+
     else:
-        su_gunluk_ihtiyac_m3 = 0.0
-        st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
+        if hesap_modu == "Konutlar":
+            su_tuketim_secenekleri = {
+                "Konutlar - Lavabolu": ("Kişi", 70.0),
+                "Konutlar - Duşlu": ("Kişi", 90.0),
+                "Konutlar - Küvetli": ("Kişi", 160.0),
+            }
+        else:
+            su_tuketim_secenekleri = {
+                "Fabrikalar": ("Kişi", 45.0),
+                "Bürolar": ("Kişi", 45.0),
+                "Okullar - Gündüzlü": ("Kişi", 45.0),
+                "Okullar - Yatılı": ("Kişi", 135.0),
+                "Bahçe sulama": ("m²", 1.5),
+                "Konutlar - Lavabolu": ("Kişi", 70.0),
+                "Konutlar - Duşlu": ("Kişi", 90.0),
+                "Konutlar - Küvetli": ("Kişi", 160.0),
+                "Oteller - Duşlu": ("Kişi", 100.0),
+                "Oteller - Küvetli": ("Kişi", 175.0),
+                "Çocuk Yuvaları": ("Kişi", 125.0),
+                "Kreşler": ("Kişi", 125.0),
+                "Kışlalar": ("Kişi", 60.0),
+                "Lokantalar": ("Kişi", 75.0),
+                "Oto Yıkama - Temizlik": ("Gün", 100.0),
+                "Askeri binalar - Yatılı": ("Kişi", 135.0),
+                "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
+            }
+        st.markdown("##### Su Tüketim Değerleri Tablosu")
+        su_tuketim_tablosu = [
+            {"Kullanım amacı": kategori, "Birim": birim,
+             "Birim tüketim değeri": f"{deger:g} L/{birim}/gün"}
+            for kategori, (birim, deger) in su_tuketim_secenekleri.items()
+        ]
+        st.table(su_tuketim_tablosu)
+        secilen_su_kategorileri = st.multiselect(
+            "Kullanım amacı / su tüketim kategorileri",
+            options=list(su_tuketim_secenekleri.keys()),
+            key="secilen_su_kategorileri",
+        )
+        if secilen_su_kategorileri:
+            for sira, kategori in enumerate(secilen_su_kategorileri):
+                su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
+                su_miktari = st.number_input(
+                    f"{kategori} miktarı ({su_birim})", min_value=0.0, value=1.0, step=1.0,
+                    key=f"su_miktari_{sira}",
+                )
+                kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
+                su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+                su_hesap_detaylari.append({
+                    "kategori": kategori, "birim": su_birim,
+                    "birim_degeri": su_birim_degeri, "miktar": su_miktari,
+                    "ihtiyac_litre": kategori_ihtiyaci_litre,
+                })
+        su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+        st.metric("Günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."))
+        if not secilen_su_kategorileri:
+            st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
 
     st.markdown("##### Su Deposu Depolama Süresi ve Gerekli Hacim")
     depo_sure_gun = st.number_input(
@@ -1640,27 +1659,19 @@ with genel_bilgiler_tab:
                 # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
                 # standart kapasiteye göre otomatik olarak yeniden belirlenir.
                 kullanilacak_poz = kapasiteye_uygun_poz
-                st.caption(f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz}")
+                st.caption(
+                    f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz} "
+                    f"({manuel_kapasite:g} m³)"
+                )
 
-            # Ekranda gösterilecek kapasite, kullanıcı girişindeki serbest değerden değil,
-            # seçilen poz numarasının gerçek kapasite karşılığından alınır.
-            poz_kapasite_kaydi = next(
-                (kayit for kayit in kayitlar if kayit[1] == kullanilacak_poz),
-                None,
-            )
-            poz_karsiligi_kapasite = (
-                poz_kapasite_kaydi[0]
-                if poz_kapasite_kaydi is not None
-                else (kapasiteye_uygun_kayit[0] if kapasiteye_uygun_kayit else manuel_kapasite)
-            )
-            otomatik_poz_kayitlari.append((depo_tipi, poz_karsiligi_kapasite, kullanilacak_poz))
+            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
         else:
             st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
 
     if poz_gosterilsin_mi and otomatik_poz_kayitlari:
         for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
             st.markdown(
-                f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz} ' 
+                f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz} '
                 f'<strong>(Kapasite: {secilen_kapasite:g} m³)</strong></div>',
                 unsafe_allow_html=True,
             )
@@ -2587,11 +2598,11 @@ if st.button("Raporu Oluştur (.docx)"):
     baslik_hucreleri[0].text = "Kullanım amacı"
     baslik_hucreleri[1].text = "Birim"
     baslik_hucreleri[2].text = "Birim tüketim değeri"
-    for satir in su_tuketim_tablosu:
+    for kategori, (birim, deger) in su_tuketim_secenekleri.items():
         hucreler = su_tuketim_word_tablosu.add_row().cells
-        hucreler[0].text = satir["Kullanım amacı"]
-        hucreler[1].text = satir["Birim"]
-        hucreler[2].text = satir["Birim tüketim değeri"]
+        hucreler[0].text = kategori
+        hucreler[1].text = birim
+        hucreler[2].text = f"{deger:g} L/{birim}/gün"
 
     doc.add_paragraph(
         "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
@@ -2643,12 +2654,12 @@ if st.button("Raporu Oluştur (.docx)"):
     depo_hacmi_paragrafi.add_run("'dir.")
     for run in depo_hacmi_paragrafi.runs:
         run.font.color.rgb = RGBColor(0, 0, 0)
-    # Word raporunda yalnızca otomatik/elle düzenlenmiş poz numarası gösterilir.
-    # Kapasite bilgisi rapora yazılmaz; kapasite yalnızca program ekranında gösterilir.
     if poz_gosterilsin_mi and poz_numarasi:
         poz_paragrafi = doc.add_paragraph()
-        poz_paragrafi.add_run("Cihaz Poz No: ")
-        poz_kalin = poz_paragrafi.add_run(poz_numarasi.strip())
+        poz_paragrafi.add_run("Seçilen poz numarası: ")
+        poz_kalin = poz_paragrafi.add_run(
+            f"{poz_numarasi}"
+        )
         poz_kalin.bold = True
         for run in poz_paragrafi.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
