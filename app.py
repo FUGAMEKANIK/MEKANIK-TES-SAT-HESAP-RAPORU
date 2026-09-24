@@ -523,12 +523,11 @@ with c_2:
 # --- 6. BÖLÜM: SIHHİ TESİSAT ---
 st.header("6. SIHHİ TESİSAT")
 
-st.markdown("### Rapor Bölümleri Seçimi")
-st.caption("İşareti kaldırılan bölüm rapora eklenmez; 6.2 alt bölüm numaraları otomatik güncellenir.")
-bolum_611_aktif = st.checkbox("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", value=True, key="bolum_611_aktif")
-bolum_621_aktif = st.checkbox("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini", value=True, key="bolum_621_aktif")
-bolum_622_aktif = st.checkbox("6.2.2 Pis Su Terfi Pompaları Seçimi", value=True, key="bolum_622_aktif")
-bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value=True, key="bolum_631_aktif")
+# Bölüm seçimleri aşağıdaki ilgili başlıkların hemen yanında gösterilir.
+bolum_611_aktif = True
+bolum_621_aktif = True
+bolum_622_aktif = True
+bolum_631_aktif = True
 num_621 = 1 if bolum_621_aktif else None
 num_622 = (2 if bolum_621_aktif else 1) if bolum_622_aktif else None
 st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
@@ -681,6 +680,7 @@ ek_sihhi_on_bilgi = st.text_area(
 )
 
 # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+bolum_611_aktif = st.checkbox("6.1.1 bölümünü rapora dahil et", value=True, key="bolum_611_aktif")
 st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
 
@@ -776,6 +776,7 @@ t1_data = [
     ("300", "-", '12"', "(518.400-1.440.000)"),
 ]
 
+bolum_621_aktif = st.checkbox("6.2.1 bölümünü rapora dahil et", value=True, key="bolum_621_aktif")
 st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
 pissu_t1_data = [
     ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
@@ -803,6 +804,7 @@ pissu_t2_data = [
 # ---------------------------------------------------------------------------
 # 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
 # ---------------------------------------------------------------------------
+bolum_622_aktif = st.checkbox("6.2.2 bölümünü rapora dahil et", value=True, key="bolum_622_aktif")
 st.subheader(
     "6.2.2 Her Bir Terfi Pompası İçin Özel Debi ve Güç Hesap Modülü"
 )
@@ -1437,6 +1439,7 @@ ek_terfi_notu = st.text_area(
 
 # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
+bolum_631_aktif = st.checkbox("6.3.1 bölümünü rapora dahil et", value=True, key="bolum_631_aktif")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
 poz_gosterilsin_mi = st.checkbox(
