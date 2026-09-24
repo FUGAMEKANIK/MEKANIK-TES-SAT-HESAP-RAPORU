@@ -1430,6 +1430,8 @@ ek_terfi_notu = st.text_area(
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
+st.markdown("### Genel Bilgiler")
+
 depo_keys = [
     "depo_sec_1",
     "depo_sec_2",
@@ -2313,6 +2315,7 @@ if st.button("Raporu Oluştur (.docx)"):
     # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
     doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
     doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
+    doc.add_heading("Genel Bilgiler", level=3)
 
     # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
     if sih_sec_depo_tipi and sih_depo_tipleri:
