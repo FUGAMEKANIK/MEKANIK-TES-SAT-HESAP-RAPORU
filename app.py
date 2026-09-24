@@ -1430,7 +1430,16 @@ ek_terfi_notu = st.text_area(
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
+depo_keys = [
+    "depo_sec_1",
+    "depo_sec_2",
+    "depo_sec_3",
+    "depo_sec_4",
+    "depo_sec_5",
+    "depo_sec_6",
+    "depo_sec_7",
+    "depo_sec_8",
+]
 _toplu_secim_butonlari(depo_keys)
 
 depo_sec_1 = st.checkbox(
@@ -1452,6 +1461,42 @@ depo_sec_3 = st.checkbox(
     "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
     " için adam geçiş kapağı (manhole) bulunacaktır.",
     key="depo_sec_3",
+    value=True,
+)
+depo_sec_4 = st.checkbox(
+    "Su deposu, içme ve kullanma suyuyla temasa uygun, korozyona dayanıklı, "
+    "hijyenik ve uzun ömürlü malzemeden seçilecektir. Depo malzemesi, suyun "
+    "fiziksel ve kimyasal özelliklerini olumsuz yönde etkilemeyecektir.",
+    key="depo_sec_4",
+    value=True,
+)
+depo_sec_5 = st.checkbox(
+    "Su deposu; doğrudan güneş ışığına, aşırı sıcaklık değişimlerine ve "
+    "donma riskine karşı korunacak şekilde konumlandırılacaktır. Gerekli "
+    "durumlarda ısı yalıtımı ve uygun koruyucu önlemler alınacaktır.",
+    key="depo_sec_5",
+    value=True,
+)
+depo_sec_6 = st.checkbox(
+    "Su deposu, periyodik temizlik, dezenfeksiyon, kontrol ve bakım "
+    "işlemlerinin kolaylıkla yapılabileceği şekilde tasarlanacaktır. Depoya "
+    "erişim için yeterli bakım alanı ve uygun büyüklükte erişim kapağı "
+    "bulunacaktır.",
+    key="depo_sec_6",
+    value=True,
+)
+depo_sec_7 = st.checkbox(
+    "Depo; toz, kir, haşere, yabancı maddeler ve dış ortamdan gelebilecek "
+    "kirleticilerin girişini önleyecek şekilde kapalı ve korunaklı olacaktır. "
+    "Depo kapağı sızdırmaz ve güvenli biçimde tasarlanacaktır.",
+    key="depo_sec_7",
+    value=True,
+)
+depo_sec_8 = st.checkbox(
+    "Su deposunun yerleşimi; yapının taşıyıcı sistemi, depo dolu durumdaki "
+    "toplam ağırlığı, bakım erişimi ve tesisat bağlantıları dikkate alınarak "
+    "belirlenecektir.",
+    key="depo_sec_8",
     value=True,
 )
 
@@ -2310,6 +2355,37 @@ if st.button("Raporu Oluştur (.docx)"):
       depo_maddeleri.append(
           "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
           " için adam geçiş kapağı (manhole) bulunacaktır."
+      )
+    if depo_sec_4:
+      depo_maddeleri.append(
+          "Su deposu, içme ve kullanma suyuyla temasa uygun, korozyona dayanıklı, "
+          "hijyenik ve uzun ömürlü malzemeden seçilecektir. Depo malzemesi, suyun "
+          "fiziksel ve kimyasal özelliklerini olumsuz yönde etkilemeyecektir."
+      )
+    if depo_sec_5:
+      depo_maddeleri.append(
+          "Su deposu; doğrudan güneş ışığına, aşırı sıcaklık değişimlerine ve "
+          "donma riskine karşı korunacak şekilde konumlandırılacaktır. Gerekli "
+          "durumlarda ısı yalıtımı ve uygun koruyucu önlemler alınacaktır."
+      )
+    if depo_sec_6:
+      depo_maddeleri.append(
+          "Su deposu, periyodik temizlik, dezenfeksiyon, kontrol ve bakım "
+          "işlemlerinin kolaylıkla yapılabileceği şekilde tasarlanacaktır. Depoya "
+          "erişim için yeterli bakım alanı ve uygun büyüklükte erişim kapağı "
+          "bulunacaktır."
+      )
+    if depo_sec_7:
+      depo_maddeleri.append(
+          "Depo; toz, kir, haşere, yabancı maddeler ve dış ortamdan gelebilecek "
+          "kirleticilerin girişini önleyecek şekilde kapalı ve korunaklı olacaktır. "
+          "Depo kapağı sızdırmaz ve güvenli biçimde tasarlanacaktır."
+      )
+    if depo_sec_8:
+      depo_maddeleri.append(
+          "Su deposunun yerleşimi; yapının taşıyıcı sistemi, depo dolu durumdaki "
+          "toplam ağırlığı, bakım erişimi ve tesisat bağlantıları dikkate alınarak "
+          "belirlenecektir."
       )
 
     if ek_depo_notu.strip():
