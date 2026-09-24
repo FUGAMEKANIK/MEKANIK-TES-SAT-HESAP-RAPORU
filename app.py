@@ -1468,32 +1468,75 @@ with genel_bilgiler_tab:
     )
 
     st.markdown("##### Su İhtiyacı Hesabı")
-    su_tuketim_tipi = st.selectbox(
-        "Kullanım amacı / su tüketim kategorisi",
-        list(su_tuketim_secenekleri.keys()),
-        key="su_tuketim_tipi",
-    )
-    su_birim, su_birim_degeri = su_tuketim_secenekleri[su_tuketim_tipi]
-
-    su_miktari = st.number_input(
-        f"Miktar ({su_birim})",
-        min_value=0.0,
-        value=1.0,
-        step=1.0,
-        key="su_miktari",
+    diger_secimler = [
+        kategori
+        for kategori in su_tuketim_secenekleri
+        if not kategori.startswith("Askeri binalar -")
+    ]
+    secilen_diger_kategoriler = st.multiselect(
+        "Kullanım amacı / su tüketim kategorileri (birden fazla seçilebilir)",
+        options=diger_secimler,
+        key="secilen_diger_su_kategorileri",
     )
 
-    su_gunluk_ihtiyac_litre = su_miktari * su_birim_degeri
-    su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+    askeri_bina_secimi = st.radio(
+        "Askeri bina tipi (aynı anda yalnızca bir seçenek seçilebilir)",
+        options=[
+            "Seçim yok",
+            "Askeri binalar - Yatılı",
+            "Askeri binalar - Yatılı olmayan",
+        ],
+        horizontal=True,
+        key="askeri_bina_secimi",
+    )
 
-    st.metric(
-        "Günlük toplam su ihtiyacı",
-        f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
-    )
-    st.caption(
-        f"Hesap: {su_miktari:g} {su_birim} × {su_birim_degeri:g} L/{su_birim}/gün "
-        f"= {su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
-    )
+    secilen_su_kategorileri = list(secilen_diger_kategoriler)
+    if askeri_bina_secimi != "Seçim yok":
+        secilen_su_kategorileri.append(askeri_bina_secimi)
+
+    su_hesap_detaylari = []
+    su_gunluk_ihtiyac_litre = 0.0
+    if secilen_su_kategorileri:
+        st.markdown("**Seçilen kategoriler için miktarları giriniz:**")
+        for sira, kategori in enumerate(secilen_su_kategorileri):
+            su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
+            su_miktari = st.number_input(
+                f"{kategori} miktarı ({su_birim})",
+                min_value=0.0,
+                value=1.0,
+                step=1.0,
+                key=f"su_miktari_{sira}",
+            )
+            kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
+            su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+            su_hesap_detaylari.append(
+                {
+                    "kategori": kategori,
+                    "birim": su_birim,
+                    "birim_degeri": su_birim_degeri,
+                    "miktar": su_miktari,
+                    "ihtiyac_litre": kategori_ihtiyaci_litre,
+                }
+            )
+
+        su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+        st.metric(
+            "Günlük toplam su ihtiyacı",
+            f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
+        )
+        st.caption(
+            f"Seçilen {len(secilen_su_kategorileri)} kategori için toplam: "
+            f"{su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
+        )
+    else:
+        su_gunluk_ihtiyac_m3 = 0.0
+        st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
+
+    # Word raporunda kullanılacak özet değerler
+    su_tuketim_tipi = ", ".join(secilen_su_kategorileri) if secilen_su_kategorileri else "Seçim yapılmadı"
+    su_birim = "-"
+    su_birim_degeri = 0.0
+    su_miktari = 0.0
 
 depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
 _toplu_secim_butonlari(depo_keys)
@@ -2412,9 +2455,28 @@ if st.button("Raporu Oluştur (.docx)"):
     )
 
     doc.add_heading("Su İhtiyacı Hesabı", level=4)
-    doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
-    doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
-    doc.add_paragraph(f"Birim su tüketimi: {su_birim_degeri:g} L/{su_birim}/gün")
+    doc.add_paragraph(
+        "Kullanım amacı / su tüketim kategorileri: "
+        f"{su_tuketim_tipi}"
+    )
+    if su_hesap_detaylari:
+        hesap_tablosu = doc.add_table(rows=1, cols=5)
+        hesap_tablosu.style = "Table Grid"
+        hesap_basliklari = hesap_tablosu.rows[0].cells
+        hesap_basliklari[0].text = "Kategori"
+        hesap_basliklari[1].text = "Miktar"
+        hesap_basliklari[2].text = "Birim"
+        hesap_basliklari[3].text = "Birim tüketimi"
+        hesap_basliklari[4].text = "Günlük ihtiyaç"
+        for detay in su_hesap_detaylari:
+            hucreler = hesap_tablosu.add_row().cells
+            hucreler[0].text = detay["kategori"]
+            hucreler[1].text = f"{detay['miktar']:g}"
+            hucreler[2].text = detay["birim"]
+            hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
+            hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
+    else:
+        doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
     doc.add_paragraph(
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
