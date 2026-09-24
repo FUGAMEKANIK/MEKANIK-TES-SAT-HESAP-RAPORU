@@ -2615,12 +2615,13 @@ if st.button("Raporu Oluştur (.docx)"):
     depo_hacmi_paragrafi.add_run("'dir.")
     for run in depo_hacmi_paragrafi.runs:
         run.font.color.rgb = RGBColor(0, 0, 0)
+    # Word raporunda yalnızca otomatik/elle düzenlenmiş poz numarası gösterilir.
+    # Kapasite bilgisi rapora yazılmaz; kapasite yalnızca program ekranında gösterilir.
     if poz_gosterilsin_mi and poz_numarasi:
         poz_paragrafi = doc.add_paragraph()
-        poz_paragrafi.add_run("Cihaz Poz No: “")
-        poz_kalin = poz_paragrafi.add_run(poz_numarasi)
+        poz_paragrafi.add_run("Cihaz Poz No: ")
+        poz_kalin = poz_paragrafi.add_run(poz_numarasi.strip())
         poz_kalin.bold = True
-        poz_paragrafi.add_run("”")
         for run in poz_paragrafi.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
     rapor_word_stillerini_uygula(doc)
