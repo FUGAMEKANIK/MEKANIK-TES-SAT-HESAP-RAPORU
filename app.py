@@ -1447,6 +1447,8 @@ with genel_bilgiler_tab:
         "Okullar - Diğer": ("Kişi", 135.0),
         "Bahçe sulama": ("m²", 1.5),
         "Binek otosu": ("Adet", 100.0),
+        "Askeri binalar - Yatılı": ("Kişi", 100.0),
+        "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
     }
 
     st.markdown("##### Su Tüketim Değerleri Tablosu")
