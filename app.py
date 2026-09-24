@@ -1571,11 +1571,34 @@ with genel_bilgiler_tab:
     }
 
     otomatik_poz_kayitlari = []
+    # Her depo tipi için kapasite elle değiştirilebilir; kapasite değişince poz otomatik yenilenir.
+    # Poz numarası da kullanıcı tarafından ayrıca elle düzenlenebilir.
     for depo_tipi in sih_depo_tipleri if sih_sec_depo_tipi else []:
         kayitlar = depo_poz_kapasiteleri.get(depo_tipi, [])
         uygun = next((kayit for kayit in kayitlar if kayit[0] >= depo_gerekli_hacim_m3), None)
         if uygun:
-            otomatik_poz_kayitlari.append((depo_tipi, uygun[0], uygun[1]))
+            otomatik_kapasite, otomatik_poz = uygun
+            kapasite_key = "manuel_depo_kapasitesi_" + str(abs(hash(depo_tipi)))
+            poz_key = "manuel_depo_pozu_" + str(abs(hash(depo_tipi)))
+            manuel_kapasite = st.number_input(
+                f"{depo_tipi} için seçilen depo kapasitesi (m³)",
+                min_value=0.001,
+                value=float(otomatik_kapasite),
+                step=0.5,
+                key=kapasite_key,
+            )
+            kapasiteye_uygun_poz = next(
+                (kayit[1] for kayit in kayitlar if kayit[0] >= manuel_kapasite),
+                "",
+            )
+            manuel_poz = st.text_input(
+                f"{depo_tipi} için seçilen poz numarası",
+                value=kapasiteye_uygun_poz,
+                key=poz_key,
+            )
+            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, manuel_poz.strip()))
+        else:
+            st.warning(f"{depo_tipi} için hesaplanan hacmin üzerinde tanımlı kapasite bulunamadı.")
 
     if poz_gosterilsin_mi and otomatik_poz_kayitlari:
         for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
@@ -2544,8 +2567,10 @@ if st.button("Raporu Oluştur (.docx)"):
         if secilen_depo_tipi_metni
         else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
     )
+    rapor_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
+    rapor_kapasite_litre = rapor_kapasite_m3 * 1000.0
     depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
-        f"{depo_gerekli_hacim_litre:g} L ({depo_gerekli_hacim_m3:g} m³)"
+        f"{rapor_kapasite_litre:g} L ({rapor_kapasite_m3:g} m³)"
     )
     depo_hacmi_kalin.bold = True
     depo_hacmi_paragrafi.add_run("'dir.")
