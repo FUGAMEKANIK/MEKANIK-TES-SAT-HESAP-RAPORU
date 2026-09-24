@@ -1459,6 +1459,11 @@ with genel_bilgiler_tab:
         for kategori, (birim, deger) in su_tuketim_secenekleri.items()
     ]
     st.table(su_tuketim_tablosu)
+    st.caption(
+        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+        "uygulamaya aktarılmıştır."
+    )
 
     st.markdown("##### Su İhtiyacı Hesabı")
     su_tuketim_tipi = st.selectbox(
@@ -2398,6 +2403,12 @@ if st.button("Raporu Oluştur (.docx)"):
         hucreler[1].text = birim
         hucreler[2].text = f"{deger:g} L/{birim}/gün"
 
+    doc.add_paragraph(
+        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+        "uygulamaya aktarılmıştır."
+    )
+
     doc.add_heading("Su İhtiyacı Hesabı", level=4)
     doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
     doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
@@ -2406,12 +2417,6 @@ if st.button("Raporu Oluştur (.docx)"):
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
     )
-    doc.add_paragraph(
-        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-        "uygulamaya aktarılmıştır."
-    )
-
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
