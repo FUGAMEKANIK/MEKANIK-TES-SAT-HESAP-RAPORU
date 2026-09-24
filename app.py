@@ -147,12 +147,19 @@ if proje_yukleme_dosyasi is not None:
         if anahtar not in {"proje_ayar_yukleme_dosyasi", "proje_son_yukleme_imzasi"}:
           st.session_state[anahtar] = deger
       st.session_state["proje_son_yukleme_imzasi"] = yukleme_imzasi
-      st.sidebar.success("Proje ayarları yüklendi. Alanlar güncellendi.")
+      st.session_state["proje_yukleme_bildirimi"] = True
+      st.rerun()
     except Exception as hata:
       st.sidebar.error(f"Ayar dosyası yüklenemedi: {hata}")
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
+
+with st.sidebar.expander("ℹ️ Nasıl kullanılır?", expanded=False):
+    st.write("1. Önce proje bilgilerini ana ekrandaki alanlara girin.")
+    st.write("2. Aşağıdaki butonla ayarları JSON olarak indirin.")
+    st.write("3. Daha sonra JSON dosyasını bu menüden yükleyin.")
+    st.write("4. Yüklenen bilgiler ana ekrandaki alanlara aktarılır.")
 
 
 
@@ -188,14 +195,17 @@ st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input(
     "Şirket / Kuruluş İsmi",
     "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ",
+    key="sirket_adi",
 )
-is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
+is_adi = st.text_input("İşin Adı / Proje Başlığı", "", key="is_adi")
 rapor_turu = st.text_input(
-    "Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU"
+    "Rapor Türü",
+    "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU",
+    key="rapor_turu",
 )
-hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
-mmo_no = st.text_input("MMO Oda No", "109913")
-tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
+hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük", key="hazirlayan")
+mmo_no = st.text_input("MMO Oda No", "109913", key="mmo_no")
+tarih = st.text_input("Rapor Tarihi", bugun_ay_yil, key="tarih")
 
 # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
 st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
