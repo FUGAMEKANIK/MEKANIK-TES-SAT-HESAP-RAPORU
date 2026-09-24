@@ -80,15 +80,26 @@ iklim_veritabani = iklim_verisini_yukle()
 
 
 # Otomatik İçindekiler Tablosu (TOC) Alanı Ekleyen Fonksiyon
+def enable_update_fields_on_open(doc):
+    """Word belgesini açarken alanların (özellikle İçindekiler) güncellenmesini ister."""
+    settings = doc.settings.element
+    update_fields = settings.find(qn("w:updateFields"))
+    if update_fields is None:
+        update_fields = OxmlElement("w:updateFields")
+        settings.append(update_fields)
+    update_fields.set(qn("w:val"), "true")
+
+
 def add_toc(paragraph):
   run = paragraph.add_run()
   fldChar1 = OxmlElement("w:fldChar")
   fldChar1.set(qn("w:fldCharType"), "begin")
   instrText = OxmlElement("w:instrText")
   instrText.set(qn("xml:space"), "preserve")
-  instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
+  instrText.text = 'TOC \\o \"1-4\" \\h \\z \\u'
   fldChar2 = OxmlElement("w:fldChar")
   fldChar2.set(qn("w:fldCharType"), "separate")
+  fldChar2.set(qn("w:dirty"), "true")
   fldChar3 = OxmlElement("w:fldChar")
   fldChar3.set(qn("w:fldCharType"), "end")
 
@@ -1947,7 +1958,11 @@ if st.button("Raporu Oluştur (.docx)"):
     run_hazirlayan.font.size = Pt(11)
     run_hazirlayan.font.name = "Arial"
 
+    # Word açılışında başlık alanları ve içindekiler otomatik güncellensin
+    enable_update_fields_on_open(doc)
+
     # 2. SAYFA: İÇİNDEKİLER
+    doc.add_page_break()
     doc.add_heading("İÇİNDEKİLER", level=1)
     p_toc = doc.add_paragraph()
     add_toc(p_toc)
@@ -1962,6 +1977,7 @@ if st.button("Raporu Oluştur (.docx)"):
     run_not.font.color.rgb = RGBColor(128, 128, 128)
 
     # 3. SAYFA: GÖVDE
+    doc.add_page_break()
     body_section = doc.add_section()
     body_section.top_margin = Inches(1.2)
     body_section.bottom_margin = Inches(1.2)
