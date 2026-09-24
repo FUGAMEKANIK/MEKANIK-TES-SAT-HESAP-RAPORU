@@ -1519,32 +1519,64 @@ with genel_bilgiler_tab:
                 "Askeri binalar - Yatılı": ("Kişi", 135.0),
                 "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
             }
-        st.markdown("##### Su Tüketim Değerleri Tablosu")
+        st.markdown("##### Su Tüketim Değerleri Tablos")
         su_tuketim_tablosu = [
             {"Kullanım amacı": kategori, "Birim": birim,
              "Birim tüketim değeri": f"{deger:g} L/{birim}/gün"}
             for kategori, (birim, deger) in su_tuketim_secenekleri.items()
         ]
         st.table(su_tuketim_tablosu)
-        secilen_su_kategorileri = st.multiselect(
-            "Kullanım amacı / su tüketim kategorileri",
-            options=list(su_tuketim_secenekleri.keys()),
-            key="secilen_su_kategorileri",
-        )
-        if secilen_su_kategorileri:
-            for sira, kategori in enumerate(secilen_su_kategorileri):
-                su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
-                su_miktari = st.number_input(
-                    f"{kategori} miktarı ({su_birim})", min_value=0.0, value=1.0, step=1.0,
-                    key=f"su_miktari_{sira}",
-                )
-                kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
-                su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
-                su_hesap_detaylari.append({
-                    "kategori": kategori, "birim": su_birim,
-                    "birim_degeri": su_birim_degeri, "miktar": su_miktari,
-                    "ihtiyac_litre": kategori_ihtiyaci_litre,
-                })
+
+        if hesap_modu == "Konutlar":
+            hane_kisi_sayisi = st.number_input(
+                "Hane başına kişi sayısı", min_value=1, value=4, step=1,
+                key="konut_hane_kisi_sayisi",
+            )
+            toplam_hane_sayisi = st.number_input(
+                "Toplam hane sayısı", min_value=1, value=1, step=1,
+                key="konut_toplam_hane_sayisi",
+            )
+            toplam_kisi_sayisi = hane_kisi_sayisi * toplam_hane_sayisi
+            st.metric("Toplam kişi sayısı", f"{toplam_kisi_sayisi:,.0f}".replace(",", "."))
+
+            secilen_konut_kategorisi = st.selectbox(
+                "Konut tipi / su tüketim kategorisi",
+                options=list(su_tuketim_secenekleri.keys()),
+                key="secilen_konut_kategorisi",
+            )
+            secilen_su_kategorileri = [secilen_konut_kategorisi]
+            su_birim, su_birim_degeri = su_tuketim_secenekleri[secilen_konut_kategorisi]
+            kategori_ihtiyaci_litre = toplam_kisi_sayisi * su_birim_degeri
+            su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+            su_hesap_detaylari.append({
+                "kategori": secilen_konut_kategorisi, "birim": su_birim,
+                "birim_degeri": su_birim_degeri, "miktar": toplam_kisi_sayisi,
+                "ihtiyac_litre": kategori_ihtiyaci_litre,
+            })
+            st.caption(
+                f"Hesap: {toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi = "
+                f"{toplam_kisi_sayisi:g} kişi × {su_birim_degeri:g} L/kişi-gün"
+            )
+        else:
+            secilen_su_kategorileri = st.multiselect(
+                "Kullanım amacı / su tüketim kategorileri",
+                options=list(su_tuketim_secenekleri.keys()),
+                key="secilen_su_kategorileri",
+            )
+            if secilen_su_kategorileri:
+                for sira, kategori in enumerate(secilen_su_kategorileri):
+                    su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
+                    su_miktari = st.number_input(
+                        f"{kategori} miktarı ({su_birim})", min_value=0.0, value=1.0, step=1.0,
+                        key=f"su_miktari_{sira}",
+                    )
+                    kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
+                    su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+                    su_hesap_detaylari.append({
+                        "kategori": kategori, "birim": su_birim,
+                        "birim_degeri": su_birim_degeri, "miktar": su_miktari,
+                        "ihtiyac_litre": kategori_ihtiyaci_litre,
+                    })
         su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
         st.metric("Günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."))
         if not secilen_su_kategorileri:
