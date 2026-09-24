@@ -1524,7 +1524,7 @@ with genel_bilgiler_tab:
     depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
     secilen_depo_tipi_metni = ", ".join(sih_depo_tipleri) if sih_sec_depo_tipi and sih_depo_tipleri else ""
     depo_hacmi_basligi = (
-        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" su deposu hacmi'
+        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi'
         if secilen_depo_tipi_metni
         else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
     )
@@ -2520,7 +2520,7 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
     depo_hacmi_paragrafi = doc.add_paragraph()
     depo_hacmi_paragrafi.add_run(
-        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" su deposu hacmi: '
+        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
         if secilen_depo_tipi_metni
         else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
     )
