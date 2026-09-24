@@ -1488,6 +1488,8 @@ with genel_bilgiler_tab:
                 "kategori": cihaz, "birim": "Kişi",
                 "birim_degeri": tuketim, "miktar": toplam_sayi,
                 "ihtiyac_litre": toplam_litre,
+                "yatak_sayisi": yatak_sayisi,
+                "katsayi": katsayi,
             })
         hastane_tablo.append({
             "CİHAZ": "GENEL TOPLAM",
@@ -2666,7 +2668,11 @@ if st.button("Raporu Oluştur (.docx)"):
     )
     if su_hesap_detaylari:
         konut_raporu_mu = hesap_modu == "Konutlar"
-        hesap_tablosu = doc.add_table(rows=1, cols=8 if konut_raporu_mu else 5)
+        hastane_raporu_mu = hesap_modu == "Hastaneler"
+        hesap_tablosu = doc.add_table(
+            rows=1,
+            cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
+        )
         hesap_tablosu.style = "Table Grid"
         hesap_basliklari = hesap_tablosu.rows[0].cells
         if konut_raporu_mu:
@@ -2674,12 +2680,16 @@ if st.button("Raporu Oluştur (.docx)"):
                 "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
                 "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
             ]
-            for i, baslik in enumerate(basliklar):
-                hesap_basliklari[i].text = baslik
+        elif hastane_raporu_mu:
+            basliklar = [
+                "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
+                "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
+            ]
         else:
             basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
-            for i, baslik in enumerate(basliklar):
-                hesap_basliklari[i].text = baslik
+        for i, baslik in enumerate(basliklar):
+            hesap_basliklari[i].text = baslik
+
         for detay in su_hesap_detaylari:
             hucreler = hesap_tablosu.add_row().cells
             hucreler[0].text = detay["kategori"]
@@ -2691,11 +2701,26 @@ if st.button("Raporu Oluştur (.docx)"):
                 hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
                 hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
                 hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
+            elif hastane_raporu_mu:
+                hucreler[1].text = f"{detay['yatak_sayisi']:g}"
+                hucreler[2].text = f"{detay['katsayi']:g}"
+                hucreler[3].text = f"{detay['miktar']:g}"
+                hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
+                hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
             else:
                 hucreler[1].text = f"{detay['miktar']:g}"
                 hucreler[2].text = detay["birim"]
                 hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
                 hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
+
+        if hastane_raporu_mu:
+            toplam_hucreler = hesap_tablosu.add_row().cells
+            toplam_hucreler[0].text = "GENEL TOPLAM"
+            toplam_hucreler[1].text = ""
+            toplam_hucreler[2].text = ""
+            toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
+            toplam_hucreler[4].text = ""
+            toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
     else:
         doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
     doc.add_paragraph(
