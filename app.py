@@ -1625,7 +1625,18 @@ with genel_bilgiler_tab:
                 kullanilacak_poz = kapasiteye_uygun_poz
                 st.caption(f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz}")
 
-            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
+            # Ekranda gösterilecek kapasite, kullanıcı girişindeki serbest değerden değil,
+            # seçilen poz numarasının gerçek kapasite karşılığından alınır.
+            poz_kapasite_kaydi = next(
+                (kayit for kayit in kayitlar if kayit[1] == kullanilacak_poz),
+                None,
+            )
+            poz_karsiligi_kapasite = (
+                poz_kapasite_kaydi[0]
+                if poz_kapasite_kaydi is not None
+                else (kapasiteye_uygun_kayit[0] if kapasiteye_uygun_kayit else manuel_kapasite)
+            )
+            otomatik_poz_kayitlari.append((depo_tipi, poz_karsiligi_kapasite, kullanilacak_poz))
         else:
             st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
 
