@@ -1467,6 +1467,26 @@ with genel_bilgiler_tab:
         }
         for kategori, (birim, deger) in su_tuketim_secenekleri.items()
     ]
+
+    # Kullanıcının paylaştığı ek kaynak tablosunda bulunan ve mevcut
+    # hesaplama listesindeki tekil değerlerden farklı/eksik olan değerler.
+    # Aralıklar (ör. 60 / 80) kaynak tablodaki haliyle gösterilir.
+    ek_su_tuketim_tablosu = [
+        {"Kullanım amacı": "Konutlar - Lavabolu", "Birim": "Kişi", "Birim tüketim değeri": "60 / 80 L/Kişi-gün"},
+        {"Kullanım amacı": "Konutlar - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "80 / 115 L/Kişi-gün"},
+        {"Kullanım amacı": "Konutlar - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "120 / 200 L/Kişi-gün"},
+        {"Kullanım amacı": "Oteller - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "100 L/Kişi-gün"},
+        {"Kullanım amacı": "Oteller - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "150 / 200 L/Kişi-gün"},
+        {"Kullanım amacı": "Hastaneler", "Birim": "Kişi", "Birim tüketim değeri": "200 / 500 L/Kişi-gün"},
+        {"Kullanım amacı": "Okullar", "Birim": "Kişi", "Birim tüketim değeri": "5 L/Kişi-gün"},
+        {"Kullanım amacı": "Çocuk Yuvaları", "Birim": "Kişi", "Birim tüketim değeri": "80 / 150 L/Kişi-gün"},
+        {"Kullanım amacı": "Kreşler", "Birim": "Kişi", "Birim tüketim değeri": "100 / 150 L/Kişi-gün"},
+        {"Kullanım amacı": "Kışlalar", "Birim": "Kişi", "Birim tüketim değeri": "60 / 80 L/Kişi-gün"},
+        {"Kullanım amacı": "Lokantalar (kaynak tablosu)", "Birim": "Kişi", "Birim tüketim değeri": "20 / 150 L/Kişi-gün"},
+        {"Kullanım amacı": "Bahçe Sulama Bir Seferde", "Birim": "m²", "Birim tüketim değeri": "1,5 L/m²"},
+        {"Kullanım amacı": "Oto Yıkama - Temizlik", "Birim": "Gün", "Birim tüketim değeri": "100 L/Gün"},
+    ]
+    su_tuketim_tablosu.extend(ek_su_tuketim_tablosu)
     st.table(su_tuketim_tablosu)
     st.caption(
         "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
