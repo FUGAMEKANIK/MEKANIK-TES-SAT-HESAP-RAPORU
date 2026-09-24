@@ -1444,10 +1444,10 @@ with genel_bilgiler_tab:
         "Bürolar": ("Kişi", 45.0),
         "Lokantalar": ("Kişi", 7.0),
         "Okullar - Gündüzlü": ("Kişi", 45.0),
-        "Okullar - Diğer": ("Kişi", 135.0),
+        "Okullar - Yatılı": ("Kişi", 135.0),
         "Bahçe sulama": ("m²", 1.5),
         "Binek otosu": ("Adet", 100.0),
-        "Askeri binalar - Yatılı": ("Kişi", 100.0),
+        "Askeri binalar - Yatılı": ("Kişi", 135.0),
         "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
     }
 
@@ -1468,31 +1468,11 @@ with genel_bilgiler_tab:
     )
 
     st.markdown("##### Su İhtiyacı Hesabı")
-    diger_secimler = [
-        kategori
-        for kategori in su_tuketim_secenekleri
-        if not kategori.startswith("Askeri binalar -")
-    ]
-    secilen_diger_kategoriler = st.multiselect(
+    secilen_su_kategorileri = st.multiselect(
         "Kullanım amacı / su tüketim kategorileri (birden fazla seçilebilir)",
-        options=diger_secimler,
-        key="secilen_diger_su_kategorileri",
+        options=list(su_tuketim_secenekleri.keys()),
+        key="secilen_su_kategorileri",
     )
-
-    askeri_bina_secimi = st.radio(
-        "Askeri bina tipi (aynı anda yalnızca bir seçenek seçilebilir)",
-        options=[
-            "Seçim yok",
-            "Askeri binalar - Yatılı",
-            "Askeri binalar - Yatılı olmayan",
-        ],
-        horizontal=True,
-        key="askeri_bina_secimi",
-    )
-
-    secilen_su_kategorileri = list(secilen_diger_kategoriler)
-    if askeri_bina_secimi != "Seçim yok":
-        secilen_su_kategorileri.append(askeri_bina_secimi)
 
     su_hesap_detaylari = []
     su_gunluk_ihtiyac_litre = 0.0
