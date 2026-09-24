@@ -1551,7 +1551,10 @@ with genel_bilgiler_tab:
 
     if poz_gosterilsin_mi and otomatik_poz_kayitlari:
         for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
-            st.markdown(f'<div style="color:#000000;"><strong>Seçilen depo kapasitesi:</strong> {secilen_kapasite:g} m³ &nbsp; | &nbsp; <strong>Poz No:</strong> {secilen_poz}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz}</div>',
+                unsafe_allow_html=True,
+            )
     elif poz_gosterilsin_mi and sih_depo_tipleri:
         st.warning("Hesaplanan hacim, tanımlı kapasite listesinin üzerindedir.")
 
@@ -2505,17 +2508,13 @@ if st.button("Raporu Oluştur (.docx)"):
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
     )
-    doc.add_heading("6.3.1.2 POZ NUMARASI TERCİHİ", level=4)
     if poz_gosterilsin_mi and poz_numarasi:
-        doc.add_paragraph("Poz numarası gösterimi: Evet")
-        doc.add_paragraph(f"Seçilen su deposu tipi: {poz_tipi}")
-        doc.add_paragraph(f"Otomatik seçilen poz numarası: {poz_numarasi}")
-    else:
-        doc.add_paragraph("Poz numarası gösterimi: Hayır")
-    doc.add_paragraph(
-        "Not: Poz numarası aralıkları kullanıcı tarafından belirtilen listelere göre oluşturulmuştur; "
-        "kesin kapasite-poz eşleştirmesi ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
-    )
+        poz_paragrafi = doc.add_paragraph()
+        poz_paragrafi.add_run("Seçilen poz numarası: ")
+        poz_kalin = poz_paragrafi.add_run(poz_numarasi)
+        poz_kalin.bold = True
+        for run in poz_paragrafi.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
     doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
     depo_hacmi_paragrafi = doc.add_paragraph()
