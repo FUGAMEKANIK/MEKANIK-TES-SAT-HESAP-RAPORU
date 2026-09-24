@@ -2632,4 +2632,10 @@ if st.button("Raporu Oluştur (.docx)"):
     )
 
     st.download_button(
-     
+        label="📥 Word Dosyasını İndir (.docx)",
+        data=buffer,
+        file_name=dosya_adi,
+        mime=(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ),
+    )
