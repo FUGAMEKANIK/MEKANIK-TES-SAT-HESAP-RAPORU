@@ -1591,12 +1591,16 @@ with genel_bilgiler_tab:
                 st.session_state[kapasite_key] = float(otomatik_kapasite)
             st.session_state[onceki_otomatik_key] = float(otomatik_kapasite)
 
+            st.caption(
+                f"Otomatik hesaplanan en yakın standart kapasite: {otomatik_kapasite:g} m³ "
+                f"(hesaplanan ihtiyaç: {depo_gerekli_hacim_m3:g} m³)"
+            )
             manuel_kapasite = st.number_input(
-                f"{depo_tipi} için seçilen depo kapasitesi (m³)",
+                f"{depo_tipi} için depo kapasitesi (m³) — otomatik gelir, elle değiştirilebilir",
                 min_value=0.001,
                 step=0.5,
                 key=kapasite_key,
-                help="Otomatik seçilen kapasiteyi isterseniz elle değiştirebilirsiniz.",
+                help="Alan başlangıçta otomatik seçilen en yakın standart kapasiteyle doldurulur. İsterseniz son onay olarak elle değiştirebilirsiniz.",
             )
 
             kapasiteye_uygun_kayit = en_yakin_kapasite_kaydi(kayitlar, manuel_kapasite)
@@ -1619,7 +1623,10 @@ with genel_bilgiler_tab:
                 # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
                 # standart kapasiteye göre otomatik olarak yeniden belirlenir.
                 kullanilacak_poz = kapasiteye_uygun_poz
-                st.caption(f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz}")
+                st.caption(
+                    f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz} "
+                    f"({manuel_kapasite:g} m³)"
+                )
 
             otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
         else:
@@ -1628,7 +1635,8 @@ with genel_bilgiler_tab:
     if poz_gosterilsin_mi and otomatik_poz_kayitlari:
         for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
             st.markdown(
-                f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz}</div>',
+                f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz} '
+                f'<strong>(Kapasite: {secilen_kapasite:g} m³)</strong></div>',
                 unsafe_allow_html=True,
             )
     elif poz_gosterilsin_mi and sih_depo_tipleri:
@@ -2613,7 +2621,9 @@ if st.button("Raporu Oluştur (.docx)"):
     if poz_gosterilsin_mi and poz_numarasi:
         poz_paragrafi = doc.add_paragraph()
         poz_paragrafi.add_run("Seçilen poz numarası: ")
-        poz_kalin = poz_paragrafi.add_run(poz_numarasi)
+        poz_kalin = poz_paragrafi.add_run(
+            f"{poz_numarasi} (Kapasite: {rapor_kapasite_m3:g} m³)"
+        )
         poz_kalin.bold = True
         for run in poz_paragrafi.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
