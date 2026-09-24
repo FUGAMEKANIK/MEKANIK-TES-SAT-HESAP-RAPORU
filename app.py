@@ -1555,26 +1555,57 @@ with genel_bilgiler_tab:
     su_miktari = 0.0
 
 # POZ NUMARASI TERCİHİ
+poz_tipi_secenekleri = {
+    "Paslanmaz Çelik Modüler su deposu": list(range(251501201, 251501227)),
+    "Galvaniz Çelik Modüler su deposu": list(range(251501301, 251501327)),
+    "GRP (Cam Takviyeli Polyester) Modüler su deposu": list(range(251501601, 251501626)),
+}
+
+def poz_formatla(numara):
+    return f"{numara // 10000000:02d}.{(numara // 10000) % 1000:03d}.{numara % 10000:04d}"
+
+poz_gosterilsin_mi = False
+poz_numarasi = ""
+poz_tipi = ""
 with poz_numarasi_tab:
     st.markdown("#### 6.3.1.2 POZ NUMARASI TERCİHİ")
-    poz_tipi_secenekleri = {
-        "Modüler paslanmaz çelik su deposu": list(range(251501201, 251501227)),
-        "Modüler galvaniz çelik su deposu": list(range(251501301, 251501327)),
-        "GRP modüler su deposu": list(range(251501601, 251501626)),
-    }
-    poz_tipi = st.selectbox(
-        "Poz numarası için depo tipi",
-        list(poz_tipi_secenekleri.keys()),
-        key="poz_tipi",
+    poz_gosterilsin_mi = st.checkbox(
+        "Poz numarasını göster",
+        value=True,
+        key="poz_gosterilsin_mi",
     )
-    poz_numarasi = st.selectbox(
-        "Poz numarası tercihi",
-        [f"{n // 10000000:02d}.{(n // 10000) % 1000:03d}.{n % 10000:04d}" for n in poz_tipi_secenekleri[poz_tipi]],
-        key="poz_numarasi",
-    )
+
+    secilen_poz_tipleri = [
+        tip for tip in (sih_depo_tipleri if sih_sec_depo_tipi else [])
+        if tip in poz_tipi_secenekleri
+    ]
+
+    if poz_gosterilsin_mi:
+        if secilen_poz_tipleri:
+            st.markdown("**Seçilen su deposu tipine göre otomatik poz numarası aralığı:**")
+            poz_satirlari = []
+            for tip in secilen_poz_tipleri:
+                pozlar = [poz_formatla(n) for n in poz_tipi_secenekleri[tip]]
+                poz_satirlari.append({
+                    "Su deposu tipi": tip,
+                    "Poz numarası aralığı": f"{pozlar[0]} – {pozlar[-1]}",
+                    "Poz numaraları": ", ".join(pozlar),
+                })
+            st.table(poz_satirlari)
+            poz_tipi = ", ".join(secilen_poz_tipleri)
+            poz_numarasi = ", ".join(
+                f"{poz_formatla(poz_tipi_secenekleri[tip][0])} – {poz_formatla(poz_tipi_secenekleri[tip][-1])}"
+                for tip in secilen_poz_tipleri
+            )
+        else:
+            st.info("Poz numarası göstermek için Genel Bilgiler sekmesinden poz tanımlı bir su deposu tipi seçiniz.")
+    else:
+        st.caption("Poz numarası raporda gösterilmeyecektir.")
+
     st.caption(
-        "Poz numarası listeleri kullanıcı tarafından verilen aralıklara göre oluşturulmuştur. "
-        "Kapasiteye karşılık gelen kesin poz seçimi, ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
+        "Poz numarası aralıkları, kullanıcı tarafından belirtilen aralıklara göre otomatik olarak "
+        "seçilen su deposu tipinden alınır. Kesin kapasite-poz eşleştirmesi için ilgili poz tarifleri "
+        "ve kapasite cetveli gereklidir."
     )
 
 depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
@@ -2521,11 +2552,15 @@ if st.button("Raporu Oluştur (.docx)"):
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
     )
     doc.add_heading("6.3.1.2 POZ NUMARASI TERCİHİ", level=4)
-    doc.add_paragraph(f"Poz numarası için depo tipi: {poz_tipi}")
-    doc.add_paragraph(f"Seçilen poz numarası: {poz_numarasi}")
+    if poz_gosterilsin_mi and poz_numarasi:
+        doc.add_paragraph("Poz numarası gösterimi: Evet")
+        doc.add_paragraph(f"Seçilen su deposu tipi: {poz_tipi}")
+        doc.add_paragraph(f"Otomatik poz numarası aralığı: {poz_numarasi}")
+    else:
+        doc.add_paragraph("Poz numarası gösterimi: Hayır")
     doc.add_paragraph(
         "Not: Poz numarası aralıkları kullanıcı tarafından belirtilen listelere göre oluşturulmuştur; "
-        "kapasite-poz eşleştirmesi ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
+        "kesin kapasite-poz eşleştirmesi ilgili poz tarifleri ve kapasite cetveliyle doğrulanmalıdır."
     )
     doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
