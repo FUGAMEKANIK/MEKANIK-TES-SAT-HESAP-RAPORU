@@ -1441,6 +1441,27 @@ with genel_bilgiler_tab:
     st.markdown("#### Genel Bilgiler")
     st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
+    # Hesap türü sekmelerinin daha büyük ve okunabilir görünmesi
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stRadio"] > label {
+            font-size: 1.15rem !important;
+            font-weight: 600 !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] label {
+            font-size: 1.10rem !important;
+            font-weight: 500 !important;
+            min-height: 2rem !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] label p {
+            font-size: 1.10rem !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     hesap_modu = st.radio(
         "Su ihtiyacı hesabı türü",
         ["Genel Su Tüketimi", "Konutlar", "Hastaneler"],
