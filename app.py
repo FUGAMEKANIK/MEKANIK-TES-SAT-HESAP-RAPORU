@@ -1451,6 +1451,9 @@ with genel_bilgiler_tab:
     su_hesap_detaylari = []
     secilen_su_kategorileri = []
     su_gunluk_ihtiyac_litre = 0.0
+    # Rapor oluşturma bölümünde de kullanılacağı için değişken tüm hesap
+    # modlarında tanımlı olmalıdır. Hastane modunda aşağıda özel olarak doldurulur.
+    su_tuketim_secenekleri = {}
 
     if hesap_modu == "Hastaneler":
         st.markdown("##### Hastane Su İhtiyacı Hesabı")
@@ -1462,6 +1465,12 @@ with genel_bilgiler_tab:
             ("Personel", 3.0, 45.0),
             ("Geçici hasta", 4.0, 15.0),
         ]
+        # Hastane seçiliyken rapordaki tüketim değerleri tablosunun
+        # oluşturulabilmesi için hastane tüketim seçeneklerini tanımla.
+        su_tuketim_secenekleri = {
+            cihaz: ("Kişi", tuketim)
+            for cihaz, _katsayi, tuketim in hastane_satirlari
+        }
         hastane_tablo = []
         for cihaz, katsayi, tuketim in hastane_satirlari:
             toplam_sayi = yatak_sayisi * katsayi
