@@ -1523,9 +1523,17 @@ with genel_bilgiler_tab:
     depo_gerekli_hacim_m3 = su_gunluk_ihtiyac_m3 * depo_sure_gun
     depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
     secilen_depo_tipi_metni = ", ".join(sih_depo_tipleri) if sih_sec_depo_tipi and sih_depo_tipleri else ""
-    depo_hacmi_basligi = (f'Gerekli "{secilen_depo_tipi_metni}" su deposu hacmi' if secilen_depo_tipi_metni else "Gerekli su deposu hacmi")
+    depo_hacmi_basligi = (
+        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" su deposu hacmi'
+        if secilen_depo_tipi_metni
+        else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
+    )
     depo_hacmi_degeri = (f"{depo_gerekli_hacim_litre:,.0f} L ({depo_gerekli_hacim_m3:,.3f} m³)").replace(",", "X").replace(".", ",").replace("X", ".")
-    st.markdown(f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: <strong style="color:#000000;">{depo_hacmi_degeri}</strong></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: '
+        f'<strong style="color:#000000;">{depo_hacmi_degeri}</strong>&#39;dir.</div>',
+        unsafe_allow_html=True,
+    )
 
     # Kapasiteye göre otomatik poz seçimi. Her poz grubunda ilk uygun üst kapasite seçilir.
     depo_poz_kapasiteleri = {
@@ -2512,14 +2520,15 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
     depo_hacmi_paragrafi = doc.add_paragraph()
     depo_hacmi_paragrafi.add_run(
-        f'Gerekli "{secilen_depo_tipi_metni}" su deposu hacmi: '
+        f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" su deposu hacmi: '
         if secilen_depo_tipi_metni
-        else "Gerekli su deposu hacmi: "
+        else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
     )
     depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
         f"{depo_gerekli_hacim_litre:g} L ({depo_gerekli_hacim_m3:g} m³)"
     )
     depo_hacmi_kalin.bold = True
+    depo_hacmi_paragrafi.add_run("'dir.")
     for run in depo_hacmi_paragrafi.runs:
         run.font.color.rgb = RGBColor(0, 0, 0)
     doc.add_paragraph(
