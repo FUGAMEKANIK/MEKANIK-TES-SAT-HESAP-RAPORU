@@ -152,15 +152,15 @@ if proje_yukleme_dosyasi is not None:
     except Exception as hata:
       st.sidebar.error(f"Ayar dosyası yüklenemedi: {hata}")
 
-# Yüklenen proje bilgilerinin yan menüde de görünür özeti
+# Yüklenen / girilen proje bilgilerinin yan menüde dinamik özeti
 with st.sidebar.expander("📋 Proje Bilgileri Özeti", expanded=True):
-    st.caption("Proje bilgileri ana ekranda da gösterilir. Yükleme yaptıysanız aşağıdaki özetten kontrol edebilirsiniz.")
-    st.text_input("Şirket / Kuruluş", value=st.session_state.get("sirket_adi", ""), disabled=True, key="ozet_sirket_adi")
-    st.text_input("Proje Başlığı", value=st.session_state.get("is_adi", ""), disabled=True, key="ozet_is_adi")
-    st.text_input("Rapor Türü", value=st.session_state.get("rapor_turu", ""), disabled=True, key="ozet_rapor_turu")
-    st.text_input("Hazırlayan", value=st.session_state.get("hazirlayan", ""), disabled=True, key="ozet_hazirlayan")
-    st.text_input("MMO Oda No", value=st.session_state.get("mmo_no", ""), disabled=True, key="ozet_mmo_no")
-    st.text_input("Rapor Tarihi", value=st.session_state.get("tarih", ""), disabled=True, key="ozet_tarih")
+    st.caption("Ana ekrandaki bilgiler burada otomatik olarak gösterilir.")
+    st.markdown(f"**Şirket / Kuruluş:** {st.session_state.get('sirket_adi', '') or '—'}")
+    st.markdown(f"**İşin Adı / Proje Başlığı:** {st.session_state.get('is_adi', '') or '—'}")
+    st.markdown(f"**Rapor Türü:** {st.session_state.get('rapor_turu', '') or '—'}")
+    st.markdown(f"**Hazırlayan:** {st.session_state.get('hazirlayan', '') or '—'}")
+    st.markdown(f"**MMO Oda No:** {st.session_state.get('mmo_no', '') or '—'}")
+    st.markdown(f"**Rapor Tarihi:** {st.session_state.get('tarih', '') or '—'}")
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
@@ -1501,12 +1501,27 @@ ek_terfi_notu = st.text_area(
 
 
 # Tüm form alanları oluşturulduktan sonra güncel ayarları indir.
+def _dosya_adi_icin_temizle(metin):
+  """İş adını güvenli bir dosya adına dönüştürür."""
+  metin = str(metin or "").strip()
+  if not metin:
+    return "proje_ayarlari"
+  yasakli_karakterler = '<>:/\\|?*\"'
+  for karakter in yasakli_karakterler:
+    metin = metin.replace(karakter, "_")
+  metin = "_".join(metin.split())
+  metin = metin.strip("._ ")
+  return metin[:150] or "proje_ayarlari"
+
 proje_ayar_paketi = _proje_ayarlari_paketi_olustur()
 proje_ayar_json = json.dumps(proje_ayar_paketi, ensure_ascii=False, indent=2)
+is_adi_dosya = _dosya_adi_icin_temizle(st.session_state.get("is_adi", ""))
+json_dosya_adi = f"{is_adi_dosya}.json"
+st.sidebar.caption(f"İndirme dosya adı: **{json_dosya_adi}**")
 st.sidebar.download_button(
     label="📥 Proje ayarlarını indir (.json)",
     data=proje_ayar_json,
-    file_name="proje_ayarlari.json",
+    file_name=json_dosya_adi,
     mime="application/json",
     key="proje_ayar_indirme_butonu",
 )
