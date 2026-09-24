@@ -1528,13 +1528,6 @@ with genel_bilgiler_tab:
         if secilen_depo_tipi_metni
         else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
     )
-    depo_hacmi_degeri = (f"{depo_gerekli_hacim_litre:,.0f} L ({depo_gerekli_hacim_m3:,.3f} m³)").replace(",", "X").replace(".", ",").replace("X", ".")
-    st.markdown(
-        f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: '
-        f'<strong style="color:#000000;">{depo_hacmi_degeri}</strong>&#39;dir.</div>',
-        unsafe_allow_html=True,
-    )
-
     # Kapasiteye göre otomatik poz seçimi. Her poz grubunda ilk uygun üst kapasite seçilir.
     # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı poz/kapasite kayıtları esas alınmıştır.
     # Seçim mantığı: hesaplanan hacme eşit veya daha büyük ilk standart kapasite.
@@ -1573,13 +1566,14 @@ with genel_bilgiler_tab:
     otomatik_poz_kayitlari = []
     # Her depo tipi için kapasite elle değiştirilebilir; kapasite değişince poz otomatik yenilenir.
     # Poz numarası da kullanıcı tarafından ayrıca elle düzenlenebilir.
-    for depo_tipi in sih_depo_tipleri if sih_sec_depo_tipi else []:
+    for depo_index, depo_tipi in enumerate(sih_depo_tipleri if sih_sec_depo_tipi else []):
         kayitlar = depo_poz_kapasiteleri.get(depo_tipi, [])
         uygun = next((kayit for kayit in kayitlar if kayit[0] >= depo_gerekli_hacim_m3), None)
         if uygun:
             otomatik_kapasite, otomatik_poz = uygun
-            kapasite_key = "manuel_depo_kapasitesi_" + str(abs(hash(depo_tipi)))
-            poz_key = "manuel_depo_pozu_" + str(abs(hash(depo_tipi)))
+            kapasite_key = f"manuel_depo_kapasitesi_{depo_index}"
+            poz_key = f"manuel_depo_pozu_{depo_index}"
+            poz_elle_key = f"depo_pozunu_elle_duzenle_{depo_index}"
             manuel_kapasite = st.number_input(
                 f"{depo_tipi} için seçilen depo kapasitesi (m³)",
                 min_value=0.001,
@@ -1591,12 +1585,22 @@ with genel_bilgiler_tab:
                 (kayit[1] for kayit in kayitlar if kayit[0] >= manuel_kapasite),
                 "",
             )
-            manuel_poz = st.text_input(
-                f"{depo_tipi} için seçilen poz numarası",
-                value=kapasiteye_uygun_poz,
-                key=poz_key,
+            poz_elle_duzenle = st.checkbox(
+                f"{depo_tipi} poz numarasını elle düzenle",
+                value=False,
+                key=poz_elle_key,
             )
-            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, manuel_poz.strip()))
+            if poz_elle_duzenle:
+                manuel_poz = st.text_input(
+                    f"{depo_tipi} için seçilen poz numarası",
+                    value=kapasiteye_uygun_poz,
+                    key=poz_key,
+                )
+                kullanilacak_poz = manuel_poz.strip()
+            else:
+                st.caption(f"Kapasiteye göre otomatik seçilen poz: {kapasiteye_uygun_poz}")
+                kullanilacak_poz = kapasiteye_uygun_poz
+            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
         else:
             st.warning(f"{depo_tipi} için hesaplanan hacmin üzerinde tanımlı kapasite bulunamadı.")
 
@@ -1608,6 +1612,15 @@ with genel_bilgiler_tab:
             )
     elif poz_gosterilsin_mi and sih_depo_tipleri:
         st.warning("Hesaplanan hacim, tanımlı kapasite listesinin üzerindedir.")
+
+    rapor_gosterilecek_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
+    rapor_gosterilecek_kapasite_litre = rapor_gosterilecek_kapasite_m3 * 1000.0
+    depo_hacmi_degeri = (f"{rapor_gosterilecek_kapasite_litre:,.0f} L ({rapor_gosterilecek_kapasite_m3:,.3f} m³)").replace(",", "X").replace(".", ",").replace("X", ".")
+    st.markdown(
+        f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: '
+        f'<strong style="color:#000000;">{depo_hacmi_degeri}</strong>&#39;dir.</div>',
+        unsafe_allow_html=True,
+    )
 
     st.caption(f"Hesap: {su_gunluk_ihtiyac_m3:g} m³/gün × {depo_sure_gun:g} gün = {depo_gerekli_hacim_m3:g} m³ ({depo_gerekli_hacim_litre:g} L)")
     su_tuketim_tipi = ", ".join(secilen_su_kategorileri) if secilen_su_kategorileri else "Seçim yapılmadı"
