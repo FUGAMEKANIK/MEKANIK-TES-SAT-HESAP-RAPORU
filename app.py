@@ -2315,22 +2315,6 @@ if st.button("Raporu Oluştur (.docx)"):
     doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
     doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
     doc.add_heading("Genel Bilgiler", level=3)
-    doc.add_heading(
-        "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
-        level=3,
-    )
-    doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
-    doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
-    doc.add_paragraph(f"Birim su tüketimi: {su_birim_degeri:g} L/{su_birim}/gün")
-    doc.add_paragraph(
-        f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
-        f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
-    )
-    doc.add_paragraph(
-        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-        "uygulamaya aktarılmıştır."
-    )
 
     # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
     if sih_sec_depo_tipi and sih_depo_tipleri:
@@ -2380,8 +2364,27 @@ if st.button("Raporu Oluştur (.docx)"):
         if ed.strip():
           depo_maddeleri.append(ed.strip())
 
+    # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
     for dm in depo_maddeleri:
       doc.add_paragraph(dm, style="List Bullet")
+
+    # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
+    doc.add_heading(
+        "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
+        level=3,
+    )
+    doc.add_paragraph(f"Kullanım amacı / su tüketim kategorisi: {su_tuketim_tipi}")
+    doc.add_paragraph(f"Miktar: {su_miktari:g} {su_birim}")
+    doc.add_paragraph(f"Birim su tüketimi: {su_birim_degeri:g} L/{su_birim}/gün")
+    doc.add_paragraph(
+        f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
+        f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+    )
+    doc.add_paragraph(
+        "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+        "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+        "uygulamaya aktarılmıştır."
+    )
 
     rapor_word_stillerini_uygula(doc)
 
