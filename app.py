@@ -1430,50 +1430,51 @@ ek_terfi_notu = st.text_area(
 st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
 st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-st.markdown("### Genel Bilgiler")
-st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
+genel_bilgiler_tab = st.tabs(["Genel Bilgiler"])[0]
+with genel_bilgiler_tab:
+    st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
-# SU TÜKETİMİ HESABI
-su_tuketim_secenekleri = {
-    "Fabrikalar": ("Kişi", 45.0),
-    "Görev başındakiler": ("Kişi", 45.0),
-    "Hemşireler": ("Kişi", 135.0),
-    "Duşlu oteller": ("Kişi", 90.0),
-    "Küvetli oteller": ("Kişi", 150.0),
-    "Bürolar": ("Kişi", 45.0),
-    "Lokantalar": ("Kişi", 7.0),
-    "Okullar - Gündüzlü": ("Kişi", 45.0),
-    "Okullar - Diğer": ("Kişi", 135.0),
-    "Bahçe sulama": ("m²", 1.5),
-    "Binek otosu": ("Adet", 100.0),
-}
+    # SU TÜKETİMİ HESABI
+    su_tuketim_secenekleri = {
+        "Fabrikalar": ("Kişi", 45.0),
+        "Görev başındakiler": ("Kişi", 45.0),
+        "Hemşireler": ("Kişi", 135.0),
+        "Duşlu oteller": ("Kişi", 90.0),
+        "Küvetli oteller": ("Kişi", 150.0),
+        "Bürolar": ("Kişi", 45.0),
+        "Lokantalar": ("Kişi", 7.0),
+        "Okullar - Gündüzlü": ("Kişi", 45.0),
+        "Okullar - Diğer": ("Kişi", 135.0),
+        "Bahçe sulama": ("m²", 1.5),
+        "Binek otosu": ("Adet", 100.0),
+    }
 
-su_tuketim_tipi = st.selectbox(
-    "Kullanım amacı / su tüketim kategorisi",
-    list(su_tuketim_secenekleri.keys()),
-    key="su_tuketim_tipi",
-)
-su_birim, su_birim_degeri = su_tuketim_secenekleri[su_tuketim_tipi]
+    su_tuketim_tipi = st.selectbox(
+        "Kullanım amacı / su tüketim kategorisi",
+        list(su_tuketim_secenekleri.keys()),
+        key="su_tuketim_tipi",
+    )
+    su_birim, su_birim_degeri = su_tuketim_secenekleri[su_tuketim_tipi]
 
-su_miktari = st.number_input(
-    f"Miktar ({su_birim})",
-    min_value=0.0,
-    value=1.0,
-    step=1.0,
-    key="su_miktari",
-)
+    su_miktari = st.number_input(
+        f"Miktar ({su_birim})",
+        min_value=0.0,
+        value=1.0,
+        step=1.0,
+        key="su_miktari",
+    )
 
-su_gunluk_ihtiyac_litre = su_miktari * su_birim_degeri
-su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+    su_gunluk_ihtiyac_litre = su_miktari * su_birim_degeri
+    su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
 
-st.metric(
-    "Günlük toplam su ihtiyacı",
-    f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
-)
-st.caption(
-    f"Hesap: {su_miktari:g} {su_birim} × {su_birim_degeri:g} L/{su_birim}/gün "
-    f"= {su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
-)
+    st.metric(
+        "Günlük toplam su ihtiyacı",
+        f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."),
+    )
+    st.caption(
+        f"Hesap: {su_miktari:g} {su_birim} × {su_birim_degeri:g} L/{su_birim}/gün "
+        f"= {su_gunluk_ihtiyac_litre:g} L/gün = {su_gunluk_ihtiyac_m3:g} m³/gün"
+    )
 
 depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
 _toplu_secim_butonlari(depo_keys)
