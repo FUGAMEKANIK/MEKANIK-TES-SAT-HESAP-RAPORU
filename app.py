@@ -100,28 +100,67 @@ def add_toc(paragraph):
 
 
 def _json_uyumlu_deger(deger):
-  """Session state içindeki JSON'a çevrilebilen değerleri ayıklar."""
+  """Değeri güvenli ve JSON'a uyumlu hâle getirir."""
   try:
     json.dumps(deger, ensure_ascii=False)
     return deger
-  except (TypeError, ValueError):
+  except (TypeError, ValueError, OverflowError):
     return None
+
+
+def _kaydedilebilir_anahtar(anahtar):
+  """Streamlit'in dahili ve yükleme ile ilgili anahtarlarını dışarıda bırakır."""
+  if not isinstance(anahtar, str) or not anahtar.strip():
+    return False
+  dislanan_baslangiclar = (
+      "proje_",
+      "FormSubmitter:",
+      "st_",
+      "_",
+  )
+  return not anahtar.startswith(dislanan_baslangiclar)
 
 
 def _proje_ayarlari_paketi_olustur():
   ayarlar = {}
   for anahtar, deger in st.session_state.items():
-    if anahtar.startswith("proje_"):
+    if not _kaydedilebilir_anahtar(anahtar):
       continue
     json_deger = _json_uyumlu_deger(deger)
     if json_deger is not None:
       ayarlar[anahtar] = json_deger
   return {
       "format": "muhendislik_proje_ayarlari",
-      "surum": 1,
+      "surum": 2,
       "olusturma_zamani": datetime.now().isoformat(timespec="seconds"),
       "ayarlar": ayarlar,
   }
+
+
+def _guvenli_ayar_degeri(deger):
+  """Yalnızca JSON temel tiplerini kabul eder; bozuk nesneleri atlar."""
+  if deger is None or isinstance(deger, (str, int, float, bool)):
+    return deger
+  if isinstance(deger, list):
+    temiz_liste = []
+    for oge in deger:
+      temiz = _guvenli_ayar_degeri(oge)
+      if temiz is not _GEcersiz:
+        temiz_liste.append(temiz)
+    return temiz_liste
+  if isinstance(deger, dict):
+    temiz_sozluk = {}
+    for anahtar, oge in deger.items():
+      if not isinstance(anahtar, str):
+        continue
+      temiz = _guvenli_ayar_degeri(oge)
+      if temiz is not _GEcersiz:
+        temiz_sozluk[anahtar] = temiz
+    return temiz_sozluk
+  return _GEcersiz
+
+
+_GEcersiz = object()
 
 
 # Kayıtlı proje ayarlarını, widget'lar oluşturulmadan önce yükle.
@@ -139,18 +178,37 @@ if proje_yukleme_dosyasi is not None:
   )
   if st.session_state.get("proje_son_yukleme_imzasi") != yukleme_imzasi:
     try:
+      proje_yukleme_dosyasi.seek(0)
       paket = json.load(proje_yukleme_dosyasi)
+      if not isinstance(paket, dict):
+        raise ValueError("JSON kök yapısı bir sözlük olmalıdır.")
       ayarlar = paket.get("ayarlar", paket)
       if not isinstance(ayarlar, dict):
         raise ValueError("JSON içinde 'ayarlar' sözlüğü bulunamadı.")
+
+      yuklenen_sayi = 0
+      atlanan_sayi = 0
       for anahtar, deger in ayarlar.items():
-        if anahtar not in {"proje_ayar_yukleme_dosyasi", "proje_son_yukleme_imzasi"}:
-          st.session_state[anahtar] = deger
+        if not _kaydedilebilir_anahtar(anahtar):
+          atlanan_sayi += 1
+          continue
+        temiz_deger = _guvenli_ayar_degeri(deger)
+        if temiz_deger is _GEcersiz:
+          atlanan_sayi += 1
+          continue
+        st.session_state[anahtar] = temiz_deger
+        yuklenen_sayi += 1
+
       st.session_state["proje_son_yukleme_imzasi"] = yukleme_imzasi
-      st.session_state["proje_yukleme_bildirimi"] = True
+      st.session_state["proje_yukleme_bildirimi"] = (
+          f"{yuklenen_sayi} ayar yüklendi."
+          + (f" {atlanan_sayi} kayıt atlandı." if atlanan_sayi else "")
+      )
       st.rerun()
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, TypeError) as hata:
+      st.sidebar.error(f"Ayar dosyası okunamadı: {hata}")
     except Exception as hata:
-      st.sidebar.error(f"Ayar dosyası yüklenemedi: {hata}")
+      st.sidebar.error(f"Ayar dosyası yüklenirken beklenmeyen hata oluştu: {hata}")
 
 # Yüklenen / girilen proje bilgilerinin yan menüde dinamik özeti
 with st.sidebar.expander("📋 Proje Bilgileri Özeti", expanded=True):
