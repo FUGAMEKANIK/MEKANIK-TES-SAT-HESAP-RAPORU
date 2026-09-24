@@ -2508,13 +2508,6 @@ if st.button("Raporu Oluştur (.docx)"):
         f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
         f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
     )
-    if poz_gosterilsin_mi and poz_numarasi:
-        poz_paragrafi = doc.add_paragraph()
-        poz_paragrafi.add_run("Seçilen poz numarası: ")
-        poz_kalin = poz_paragrafi.add_run(poz_numarasi)
-        poz_kalin.bold = True
-        for run in poz_paragrafi.runs:
-            run.font.color.rgb = RGBColor(0, 0, 0)
     doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
     doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
     depo_hacmi_paragrafi = doc.add_paragraph()
@@ -2530,6 +2523,13 @@ if st.button("Raporu Oluştur (.docx)"):
     depo_hacmi_paragrafi.add_run("'dir.")
     for run in depo_hacmi_paragrafi.runs:
         run.font.color.rgb = RGBColor(0, 0, 0)
+    if poz_gosterilsin_mi and poz_numarasi:
+        poz_paragrafi = doc.add_paragraph()
+        poz_paragrafi.add_run("Seçilen poz numarası: ")
+        poz_kalin = poz_paragrafi.add_run(poz_numarasi)
+        poz_kalin.bold = True
+        for run in poz_paragrafi.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
     doc.add_paragraph(
         "Hesap yöntemi: Günlük toplam su ihtiyacı × seçilen depolama süresi (gün). "
         "Nihai depo hacmi, proje kriterleri ve ilgili mevzuat/standartlar ayrıca değerlendirilerek kesinleştirilmelidir."
