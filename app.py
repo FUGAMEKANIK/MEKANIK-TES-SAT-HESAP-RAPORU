@@ -1442,51 +1442,48 @@ with genel_bilgiler_tab:
     st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
     # SU TÜKETİMİ HESABI
+    # Kullanıcının ilettiği güncel tablo değerleri esas alınmıştır.
+    # Aralık verilen Kışlalar değeri (60 / 80) hesaplama seçeneğine
+    # tek bir sayıya dönüştürülmeden yalnızca tabloda gösterilir.
     su_tuketim_secenekleri = {
         "Fabrikalar": ("Kişi", 45.0),
-        "Görev başındakiler": ("Kişi", 45.0),
-        "Hemşireler": ("Kişi", 135.0),
-        "Duşlu oteller": ("Kişi", 90.0),
-        "Küvetli oteller": ("Kişi", 150.0),
         "Bürolar": ("Kişi", 45.0),
-        "Lokantalar": ("Kişi", 7.0),
         "Okullar - Gündüzlü": ("Kişi", 45.0),
         "Okullar - Yatılı": ("Kişi", 135.0),
         "Bahçe sulama": ("m²", 1.5),
-        "Binek otosu": ("Adet", 100.0),
+        "Konutlar - Lavabolu": ("Kişi", 70.0),
+        "Konutlar - Duşlu": ("Kişi", 90.0),
+        "Konutlar - Küvetli": ("Kişi", 160.0),
+        "Oteller - Duşlu": ("Kişi", 100.0),
+        "Oteller - Küvetli": ("Kişi", 175.0),
+        "Çocuk Yuvaları": ("Kişi", 125.0),
+        "Kreşler": ("Kişi", 125.0),
+        "Lokantalar (kaynak tablosu)": ("Kişi", 75.0),
+        "Oto Yıkama - Temizlik": ("Gün", 100.0),
         "Askeri binalar - Yatılı": ("Kişi", 135.0),
         "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
     }
 
     st.markdown("##### Su Tüketim Değerleri Tablosu")
     su_tuketim_tablosu = [
-        {
-            "Kullanım amacı": kategori,
-            "Birim": birim,
-            "Birim tüketim değeri": f"{deger:g} L/{birim}/gün",
-        }
-        for kategori, (birim, deger) in su_tuketim_secenekleri.items()
-    ]
-
-    # Kullanıcının paylaştığı ek kaynak tablosunda bulunan ve mevcut
-    # hesaplama listesindeki tekil değerlerden farklı/eksik olan değerler.
-    # Aralıklar (ör. 60 / 80) kaynak tablodaki haliyle gösterilir.
-    ek_su_tuketim_tablosu = [
-        {"Kullanım amacı": "Konutlar - Lavabolu", "Birim": "Kişi", "Birim tüketim değeri": "60 / 80 L/Kişi-gün"},
-        {"Kullanım amacı": "Konutlar - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "80 / 115 L/Kişi-gün"},
-        {"Kullanım amacı": "Konutlar - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "120 / 200 L/Kişi-gün"},
+        {"Kullanım amacı": "Fabrikalar", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
+        {"Kullanım amacı": "Bürolar", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
+        {"Kullanım amacı": "Okullar - Gündüzlü", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
+        {"Kullanım amacı": "Okullar - Yatılı", "Birim": "Kişi", "Birim tüketim değeri": "135 L/Kişi/gün"},
+        {"Kullanım amacı": "Bahçe sulama", "Birim": "m²", "Birim tüketim değeri": "1.5 L/m²/gün"},
+        {"Kullanım amacı": "Konutlar - Lavabolu", "Birim": "Kişi", "Birim tüketim değeri": "70 L/Kişi-gün"},
+        {"Kullanım amacı": "Konutlar - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "90 L/Kişi-gün"},
+        {"Kullanım amacı": "Konutlar - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "160 L/Kişi-gün"},
         {"Kullanım amacı": "Oteller - Duşlu", "Birim": "Kişi", "Birim tüketim değeri": "100 L/Kişi-gün"},
-        {"Kullanım amacı": "Oteller - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "150 / 200 L/Kişi-gün"},
-        {"Kullanım amacı": "Hastaneler", "Birim": "Kişi", "Birim tüketim değeri": "200 / 500 L/Kişi-gün"},
-        {"Kullanım amacı": "Okullar", "Birim": "Kişi", "Birim tüketim değeri": "5 L/Kişi-gün"},
-        {"Kullanım amacı": "Çocuk Yuvaları", "Birim": "Kişi", "Birim tüketim değeri": "80 / 150 L/Kişi-gün"},
-        {"Kullanım amacı": "Kreşler", "Birim": "Kişi", "Birim tüketim değeri": "100 / 150 L/Kişi-gün"},
+        {"Kullanım amacı": "Oteller - Küvetli", "Birim": "Kişi", "Birim tüketim değeri": "175 L/Kişi-gün"},
+        {"Kullanım amacı": "Çocuk Yuvaları", "Birim": "Kişi", "Birim tüketim değeri": "125 L/Kişi-gün"},
+        {"Kullanım amacı": "Kreşler", "Birim": "Kişi", "Birim tüketim değeri": "125 L/Kişi-gün"},
         {"Kullanım amacı": "Kışlalar", "Birim": "Kişi", "Birim tüketim değeri": "60 / 80 L/Kişi-gün"},
-        {"Kullanım amacı": "Lokantalar (kaynak tablosu)", "Birim": "Kişi", "Birim tüketim değeri": "20 / 150 L/Kişi-gün"},
-        {"Kullanım amacı": "Bahçe Sulama Bir Seferde", "Birim": "m²", "Birim tüketim değeri": "1,5 L/m²"},
+        {"Kullanım amacı": "Lokantalar (kaynak tablosu)", "Birim": "Kişi", "Birim tüketim değeri": "75 L/Kişi-gün"},
         {"Kullanım amacı": "Oto Yıkama - Temizlik", "Birim": "Gün", "Birim tüketim değeri": "100 L/Gün"},
+        {"Kullanım amacı": "Askeri binalar - Yatılı", "Birim": "Kişi", "Birim tüketim değeri": "135 L/Kişi/gün"},
+        {"Kullanım amacı": "Askeri binalar - Yatılı olmayan", "Birim": "Kişi", "Birim tüketim değeri": "45 L/Kişi/gün"},
     ]
-    su_tuketim_tablosu.extend(ek_su_tuketim_tablosu)
     st.table(su_tuketim_tablosu)
     st.caption(
         "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
@@ -2590,11 +2587,11 @@ if st.button("Raporu Oluştur (.docx)"):
     baslik_hucreleri[0].text = "Kullanım amacı"
     baslik_hucreleri[1].text = "Birim"
     baslik_hucreleri[2].text = "Birim tüketim değeri"
-    for kategori, (birim, deger) in su_tuketim_secenekleri.items():
+    for satir in su_tuketim_tablosu:
         hucreler = su_tuketim_word_tablosu.add_row().cells
-        hucreler[0].text = kategori
-        hucreler[1].text = birim
-        hucreler[2].text = f"{deger:g} L/{birim}/gün"
+        hucreler[0].text = satir["Kullanım amacı"]
+        hucreler[1].text = satir["Birim"]
+        hucreler[2].text = satir["Birim tüketim değeri"]
 
     doc.add_paragraph(
         "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
