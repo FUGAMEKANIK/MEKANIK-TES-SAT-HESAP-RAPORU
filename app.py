@@ -127,9 +127,10 @@ bolum_621_aktif = st.checkbox("6.2.1 Pis Su Hesabı", value=True, key="rapor_bol
 bolum_622_aktif = st.checkbox("6.2.2 Pis Su Terfi Pompaları", value=True, key="rapor_bolum_622")
 bolum_63_aktif = st.checkbox("6.3 Sıhhi Tesisat Cihaz Seçimleri", value=True, key="rapor_bolum_63")
 bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value=True, key="rapor_bolum_631")
+bolum_632_aktif = st.checkbox("6.3.2 Kullanma Suyu Hidroforu Seçimi", value=True, key="rapor_bolum_632")
 
-# 6.3.1 alt bölümü kapatılırsa 6.3 bölümü de kapatılır.
-bolum_63_aktif = bolum_63_aktif and bolum_631_aktif
+# 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
+bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif)
 
 
 def _toplu_checkbox_ayarla(anahtarlar, durum):
@@ -1419,6 +1420,8 @@ if bolum_6_aktif:
               "h": h_val,
               "guc": hesap["motor_secim_kw"],
               "asil_adedi": asil_adedi,
+              "yedek_adedi": yedek_adedi,
+              "toplam_adet": toplam_adet,
               "adet_str": adet_metin,
               "tip": tip_metin,
               "poz": hesaplanan_poz,
@@ -1857,6 +1860,10 @@ if bolum_6_aktif:
         "",
         height=80,
     )
+
+    if bolum_632_aktif:
+        st.subheader("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ")
+        st.info("Bu bölümün hidrofor seçim hesapları ve cihaz bilgileri bir sonraki adımda eklenecektir.")
 
 
     def rapor_word_stillerini_uygula(doc):
@@ -2674,6 +2681,46 @@ if st.button("Raporu Oluştur (.docx)"):
               doc.add_picture(grafik_buf, width=Inches(6.2))
               doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+          # --- PİS SU POMPALARI GENEL ÇALIŞMA NOTU ---
+          # Tüm pompa seçimleri rapora aktarıldıktan sonra, pompa adedine
+          # göre asıl/yedek çalışma düzeni otomatik olarak açıklanır.
+          for psp, pp in psp_parametreleri.items():
+            toplam_pompa = int(pp.get("toplam_adet", 0))
+            if toplam_pompa == 2:
+              calisma_duzeni = (
+                  "İki pompalı terfi istasyonunda pompalardan birincisi normal "
+                  "tüketim zamanında çalışacak, ikinci pompa yedek konumunda "
+                  "olacaktır."
+              )
+            elif toplam_pompa == 3:
+              calisma_duzeni = (
+                  "Üç pompalı terfi istasyonunda birinci ve ikinci pompalar "
+                  "normal tüketim zamanında asıl olarak çalışacak, üçüncü pompa "
+                  "yedek konumunda olacaktır."
+              )
+            else:
+              asil_sayisi = int(pp.get("asil_adedi", 0))
+              yedek_sayisi = int(pp.get("yedek_adedi", 0))
+              calisma_duzeni = (
+                  f"{toplam_pompa} pompalı terfi istasyonunda {asil_sayisi} "
+                  f"pompa asıl, {yedek_sayisi} pompa yedek konumunda "
+                  "çalışacaktır."
+              )
+
+            not_basligi = doc.add_paragraph()
+            not_basligi.paragraph_format.space_before = Pt(8)
+            not_basligi.paragraph_format.space_after = Pt(3)
+            run = not_basligi.add_run(
+                "Pis su pompaları ilgili genel çalışma notu:"
+            )
+            run.bold = True
+
+            doc.add_paragraph(
+                f"{calisma_duzeni} Pompaların yedeklemesi otomatik olarak "
+                "münavebe ile sağlanacaktır. Pompaların elektrik panosu bu "
+                "işlevleri sağlayacak şekilde imal ve monte edilecektir."
+            )
+
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
         doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
@@ -2848,6 +2895,13 @@ if st.button("Raporu Oluştur (.docx)"):
             poz_kalin.bold = True
             for run in poz_paragrafi.runs:
                 run.font.color.rgb = RGBColor(0, 0, 0)
+
+        # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
+        if bolum_632_aktif:
+          doc.add_heading("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ", level=2)
+          doc.add_paragraph(
+              "Bu bölümün hidrofor seçim hesapları ve cihaz bilgileri bir sonraki adımda eklenecektir."
+          )
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
