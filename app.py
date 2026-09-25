@@ -1758,16 +1758,34 @@ with genel_bilgiler_tab:
                     key=poz_key,
                 )
                 kullanilacak_poz = manuel_poz.strip()
+
+                # Poz numarası elle değiştirildiğinde parantez içindeki kapasite de
+                # aynı pozun tanımlı kapasitesinden otomatik olarak alınır.
+                poz_kapasite_eslesmesi = next(
+                    (kapasite for kapasite, poz in kayitlar if poz == kullanilacak_poz),
+                    None,
+                )
+                gosterilecek_kapasite = (
+                    float(poz_kapasite_eslesmesi)
+                    if poz_kapasite_eslesmesi is not None
+                    else float(manuel_kapasite)
+                )
+                if poz_kapasite_eslesmesi is None and kullanilacak_poz:
+                    st.warning(
+                        f"{depo_tipi}: '{kullanilacak_poz}' poz numarası kapasite listesinde bulunamadı. "
+                        "Mevcut kapasite değeri kullanılacaktır."
+                    )
             else:
                 # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
                 # standart kapasiteye göre otomatik olarak yeniden belirlenir.
                 kullanilacak_poz = kapasiteye_uygun_poz
+                gosterilecek_kapasite = float(manuel_kapasite)
                 st.caption(
                     f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz} "
-                    f"({manuel_kapasite:g} m³)"
+                    f"({gosterilecek_kapasite:g} m³)"
                 )
 
-            otomatik_poz_kayitlari.append((depo_tipi, manuel_kapasite, kullanilacak_poz))
+            otomatik_poz_kayitlari.append((depo_tipi, gosterilecek_kapasite, kullanilacak_poz))
         else:
             st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
 
