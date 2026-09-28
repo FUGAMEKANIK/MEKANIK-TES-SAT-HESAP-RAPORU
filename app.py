@@ -2290,6 +2290,15 @@ if bolum_6_aktif:
             )
             st.image(hidrofor_grafik, caption=hq_baslik, use_container_width=True)
 
+            # Marka ve model yalnızca program ekranında gösterilir; rapora aktarılmaz.
+            if hq_model:
+                st.info(
+                    f"**Seçilen pompa:** {hq_model.get('marka', '')} "
+                    f"{hq_model.get('model', '')}"
+                )
+            else:
+                st.warning("Bu çalışma noktası için üretici marka/model verisi bulunamadı.")
+
             if hidrofor_poz:
                 st.success(f"Cihaz Poz No: **{hidrofor_poz}**")
             else:
