@@ -128,9 +128,10 @@ bolum_622_aktif = st.checkbox("6.2.2 Pis Su Terfi Pompaları", value=True, key="
 bolum_63_aktif = st.checkbox("6.3 Sıhhi Tesisat Cihaz Seçimleri", value=True, key="rapor_bolum_63")
 bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value=True, key="rapor_bolum_631")
 bolum_632_aktif = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", value=True, key="rapor_bolum_632")
+bolum_633_aktif = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", value=True, key="rapor_bolum_633")
 
 # 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
-bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif)
+bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif or bolum_633_aktif)
 
 
 def _toplu_checkbox_ayarla(anahtarlar, durum):
@@ -3797,6 +3798,11 @@ if st.button("Raporu Oluştur (.docx)"):
                     rapor_hidrofor_alt_basligi_ekle(doc, "Pompa Performans Eğrisi:")
                     doc.add_picture(grafik_buf, width=Inches(6.2))
                     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
+    # Bu sürümde yalnızca bölüm başlığı eklenmiştir; hesap içeriği sonraki adımda oluşturulacaktır.
+    if bolum_633_aktif:
+        doc.add_heading("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", level=2)
+
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
