@@ -1900,8 +1900,8 @@ if bolum_6_aktif:
         st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
         hidrofor_turleri = [
             "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ",
-            "Bahçe Sulama Hidroforu",
-            "Yağmur Suyu Hidroforu",
+            "BAHÇE SULAMA SUYU HİDROFORU SEÇİMİ",
+            "YAĞMUR SUYU HİDROFORU SEÇİMİ",
         ]
 
         st.write("Aynı hidrofor türünden birden fazla adet seçebilirsiniz:")
@@ -1945,7 +1945,7 @@ if bolum_6_aktif:
                 zip(hidrofor_tanimlari, hidrofor_sekmeleri), 1
             ):
                 with sekme:
-                    st.markdown(f"### 6.3.2.{i} {baslik.upper()} SEÇİMİ")
+                    st.markdown(f"### 6.3.2.{i} {baslik.upper()}")
                     st.caption(
                         "Bu hidrofor bağımsız bir seçim alanıdır. Aynı türden birden "
                         "fazla hidrofor eklenebilir ve her birinin başlık ön eki ayrı "
@@ -2996,7 +2996,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
           # Yalnızca seçilen hidroforlar, boşluk bırakmadan sıralanır.
           for i, ad in locals().get("hidrofor_sekme_bilgileri", []):
-              doc.add_heading(f"6.3.2.{i} {ad.upper()} SEÇİMİ", level=3)
+              doc.add_heading(f"6.3.2.{i} {ad.upper()}", level=3)
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
