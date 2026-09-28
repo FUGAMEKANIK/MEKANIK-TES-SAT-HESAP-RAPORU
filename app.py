@@ -1938,14 +1938,19 @@ if bolum_6_aktif:
 
         hidrofor_sekme_bilgileri = []
         if hidrofor_tanimlari:
-            # st.tabs() başlıkları yatay olarak yan yana gösterir.
-            # Hidroforların her birini alt alta göstermek için expander kullanıyoruz.
-            for i, baslik in enumerate(hidrofor_tanimlari, 1):
+            # Hidroforları tekrar yatay sekmeler (st.tabs) olarak gösteriyoruz.
+            # Aynı türden birden fazla hidrofor seçilebilir; her kayıt ayrı bir sekmedir.
+            tab_labels = [
+                f"6.3.2.{i} {baslik.upper()}"
+                for i, baslik in enumerate(hidrofor_tanimlari, 1)
+            ]
+            hidrofor_tabs = st.tabs(tab_labels)
+
+            for i, (tab, baslik) in enumerate(
+                zip(hidrofor_tabs, hidrofor_tanimlari), 1
+            ):
                 baslik_buyuk = baslik.upper()
-                with st.expander(
-                    f"6.3.2.{i} {baslik_buyuk}",
-                    expanded=True,
-                ):
+                with tab:
                     st.markdown(f"### 6.3.2.{i} {baslik_buyuk}")
                     st.caption(
                         "Bu hidrofor bağımsız bir seçim alanıdır. Aynı türden birden "
