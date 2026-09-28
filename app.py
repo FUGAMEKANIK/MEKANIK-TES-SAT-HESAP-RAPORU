@@ -1161,10 +1161,15 @@ if bolum_6_aktif:
           " faktörleri ve asıl/yedek adetlerini ayrı ayrı girin:"
       )
 
-      for psp in secilen_psp_listesi:
-        with st.expander(
-            f"⚙️ {psp} Özel Debi ve Güç Hesap Modülü", expanded=True
-        ):
+      # Pis su pompalarını hidroforlarda olduğu gibi yan yana sekmelerde göster.
+      psp_tab_basliklari = [
+          f"6.2.2.{i} {psp}" for i, psp in enumerate(secilen_psp_listesi, start=1)
+      ]
+      psp_tabs = st.tabs(psp_tab_basliklari)
+
+      for psp, psp_tab in zip(secilen_psp_listesi, psp_tabs):
+        with psp_tab:
+          st.markdown(f"### ⚙️ {psp} ÖZEL DEBİ VE GÜÇ HESAP MODÜLÜ")
           bina_tipi = st.selectbox(
               f"{psp} Bina Kullanım Türü",
               [
