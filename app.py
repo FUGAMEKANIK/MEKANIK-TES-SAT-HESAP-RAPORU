@@ -2196,7 +2196,7 @@ if bolum_6_aktif:
 
             yedek_pompa = st.number_input(
                 "Yedek pompa adedi",
-                min_value=0, max_value=2, value=int(yedek_pompa), step=1,
+                min_value=0, max_value=2, value=1, step=1,
                 key=f"hidrofor_{i}_yedek",
             )
             toplam_pompa = asil_pompa + int(yedek_pompa)
