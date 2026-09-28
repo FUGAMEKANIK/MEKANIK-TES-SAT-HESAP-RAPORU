@@ -3613,7 +3613,12 @@ if st.button("Raporu Oluştur (.docx)"):
               ad = hesap["baslik"]
               doc.add_heading(f"6.3.2.{i} {ad}", level=3)
 
-              doc.add_paragraph("HİDROFOR HESAP FORMÜLASYONU", style="List Bullet")
+              hidrofor_hesap_basligi = doc.add_paragraph()
+              hidrofor_hesap_run = hidrofor_hesap_basligi.add_run("Hidrofor Hesaplamaları")
+              hidrofor_hesap_run.bold = False
+              hidrofor_hesap_run.italic = True
+              hidrofor_hesap_run.font.size = Pt(12)
+              hidrofor_hesap_run.font.color.rgb = RGBColor(68, 114, 196)
               doc.add_paragraph(
                   f"Toplam yükleme birimi: Z = {hesap['toplam_yb']:.0f} YB"
               )
