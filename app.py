@@ -2866,12 +2866,14 @@ if bolum_633_aktif:
     sicak_su_gunluk_toplam_litre = float(sonuc_df["Toplam [L/gün]"].sum())
 
     # BOYLER SEÇİMİ.xlsx / Sayfa1 içindeki faktörler.
-    # Excel'de hesap formülü verilmediği için bu sürümde faktörler raporlanır;
-    # faktörlerle yeni bir sonuç üretilmez.
-    kullanma_es_faktoru = KULLANMA_ES_FAKTORLERI.get(sicak_su_yapi_tipi)
-    depolama_faktoru = DEPOLAMA_FAKTORLERI.get(sicak_su_yapi_tipi)
+    # Kullanıcı tarafından verilen hesap bağıntısı:
+    # V = Kullanma Eş Zaman Faktörü x Depolama Faktörü x Toplam Tüketim
+    # Sonuç emniyetli seçim için 100 L'nin bir üst katına yuvarlanır.
+    kullanma_es_faktoru_kaynak = KULLANMA_ES_FAKTORLERI.get(sicak_su_yapi_tipi)
+    depolama_faktoru_kaynak = DEPOLAMA_FAKTORLERI.get(sicak_su_yapi_tipi)
     es_zaman_faktoru = None
     konut_sayisi = None
+
     if sicak_su_yapi_tipi == "Apartman":
         konut_sayisi = st.selectbox(
             "Konut / daire sayısı (Excel eş zaman faktörü tablosu)",
@@ -2879,20 +2881,53 @@ if bolum_633_aktif:
             key="sicak_su_konut_sayisi",
         )
         es_zaman_faktoru = ES_ZAMAN_FAKTORLERI[konut_sayisi]
+        varsayilan_es = float(es_zaman_faktoru)
     else:
-        st.info(f"Kullanma eş faktörü: {kullanma_es_faktoru:.2f}   |   Depolama faktörü: {depolama_faktoru:.2f}")
+        varsayilan_es = float(kullanma_es_faktoru_kaynak or 0.0)
 
-    st.markdown("**Excel'den alınan faktörler**")
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        kullanma_es_faktoru = st.number_input(
+            "Kullanım Eş Zaman Faktörü",
+            min_value=0.0, max_value=1.0, value=varsayilan_es, step=0.01,
+            format="%.2f", key="sicak_su_kullanma_es_faktoru"
+        )
+    with col_f2:
+        depolama_faktoru = st.number_input(
+            "Depolama Faktörü",
+            min_value=0.0, max_value=10.0, value=float(depolama_faktoru_kaynak or 0.0), step=0.01,
+            format="%.2f", key="sicak_su_depolama_faktoru"
+        )
+
+    st.markdown("**Boyler hacmi hesabı**")
+    toplam_tuketim = float(sicak_su_gunluk_toplam_litre)
+    es_zamanli_tuketim = toplam_tuketim * float(kullanma_es_faktoru)
+    hesaplanan_boyler_hacmi = es_zamanli_tuketim * float(depolama_faktoru)
+    secilen_boyler_hacmi = int(((hesaplanan_boyler_hacmi + 99.999999) // 100) * 100) if hesaplanan_boyler_hacmi > 0 else 0
+
+    st.markdown(
+        f"Kullanma Eş Zaman Faktörü = **{kullanma_es_faktoru:.2f}**"
+    )
+    st.markdown(
+        f"Depolama Faktörü = **{depolama_faktoru:.2f}**"
+    )
+    st.markdown(
+        f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_tuketim:,.0f} = **{hesaplanan_boyler_hacmi:,.0f} L**".replace(',', '.')
+    )
+    st.markdown(
+        f"V = **{secilen_boyler_hacmi:,.0f} L (Emniyetle)**".replace(',', '.')
+    )
+
     faktor_satirlari = [{
-        "Parametre": "Kullanma eş faktörü",
-        "Değer": "Alttaki tabloya bakınız" if kullanma_es_faktoru is None else f"{kullanma_es_faktoru:.2f}",
+        "Parametre": "Kullanma eş zaman faktörü",
+        "Değer": f"{kullanma_es_faktoru:.2f}",
     }, {
         "Parametre": "Depolama faktörü",
         "Değer": f"{depolama_faktoru:.2f}",
     }]
     if es_zaman_faktoru is not None:
         faktor_satirlari.append({
-            "Parametre": f"Eş zaman faktörü ({konut_sayisi} konut)",
+            "Parametre": f"Excel eş zaman faktörü ({konut_sayisi} konut)",
             "Değer": f"{es_zaman_faktoru:.2f}",
         })
     st.dataframe(pd.DataFrame(faktor_satirlari), hide_index=True, use_container_width=True)
@@ -4039,12 +4074,14 @@ if st.button("Raporu Oluştur (.docx)"):
             toplam = t_sicak.add_row().cells
             toplam[0].text = "GENEL TOPLAM"
             toplam[4].text = f"{sicak_su_gunluk_toplam_litre:.0f} L/gün"
+            doc.add_paragraph(f"Kullanma Eş Zaman Faktörü = {kullanma_es_faktoru:.2f}")
+            doc.add_paragraph(f"Depolama Faktörü = {depolama_faktoru:.2f}")
             doc.add_paragraph(
-                f"Kullanma eş faktörü: {'Alttaki tabloya bakınız' if kullanma_es_faktoru is None else f'{kullanma_es_faktoru:.2f}'}"
+                f"V = {depolama_faktoru:.2f} x {kullanma_es_faktoru:.2f} x {sicak_su_gunluk_toplam_litre:.0f} = {hesaplanan_boyler_hacmi:.0f} L"
             )
-            doc.add_paragraph(f"Depolama faktörü: {depolama_faktoru:.2f}")
+            doc.add_paragraph(f"V = {secilen_boyler_hacmi:.0f} L (Emniyetle)")
             if es_zaman_faktoru is not None:
-                doc.add_paragraph(f"Eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
+                doc.add_paragraph(f"Excel eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
 
