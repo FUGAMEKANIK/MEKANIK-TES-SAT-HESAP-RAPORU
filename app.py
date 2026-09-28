@@ -2047,15 +2047,88 @@ if bolum_6_aktif:
         # ================================================================
         hidrofor_hesaplari = []
 
-        # Birim Poziyat verisi sisteme bağlandığında bu sözlük doğrudan
-        # dışarıdan okunacak şekilde bırakılmıştır. Bu örnekte yalnızca
-        # kaynak dokümanda doğrulanan 2 pompalı poz bulunmaktadır.
+        # Hidrofor Cihaz Poz tablosu. Poz seçimi toplam pompa adedinden
+        # sonra, bir asıl pompanın debisi (m³/h) ve çalışma basıncı (mSS)
+        # aralığına göre otomatik yapılır. Aralıklar 2026 Mekanik Tesisat
+        # Birim Fiyatlarındaki 25.160.21xx-26xx gruplarından alınmıştır.
         HIDROFOR_POZ_TABLOSU = {
-            2: {
-                "poz": "25.160.2203",
-                "aciklama": "İki pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
-            },
+            1: [
+                {"poz": "25.160.2101", "qmin": 0,  "qmax": 5,  "hmin": 20, "hmax": 40},
+                {"poz": "25.160.2102", "qmin": 0,  "qmax": 5,  "hmin": 40, "hmax": 60},
+                {"poz": "25.160.2103", "qmin": 0,  "qmax": 5,  "hmin": 60, "hmax": 80},
+                {"poz": "25.160.2104", "qmin": 5,  "qmax": 15, "hmin": 20, "hmax": 40},
+                {"poz": "25.160.2105", "qmin": 5,  "qmax": 15, "hmin": 40, "hmax": 60},
+                {"poz": "25.160.2106", "qmin": 5,  "qmax": 15, "hmin": 60, "hmax": 80},
+                {"poz": "25.160.2107", "qmin": 15, "qmax": 30, "hmin": 20, "hmax": 40},
+                {"poz": "25.160.2108", "qmin": 15, "qmax": 30, "hmin": 40, "hmax": 60},
+                {"poz": "25.160.2109", "qmin": 15, "qmax": 30, "hmin": 60, "hmax": 80},
+            ],
+            2: [
+                {"poz": "25.160.2201", "qmin": 0,  "qmax": 10, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2202", "qmin": 0,  "qmax": 10, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2203", "qmin": 10, "qmax": 30, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2204", "qmin": 10, "qmax": 30, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2205", "qmin": 30, "qmax": 60, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2206", "qmin": 30, "qmax": 60, "hmin": 60, "hmax": 90},
+            ],
+            3: [
+                {"poz": "25.160.2301", "qmin": 0,  "qmax": 20,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2302", "qmin": 0,  "qmax": 20,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2303", "qmin": 20, "qmax": 50,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2304", "qmin": 20, "qmax": 50,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2305", "qmin": 50, "qmax": 80,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2306", "qmin": 50, "qmax": 80,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2307", "qmin": 80,  "qmax": 120, "hmin": 60, "hmax": 90},
+            ],
+            4: [
+                {"poz": "25.160.2401", "qmin": 0,  "qmax": 30, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2402", "qmin": 0,  "qmax": 30, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2403", "qmin": 30, "qmax": 60, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2404", "qmin": 30, "qmax": 60, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2405", "qmin": 60, "qmax": 90, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2406", "qmin": 60, "qmax": 90, "hmin": 60, "hmax": 90},
+            ],
+            5: [
+                {"poz": "25.160.2501", "qmin": 0,   "qmax": 40,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2502", "qmin": 0,   "qmax": 40,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2503", "qmin": 40,  "qmax": 80,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2504", "qmin": 40,  "qmax": 80,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2505", "qmin": 80,  "qmax": 120, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2506", "qmin": 80,  "qmax": 120, "hmin": 60, "hmax": 90},
+            ],
+            6: [
+                {"poz": "25.160.2601", "qmin": 0,   "qmax": 50,  "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2602", "qmin": 0,   "qmax": 50,  "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2603", "qmin": 50,  "qmax": 100, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2604", "qmin": 50,  "qmax": 100, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2605", "qmin": 150, "qmax": 200, "hmin": 30, "hmax": 60},
+                {"poz": "25.160.2606", "qmin": 150, "qmax": 200, "hmin": 60, "hmax": 90},
+                {"poz": "25.160.2607", "qmin": 200, "qmax": 250, "hmin": 60, "hmax": 90},
+            ],
         }
+
+        HIDROFOR_TIP_METINLERI = {
+            1: "Tek pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+            2: "İki pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+            3: "Üç pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+            4: "Dört pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+            5: "Beş pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+            6: "Altı pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",
+        }
+
+        def hidrofor_poz_sec(toplam_pompa, q_pompa_m3h, h_mss):
+            """Asıl pompa debisi ve çalışma basıncına göre hidrofor Cihaz Poz No seçer."""
+            kayitlar = HIDROFOR_POZ_TABLOSU.get(int(toplam_pompa), [])
+            if not kayitlar:
+                return None
+            q = float(q_pompa_m3h)
+            h = float(h_mss)
+            for kayit in kayitlar:
+                q_uygun = (q >= kayit["qmin"] and (q < kayit["qmax"] or abs(q - kayit["qmax"]) < 1e-9))
+                h_uygun = (h >= kayit["hmin"] and (h < kayit["hmax"] or abs(h - kayit["hmax"]) < 1e-9))
+                if q_uygun and h_uygun:
+                    return {**kayit, "aciklama": HIDROFOR_TIP_METINLERI.get(int(toplam_pompa), "Hidrofor")}
+            return None
 
         # Genleşme tankı standart kapasite listesi.
         # Tank adedi seçildikten sonra toplam ihtiyaç tank adedine bölünür
@@ -2131,9 +2204,11 @@ if bolum_6_aktif:
                 # 2 pompa = 1 asıl + 1 yedek
                 # 3 pompa = 2 asıl + 1 yedek
                 # 4 pompa = 3 asıl + 1 yedek
+                # 5 pompa = 4 asıl + 1 yedek
+                # 6 pompa = 5 asıl + 1 yedek
                 toplam_pompa = st.selectbox(
                     f"{sekme_kodu} Toplam pompa adedi",
-                    [1, 2, 3, 4],
+                    [1, 2, 3, 4, 5, 6],
                     index=1,
                     format_func=lambda x: (
                         f"{x} pompa ({0 if x == 1 else 1} yedek)"
@@ -2386,8 +2461,9 @@ if bolum_6_aktif:
                 args=(guc_final_key,),
             )
 
-            # Cihaz Poz No da toplam pompa adedine göre otomatik gelir; elle değiştirilebilir.
-            poz_kaydi = HIDROFOR_POZ_TABLOSU.get(toplam_pompa)
+            # Cihaz Poz No; toplam pompa adedi + asıl pompa debisi + çalışma
+            # basıncı aralığına göre otomatik gelir. Kullanıcı yine elle değiştirebilir.
+            poz_kaydi = hidrofor_poz_sec(toplam_pompa, vp_pompa_m3h, h_calisma)
             otomatik_hidrofor_poz = poz_kaydi["poz"] if poz_kaydi else ""
             _sync_final_auto(poz_final_key, otomatik_hidrofor_poz)
             hidrofor_poz = st.text_input(
@@ -2397,8 +2473,9 @@ if bolum_6_aktif:
                 args=(poz_final_key,),
             ).strip()
             hidrofor_poz_aciklama = (
-                poz_kaydi["aciklama"] if poz_kaydi else
-                "Birim Poziyat tablosunda bu pompa adedi için poz tanımı henüz yüklenmedi."
+                poz_kaydi.get("aciklama", HIDROFOR_TIP_METINLERI.get(toplam_pompa, "Hidrofor"))
+                if poz_kaydi else
+                "Seçilen debi ve basınç için tanımlı hidrofor poz aralığı bulunamadı."
             )
 
             # Bu bölümdeki nihai değerler pompa eğrisine de aktarılır.
@@ -3589,8 +3666,8 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"Pompa gücü: Np = {hesap['toplam_pompa']} ad x {hesap['guc']:.1f} KW."
               )
               tip_metni = hesap.get("poz_aciklama", "")
-              if not tip_metni or tip_metni.startswith("Birim Poziyat"):
-                  tip_metni = {1:"Tek pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",2:"İki pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",3:"Üç pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor"}.get(hesap['toplam_pompa'], "Hidrofor")
+              if not tip_metni or tip_metni.startswith("Birim Poziyat") or tip_metni.startswith("Seçilen debi"):
+                  tip_metni = HIDROFOR_TIP_METINLERI.get(hesap['toplam_pompa'], "Hidrofor")
               doc.add_paragraph(f"Tipi: {tip_metni}")
               if hesap.get("poz"):
                   doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
