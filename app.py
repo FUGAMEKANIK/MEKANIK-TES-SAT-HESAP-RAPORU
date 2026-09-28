@@ -2009,12 +2009,26 @@ if bolum_6_aktif:
             },
         }
 
-        # Genleşme tankı poz/kapasite listesi. Birim poiyat listesindeki
-        # kapasite ve poz kayıtları bu listeye aktarılır. Kaynak örnekte
-        # doğrulanan kapasite: 750 L; bu kapasitenin poz numarası kaynakta verilmemiştir.
+        # Genleşme tankı standart kapasite listesi.
+        # Tank adedi seçildikten sonra toplam ihtiyaç tank adedine bölünür
+        # ve tank başına ihtiyaç, listedeki ilk üst kapasiteye yükseltilir.
+        # Poz numaraları ayrıca tanımlandığında aynı kayıtlar üzerinden eşleştirilir.
         HIDROFOR_GENLESME_TANK_POZ_TABLOSU = [
+            {"kapasite_l": 25.0, "poz": ""},
+            {"kapasite_l": 50.0, "poz": ""},
+            {"kapasite_l": 80.0, "poz": ""},
+            {"kapasite_l": 100.0, "poz": ""},
+            {"kapasite_l": 150.0, "poz": ""},
+            {"kapasite_l": 200.0, "poz": ""},
+            {"kapasite_l": 250.0, "poz": ""},
+            {"kapasite_l": 300.0, "poz": ""},
+            {"kapasite_l": 500.0, "poz": ""},
             {"kapasite_l": 750.0, "poz": ""},
+            {"kapasite_l": 1000.0, "poz": ""},
             {"kapasite_l": 1500.0, "poz": ""},
+            {"kapasite_l": 2000.0, "poz": ""},
+            {"kapasite_l": 2500.0, "poz": ""},
+            {"kapasite_l": 3000.0, "poz": ""},
         ]
 
         def genlesme_tanki_sec(gerekli_litre, bolme_adedi, poz_tablosu):
