@@ -1899,47 +1899,51 @@ if bolum_6_aktif:
         st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
         hidrofor_turleri = [
             "Kullanma Suyu Hidroforu",
+            "Bahçe Sulama Hidroforu",
             "Yağmur Suyu Hidroforu",
-            "Yangın Suyu Hidroforu",
-            "Sıcak Kullanma Suyu Hidroforu",
-            "Diğer",
         ]
         hidrofor_adet = st.number_input(
             "Projede yer alacak hidrofor sayısı",
             min_value=0, max_value=10, value=1, step=1,
             key="hidrofor_adet",
         )
-        hidrofor_adlari = []
+
+        hidrofor_tanimlari = []
         for i in range(1, int(hidrofor_adet) + 1):
+            st.markdown(f"**Hidrofor {i}**")
             secim = st.selectbox(
-                f"Hidrofor {i} türü / adı",
+                "Hidrofor türü",
                 hidrofor_turleri,
                 key=f"hidrofor_turu_{i}",
             )
-            if secim == "Diğer":
-                ad = st.text_input(
-                    f"Hidrofor {i} adı",
-                    key=f"hidrofor_diger_adi_{i}",
-                ).strip() or f"Hidrofor {i}"
-            else:
-                ad = secim
-            hidrofor_adlari.append(ad)
+            on_ek = st.text_input(
+                "Başlık ön eki / özel tanım (isteğe bağlı)",
+                key=f"hidrofor_on_ek_{i}",
+                placeholder="Örn.: Blok A, Otopark, 1. Etap",
+            ).strip()
+            baslik = f"{on_ek} {secim}".strip() if on_ek else secim
+            hidrofor_tanimlari.append(baslik)
 
         hidrofor_sekme_bilgileri = []
-        if hidrofor_adlari:
+        if hidrofor_tanimlari:
             hidrofor_sekmeleri = st.tabs([
-                f"6.3.2.{i} {ad}" for i, ad in enumerate(hidrofor_adlari, 1)
+                f"6.3.2.{i} {baslik}" for i, baslik in enumerate(hidrofor_tanimlari, 1)
             ])
-            for i, (ad, sekme) in enumerate(
-                zip(hidrofor_adlari, hidrofor_sekmeleri), 1
+            for i, (baslik, sekme) in enumerate(
+                zip(hidrofor_tanimlari, hidrofor_sekmeleri), 1
             ):
                 with sekme:
-                    st.markdown(f"### 6.3.2.{i} {ad.upper()} SEÇİMİ")
+                    st.markdown(f"### 6.3.2.{i} {baslik.upper()} SEÇİMİ")
+                    st.caption(
+                        "Hidrofor türünü ve başlık ön ekini yukarıdaki alandan "
+                        "değiştirebilirsiniz. Değişiklik yapıldığında sekme başlığı "
+                        "ve rapor başlığı otomatik güncellenir."
+                    )
                     st.info(
                         "Bu hidroforun debi, basma yüksekliği ve pompa "
                         "seçimi hesapları sonraki aşamada eklenecektir."
                     )
-                    hidrofor_sekme_bilgileri.append((i, ad))
+                    hidrofor_sekme_bilgileri.append((i, baslik))
         else:
             st.info("Hidrofor seçilmedi; rapora hidrofor seçim alt başlığı eklenmez.")
 
