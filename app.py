@@ -1863,7 +1863,40 @@ if bolum_6_aktif:
 
     if bolum_632_aktif:
         st.subheader("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ")
-        st.info("Bu bölümün hidrofor seçim hesapları ve cihaz bilgileri bir sonraki adımda eklenecektir.")
+        st.markdown("#### GENEL BİLGİLER VE HİDROFOR SEÇİM ESASLARI")
+
+        hidrofor_genel_keys = [f"hidrofor_genel_{i}" for i in range(1, 16)]
+        _toplu_secim_butonlari(hidrofor_genel_keys)
+
+        hidrofor_genel_maddeleri = [
+            "Hidrofor sistemi, binanın kullanma suyu ihtiyacını karşılayacak ve kullanım noktalarında gerekli basıncı sağlayacak şekilde seçilecektir.",
+            "Hidrofor seçiminde binanın kullanım amacı, kullanıcı sayısı, günlük su tüketimi ve eş zamanlı kullanım şartları dikkate alınacaktır.",
+            "Hidroforun gerekli debisi, binanın hesaplanan anlık kullanma suyu ihtiyacına göre belirlenecektir.",
+            "Hidrofor seçiminde gerekli basma yüksekliği; bina kot farkı, boru hatlarındaki sürtünme kayıpları, armatür ve ekipman kayıpları ile kullanım noktalarında gerekli minimum basınç dikkate alınarak belirlenecektir.",
+            "Hidrofor sistemi, kullanım noktalarında yeterli ve kararlı su basıncı sağlayacak şekilde seçilecektir.",
+            "Hidrofor pompaları, sistemin ihtiyacına göre asıl ve yedek pompa çalışma düzenine uygun olarak seçilecektir.",
+            "Birden fazla pompalı sistemlerde pompaların çalışma sırası otomatik olarak münavebeli olacak şekilde düzenlenecektir.",
+            "Hidrofor sistemi, düşük debilerde gereksiz pompa çalışmasını önleyecek ve değişken su tüketimlerine uyum sağlayacak şekilde tasarlanacaktır.",
+            "Hidrofor sisteminde kullanılacak pompaların seçiminde pompa debisi, basma yüksekliği ve motor gücü birlikte değerlendirilecektir.",
+            "Seçilen pompaların çalışma noktası, pompa performans eğrisi üzerinde hesaplanan debi ve basma yüksekliğini karşılayacak bölgede olacaktır.",
+            "Hidrofor sisteminin elektrik ve otomasyon panosu, pompaların otomatik devreye girip çıkmasını, münavebeli çalışmasını ve gerekli koruma fonksiyonlarını sağlayacak şekilde tasarlanacaktır.",
+            "Sistemde kullanılacak basınç tankı, kontrol ekipmanları, çekvalf, vana, basınç sensörü ve benzeri yardımcı ekipmanlar hidrofor sisteminin çalışma şartlarına uygun olarak seçilecektir.",
+            "Hidrofor seçiminde minimum ve maksimum çalışma basınçları dikkate alınacaktır.",
+            "Hidroforun emiş ve basma bağlantıları, sistemde gereksiz basınç kayıpları ve hidrolik sorunlar oluşturmayacak şekilde düzenlenecektir.",
+            "Hidrofor sistemi, kolay bakım, işletme ve servis yapılmasına olanak sağlayacak şekilde tesis edilecektir.",
+        ]
+
+        hidrofor_genel_secimler = []
+        for i, madde in enumerate(hidrofor_genel_maddeleri, start=1):
+            secili = st.checkbox(
+                madde,
+                value=True,
+                key=f"hidrofor_genel_{i}",
+            )
+            hidrofor_genel_secimler.append(secili)
+
+        # 6.3.2.1, 6.3.2.2, ... numaraları burada kullanılmaz;
+        # bu numaralar sonraki hidrofor hesap/seçim aşamalarına ayrılmıştır.
 
 
     def rapor_word_stillerini_uygula(doc):
@@ -2880,9 +2913,25 @@ if st.button("Raporu Oluştur (.docx)"):
         # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
         if bolum_632_aktif:
           doc.add_heading("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ", level=2)
-          doc.add_paragraph(
-              "Bu bölümün hidrofor seçim hesapları ve cihaz bilgileri bir sonraki adımda eklenecektir."
+
+          genel_bilgiler_basligi = doc.add_paragraph()
+          genel_bilgiler_run = genel_bilgiler_basligi.add_run(
+              "GENEL BİLGİLER VE HİDROFOR SEÇİM ESASLARI"
           )
+          genel_bilgiler_run.bold = True
+          genel_bilgiler_run.font.size = Pt(12)
+
+          hidrofor_genel_secimler_rapor = locals().get(
+              "hidrofor_genel_secimler", [True] * 15
+          )
+          hidrofor_genel_maddeleri_rapor = locals().get(
+              "hidrofor_genel_maddeleri", []
+          )
+          for secili, madde in zip(
+              hidrofor_genel_secimler_rapor, hidrofor_genel_maddeleri_rapor
+          ):
+              if secili:
+                  doc.add_paragraph(madde, style="List Bullet")
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
