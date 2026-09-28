@@ -1860,7 +1860,7 @@ if bolum_6_aktif:
         if poz_gosterilsin_mi and otomatik_poz_kayitlari:
             for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
                 st.markdown(
-                    f'<div style="color:#000000;"><strong>Seçilen poz numarası:</strong> {secilen_poz} '
+                    f'<div style="color:#000000;"><strong>Cihaz Poz No:</strong> {secilen_poz} '
                     f'<strong>(Kapasite: {secilen_kapasite:g} m³)</strong></div>',
                     unsafe_allow_html=True,
                 )
@@ -3595,7 +3595,7 @@ if st.button("Raporu Oluştur (.docx)"):
             run.font.color.rgb = RGBColor(0, 0, 0)
         if poz_gosterilsin_mi and poz_numarasi:
             poz_paragrafi = doc.add_paragraph()
-            poz_paragrafi.add_run("Seçilen poz numarası: ")
+            poz_paragrafi.add_run("Cihaz Poz No: ")
             poz_kalin = poz_paragrafi.add_run(
                 f"{poz_numarasi}"
             )
