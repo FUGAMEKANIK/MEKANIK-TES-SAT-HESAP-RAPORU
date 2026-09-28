@@ -1946,9 +1946,9 @@ if bolum_6_aktif:
             # Program ekranındaki sekmeler kısa kodlarla gösterilir.
             # Rapor başlıkları ise aşağıdaki hidrofor_tanimlari üzerinden tam açılımıyla yazılır.
             hidrofor_kodlari = {
-                "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ": "KSS",
-                "BAHÇE SULAMA SUYU HİDROFORU SEÇİMİ": "BSS",
-                "YAĞMUR SUYU HİDROFORU SEÇİMİ": "YSS",
+                "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ": "KUL-HİD",
+                "BAHÇE SULAMA SUYU HİDROFORU SEÇİMİ": "BAHÇE-HİD",
+                "YAĞMUR SUYU HİDROFORU SEÇİMİ": "YAĞM-HİD",
             }
 
             # Aynı tür için sıra numarası kendi içinde 1'den başlar:
@@ -1964,7 +1964,7 @@ if bolum_6_aktif:
                 )
                 tur_sayaclari[tur] = tur_sayaclari.get(tur, 0) + 1
                 kod = hidrofor_kodlari.get(tur, "H")
-                sekme_kodu = f"{kod}{tur_sayaclari[tur]}"
+                sekme_kodu = f"{kod} {tur_sayaclari[tur]}"
                 hidrofor_sekme_etiketleri.append(sekme_kodu)
 
             hidrofor_tabs = st.tabs(hidrofor_sekme_etiketleri)
