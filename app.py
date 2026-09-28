@@ -1868,7 +1868,7 @@ if bolum_6_aktif:
 
     if bolum_632_aktif:
         st.subheader("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ")
-        st.markdown("#### GENEL BİLGİLER VE HİDROFOR SEÇİM ESASLARI")
+        st.markdown("#### Genel Bilgiler ve Hidrofor Seçim Esasları")
 
         hidrofor_genel_keys = [f"hidrofor_genel_{i}" for i in range(1, 16)]
         _toplu_secim_butonlari(hidrofor_genel_keys)
@@ -2009,6 +2009,32 @@ if bolum_6_aktif:
             },
         }
 
+        # Genleşme tankı poz/kapasite listesi. Birim poiyat listesindeki
+        # kapasite ve poz kayıtları bu listeye aktarılır. Kaynak örnekte
+        # doğrulanan kapasite: 750 L; bu kapasitenin poz numarası kaynakta verilmemiştir.
+        HIDROFOR_GENLESME_TANK_POZ_TABLOSU = [
+            {"kapasite_l": 750.0, "poz": ""},
+        ]
+
+        def genlesme_tanki_sec(gerekli_litre, bolme_adedi, poz_tablosu):
+            if gerekli_litre <= 0:
+                return {"birim_gerekli_l": 0.0, "secilen_birim_l": 0.0, "tank_adedi": bolme_adedi, "toplam_l": 0.0, "poz": ""}
+            kayitlar = sorted(
+                [k for k in poz_tablosu if float(k.get("kapasite_l", 0)) > 0],
+                key=lambda x: float(x["kapasite_l"]),
+            )
+            birim_gerekli = gerekli_litre / bolme_adedi
+            if not kayitlar:
+                return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim_gerekli, "tank_adedi": bolme_adedi, "toplam_l": gerekli_litre, "poz": ""}
+            # En yakın poz kapasitesi seçilir; eşitlikte üst kapasite tercih edilir.
+            secilen = min(
+                kayitlar,
+                key=lambda k: (abs(float(k["kapasite_l"]) - birim_gerekli),
+                               0 if float(k["kapasite_l"]) >= birim_gerekli else 1),
+            )
+            birim = float(secilen["kapasite_l"])
+            return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim, "tank_adedi": bolme_adedi, "toplam_l": birim * bolme_adedi, "poz": secilen.get("poz", "")}
+
         st.markdown("#### HİDROFOR HESABI VE POMPA SEÇİMİ")
         st.caption(
             "Hesap yöntemi, yükleme birimi ve işletme basınçları esas alınarak "
@@ -2092,18 +2118,31 @@ if bolum_6_aktif:
                 f"(({p_ust_atu:.2f} - {p_alt_atu:.2f}) × {schalt:.0f}) = **{vn_m3:.3f} m³ = {vn_m3*1000:.0f} L**"
             )
 
-            tank_adedi = st.number_input(
-                "Hidrofor tankı adedi", min_value=1, max_value=6, value=2, step=1,
-                key=f"hidrofor_{i}_tank_adet",
+            st.success(f"**Hesaplanan hidrofor tankı nominal hacmi: {vn_m3:.3f} m³ = {vn_m3*1000:.0f} L**")
+
+            st.markdown("**Hidrofor genleşme tankı bölme ve kapasite seçimi**")
+            tank_bolme = st.selectbox(
+                "Tankı kaç parçaya böleceksiniz?",
+                [1, 2, 3, 4],
+                index=1,
+                format_func=lambda x: "Tek tank" if x == 1 else f"{x}'e böl",
+                key=f"hidrofor_{i}_tank_bolme",
             )
-            tank_birim_litre = st.number_input(
-                "Seçilen tank birim hacmi [L]", min_value=1.0, value=750.0, step=50.0,
-                key=f"hidrofor_{i}_tank_litre",
-            )
-            tank_toplam_litre = tank_adedi * tank_birim_litre
-            st.write(f"Seçilen tank: **{tank_adedi} × {tank_birim_litre:g} L = {tank_toplam_litre:g} L**")
+            tank_secim = genlesme_tanki_sec(vn_m3 * 1000.0, tank_bolme, HIDROFOR_GENLESME_TANK_POZ_TABLOSU)
+            tank_adedi = tank_secim["tank_adedi"]
+            tank_birim_gerekli_litre = tank_secim["birim_gerekli_l"]
+            tank_birim_litre = tank_secim["secilen_birim_l"]
+            tank_toplam_litre = tank_secim["toplam_l"]
+            tank_poz = tank_secim["poz"]
+
+            st.write(f"Her tank için gerekli hacim: **{tank_birim_gerekli_litre:.0f} L**")
+            st.write(f"Otomatik seçilen tank: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
+            if tank_poz:
+                st.success(f"Genleşme tankı Cihaz Poz No: **{tank_poz}**")
+            else:
+                st.info("Genleşme tankı poz numarası, birim poiyat listesindeki kapasite/poz kayıtları eklendiğinde otomatik atanacaktır.")
             if tank_toplam_litre < vn_m3 * 1000:
-                st.warning("Seçilen toplam tank hacmi hesaplanan nominal hacmin altındadır.")
+                st.warning("Mevcut poz kapasite listesi hesaplanan toplam hacmi karşılamıyor; birim poiyat listesine daha büyük kapasite kayıtları eklenmelidir.")
             else:
                 st.success("Seçilen toplam tank hacmi hesaplanan nominal hacmi karşılıyor.")
 
@@ -2171,8 +2210,11 @@ if bolum_6_aktif:
                 "schalt": schalt,
                 "vn_m3": vn_m3,
                 "tank_adedi": tank_adedi,
+                "tank_bolme": tank_bolme,
+                "tank_birim_gerekli_litre": tank_birim_gerekli_litre,
                 "tank_birim_litre": tank_birim_litre,
                 "tank_toplam_litre": tank_toplam_litre,
+                "tank_poz": tank_poz,
                 "h": h_calisma,
                 "guc": hidrofor_pompa_hesap["motor_secim_kw"],
                 "poz": hidrofor_poz,
@@ -3265,9 +3307,17 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"{hesap['vn_m3']:.3f} m³ = {hesap['vn_m3']*1000:.0f} L"
               )
               doc.add_paragraph(
+                  f"Tank bölme sayısı: {hesap.get('tank_bolme', hesap['tank_adedi'])}"
+              )
+              doc.add_paragraph(
+                  f"Her tank için gerekli hacim: {hesap.get('tank_birim_gerekli_litre', 0):.0f} L"
+              )
+              doc.add_paragraph(
                   f"Seçilen tank: {hesap['tank_adedi']} × {hesap['tank_birim_litre']:.0f} L = "
                   f"{hesap['tank_toplam_litre']:.0f} L"
               )
+              if hesap.get("tank_poz"):
+                  doc.add_paragraph(f"Genleşme Tankı Cihaz Poz No: {hesap['tank_poz']}")
 
               doc.add_paragraph("POMPA SEÇİMİ", style="List Bullet")
               doc.add_paragraph(
@@ -3282,12 +3332,6 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"Pompa motor gücü: {hesap['toplam_pompa']} × "
                   f"{hesap['guc']:.2f} kW"
               )
-              if hesap.get("pompa_markasi") or hesap.get("pompa_modeli"):
-                  doc.add_paragraph(
-                      f"Pompa üreticisi/modeli: {hesap.get('pompa_markasi','')} "
-                      f"{hesap.get('pompa_modeli','')}"
-                  )
-
               if hesap.get("poz"):
                   doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
               else:
