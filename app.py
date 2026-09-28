@@ -2077,11 +2077,23 @@ if bolum_6_aktif:
                     key=f"hidrofor_{i}_emniyet",
                 )
             with hc3:
-                asil_pompa = st.selectbox(
-                    f"{sekme_kodu} Asıl pompa adedi",
-                    [1, 2, 3], index=1,
-                    key=f"hidrofor_{i}_asil",
+                # Toplam pompa adedi seçilir; yedek pompa adedi sistem kuralına
+                # göre otomatik belirlenir:
+                # 1 pompa = 1 asıl + 0 yedek
+                # 2 pompa = 1 asıl + 1 yedek
+                # 3 pompa = 2 asıl + 1 yedek
+                # 4 pompa = 3 asıl + 1 yedek
+                toplam_pompa = st.selectbox(
+                    f"{sekme_kodu} Toplam pompa adedi",
+                    [1, 2, 3, 4],
+                    index=1,
+                    format_func=lambda x: (
+                        f"{x} pompa ({0 if x == 1 else 1} yedek)"
+                    ),
+                    key=f"hidrofor_{i}_toplam_pompa",
                 )
+                asil_pompa = 1 if toplam_pompa <= 2 else toplam_pompa - 1
+                yedek_pompa = 0 if toplam_pompa == 1 else 1
 
             st.markdown("**1. Gerekli debi hesabı**")
             vm_lph = 3600.0 * (0.25 * math.sqrt(yukleme_birimi)) if yukleme_birimi > 0 else 0.0
@@ -2194,13 +2206,10 @@ if bolum_6_aktif:
             )
             tank_birim_litre = tank_toplam_litre / tank_adedi if tank_adedi else tank_toplam_litre
 
-            yedek_pompa = st.number_input(
-                "Yedek pompa adedi",
-                min_value=0, max_value=2, value=1, step=1,
-                key=f"hidrofor_{i}_yedek",
+            st.write(
+                f"Toplam pompa adedi: **{toplam_pompa} adet "
+                f"({asil_pompa} Asıl + {yedek_pompa} Yedek)**"
             )
-            toplam_pompa = asil_pompa + int(yedek_pompa)
-            st.write(f"Toplam pompa adedi: **{toplam_pompa} adet ({asil_pompa} Asıl + {int(yedek_pompa)} Yedek)**")
 
             # Mevcut pompa hidrolik güç fonksiyonu, kullanıcının son girdiği
             # debi ve çalışma basıncına göre motor gücünü hesaplar.
