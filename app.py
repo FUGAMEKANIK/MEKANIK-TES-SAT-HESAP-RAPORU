@@ -1118,6 +1118,46 @@ if bolum_6_aktif:
       return q_egrisi, h_egrisi, "Sınır Dışı Çalışma Noktası!", None
 
 
+    def hidrofor_standart_egrisi(q_m3h, h_mss):
+      """Hidrofor için üretici verisi bulunmadığında kullanılan standart Q-H eğrisi.
+      Çalışma noktası eğri üzerinde tutulur; bu eğri üretici katalog eğrisi değildir.
+      """
+      q = max(float(q_m3h), 0.1)
+      h = max(float(h_mss), 0.1)
+      oranlar = [0.0, 0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 2.00]
+      head_carpan = [1.40, 1.22, 1.10, 1.00, 0.82, 0.63, 0.43, 0.22]
+      q_curve = [q * r for r in oranlar]
+      h_curve = [h * k for k in head_carpan]
+      return q_curve, h_curve
+
+
+    def hidrofor_pompa_secim_egrisi(q_m3h, h_mss, marka_secimi="Standart Pompa"):
+      # Hidrofor tarafı pis su pompası poz/eğri tablosundan bağımsızdır.
+      # Wilo/Grundfos/Lowara için doğrulanmış hidrofor Q-H veri seti eklenene kadar
+      # çalışma noktasını garanti eden standart hidrofor eğrisi kullanılır.
+      q_egrisi, h_egrisi = hidrofor_standart_egrisi(q_m3h, h_mss)
+      if marka_secimi == "Standart Pompa":
+        baslik = "Standart Hidrofor Pompası - Q-H Karakteristik Eğrisi"
+      elif marka_secimi == "Wilo":
+        baslik = "Wilo - Hidrofor Q-H Eğrisi (standart veri seti)"
+      elif marka_secimi == "Grundfos":
+        baslik = "Grundfos - Hidrofor Q-H Eğrisi (standart veri seti)"
+      elif marka_secimi == "Lowara":
+        baslik = "Lowara - Hidrofor Q-H Eğrisi (standart veri seti)"
+      else:
+        baslik = "Otomatik - Standart Hidrofor Q-H Eğrisi"
+      model = {
+          "marka": marka_secimi if marka_secimi != "Otomatik (Wilo + Grundfos + Lowara)" else "Standart",
+          "seri": "Hidrofor",
+          "model": "Standart Q-H",
+          "curve": list(zip(q_egrisi, h_egrisi)),
+          "h_calisma": float(h_mss),
+          "p2_kw": 0.0,
+          "kaynak": "Standart hidrofor Q-H eğrisi; üretici katalog eğrisi değildir.",
+      }
+      return q_egrisi, h_egrisi, baslik, model
+
+
     def pompa_grafigi_png(q_egrisi, h_egrisi, q_calisma, h_calisma, baslik, anonim=False):
       fig, ax = plt.subplots(figsize=(7.0, 3.8))
       ax.plot(q_egrisi, h_egrisi, linewidth=2.0, label=("Pompa Performans Eğrisi" if anonim else baslik))
@@ -1149,10 +1189,18 @@ if bolum_6_aktif:
     psp_parametreleri = {}
 
     pompa_marka_secimi = st.selectbox(
-        "Pompa üreticisi / seçim modu",
+        "Pis Su Pompası üreticisi / seçim modu",
         ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
         index=0,
         key="pompa_marka_secimi",
+    )
+
+    hidrofor_marka_secimi = st.selectbox(
+        "Hidrofor pompası üreticisi / seçim modu",
+        ["Otomatik (Wilo + Grundfos + Lowara)", "Wilo", "Grundfos", "Lowara", "Standart Pompa"],
+        index=4,
+        key="hidrofor_marka_secimi",
+        help="Üreticiye ait doğrulanmış Q-H eğrisi veri seti bulunmadığında sistem standart hidrofor Q-H eğrisi ile devam eder.",
     )
 
     if secilen_psp_listesi:
@@ -2354,8 +2402,8 @@ if bolum_6_aktif:
             )
 
             # Bu bölümdeki nihai değerler pompa eğrisine de aktarılır.
-            hq_egrisi, hh_egrisi, hq_baslik, hq_model = pompa_secim_egrisi(
-                vp_pompa_m3h, h_calisma, pompa_marka_secimi
+            hq_egrisi, hh_egrisi, hq_baslik, hq_model = hidrofor_pompa_secim_egrisi(
+                vp_pompa_m3h, h_calisma, hidrofor_marka_secimi
             )
 
             # Pis Su Pompası Seçimi'ndeki mantıkla marka/model bilgisi
@@ -2371,11 +2419,6 @@ if bolum_6_aktif:
                     st.write(f"Seri: **{seri}**")
                 if kaynak:
                     st.caption(f"Kaynak: {kaynak}")
-            else:
-                st.warning(
-                    "Bu çalışma noktası için üretici eğrisinde uygun marka/model "
-                    "bulunamadı. Programda yalnızca poz sınır eğrisi gösteriliyor."
-                )
 
             hidrofor_grafik = pompa_grafigi_png(
                 hq_egrisi, hh_egrisi, vp_pompa_m3h, h_calisma,
