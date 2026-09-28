@@ -2576,7 +2576,7 @@ if bolum_6_aktif:
       p = doc.add_paragraph()
       p.paragraph_format.space_before = Pt(4)
       p.paragraph_format.space_after = Pt(4)
-      run = p.add_run(metin)
+      run = p.add_run(f"• {metin}")
       run.bold = False
       run.italic = True
       run.font.name = "Arial"
@@ -3601,7 +3601,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
           genel_bilgiler_basligi = doc.add_paragraph()
           genel_bilgiler_run = genel_bilgiler_basligi.add_run(
-              "Genel Bilgiler ve Hidrofor Seçim Esasları"
+              "• Genel Bilgiler ve Hidrofor Seçim Esasları"
           )
           genel_bilgiler_run.bold = False
           genel_bilgiler_run.italic = True
@@ -3631,7 +3631,7 @@ if st.button("Raporu Oluştur (.docx)"):
               hidrofor_hesap_basligi.paragraph_format.space_before = Pt(4)
               hidrofor_hesap_basligi.paragraph_format.space_after = Pt(4)
               hidrofor_hesap_run = hidrofor_hesap_basligi.add_run(
-                  "Hidrofor Hesaplamaları"
+                  "• Hidrofor Hesaplamaları"
               )
               hidrofor_hesap_run.bold = False
               hidrofor_hesap_run.italic = True
