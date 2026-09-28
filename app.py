@@ -1943,28 +1943,46 @@ if bolum_6_aktif:
 
         hidrofor_sekme_bilgileri = []
         if hidrofor_tanimlari:
-            # Hidroforları tekrar yatay sekmeler (st.tabs) olarak gösteriyoruz.
-            # Aynı türden birden fazla hidrofor seçilebilir; her kayıt ayrı bir sekmedir.
-            tab_labels = [
-                f"6.3.2.{i} {baslik.upper()}"
-                for i, baslik in enumerate(hidrofor_tanimlari, 1)
-            ]
-            hidrofor_tabs = st.tabs(tab_labels)
+            # Program ekranındaki sekmeler kısa kodlarla gösterilir.
+            # Rapor başlıkları ise aşağıdaki hidrofor_tanimlari üzerinden tam açılımıyla yazılır.
+            hidrofor_kodlari = {
+                "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ": "KSS",
+                "BAHÇE SULAMA SUYU HİDROFORU SEÇİMİ": "BSS",
+                "YAĞMUR SUYU HİDROFORU SEÇİMİ": "YSS",
+            }
 
-            for i, (tab, baslik) in enumerate(
-                zip(hidrofor_tabs, hidrofor_tanimlari), 1
+            # Aynı tür için sıra numarası kendi içinde 1'den başlar:
+            # KSS1, KSS2, BSS1, YSS1 ...
+            tur_sayaclari = {tur: 0 for tur in hidrofor_turleri}
+            hidrofor_sekme_etiketleri = []
+
+            for baslik in hidrofor_tanimlari:
+                # Başlık ön eki varsa, türü sondan güvenli şekilde ayırıyoruz.
+                tur = next(
+                    (t for t in hidrofor_turleri if baslik.endswith(t)),
+                    baslik,
+                )
+                tur_sayaclari[tur] = tur_sayaclari.get(tur, 0) + 1
+                kod = hidrofor_kodlari.get(tur, "H")
+                sekme_kodu = f"{kod}{tur_sayaclari[tur]}"
+                hidrofor_sekme_etiketleri.append(sekme_kodu)
+
+            hidrofor_tabs = st.tabs(hidrofor_sekme_etiketleri)
+
+            for i, (tab, baslik, sekme_kodu) in enumerate(
+                zip(hidrofor_tabs, hidrofor_tanimlari, hidrofor_sekme_etiketleri), 1
             ):
                 baslik_buyuk = baslik.upper()
                 with tab:
-                    st.markdown(f"### 6.3.2.{i} {baslik_buyuk}")
+                    # Sekmede yalnızca kısa kod gösterilir; tam başlık raporda kullanılır.
+                    st.markdown(f"### {sekme_kodu}")
                     st.caption(
+                        f"Program sekmesi: {sekme_kodu} | Rapor başlığı: 6.3.2.{i} {baslik_buyuk}"
+                    )
+                    st.info(
                         "Bu hidrofor bağımsız bir seçim alanıdır. Aynı türden birden "
                         "fazla hidrofor eklenebilir ve her birinin başlık ön eki ayrı "
                         "olarak değiştirilebilir."
-                    )
-                    st.info(
-                        "Bu hidroforun debi, basma yüksekliği ve pompa seçimi "
-                        "hesapları sonraki aşamada eklenecektir."
                     )
                     hidrofor_sekme_bilgileri.append((i, baslik))
         else:
