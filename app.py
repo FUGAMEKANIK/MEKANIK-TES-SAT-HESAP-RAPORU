@@ -2461,9 +2461,12 @@ if bolum_6_aktif:
                 args=(guc_final_key,),
             )
 
-            # Cihaz Poz No; toplam pompa adedi + asıl pompa debisi + çalışma
-            # basıncı aralığına göre otomatik gelir. Kullanıcı yine elle değiştirebilir.
-            poz_kaydi = hidrofor_poz_sec(toplam_pompa, vp_pompa_m3h, h_calisma)
+            # Cihaz Poz No seçimi: poz aralığındaki basınç sınıfı,
+            # İŞLETME ÜST BASINCI (Pu) esas alınarak belirlenir.
+            # Pompa gücü hesabında ise çalışma basıncı olarak alt basınç (Pa)
+            # kullanılmaya devam eder.
+            h_poz_secim = p_ust_mss
+            poz_kaydi = hidrofor_poz_sec(toplam_pompa, vp_pompa_m3h, h_poz_secim)
             otomatik_hidrofor_poz = poz_kaydi["poz"] if poz_kaydi else ""
             _sync_final_auto(poz_final_key, otomatik_hidrofor_poz)
             hidrofor_poz = st.text_input(
