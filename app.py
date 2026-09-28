@@ -2014,6 +2014,7 @@ if bolum_6_aktif:
         # doğrulanan kapasite: 750 L; bu kapasitenin poz numarası kaynakta verilmemiştir.
         HIDROFOR_GENLESME_TANK_POZ_TABLOSU = [
             {"kapasite_l": 750.0, "poz": ""},
+            {"kapasite_l": 1500.0, "poz": ""},
         ]
 
         def genlesme_tanki_sec(gerekli_litre, bolme_adedi, poz_tablosu):
@@ -3318,11 +3319,6 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"(({hesap['p_ust_atu']:.2f} − {hesap['p_alt_atu']:.2f}) × {hesap['schalt']:.0f}) = "
                   f"{hesap['vn_m3']:.3f} m³ = {hesap['vn_m3']*1000:.0f} L"
               )
-              doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
-              doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
-              doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
-              doc.add_paragraph("- 2 veya 3 kW lık motor güçlerine kadar şalt sayısı 40'a kadar çıkabilir.")
-              doc.add_paragraph("- Büyük motorlarda şalt sayısı 20'ye çekildi.")
               doc.add_paragraph(
                   f"Her tank için gerekli hacim: {hesap.get('tank_birim_gerekli_litre', 0):.0f} L"
               )
