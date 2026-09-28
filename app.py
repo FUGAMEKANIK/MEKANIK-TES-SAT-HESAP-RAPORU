@@ -2744,6 +2744,31 @@ SICAK_SU_EXCEL_VERILERI = {
     },
 }
 
+
+KULLANMA_ES_FAKTORLERI = {
+    "Bağımsız Ev": 0.30,
+    "Apartman": None,
+    "Hastane": 0.25,
+    "Otel": 0.25,
+    "İşyeri": 0.30,
+    "Okul": 0.40,
+    "Endüstriyel Tesis": 0.40,
+}
+DEPOLAMA_FAKTORLERI = {
+    "Bağımsız Ev": 0.70,
+    "Apartman": 1.25,
+    "Hastane": 0.60,
+    "Otel": 0.80,
+    "İşyeri": 2.00,
+    "Okul": 1.00,
+    "Endüstriyel Tesis": 1.00,
+}
+ES_ZAMAN_FAKTORLERI = {
+    1: 1.00, 2: 0.75, 3: 0.60, 4: 0.58, 5: 0.55, 6: 0.54, 7: 0.51,
+    8: 0.49, 10: 0.45, 15: 0.42, 18: 0.40, 20: 0.38, 25: 0.36, 30: 0.34,
+    40: 0.32, 50: 0.31, 60: 0.30, 70: 0.30, 80: 0.30, 90: 0.30, 100: 0.30,
+}
+
 def sicak_su_aralik_ortalama_10(aralik):
     if not aralik or str(aralik).strip() == "-":
         return None
@@ -2839,6 +2864,38 @@ if bolum_633_aktif:
 
     aktif_sonuc_df = sonuc_df[sonuc_df["Adet"] > 0].copy()
     sicak_su_gunluk_toplam_litre = float(sonuc_df["Toplam [L/gün]"].sum())
+
+    # BOYLER SEÇİMİ.xlsx / Sayfa1 içindeki faktörler.
+    # Excel'de hesap formülü verilmediği için bu sürümde faktörler raporlanır;
+    # faktörlerle yeni bir sonuç üretilmez.
+    kullanma_es_faktoru = KULLANMA_ES_FAKTORLERI.get(sicak_su_yapi_tipi)
+    depolama_faktoru = DEPOLAMA_FAKTORLERI.get(sicak_su_yapi_tipi)
+    es_zaman_faktoru = None
+    konut_sayisi = None
+    if sicak_su_yapi_tipi == "Apartman":
+        konut_sayisi = st.selectbox(
+            "Konut / daire sayısı (Excel eş zaman faktörü tablosu)",
+            list(ES_ZAMAN_FAKTORLERI.keys()),
+            key="sicak_su_konut_sayisi",
+        )
+        es_zaman_faktoru = ES_ZAMAN_FAKTORLERI[konut_sayisi]
+    else:
+        st.info(f"Kullanma eş faktörü: {kullanma_es_faktoru:.2f}   |   Depolama faktörü: {depolama_faktoru:.2f}")
+
+    st.markdown("**Excel'den alınan faktörler**")
+    faktor_satirlari = [{
+        "Parametre": "Kullanma eş faktörü",
+        "Değer": "Alttaki tabloya bakınız" if kullanma_es_faktoru is None else f"{kullanma_es_faktoru:.2f}",
+    }, {
+        "Parametre": "Depolama faktörü",
+        "Değer": f"{depolama_faktoru:.2f}",
+    }]
+    if es_zaman_faktoru is not None:
+        faktor_satirlari.append({
+            "Parametre": f"Eş zaman faktörü ({konut_sayisi} konut)",
+            "Değer": f"{es_zaman_faktoru:.2f}",
+        })
+    st.dataframe(pd.DataFrame(faktor_satirlari), hide_index=True, use_container_width=True)
 
     # Rapor için yalnızca kullanılan satırları sakla; kaynakta olmayan Engelli satırı da kullanıcı değer girdiyse aktarılır.
     for _, row in aktif_sonuc_df.iterrows():
@@ -3982,6 +4039,12 @@ if st.button("Raporu Oluştur (.docx)"):
             toplam = t_sicak.add_row().cells
             toplam[0].text = "GENEL TOPLAM"
             toplam[4].text = f"{sicak_su_gunluk_toplam_litre:.0f} L/gün"
+            doc.add_paragraph(
+                f"Kullanma eş faktörü: {'Alttaki tabloya bakınız' if kullanma_es_faktoru is None else f'{kullanma_es_faktoru:.2f}'}"
+            )
+            doc.add_paragraph(f"Depolama faktörü: {depolama_faktoru:.2f}")
+            if es_zaman_faktoru is not None:
+                doc.add_paragraph(f"Eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
 
