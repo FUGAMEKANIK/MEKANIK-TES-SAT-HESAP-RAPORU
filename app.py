@@ -2571,6 +2571,19 @@ if bolum_6_aktif:
             })
 
 
+    def rapor_hidrofor_alt_basligi_ekle(doc, metin):
+      """Hidrofor raporundaki alt başlıkları örnekteki gibi mavi/italik biçimde ekler."""
+      p = doc.add_paragraph()
+      p.paragraph_format.space_before = Pt(4)
+      p.paragraph_format.space_after = Pt(4)
+      run = p.add_run(metin)
+      run.bold = False
+      run.italic = True
+      run.font.name = "Arial"
+      run.font.size = Pt(12)
+      run.font.color.rgb = RGBColor(68, 114, 196)
+      return p
+
     def rapor_word_stillerini_uygula(doc):
       for style_name in [
           "Normal",
@@ -3661,7 +3674,7 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"İşletme üst basıncı: Pu = {hesap['p_ust_atu']:.1f} atü seçildi."
               )
 
-              doc.add_paragraph("HİDROFOR TANKI HESABI", style="List Bullet")
+              rapor_hidrofor_alt_basligi_ekle(doc, "HİDROFOR TANKI HESABI")
               doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
               doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
               doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
@@ -3686,8 +3699,7 @@ if st.button("Raporu Oluştur (.docx)"):
               if hesap.get("tank_poz"):
                   doc.add_paragraph(f"Genleşme Tankı Cihaz Poz No: {hesap['tank_poz']}")
 
-              doc.add_paragraph("POMPA SEÇİMİ", style="List Bullet")
-              doc.add_paragraph("Hidroforun Karakteristikleri")
+              rapor_hidrofor_alt_basligi_ekle(doc, "Hidroforun Karakteristikleri")
               doc.add_paragraph(
                   f"Tank hacmi: Vt = {hesap['tank_adedi']} x {hesap['tank_birim_litre']:.0f} lt."
               )
@@ -3719,7 +3731,7 @@ if st.button("Raporu Oluştur (.docx)"):
                       hesap.get("pompa_egrisi_basligi", "Pompa Performans Eğrisi"),
                       anonim=True,
                   )
-                  doc.add_paragraph("Pompa Performans Eğrisi:")
+                  rapor_hidrofor_alt_basligi_ekle(doc, "Pompa Performans Eğrisi:")
                   doc.add_picture(grafik_buf, width=Inches(6.2))
                   doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
