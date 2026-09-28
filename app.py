@@ -3488,10 +3488,12 @@ if st.button("Raporu Oluştur (.docx)"):
 
           genel_bilgiler_basligi = doc.add_paragraph()
           genel_bilgiler_run = genel_bilgiler_basligi.add_run(
-              "GENEL BİLGİLER VE HİDROFOR SEÇİM ESASLARI"
+              "Genel Bilgiler ve Hidrofor Seçim Esasları"
           )
-          genel_bilgiler_run.bold = True
+          genel_bilgiler_run.bold = False
+          genel_bilgiler_run.italic = True
           genel_bilgiler_run.font.size = Pt(12)
+          genel_bilgiler_run.font.color.rgb = RGBColor(68, 114, 196)
 
           hidrofor_genel_secimler_rapor = locals().get(
               "hidrofor_genel_secimler", [True] * 15
