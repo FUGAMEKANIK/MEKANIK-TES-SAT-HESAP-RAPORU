@@ -127,7 +127,7 @@ bolum_621_aktif = st.checkbox("6.2.1 Pis Su Hesabı", value=True, key="rapor_bol
 bolum_622_aktif = st.checkbox("6.2.2 Pis Su Terfi Pompaları", value=True, key="rapor_bolum_622")
 bolum_63_aktif = st.checkbox("6.3 Sıhhi Tesisat Cihaz Seçimleri", value=True, key="rapor_bolum_63")
 bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value=True, key="rapor_bolum_631")
-bolum_632_aktif = st.checkbox("6.3.2 Kullanma Suyu Hidroforu Seçimi", value=True, key="rapor_bolum_632")
+bolum_632_aktif = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", value=True, key="rapor_bolum_632")
 
 # 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
 bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif)
@@ -1862,7 +1862,7 @@ if bolum_6_aktif:
     )
 
     if bolum_632_aktif:
-        st.subheader("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ")
+        st.subheader("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ")
         st.markdown("#### GENEL BİLGİLER VE HİDROFOR SEÇİM ESASLARI")
 
         hidrofor_genel_keys = [f"hidrofor_genel_{i}" for i in range(1, 16)]
@@ -1899,7 +1899,7 @@ if bolum_6_aktif:
         # Her tür için adet seçilir; her bir hidrofor bağımsız başlık ön eki alabilir.
         st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
         hidrofor_turleri = [
-            "Kullanma Suyu Hidroforu",
+            "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ",
             "Bahçe Sulama Hidroforu",
             "Yağmur Suyu Hidroforu",
         ]
@@ -1914,7 +1914,7 @@ if bolum_6_aktif:
                     tur,
                     min_value=0,
                     max_value=10,
-                    value=1 if tur == "Kullanma Suyu Hidroforu" else 0,
+                    value=1 if tur == "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ" else 0,
                     step=1,
                     key=anahtar,
                 )
@@ -1939,7 +1939,7 @@ if bolum_6_aktif:
         hidrofor_sekme_bilgileri = []
         if hidrofor_tanimlari:
             hidrofor_sekmeleri = st.tabs([
-                f"6.3.2.{i} {baslik}" for i, baslik in enumerate(hidrofor_tanimlari, 1)
+                f"6.3.2.{i} {baslik.upper()}" for i, baslik in enumerate(hidrofor_tanimlari, 1)
             ])
             for i, (baslik, sekme) in enumerate(
                 zip(hidrofor_tanimlari, hidrofor_sekmeleri), 1
@@ -2973,7 +2973,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
         # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
         if bolum_632_aktif:
-          doc.add_heading("6.3.2 KULLANMA SUYU HİDROFORU SEÇİMİ", level=2)
+          doc.add_heading("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", level=2)
 
           genel_bilgiler_basligi = doc.add_paragraph()
           genel_bilgiler_run = genel_bilgiler_basligi.add_run(
