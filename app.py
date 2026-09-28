@@ -2158,13 +2158,61 @@ if bolum_6_aktif:
             tank_secim = genlesme_tanki_sec(vn_m3 * 1000.0, tank_bolme, HIDROFOR_GENLESME_TANK_POZ_TABLOSU)
             tank_adedi = tank_secim["tank_adedi"]
             tank_birim_gerekli_litre = tank_secim["birim_gerekli_l"]
-            tank_birim_litre = tank_secim["secilen_birim_l"]
-            tank_toplam_litre = tank_secim["toplam_l"]
+            otomatik_tank_birim_litre = tank_secim["secilen_birim_l"]
+            otomatik_tank_toplam_litre = tank_secim["toplam_l"]
             tank_poz = tank_secim["poz"]
 
+            # Üst bölümde de tank kapasitesine doğrudan elle müdahale edilebilir.
+            # Üstte yapılan değişiklik, aşağıdaki 4. bölümdeki nihai değere aktarılır
+            # ve aşağıdaki daha önceki manuel seçim sıfırlanır.
+            tank_ust_key = f"hidrofor_{i}_tank_ust_toplam"
+            tank_ust_manual_key = f"{tank_ust_key}__manual"
+            tank_ust_last_auto_key = f"{tank_ust_key}__last_auto"
+            tank_alt_manual_key = f"hidrofor_{i}_tank_toplam_ozet__manual"
+
+            if tank_ust_manual_key not in st.session_state:
+                st.session_state[tank_ust_manual_key] = False
+            if tank_ust_last_auto_key not in st.session_state:
+                st.session_state[tank_ust_last_auto_key] = otomatik_tank_toplam_litre
+
+            # Otomatik hesap değiştiyse ve üst alan daha önce elle değiştirilmediyse
+            # üst alanı güncelle.
+            if (st.session_state[tank_ust_last_auto_key] != otomatik_tank_toplam_litre
+                    and not st.session_state[tank_ust_manual_key]):
+                st.session_state[tank_ust_key] = otomatik_tank_toplam_litre
+                st.session_state[tank_ust_last_auto_key] = otomatik_tank_toplam_litre
+            elif tank_ust_key not in st.session_state:
+                st.session_state[tank_ust_key] = otomatik_tank_toplam_litre
+                st.session_state[tank_ust_last_auto_key] = otomatik_tank_toplam_litre
+
+            def _ust_tank_degisti(widget_key, alt_manual_key):
+                # Üstteki manuel değişiklik aşağıdaki nihai alanı otomatik güncellesin.
+                st.session_state[f"{widget_key}__manual"] = True
+                st.session_state[f"{widget_key}__last_auto"] = st.session_state.get(widget_key, 0.0)
+                st.session_state[alt_manual_key] = False
+
+            tank_ust_toplam_litre = st.number_input(
+                "Genleşme tankı toplam kapasitesi [L]",
+                min_value=1.0, step=50.0,
+                key=tank_ust_key,
+                on_change=_ust_tank_degisti,
+                args=(tank_ust_key, tank_alt_manual_key),
+                help="Otomatik seçilen kapasite gelir. İsterseniz burada toplam tank kapasitesini elle değiştirebilirsiniz. Bu değer aşağıdaki 4. Pompa seçim kriterleri bölümüne otomatik aktarılır.",
+            )
+
+            tank_toplam_litre = float(tank_ust_toplam_litre)
+            tank_birim_litre = tank_toplam_litre / tank_adedi if tank_adedi else tank_toplam_litre
+
+            # Manuel üst kapasite standart poz kapasitesine karşılık geliyorsa pozunu bul.
+            tank_poz = ""
+            for _kayit in HIDROFOR_GENLESME_TANK_POZ_TABLOSU:
+                if abs(float(_kayit.get("kapasite_l", 0)) - tank_birim_litre) < 0.01:
+                    tank_poz = _kayit.get("poz", "") or ""
+                    break
+
             st.write(f"Her tank için gerekli hacim: **{tank_birim_gerekli_litre:.0f} L**")
-            st.write(f"Otomatik seçilen tank: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
-            st.caption("Nihai tank kapasitesi aşağıdaki 4. Pompa seçim kriterleri bölümünden elle değiştirilebilir.")
+            st.write(f"Nihai tank: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
+            st.caption("Bu kapasiteyi burada da, aşağıdaki 4. Pompa seçim kriterleri bölümünde de elle değiştirebilirsiniz.")
 
             if tank_poz:
                 st.success(f"Genleşme tankı Cihaz Poz No: **{tank_poz}**")
@@ -2205,6 +2253,7 @@ if bolum_6_aktif:
             otomatik_vp_pompa = float(vp_pompa_m3h)
             otomatik_p_alt_mss = float(p_alt_mss)
             otomatik_p_ust_mss = float(p_ust_mss)
+            # Üst bölümdeki tank değeri, aşağıdaki nihai alanın otomatik kaynağıdır.
             otomatik_tank_toplam_litre = float(tank_toplam_litre)
 
             # Önce nihai debi ve basınçlar senkronize edilir; motor gücü bunlara göre hesaplanır.
@@ -2249,12 +2298,15 @@ if bolum_6_aktif:
                 on_change=_mark_final_manual,
                 args=(tank_final_key,),
                 help=(
-                    "Otomatik değer yukarıdaki hesaptan gelir. Elle değiştirirseniz "
-                    "bu değer nihai TOPLAM tank kapasitesi kabul edilir. Tank adedini "
-                    "değiştirirseniz toplam değer seçilen tank adedine bölünür."
+                    "Yukarıdaki tank kapasitesi otomatik olarak buraya aktarılır. "
+                    "Burada da elle değiştirebilirsiniz; bu değer rapora gidecek nihai TOPLAM tank kapasitesidir."
                 ),
             )
             tank_birim_litre = tank_toplam_litre / tank_adedi if tank_adedi else tank_toplam_litre
+
+            # Alt bölümdeki manuel değer, rapora gidecek nihai değerdir. Üst bölümde
+            # yeni bir değişiklik yapılırsa üst alanın callback'i bu manuel durumu sıfırlar
+            # ve yeni üst değeri tekrar aşağıya otomatik aktarır.
 
             # Manuel girilen toplam kapasite standart poz kapasitesine tam eşit
             # geliyorsa, tank adedi ile bölünerek pozdaki birim kapasite bulunur.
