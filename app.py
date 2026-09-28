@@ -9,6 +9,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 import matplotlib.pyplot as plt
+import pandas as pd
 import streamlit as st
 
 # Türkçe ay isimleri için sözlük
@@ -2763,6 +2764,7 @@ def sicak_su_aralik_ortalama_10(aralik):
 sicak_su_hesap_detaylari = []
 sicak_su_gunluk_toplam_litre = 0.0
 sicak_su_yapi_tipi = "Bağımsız Ev"
+
 if bolum_633_aktif:
     st.markdown("### • 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI")
     st.caption("Kaynak tüketim değerleri: BOYLER SEÇİMİ.xlsx / Sayfa1")
@@ -2772,62 +2774,89 @@ if bolum_633_aktif:
         key="sicak_su_yapi_tipi",
     )
     kaynak_satirlari = SICAK_SU_EXCEL_VERILERI[sicak_su_yapi_tipi]
-    mevcut_kullanimlar = [k for k, v in kaynak_satirlari.items() if sicak_su_aralik_ortalama_10(v) is not None]
-    sicak_su_secilen_kullanimlar = st.multiselect(
-        "Kullanım yerleri",
-        mevcut_kullanimlar,
-        key="sicak_su_secilen_kullanimlar",
+
+    # Kullanım yerleri artık seçim kutusu yerine sabit ve düzenlenebilir bir tablodur.
+    # Kullanıcı yalnızca Adet ve Birim Tüketim değerlerini değiştirir.
+    # Adet = 0 olan satırlar hesaba dahil edilmez.
+    tablo_key = f"sicak_su_kullanim_tablosu_{sicak_su_yapi_tipi}"
+    satirlar = []
+    for kullanim, kaynak_aralik in kaynak_satirlari.items():
+        varsayilan = sicak_su_aralik_ortalama_10(kaynak_aralik)
+        # Kaynakta değer yoksa ("-") kullanıcı tarafından girilebilir; başlangıç 0'dır.
+        birim = float(varsayilan) if varsayilan is not None else 0.0
+        satirlar.append({
+            "Kullanım Yeri": kullanim,
+            "Excel Aralığı [L]": str(kaynak_aralik),
+            "Birim Tüketim [L]": birim,
+            "Adet": 0,
+        })
+
+    # Excel'de bulunmayan fakat projelerde kullanılabilecek Engelli satırı.
+    # Kaynak değeri olmadığı için başlangıç değeri 0 L'dir ve kullanıcı elle girer.
+    satirlar.append({
+        "Kullanım Yeri": "Engelli",
+        "Excel Aralığı [L]": "Kaynakta yok",
+        "Birim Tüketim [L]": 0.0,
+        "Adet": 0,
+    })
+
+    varsayilan_df = pd.DataFrame(satirlar)
+    if tablo_key not in st.session_state:
+        st.session_state[tablo_key] = varsayilan_df.copy()
+
+    st.caption("Birim tüketim değerleri Excel'deki alt-üst değerlerin ortalamasının en yakın 10 L'ye yuvarlanmış başlangıç değeridir. İstediğiniz değeri elle değiştirebilirsiniz. Adet = 0 ise satır hesaba dahil edilmez.")
+
+    edited_df = st.data_editor(
+        st.session_state[tablo_key],
+        key=f"sicak_su_editor_{sicak_su_yapi_tipi}",
+        hide_index=True,
+        num_rows="fixed",
+        use_container_width=True,
+        column_config={
+            "Kullanım Yeri": st.column_config.TextColumn("Kullanım Yeri", disabled=True),
+            "Excel Aralığı [L]": st.column_config.TextColumn("Excel Aralığı [L]", disabled=True),
+            "Birim Tüketim [L]": st.column_config.NumberColumn(
+                "Birim Tüketim [L]", min_value=0, step=10, format="%.0f L"
+            ),
+            "Adet": st.column_config.NumberColumn(
+                "Adet", min_value=0, step=1, format="%.0f"
+            ),
+        },
     )
-    if sicak_su_secilen_kullanimlar:
-        sicak_su_tablo = []
-        for sira, kullanim in enumerate(sicak_su_secilen_kullanimlar):
-            kaynak_aralik = kaynak_satirlari[kullanim]
-            varsayilan = sicak_su_aralik_ortalama_10(kaynak_aralik)
-            key_deger = f"sicak_su_birim_{sicak_su_yapi_tipi}_{kullanim}"
-            if key_deger not in st.session_state:
-                st.session_state[key_deger] = float(varsayilan)
-            c1, c2, c3, c4 = st.columns([2.1, 1.3, 1.5, 1.2])
-            with c1:
-                st.write(f"**{kullanim}**")
-            with c2:
-                st.caption(f"Excel: {kaynak_aralik} L")
-            with c3:
-                birim_deger = st.number_input(
-                    "Birim tüketim [L]",
-                    min_value=0.0,
-                    step=10.0,
-                    format="%.0f",
-                    key=key_deger,
-                )
-            with c4:
-                miktar = st.number_input(
-                    "Adet",
-                    min_value=0.0,
-                    step=1.0,
-                    format="%.0f",
-                    value=1.0,
-                    key=f"sicak_su_miktar_{sicak_su_yapi_tipi}_{kullanim}",
-                )
-            toplam = birim_deger * miktar
-            sicak_su_gunluk_toplam_litre += toplam
-            sicak_su_hesap_detaylari.append({
-                "kullanim": kullanim,
-                "kaynak_aralik": kaynak_aralik,
-                "birim_degeri": birim_deger,
-                "miktar": miktar,
-                "toplam_litre": toplam,
-            })
-            sicak_su_tablo.append({
-                "Kullanım yeri": kullanim,
-                "Excel aralığı [L]": kaynak_aralik,
-                "Hesapta kullanılan [L]": f"{birim_deger:.0f}",
-                "Adet": f"{miktar:.0f}",
-                "Toplam [L]": f"{toplam:.0f}",
-            })
-        st.table(sicak_su_tablo)
-        st.metric("Günlük toplam kullanma sıcak suyu ihtiyacı", f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", "."))
-    else:
-        st.info("Hesaplama için en az bir kullanım yeri seçiniz.")
+
+    # Düzenlemeleri kalıcı oturum durumuna al.
+    st.session_state[tablo_key] = edited_df.copy()
+
+    # Hesaplanan toplamları ayrı ve okunaklı sonuç tablosunda göster.
+    sonuc_df = edited_df.copy()
+    sonuc_df["Toplam [L/gün]"] = (
+        pd.to_numeric(sonuc_df["Birim Tüketim [L]"], errors="coerce").fillna(0)
+        * pd.to_numeric(sonuc_df["Adet"], errors="coerce").fillna(0)
+    )
+    sonuc_df["Birim Tüketim [L]"] = pd.to_numeric(sonuc_df["Birim Tüketim [L]"], errors="coerce").fillna(0).round(0).astype(int)
+    sonuc_df["Adet"] = pd.to_numeric(sonuc_df["Adet"], errors="coerce").fillna(0).round(0).astype(int)
+    sonuc_df["Toplam [L/gün]"] = pd.to_numeric(sonuc_df["Toplam [L/gün]"], errors="coerce").fillna(0).round(0).astype(int)
+
+    aktif_sonuc_df = sonuc_df[sonuc_df["Adet"] > 0].copy()
+    sicak_su_gunluk_toplam_litre = float(sonuc_df["Toplam [L/gün]"].sum())
+
+    # Rapor için yalnızca kullanılan satırları sakla; kaynakta olmayan Engelli satırı da kullanıcı değer girdiyse aktarılır.
+    for _, row in aktif_sonuc_df.iterrows():
+        sicak_su_hesap_detaylari.append({
+            "kullanim": str(row["Kullanım Yeri"]),
+            "kaynak_aralik": str(row["Excel Aralığı [L]"]),
+            "birim_degeri": float(row["Birim Tüketim [L]"]),
+            "miktar": float(row["Adet"]),
+            "toplam_litre": float(row["Toplam [L/gün]"]),
+        })
+
+    st.markdown("**Hesaplanan kullanım yerleri**")
+    st.dataframe(
+        aktif_sonuc_df[["Kullanım Yeri", "Excel Aralığı [L]", "Birim Tüketim [L]", "Adet", "Toplam [L/gün]"]],
+        hide_index=True,
+        use_container_width=True,
+    )
+    st.metric("Günlük toplam kullanma sıcak suyu ihtiyacı", f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", "."))
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
