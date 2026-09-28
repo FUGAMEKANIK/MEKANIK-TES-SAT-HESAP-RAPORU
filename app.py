@@ -1895,30 +1895,27 @@ if bolum_6_aktif:
             )
             hidrofor_genel_secimler.append(secili)
 
-        # Seçilen hidroforlar ardışık numaralandırılır.
+        # Hidrofor türleri çoklu seçilebilir. Seçilenler otomatik olarak
+        # 6.3.2.1, 6.3.2.2, 6.3.2.3 ... şeklinde sıralanır.
         st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
         hidrofor_turleri = [
             "Kullanma Suyu Hidroforu",
             "Bahçe Sulama Hidroforu",
             "Yağmur Suyu Hidroforu",
         ]
-        hidrofor_adet = st.number_input(
-            "Projede yer alacak hidrofor sayısı",
-            min_value=0, max_value=10, value=1, step=1,
-            key="hidrofor_adet",
+        secilen_hidrofor_turleri = st.multiselect(
+            "Projede yer alacak hidrofor türlerini seçiniz (birden fazla seçebilirsiniz):",
+            hidrofor_turleri,
+            default=hidrofor_turleri,
+            key="secilen_hidrofor_turleri",
         )
 
         hidrofor_tanimlari = []
-        for i in range(1, int(hidrofor_adet) + 1):
-            st.markdown(f"**Hidrofor {i}**")
-            secim = st.selectbox(
-                "Hidrofor türü",
-                hidrofor_turleri,
-                key=f"hidrofor_turu_{i}",
-            )
+        for i, secim in enumerate(secilen_hidrofor_turleri, 1):
+            st.markdown(f"**Hidrofor {i}: {secim}**")
             on_ek = st.text_input(
-                "Başlık ön eki / özel tanım (isteğe bağlı)",
-                key=f"hidrofor_on_ek_{i}",
+                f"6.3.2.{i} için başlık ön eki / özel tanım (isteğe bağlı)",
+                key=f"hidrofor_on_ek_tur_{i}",
                 placeholder="Örn.: Blok A, Otopark, 1. Etap",
             ).strip()
             baslik = f"{on_ek} {secim}".strip() if on_ek else secim
