@@ -3674,7 +3674,7 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"İşletme üst basıncı: Pu = {hesap['p_ust_atu']:.1f} atü seçildi."
               )
 
-              rapor_hidrofor_alt_basligi_ekle(doc, "HİDROFOR TANKI HESABI")
+              rapor_hidrofor_alt_basligi_ekle(doc, "Hidrofor Tankı Hesabı")
               doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
               doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
               doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
