@@ -1897,19 +1897,41 @@ if bolum_6_aktif:
 
         # Seçilen hidroforlar ardışık numaralandırılır.
         st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
-        secilen_hidroforlar = st.multiselect(
-            "Projede yer alacak hidroforları seçiniz:",
-            [f"Hidrofor {i}" for i in range(1, 11)],
-            default=["Hidrofor 1"],
-            key="secilen_hidroforlar",
+        hidrofor_turleri = [
+            "Kullanma Suyu Hidroforu",
+            "Yağmur Suyu Hidroforu",
+            "Yangın Suyu Hidroforu",
+            "Sıcak Kullanma Suyu Hidroforu",
+            "Diğer",
+        ]
+        hidrofor_adet = st.number_input(
+            "Projede yer alacak hidrofor sayısı",
+            min_value=0, max_value=10, value=1, step=1,
+            key="hidrofor_adet",
         )
+        hidrofor_adlari = []
+        for i in range(1, int(hidrofor_adet) + 1):
+            secim = st.selectbox(
+                f"Hidrofor {i} türü / adı",
+                hidrofor_turleri,
+                key=f"hidrofor_turu_{i}",
+            )
+            if secim == "Diğer":
+                ad = st.text_input(
+                    f"Hidrofor {i} adı",
+                    key=f"hidrofor_diger_adi_{i}",
+                ).strip() or f"Hidrofor {i}"
+            else:
+                ad = secim
+            hidrofor_adlari.append(ad)
+
         hidrofor_sekme_bilgileri = []
-        if secilen_hidroforlar:
+        if hidrofor_adlari:
             hidrofor_sekmeleri = st.tabs([
-                f"6.3.2.{i} {ad}" for i, ad in enumerate(secilen_hidroforlar, 1)
+                f"6.3.2.{i} {ad}" for i, ad in enumerate(hidrofor_adlari, 1)
             ])
             for i, (ad, sekme) in enumerate(
-                zip(secilen_hidroforlar, hidrofor_sekmeleri), 1
+                zip(hidrofor_adlari, hidrofor_sekmeleri), 1
             ):
                 with sekme:
                     st.markdown(f"### 6.3.2.{i} {ad.upper()} SEÇİMİ")
