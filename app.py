@@ -1895,8 +1895,31 @@ if bolum_6_aktif:
             )
             hidrofor_genel_secimler.append(secili)
 
-        # 6.3.2.1, 6.3.2.2, ... numaraları burada kullanılmaz;
-        # bu numaralar sonraki hidrofor hesap/seçim aşamalarına ayrılmıştır.
+        # Seçilen hidroforlar ardışık numaralandırılır.
+        st.markdown("#### HİDROFOR SEÇİM BÖLÜMLERİ")
+        secilen_hidroforlar = st.multiselect(
+            "Projede yer alacak hidroforları seçiniz:",
+            [f"Hidrofor {i}" for i in range(1, 11)],
+            default=["Hidrofor 1"],
+            key="secilen_hidroforlar",
+        )
+        hidrofor_sekme_bilgileri = []
+        if secilen_hidroforlar:
+            hidrofor_sekmeleri = st.tabs([
+                f"6.3.2.{i} {ad}" for i, ad in enumerate(secilen_hidroforlar, 1)
+            ])
+            for i, (ad, sekme) in enumerate(
+                zip(secilen_hidroforlar, hidrofor_sekmeleri), 1
+            ):
+                with sekme:
+                    st.markdown(f"### 6.3.2.{i} {ad.upper()} SEÇİMİ")
+                    st.info(
+                        "Bu hidroforun debi, basma yüksekliği ve pompa "
+                        "seçimi hesapları sonraki aşamada eklenecektir."
+                    )
+                    hidrofor_sekme_bilgileri.append((i, ad))
+        else:
+            st.info("Hidrofor seçilmedi; rapora hidrofor seçim alt başlığı eklenmez.")
 
 
     def rapor_word_stillerini_uygula(doc):
@@ -2932,6 +2955,10 @@ if st.button("Raporu Oluştur (.docx)"):
           ):
               if secili:
                   doc.add_paragraph(madde, style="List Bullet")
+
+          # Yalnızca seçilen hidroforlar, boşluk bırakmadan sıralanır.
+          for i, ad in locals().get("hidrofor_sekme_bilgileri", []):
+              doc.add_heading(f"6.3.2.{i} {ad.upper()} SEÇİMİ", level=3)
     rapor_word_stillerini_uygula(doc)
 
     buffer = io.BytesIO()
