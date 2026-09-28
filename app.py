@@ -2026,12 +2026,9 @@ if bolum_6_aktif:
             birim_gerekli = gerekli_litre / bolme_adedi
             if not kayitlar:
                 return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim_gerekli, "tank_adedi": bolme_adedi, "toplam_l": gerekli_litre, "poz": ""}
-            # En yakın poz kapasitesi seçilir; eşitlikte üst kapasite tercih edilir.
-            secilen = min(
-                kayitlar,
-                key=lambda k: (abs(float(k["kapasite_l"]) - birim_gerekli),
-                               0 if float(k["kapasite_l"]) >= birim_gerekli else 1),
-            )
+            # Tank kapasitesi daima yukarı doğru seçilir; hesaplanan değerden küçük tank seçilmez.
+            ust_kapasiteler = [k for k in kayitlar if float(k["kapasite_l"]) >= birim_gerekli]
+            secilen = ust_kapasiteler[0] if ust_kapasiteler else kayitlar[-1]
             birim = float(secilen["kapasite_l"])
             return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim, "tank_adedi": bolme_adedi, "toplam_l": birim * bolme_adedi, "poz": secilen.get("poz", "")}
 
@@ -2070,13 +2067,15 @@ if bolum_6_aktif:
             st.markdown("**1. Gerekli debi hesabı**")
             vm_lph = 3600.0 * (0.25 * math.sqrt(yukleme_birimi)) if yukleme_birimi > 0 else 0.0
             vm_m3h = vm_lph / 1000.0
-            vp_m3h = vm_m3h * (1.0 + emniyet_orani / 100.0)
+            vp_m3h_hesap = vm_m3h * (1.0 + emniyet_orani / 100.0)
+            # Emniyetli toplam debi her zaman bir üst tam sayıya yuvarlanır.
+            vp_m3h = float(math.ceil(vp_m3h_hesap))
             vp_pompa_m3h = vp_m3h / asil_pompa if asil_pompa else 0.0
 
             st.latex(r"V_m = 3600 \times (0,25 \times \sqrt{Z})")
             st.write(f"Z = **{yukleme_birimi:.0f} YB**")
             st.write(f"Vm = 3600 × (0,25 × √{yukleme_birimi:.0f}) = **{vm_lph:.0f} L/h = {vm_m3h:.2f} m³/h**")
-            st.write(f"Vp = {vm_m3h:.2f} × (1 + {emniyet_orani:.0f}/100) = **{vp_m3h:.2f} m³/h**")
+            st.write(f"Vp = {vm_m3h:.2f} × (1 + {emniyet_orani:.0f}/100) = {vp_m3h_hesap:.2f} m³/h → **{vp_m3h:.0f} m³/h**")
             st.write(f"Bir pompa debisi = {vp_m3h:.2f} / {asil_pompa} = **{vp_pompa_m3h:.2f} m³/h**")
 
             st.markdown("**2. İşletme basınçları**")
@@ -2092,16 +2091,13 @@ if bolum_6_aktif:
 
             p_alt_mss = kot_farki + akma_basinci + boru_kaybi + sayac_kaybi
             p_alt_atu = p_alt_mss / 10.0
-            p_ust_atu = st.number_input(
-                "İşletme üst basıncı Pu [atü]", min_value=0.1, value=6.0, step=0.1,
-                key=f"hidrofor_{i}_pust",
-            )
+            p_ust_atu = p_alt_atu + 1.5
             p_ust_mss = p_ust_atu * 10.0
             st.write(
                 f"Pa = hp + ha + hb + hc = {kot_farki:g} + {akma_basinci:g} + "
                 f"{boru_kaybi:g} + {sayac_kaybi:g} = **{p_alt_mss:.2f} mSS = {p_alt_atu:.2f} atü**"
             )
-            st.write(f"Pu = **{p_ust_atu:.2f} atü = {p_ust_mss:.2f} mSS**")
+            st.write(f"Pu = Pa + 1,5 = **{p_ust_atu:.2f} atü = {p_ust_mss:.2f} mSS**")
 
             st.markdown("**3. Hidrofor tankı nominal hacmi**")
             schalt = st.number_input(
@@ -3286,14 +3282,21 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"bir pompa debisi: {hesap['vp_pompa_m3h']:.2f} m³/h"
               )
 
-              doc.add_paragraph("İŞLETME BASINÇLARI", style="List Bullet")
+              doc.add_paragraph("İşletme basınçları:")
+              doc.add_paragraph(f"Kot Farkı: hp = {hesap['hp']:.0f} mSS")
+              doc.add_paragraph(f"Akma Basıncı: ha = {hesap['ha']:.0f} mSS")
+              doc.add_paragraph(f"Boru Kayıpları: hb = {hesap['hb']:.1f} mSS")
+              doc.add_paragraph(f"Sayaç Kayıpları: hc = {hesap['hc']:.0f} mSS")
+              doc.add_paragraph("İşletme alt basıncı: Pa = (hp + ha + hb+ hc )")
               doc.add_paragraph(
-                  f"Pa = hp + ha + hb + hc = {hesap['hp']:.2f} + {hesap['ha']:.2f} + "
-                  f"{hesap['hb']:.2f} + {hesap['hc']:.2f} = "
-                  f"{hesap['p_alt_mss']:.2f} mSS = {hesap['p_alt_atu']:.2f} atü"
+                  f"İşletme alt basıncı: Pa = ( {hesap['hp']:.0f} + {hesap['ha']:.0f} + "
+                  f"{hesap['hb']:.1f} + {hesap['hc']:.0f}) = {hesap['p_alt_mss']:.1f} mSS"
               )
               doc.add_paragraph(
-                  f"Pu = {hesap['p_ust_atu']:.2f} atü = {hesap['p_ust_mss']:.2f} mSS"
+                  f"İşletme alt basıncı: Pa = {hesap['p_alt_atu']:.1f} atü seçildi."
+              )
+              doc.add_paragraph(
+                  f"İşletme üst basıncı: Pu = {hesap['p_ust_atu']:.1f} atü seçildi."
               )
 
               doc.add_paragraph("HİDROFOR TANKI HESABI", style="List Bullet")
@@ -3306,9 +3309,11 @@ if st.button("Raporu Oluştur (.docx)"):
                   f"(({hesap['p_ust_atu']:.2f} − {hesap['p_alt_atu']:.2f}) × {hesap['schalt']:.0f}) = "
                   f"{hesap['vn_m3']:.3f} m³ = {hesap['vn_m3']*1000:.0f} L"
               )
-              doc.add_paragraph(
-                  f"Tank bölme sayısı: {hesap.get('tank_bolme', hesap['tank_adedi'])}"
-              )
+              doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
+              doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
+              doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
+              doc.add_paragraph("- 2 veya 3 kW lık motor güçlerine kadar şalt sayısı 40'a kadar çıkabilir.")
+              doc.add_paragraph("- Büyük motorlarda şalt sayısı 20'ye çekildi.")
               doc.add_paragraph(
                   f"Her tank için gerekli hacim: {hesap.get('tank_birim_gerekli_litre', 0):.0f} L"
               )
@@ -3320,18 +3325,22 @@ if st.button("Raporu Oluştur (.docx)"):
                   doc.add_paragraph(f"Genleşme Tankı Cihaz Poz No: {hesap['tank_poz']}")
 
               doc.add_paragraph("POMPA SEÇİMİ", style="List Bullet")
+              doc.add_paragraph("Hidroforun Karakteristikleri")
               doc.add_paragraph(
-                  f"Pompa çalışma noktası: Q = {hesap['vp_pompa_m3h']:.2f} m³/h, "
-                  f"H = {hesap['h']:.2f} mSS"
+                  f"Tank hacmi: Vt = {hesap['tank_adedi']} x {hesap['tank_birim_litre']:.0f} lt."
               )
               doc.add_paragraph(
-                  f"Pompa adedi: {hesap['toplam_pompa']} adet "
-                  f"({hesap['asil_pompa']} Asıl + {hesap['yedek_pompa']} Yedek)"
+                  f"Pompa debisi: Vp = {hesap['asil_pompa']} ad x {hesap['vp_pompa_m3h']:.0f} m3/h"
               )
+              doc.add_paragraph(f"İşletme alt basıncı: H a = {hesap['p_alt_mss']:.0f} mSS")
+              doc.add_paragraph(f"İşletme üst basıncı: H ü = {hesap['p_ust_mss']:.0f} mSS")
               doc.add_paragraph(
-                  f"Pompa motor gücü: {hesap['toplam_pompa']} × "
-                  f"{hesap['guc']:.2f} kW"
+                  f"Pompa gücü: Np = {hesap['toplam_pompa']} ad x {hesap['guc']:.1f} KW."
               )
+              tip_metni = hesap.get("poz_aciklama", "")
+              if not tip_metni or tip_metni.startswith("Birim Poziyat"):
+                  tip_metni = {1:"Tek pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",2:"İki pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor",3:"Üç pompalı, düşey milli, frekans konvertörlü santrifüj pompalı hidrofor"}.get(hesap['toplam_pompa'], "Hidrofor")
+              doc.add_paragraph(f"Tipi: {tip_metni}")
               if hesap.get("poz"):
                   doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
               else:
