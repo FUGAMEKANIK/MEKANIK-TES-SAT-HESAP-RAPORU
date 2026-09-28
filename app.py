@@ -2152,10 +2152,35 @@ if bolum_6_aktif:
 
             st.write(f"Her tank için gerekli hacim: **{tank_birim_gerekli_litre:.0f} L**")
             st.write(f"Otomatik seçilen tank: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
+
+            manuel_tank = st.checkbox(
+                "Genleşme tankı kapasitesini manuel olarak düzelt",
+                value=False,
+                key=f"hidrofor_{i}_manuel_tank",
+            )
+            if manuel_tank:
+                manuel_birim_litre = st.number_input(
+                    "Manuel tank kapasitesi (L) — her bir tank için",
+                    min_value=1.0,
+                    value=float(tank_birim_litre),
+                    step=50.0,
+                    key=f"hidrofor_{i}_manuel_tank_litre",
+                )
+                tank_birim_litre = float(manuel_birim_litre)
+                tank_toplam_litre = tank_birim_litre * tank_adedi
+                # Manuel değer standart kapasiteyle tam eşleşiyorsa mevcut poz numarasını koru;
+                # aksi halde poz numarası boş bırakılır.
+                tank_poz = next(
+                    (k.get("poz", "") for k in HIDROFOR_GENLESME_TANK_POZ_TABLOSU
+                     if abs(float(k.get("kapasite_l", 0)) - tank_birim_litre) < 1e-9),
+                    "",
+                )
+                st.info(f"Manuel seçim: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
+
             if tank_poz:
                 st.success(f"Genleşme tankı Cihaz Poz No: **{tank_poz}**")
             else:
-                st.info("Genleşme tankı poz numarası, birim poiyat listesindeki kapasite/poz kayıtları eklendiğinde otomatik atanacaktır.")
+                st.info("Genleşme tankı poz numarası, seçilen manuel kapasite için tanımlı değilse boş bırakılır.")
             if tank_toplam_litre < vn_m3 * 1000:
                 st.warning("Mevcut poz kapasite listesi hesaplanan toplam hacmi karşılamıyor; birim poiyat listesine daha büyük kapasite kayıtları eklenmelidir.")
             else:
