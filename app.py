@@ -2206,6 +2206,20 @@ if bolum_6_aktif:
                 # 4 pompa = 3 asıl + 1 yedek
                 # 5 pompa = 4 asıl + 1 yedek
                 # 6 pompa = 5 asıl + 1 yedek
+                # Pompa adedi değiştiğinde aşağıdaki Cihaz Poz No alanının
+                # daha önce elle değiştirilmiş olması önemini kaybeder: manuel
+                # kilit sıfırlanır ve yeni pompa adedi + debi + ÜST BASINÇ (Pu)
+                # için poz yeniden otomatik seçilir.
+                poz_final_key_for_callback = f"hidrofor_{i}_poz_manuel"
+                poz_final_manual_key_for_callback = f"{poz_final_key_for_callback}__manual"
+                poz_final_last_auto_key_for_callback = f"{poz_final_key_for_callback}__last_auto"
+
+                def _pompa_adedi_degisti(poz_key, manual_key, last_auto_key):
+                    st.session_state[manual_key] = False
+                    # _sync_final_auto() bir sonraki çalışmada yeni otomatik
+                    # poz değerini zorunlu olarak widget'a yazsın.
+                    st.session_state[last_auto_key] = None
+
                 toplam_pompa = st.selectbox(
                     f"{sekme_kodu} Toplam pompa adedi",
                     [1, 2, 3, 4, 5, 6],
@@ -2214,6 +2228,12 @@ if bolum_6_aktif:
                         f"{x} pompa ({0 if x == 1 else 1} yedek)"
                     ),
                     key=f"hidrofor_{i}_toplam_pompa",
+                    on_change=_pompa_adedi_degisti,
+                    args=(
+                        poz_final_key_for_callback,
+                        poz_final_manual_key_for_callback,
+                        poz_final_last_auto_key_for_callback,
+                    ),
                 )
                 asil_pompa = 1 if toplam_pompa <= 2 else toplam_pompa - 1
                 yedek_pompa = 0 if toplam_pompa == 1 else 1
