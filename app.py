@@ -2683,39 +2683,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
           # --- PİS SU POMPALARI GENEL ÇALIŞMA NOTU ---
           # Tüm pompa seçimleri rapora aktarıldıktan sonra yalnızca BİR KEZ eklenir.
-          # Farklı pompa grupları varsa ilgili çalışma düzenleri aynı not altında
-          # birleştirilir; böylece not her pompa seçiminin ardından tekrarlanmaz.
-          calisma_duzenleri = []
-          gorulen_duzenler = set()
-
-          for psp, pp in psp_parametreleri.items():
-            toplam_pompa = int(pp.get("toplam_adet", 0))
-            if toplam_pompa == 2:
-              calisma_duzeni = (
-                  "İki pompalı terfi istasyonunda pompalardan birincisi, normal "
-                  "tüketim zamanında çalışacak, ikinci pompa yedek konumunda "
-                  "olacaktır."
-              )
-            elif toplam_pompa == 3:
-              calisma_duzeni = (
-                  "Üç pompalı terfi istasyonunda pompalardan birincisi ve "
-                  "ikincisi, normal tüketim zamanında çalışacak, üçüncü pompa "
-                  "yedek konumunda olacaktır."
-              )
-            else:
-              asil_sayisi = int(pp.get("asil_adedi", 0))
-              yedek_sayisi = int(pp.get("yedek_adedi", 0))
-              calisma_duzeni = (
-                  f"{toplam_pompa} pompalı terfi istasyonunda {asil_sayisi} "
-                  f"pompa asıl, {yedek_sayisi} pompa yedek konumunda "
-                  "çalışacaktır."
-              )
-
-            if calisma_duzeni not in gorulen_duzenler:
-              calisma_duzenleri.append(calisma_duzeni)
-              gorulen_duzenler.add(calisma_duzeni)
-
-          if calisma_duzenleri:
+          if psp_parametreleri:
             not_basligi = doc.add_paragraph()
             not_basligi.paragraph_format.space_before = Pt(8)
             not_basligi.paragraph_format.space_after = Pt(3)
@@ -2725,8 +2693,11 @@ if st.button("Raporu Oluştur (.docx)"):
             run.bold = True
 
             doc.add_paragraph(
-                " ".join(calisma_duzenleri)
-                + " Pompaların yedeklemesi otomatik olarak münavebe ile "
+                "İki pompalı terfi istasyonunda pompalardan birincisi, normal "
+                "tüketim zamanında çalışacak, ikinci pompa yedek. üç pompalı "
+                "terfi istasyonunda pompalardan birincisi ve ikincisi, normal "
+                "tüketim zamanında çalışacak, üçüncü pompa yedek konumunda "
+                "olacaktır. Pompaların yedeklemesi otomatik olarak münavebe ile "
                 "sağlanacaktır. Pompaların elektrik panosu bu işlevleri "
                 "sağlayacak şekilde imal ve monte edilecektir."
             )
