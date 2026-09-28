@@ -2159,17 +2159,20 @@ if bolum_6_aktif:
                 key=f"hidrofor_{i}_manuel_tank",
             )
             if manuel_tank:
-                manuel_birim_litre = st.number_input(
-                    "Manuel tank kapasitesi (L) — her bir tank için",
+                # Manuel giriş TOPLAM tank kapasitesi olarak alınır.
+                # Tank adedi değiştiğinde bu toplam değer tank adedine bölünür.
+                manuel_toplam_litre = st.number_input(
+                    "Manuel toplam tank kapasitesi (L)",
                     min_value=1.0,
-                    value=float(tank_birim_litre),
+                    value=float(tank_toplam_litre),
                     step=50.0,
                     key=f"hidrofor_{i}_manuel_tank_litre",
                 )
-                tank_birim_litre = float(manuel_birim_litre)
-                tank_toplam_litre = tank_birim_litre * tank_adedi
-                # Manuel değer standart kapasiteyle tam eşleşiyorsa mevcut poz numarasını koru;
-                # aksi halde poz numarası boş bırakılır.
+                tank_toplam_litre = float(manuel_toplam_litre)
+                tank_birim_litre = tank_toplam_litre / tank_adedi
+
+                # Bölme sonrası ortaya çıkan birim kapasite standart poz
+                # kapasitesiyle tam eşleşiyorsa poz numarasını koru.
                 tank_poz = next(
                     (k.get("poz", "") for k in HIDROFOR_GENLESME_TANK_POZ_TABLOSU
                      if abs(float(k.get("kapasite_l", 0)) - tank_birim_litre) < 1e-9),
@@ -2187,11 +2190,81 @@ if bolum_6_aktif:
                 st.success("Seçilen toplam tank hacmi hesaplanan nominal hacmi karşılıyor.")
 
             st.markdown("**4. Pompa seçim kriterleri**")
+            st.info(
+                "Bu bölümde yukarıdaki hesaplardan gelen hidrofor seçim değerlerini özet olarak görebilir "
+                "ve isterseniz her bir değere manuel müdahale edebilirsiniz. Manuel değerler raporda esas alınır."
+            )
+
+            # 4. bölümde kullanılacak nihai seçim değerleri. Varsayılan olarak
+            # yukarıdaki otomatik hesapları getirir; kullanıcı isterse tek tek
+            # manuel olarak değiştirebilir.
+            manuel_debi_4 = st.checkbox(
+                "Pompa debisine manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_debi_4"
+            )
+            if manuel_debi_4:
+                nihai_vp_pompa_m3h = st.number_input(
+                    "Manuel bir pompa debisi [m³/h]",
+                    min_value=0.1, value=float(vp_pompa_m3h), step=1.0,
+                    key=f"hidrofor_{i}_manuel_vp_4",
+                )
+            else:
+                nihai_vp_pompa_m3h = float(vp_pompa_m3h)
+
+            manuel_pa_4 = st.checkbox(
+                "İşletme alt basıncına manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_pa_4"
+            )
+            if manuel_pa_4:
+                nihai_p_alt_mss = st.number_input(
+                    "Manuel işletme alt basıncı Pa [mSS]",
+                    min_value=0.0, value=float(p_alt_mss), step=0.5,
+                    key=f"hidrofor_{i}_palt_4",
+                )
+            else:
+                nihai_p_alt_mss = float(p_alt_mss)
+
+            manuel_pu_4 = st.checkbox(
+                "İşletme üst basıncına manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_pu_4"
+            )
+            if manuel_pu_4:
+                nihai_p_ust_mss = st.number_input(
+                    "Manuel işletme üst basıncı Pu [mSS]",
+                    min_value=0.0, value=float(p_ust_mss), step=0.5,
+                    key=f"hidrofor_{i}_pust_4",
+                )
+            else:
+                nihai_p_ust_mss = float(p_ust_mss)
+
+            # Genleşme tankı: yukarıda seçilen/manuel girilen toplam kapasiteyi
+            # bu özet bölümünde de gösterir ve istenirse burada değiştirmeye
+            # izin verir.
+            manuel_tank_4 = st.checkbox(
+                "Genleşme tankı kapasitesine manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_tank_4"
+            )
+            if manuel_tank_4:
+                nihai_tank_toplam_litre = st.number_input(
+                    "Manuel toplam genleşme tankı kapasitesi [L]",
+                    min_value=1.0, value=float(tank_toplam_litre), step=50.0,
+                    key=f"hidrofor_{i}_tank_toplam_4",
+                )
+                nihai_tank_birim_litre = nihai_tank_toplam_litre / tank_adedi
+            else:
+                nihai_tank_toplam_litre = float(tank_toplam_litre)
+                nihai_tank_birim_litre = float(tank_birim_litre)
+
+            # Pompa adedi, yedek pompa seçimiyle belirlenir.
             h_calisma = st.number_input(
                 "Pompa çalışma basma yüksekliği H [mSS]",
-                min_value=1.0, value=float(p_alt_mss), step=0.5,
+                min_value=1.0, value=float(nihai_p_alt_mss), step=0.5,
                 key=f"hidrofor_{i}_hcalisma",
             )
+            # Çalışma yüksekliği manuel değiştirilmediyse özet alt basıncıyla
+            # aynı kabul edilir; mevcut kontrol ayrıca korunur.
+            nihai_h_calisma = float(h_calisma)
+
             yedek_pompa = st.selectbox(
                 "Yedek pompa adedi", [0, 1, 2], index=1,
                 key=f"hidrofor_{i}_yedek",
@@ -2199,32 +2272,60 @@ if bolum_6_aktif:
             toplam_pompa = asil_pompa + yedek_pompa
             st.write(f"Toplam pompa adedi: **{toplam_pompa} adet ({asil_pompa} Asıl + {yedek_pompa} Yedek)**")
 
-            # Mevcut pompa hidrolik güç fonksiyonu, hidroforun pompa başına
-            # çalışma noktasını kontrol etmek için kullanılır.
-            hidrofor_pompa_hesap = pompa_hidrolik_hesap(vp_pompa_m3h, h_calisma, 0.60, 0.90)
-            st.write(f"Hesaplanan pompa motor gücü: **{hidrofor_pompa_hesap['motor_secim_kw']:.2f} kW/adet**")
+            hidrofor_pompa_hesap = pompa_hidrolik_hesap(nihai_vp_pompa_m3h, nihai_h_calisma, 0.60, 0.90)
 
-            # Performans eğrisi: mevcut üretici veritabanı uygunsa gösterilir.
+            manuel_guc_4 = st.checkbox(
+                "Pompa elektrik gücüne manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_guc_4"
+            )
+            if manuel_guc_4:
+                nihai_guc_kw = st.number_input(
+                    "Manuel pompa elektrik gücü [kW/adet]",
+                    min_value=0.1, value=float(hidrofor_pompa_hesap["motor_secim_kw"]), step=0.5,
+                    key=f"hidrofor_{i}_guc_4",
+                )
+            else:
+                nihai_guc_kw = float(hidrofor_pompa_hesap["motor_secim_kw"])
+
+            poz_kaydi = HIDROFOR_POZ_TABLOSU.get(toplam_pompa)
+            otomatik_hidrofor_poz = poz_kaydi["poz"] if poz_kaydi else ""
+            otomatik_poz_aciklama = poz_kaydi["aciklama"] if poz_kaydi else "Birim Poziyat tablosunda bu pompa adedi için poz tanımı henüz yüklenmedi."
+            manuel_poz_4 = st.checkbox(
+                "Cihaz Poz No'ya manuel müdahale et", value=False,
+                key=f"hidrofor_{i}_manuel_poz_4"
+            )
+            if manuel_poz_4:
+                nihai_hidrofor_poz = st.text_input(
+                    "Manuel Cihaz Poz No", value=otomatik_hidrofor_poz,
+                    key=f"hidrofor_{i}_poz_4",
+                ).strip()
+                nihai_poz_aciklama = otomatik_poz_aciklama
+            else:
+                nihai_hidrofor_poz = otomatik_hidrofor_poz
+                nihai_poz_aciklama = otomatik_poz_aciklama
+
+            # Özet kartı
+            st.markdown("#### Pompa seçim özeti")
+            o1, o2 = st.columns(2)
+            with o1:
+                st.write(f"**Pompa debisi:** {nihai_vp_pompa_m3h:.2f} m³/h / pompa")
+                st.write(f"**İşletme alt basıncı:** {nihai_p_alt_mss:.1f} mSS")
+                st.write(f"**İşletme üst basıncı:** {nihai_p_ust_mss:.1f} mSS")
+            with o2:
+                st.write(f"**Genleşme tankı:** {tank_adedi} × {nihai_tank_birim_litre:.0f} L = {nihai_tank_toplam_litre:.0f} L")
+                st.write(f"**Pompa elektrik gücü:** {nihai_guc_kw:.2f} kW/adet")
+                st.write(f"**Cihaz Poz No:** {nihai_hidrofor_poz or 'Tanımlı değil'}")
+
+            # Performans eğrisi, 4. bölümdeki nihai debi ve çalışma basıncıyla
+            # yeniden oluşturulur.
             hq_egrisi, hh_egrisi, hq_baslik, hq_model = pompa_secim_egrisi(
-                vp_pompa_m3h, h_calisma, pompa_marka_secimi
+                nihai_vp_pompa_m3h, nihai_h_calisma, pompa_marka_secimi
             )
             hidrofor_grafik = pompa_grafigi_png(
-                hq_egrisi, hh_egrisi, vp_pompa_m3h, h_calisma,
+                hq_egrisi, hh_egrisi, nihai_vp_pompa_m3h, nihai_h_calisma,
                 hq_baslik, anonim=False,
             )
             st.image(hidrofor_grafik, caption=hq_baslik, use_container_width=True)
-
-            poz_kaydi = HIDROFOR_POZ_TABLOSU.get(toplam_pompa)
-            if poz_kaydi:
-                hidrofor_poz = poz_kaydi["poz"]
-                hidrofor_poz_aciklama = poz_kaydi["aciklama"]
-                st.success(f"Cihaz Poz No: **{hidrofor_poz}**")
-            else:
-                hidrofor_poz = ""
-                hidrofor_poz_aciklama = "Birim Poziyat tablosunda bu pompa adedi için poz tanımı henüz yüklenmedi."
-                st.warning(
-                    f"{toplam_pompa} pompalı hidrofor için Cihaz Poz No, Birim Poziyat verisi yüklendiğinde otomatik seçilecektir."
-                )
 
             hidrofor_hesaplari.append({
                 "index": i,
@@ -2238,27 +2339,27 @@ if bolum_6_aktif:
                 "asil_pompa": asil_pompa,
                 "yedek_pompa": yedek_pompa,
                 "toplam_pompa": toplam_pompa,
-                "vp_pompa_m3h": vp_pompa_m3h,
+                "vp_pompa_m3h": nihai_vp_pompa_m3h,
                 "hp": kot_farki,
                 "ha": akma_basinci,
                 "hb": boru_kaybi,
                 "hc": sayac_kaybi,
-                "p_alt_mss": p_alt_mss,
-                "p_alt_atu": p_alt_atu,
-                "p_ust_atu": p_ust_atu,
-                "p_ust_mss": p_ust_mss,
+                "p_alt_mss": nihai_p_alt_mss,
+                "p_alt_atu": nihai_p_alt_mss / 10.0,
+                "p_ust_atu": nihai_p_ust_mss / 10.0,
+                "p_ust_mss": nihai_p_ust_mss,
                 "schalt": schalt,
                 "vn_m3": vn_m3,
                 "tank_adedi": tank_adedi,
                 "tank_bolme": tank_bolme,
                 "tank_birim_gerekli_litre": tank_birim_gerekli_litre,
-                "tank_birim_litre": tank_birim_litre,
-                "tank_toplam_litre": tank_toplam_litre,
+                "tank_birim_litre": nihai_tank_birim_litre,
+                "tank_toplam_litre": nihai_tank_toplam_litre,
                 "tank_poz": tank_poz,
-                "h": h_calisma,
-                "guc": hidrofor_pompa_hesap["motor_secim_kw"],
-                "poz": hidrofor_poz,
-                "poz_aciklama": hidrofor_poz_aciklama,
+                "h": nihai_h_calisma,
+                "guc": nihai_guc_kw,
+                "poz": nihai_hidrofor_poz,
+                "poz_aciklama": nihai_poz_aciklama,
                 "pompa_curve": list(zip(hq_egrisi, hh_egrisi)),
                 "pompa_egrisi_basligi": hq_baslik,
                 "pompa_modeli": hq_model["model"] if hq_model else "",
