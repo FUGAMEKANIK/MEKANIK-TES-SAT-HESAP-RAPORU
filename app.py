@@ -2485,6 +2485,13 @@ if bolum_6_aktif:
             # İŞLETME ÜST BASINCI (Pu) esas alınarak belirlenir.
             # Pompa gücü hesabında ise çalışma basıncı olarak alt basınç (Pa)
             # kullanılmaya devam eder.
+            # Kullanıcı isterse hidrofor Cihaz Poz No bilgisini hesap raporuna
+            # aktarabilir; istemezse poz programda görünür ancak raporda yazılmaz.
+            poz_rapora_eklensin_mi_hid = st.checkbox(
+                "Cihaz Poz Numarasını Hesap Raporuna Aktar",
+                value=True,
+                key=f"hidrofor_poz_rapor_chk_{sekme_kodu}",
+            )
             h_poz_secim = p_ust_mss
             poz_kaydi = hidrofor_poz_sec(toplam_pompa, vp_pompa_m3h, h_poz_secim)
             otomatik_hidrofor_poz = poz_kaydi["poz"] if poz_kaydi else ""
@@ -2563,6 +2570,7 @@ if bolum_6_aktif:
                 "h": h_calisma,
                 "guc": guc,
                 "poz": hidrofor_poz,
+                "poz_rapora_eklensin_mi": poz_rapora_eklensin_mi_hid,
                 "poz_aciklama": hidrofor_poz_aciklama,
                 "pompa_curve": list(zip(hq_egrisi, hh_egrisi)),
                 "pompa_egrisi_basligi": hq_baslik,
@@ -3715,12 +3723,13 @@ if st.button("Raporu Oluştur (.docx)"):
               if not tip_metni or tip_metni.startswith("Birim Poziyat") or tip_metni.startswith("Seçilen debi"):
                   tip_metni = HIDROFOR_TIP_METINLERI.get(hesap['toplam_pompa'], "Hidrofor")
               doc.add_paragraph(f"Tipi: {tip_metni}")
-              if hesap.get("poz"):
-                  doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
-              else:
-                  doc.add_paragraph(
-                      "Cihaz Poz No: Birim Poziyat verisi bu pompa adedi için henüz tanımlanmamıştır."
-                  )
+              if hesap.get("poz_rapora_eklensin_mi", True):
+                  if hesap.get("poz"):
+                      doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
+                  else:
+                      doc.add_paragraph(
+                          "Cihaz Poz No: Birim Poziyat verisi bu pompa adedi için henüz tanımlanmamıştır."
+                      )
 
               curve = hesap.get("pompa_curve", [])
               if curve:
