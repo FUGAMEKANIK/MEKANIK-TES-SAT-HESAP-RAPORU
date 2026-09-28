@@ -2284,20 +2284,31 @@ if bolum_6_aktif:
             hq_egrisi, hh_egrisi, hq_baslik, hq_model = pompa_secim_egrisi(
                 vp_pompa_m3h, h_calisma, pompa_marka_secimi
             )
+
+            # Pis Su Pompası Seçimi'ndeki mantıkla marka/model bilgisi
+            # PROGRAM EKRANINDA açıkça gösterilir; RAPORA aktarılmaz.
+            st.markdown("**Seçilen Pompa / Üretici Verisi**")
+            if hq_model:
+                marka = hq_model.get("marka", "")
+                seri = hq_model.get("seri", "")
+                model = hq_model.get("model", "")
+                kaynak = hq_model.get("kaynak", "")
+                st.success(f"Marka: **{marka}**  |  Model: **{model}**")
+                if seri:
+                    st.write(f"Seri: **{seri}**")
+                if kaynak:
+                    st.caption(f"Kaynak: {kaynak}")
+            else:
+                st.warning(
+                    "Bu çalışma noktası için üretici eğrisinde uygun marka/model "
+                    "bulunamadı. Programda yalnızca poz sınır eğrisi gösteriliyor."
+                )
+
             hidrofor_grafik = pompa_grafigi_png(
                 hq_egrisi, hh_egrisi, vp_pompa_m3h, h_calisma,
                 hq_baslik, anonim=False,
             )
             st.image(hidrofor_grafik, caption=hq_baslik, use_container_width=True)
-
-            # Marka ve model yalnızca program ekranında gösterilir; rapora aktarılmaz.
-            if hq_model:
-                st.info(
-                    f"**Seçilen pompa:** {hq_model.get('marka', '')} "
-                    f"{hq_model.get('model', '')}"
-                )
-            else:
-                st.warning("Bu çalışma noktası için üretici marka/model verisi bulunamadı.")
 
             if hidrofor_poz:
                 st.success(f"Cihaz Poz No: **{hidrofor_poz}**")
