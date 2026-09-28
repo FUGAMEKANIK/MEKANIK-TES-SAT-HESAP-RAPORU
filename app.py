@@ -2699,6 +2699,136 @@ if bolum_6_aktif:
                 run.font.size = Pt(12)
 
 
+
+# --- 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI ---
+# Kaynak: kullanıcı tarafından yüklenen BOYLER SEÇİMİ.xlsx / Sayfa1.
+# Excel'deki alt-üst tüketim aralığı korunur. Hesap başlangıç değeri,
+# aralığın ortalamasının en yakın 10 L'ye yuvarlanmış halidir ve kullanıcı
+# tarafından elle değiştirilebilir.
+SICAK_SU_EXCEL_VERILERI = {
+    "Bağımsız Ev": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "-", "Banyo": "90-250",
+        "Bulaşık Makinası": "40-68", "Evye": "35-45", "Çamaşır Teknesi": "70-90",
+        "Çamaşır Makinası": "70-90", "Duş": "136-250",
+    },
+    "Apartman": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "15-18", "Banyo": "76-250",
+        "Bulaşık Makinası": "40-68", "Evye": "35-45", "Çamaşır Teknesi": "70-90",
+        "Çamaşır Makinası": "70-90", "Duş": "114-250",
+    },
+    "Hastane": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "20-27", "Banyo": "76-250",
+        "Bulaşık Makinası": "160-680", "Evye": "70-90", "Çamaşır Teknesi": "75-126",
+        "Çamaşır Makinası": "75-126", "Duş": "250-340",
+    },
+    "Otel": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "30-36", "Banyo": "76-250",
+        "Bulaşık Makinası": "160-760", "Evye": "70-136", "Çamaşır Teknesi": "75-126",
+        "Çamaşır Makinası": "75-126", "Duş": "250-340",
+    },
+    "İşyeri": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "23-27", "Banyo": "-",
+        "Bulaşık Makinası": "-", "Evye": "35-90", "Çamaşır Teknesi": "-",
+        "Çamaşır Makinası": "-", "Duş": "114-136",
+    },
+    "Okul": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "50-68", "Banyo": "-",
+        "Bulaşık Makinası": "75-450", "Evye": "35-90", "Çamaşır Teknesi": "-",
+        "Çamaşır Makinası": "-", "Duş": "250-1000",
+    },
+    "Endüstriyel Tesis": {
+        "Özel Lavabo": "7,5 -9", "Genel Lavabo": "40-54", "Banyo": "-",
+        "Bulaşık Makinası": "75-450", "Evye": "70-90", "Çamaşır Teknesi": "-",
+        "Çamaşır Makinası": "-", "Duş": "750-1000",
+    },
+}
+
+def sicak_su_aralik_ortalama_10(aralik):
+    if not aralik or str(aralik).strip() == "-":
+        return None
+    metin = str(aralik).strip().replace("–", "-").replace("—", "-").replace(" ", "")
+    try:
+        parcalar = metin.split("-")
+        if len(parcalar) != 2:
+            return None
+        def sayiya_cevir(x):
+            return float(str(x).replace(",", "."))
+        alt = sayiya_cevir(parcalar[0])
+        ust = sayiya_cevir(parcalar[1])
+        ort = (alt + ust) / 2.0
+        return int((ort / 10.0) + 0.5) * 10
+    except (TypeError, ValueError):
+        return None
+
+sicak_su_hesap_detaylari = []
+sicak_su_gunluk_toplam_litre = 0.0
+sicak_su_yapi_tipi = "Bağımsız Ev"
+if bolum_633_aktif:
+    st.markdown("### • 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI")
+    st.caption("Kaynak tüketim değerleri: BOYLER SEÇİMİ.xlsx / Sayfa1")
+    sicak_su_yapi_tipi = st.selectbox(
+        "Yapı / kullanım tipi",
+        list(SICAK_SU_EXCEL_VERILERI.keys()),
+        key="sicak_su_yapi_tipi",
+    )
+    kaynak_satirlari = SICAK_SU_EXCEL_VERILERI[sicak_su_yapi_tipi]
+    mevcut_kullanimlar = [k for k, v in kaynak_satirlari.items() if sicak_su_aralik_ortalama_10(v) is not None]
+    sicak_su_secilen_kullanimlar = st.multiselect(
+        "Kullanım yerleri",
+        mevcut_kullanimlar,
+        key="sicak_su_secilen_kullanimlar",
+    )
+    if sicak_su_secilen_kullanimlar:
+        sicak_su_tablo = []
+        for sira, kullanim in enumerate(sicak_su_secilen_kullanimlar):
+            kaynak_aralik = kaynak_satirlari[kullanim]
+            varsayilan = sicak_su_aralik_ortalama_10(kaynak_aralik)
+            key_deger = f"sicak_su_birim_{sicak_su_yapi_tipi}_{kullanim}"
+            if key_deger not in st.session_state:
+                st.session_state[key_deger] = float(varsayilan)
+            c1, c2, c3, c4 = st.columns([2.1, 1.3, 1.5, 1.2])
+            with c1:
+                st.write(f"**{kullanim}**")
+            with c2:
+                st.caption(f"Excel: {kaynak_aralik} L")
+            with c3:
+                birim_deger = st.number_input(
+                    "Birim tüketim [L]",
+                    min_value=0.0,
+                    step=10.0,
+                    format="%.0f",
+                    key=key_deger,
+                )
+            with c4:
+                miktar = st.number_input(
+                    "Adet",
+                    min_value=0.0,
+                    step=1.0,
+                    format="%.0f",
+                    value=1.0,
+                    key=f"sicak_su_miktar_{sicak_su_yapi_tipi}_{kullanim}",
+                )
+            toplam = birim_deger * miktar
+            sicak_su_gunluk_toplam_litre += toplam
+            sicak_su_hesap_detaylari.append({
+                "kullanim": kullanim,
+                "kaynak_aralik": kaynak_aralik,
+                "birim_degeri": birim_deger,
+                "miktar": miktar,
+                "toplam_litre": toplam,
+            })
+            sicak_su_tablo.append({
+                "Kullanım yeri": kullanim,
+                "Excel aralığı [L]": kaynak_aralik,
+                "Hesapta kullanılan [L]": f"{birim_deger:.0f}",
+                "Adet": f"{miktar:.0f}",
+                "Toplam [L]": f"{toplam:.0f}",
+            })
+        st.table(sicak_su_tablo)
+        st.metric("Günlük toplam kullanma sıcak suyu ihtiyacı", f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", "."))
+    else:
+        st.info("Hesaplama için en az bir kullanım yeri seçiniz.")
+
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
   gecersiz_var = any(
@@ -3799,9 +3929,32 @@ if st.button("Raporu Oluştur (.docx)"):
                     doc.add_picture(grafik_buf, width=Inches(6.2))
                     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
-    # Bu sürümde yalnızca bölüm başlığı eklenmiştir; hesap içeriği sonraki adımda oluşturulacaktır.
     if bolum_633_aktif:
         doc.add_heading("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", level=2)
+        if sicak_su_hesap_detaylari:
+            doc.add_paragraph(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
+            doc.add_paragraph(
+                "Birim tüketim değerleri, BOYLER SEÇİMİ.xlsx dosyasındaki alt-üst değerlerin "
+                "aritmetik ortalamasının en yakın 10 L değerine yuvarlanmasıyla başlangıç değeri "
+                "olarak belirlenmiş; kullanıcı tarafından değiştirilebilmektedir."
+            )
+            t_sicak = doc.add_table(rows=1, cols=5)
+            t_sicak.style = "Table Grid"
+            basliklar = ["Kullanım yeri", "Excel aralığı [L]", "Hesapta kullanılan [L]", "Adet", "Toplam [L]"]
+            for i, baslik in enumerate(basliklar):
+                t_sicak.rows[0].cells[i].text = baslik
+            for detay in sicak_su_hesap_detaylari:
+                hucre = t_sicak.add_row().cells
+                hucre[0].text = detay["kullanim"]
+                hucre[1].text = str(detay["kaynak_aralik"])
+                hucre[2].text = f"{detay['birim_degeri']:.0f}"
+                hucre[3].text = f"{detay['miktar']:.0f}"
+                hucre[4].text = f"{detay['toplam_litre']:.0f}"
+            toplam = t_sicak.add_row().cells
+            toplam[0].text = "GENEL TOPLAM"
+            toplam[4].text = f"{sicak_su_gunluk_toplam_litre:.0f} L/gün"
+        else:
+            doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
 
     rapor_word_stillerini_uygula(doc)
 
