@@ -2164,6 +2164,7 @@ if bolum_6_aktif:
 
             st.write(f"Her tank için gerekli hacim: **{tank_birim_gerekli_litre:.0f} L**")
             st.write(f"Otomatik seçilen tank: **{tank_adedi} × {tank_birim_litre:.0f} L = {tank_toplam_litre:.0f} L**")
+            st.caption("Nihai tank kapasitesi aşağıdaki 4. Pompa seçim kriterleri bölümünden elle değiştirilebilir.")
 
             if tank_poz:
                 st.success(f"Genleşme tankı Cihaz Poz No: **{tank_poz}**")
@@ -2235,7 +2236,11 @@ if bolum_6_aktif:
             p_alt_atu = p_alt_mss / 10.0
             p_ust_atu = p_ust_mss / 10.0
 
-            # Tank kapasitesi: yukarıdaki otomatik/manuel tank sonucunu nihai değer olarak kullanır.
+            # GENLEŞME TANKI NİHAİ DEĞERİ
+            # Otomatik değer yukarıdaki hesaplamadan gelir. Kullanıcı bu alanı
+            # elle değiştirdiğinde girilen değer TOPLAM tank hacmi kabul edilir.
+            # Tank adedi değişirse manuel toplam değer korunur ve tank başına
+            # değer otomatik olarak yeniden bölünür.
             _sync_final_auto(tank_final_key, otomatik_tank_toplam_litre)
             tank_toplam_litre = st.number_input(
                 "Genleşme tankı toplam kapasitesi [L]",
@@ -2243,8 +2248,24 @@ if bolum_6_aktif:
                 key=tank_final_key,
                 on_change=_mark_final_manual,
                 args=(tank_final_key,),
+                help=(
+                    "Otomatik değer yukarıdaki hesaptan gelir. Elle değiştirirseniz "
+                    "bu değer nihai TOPLAM tank kapasitesi kabul edilir. Tank adedini "
+                    "değiştirirseniz toplam değer seçilen tank adedine bölünür."
+                ),
             )
             tank_birim_litre = tank_toplam_litre / tank_adedi if tank_adedi else tank_toplam_litre
+
+            # Manuel girilen toplam kapasite standart poz kapasitesine tam eşit
+            # geliyorsa, tank adedi ile bölünerek pozdaki birim kapasite bulunur.
+            # Standart listede karşılığı yoksa otomatik poz eşleşmesi korunmaz.
+            manuel_birim_poz = ""
+            for _kayit in HIDROFOR_GENLESME_TANK_POZ_TABLOSU:
+                if abs(float(_kayit.get("kapasite_l", 0)) - tank_birim_litre) < 0.01:
+                    manuel_birim_poz = _kayit.get("poz", "") or ""
+                    break
+            if st.session_state.get(f"{tank_final_key}__manual", False):
+                tank_poz = manuel_birim_poz
 
             st.write(
                 f"Toplam pompa adedi: **{toplam_pompa} adet "
