@@ -2017,18 +2017,22 @@ if bolum_6_aktif:
         ]
 
         def genlesme_tanki_sec(gerekli_litre, bolme_adedi, poz_tablosu):
-            if gerekli_litre <= 0:
-                return {"birim_gerekli_l": 0.0, "secilen_birim_l": 0.0, "tank_adedi": bolme_adedi, "toplam_l": 0.0, "poz": ""}
+            """Toplam gerekli hacmi bölme adedine göre tank başına indirir.
+            Poz kapasitesi her zaman tank başına gerekli hacmi karşılayan ilk
+            (yukarıdaki) standart kapasitedir. Seçilen kapasite tank başına
+            gösterilir; toplam kapasite ayrıca hesaplanır.
+            """
+            bolme_adedi = max(1, int(bolme_adedi))
+            gerekli_litre = max(0.0, float(gerekli_litre))
+            birim_gerekli = gerekli_litre / bolme_adedi
             kayitlar = sorted(
                 [k for k in poz_tablosu if float(k.get("kapasite_l", 0)) > 0],
                 key=lambda x: float(x["kapasite_l"]),
             )
-            birim_gerekli = gerekli_litre / bolme_adedi
             if not kayitlar:
-                return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim_gerekli, "tank_adedi": bolme_adedi, "toplam_l": gerekli_litre, "poz": ""}
-            # Tank kapasitesi daima yukarı doğru seçilir; hesaplanan değerden küçük tank seçilmez.
-            ust_kapasiteler = [k for k in kayitlar if float(k["kapasite_l"]) >= birim_gerekli]
-            secilen = ust_kapasiteler[0] if ust_kapasiteler else kayitlar[-1]
+                return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim_gerekli, "tank_adedi": bolme_adedi, "toplam_l": birim_gerekli * bolme_adedi, "poz": ""}
+            # Daima yukarı yuvarla: tank başına ihtiyaçtan küçük kapasite seçilmez.
+            secilen = next((k for k in kayitlar if float(k["kapasite_l"]) >= birim_gerekli), kayitlar[-1])
             birim = float(secilen["kapasite_l"])
             return {"birim_gerekli_l": birim_gerekli, "secilen_birim_l": birim, "tank_adedi": bolme_adedi, "toplam_l": birim * bolme_adedi, "poz": secilen.get("poz", "")}
 
@@ -3300,6 +3304,11 @@ if st.button("Raporu Oluştur (.docx)"):
               )
 
               doc.add_paragraph("HİDROFOR TANKI HESABI", style="List Bullet")
+              doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
+              doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
+              doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
+              doc.add_paragraph("- 2 veya 3 kW lık motor güçlerine kadar şalt sayısı 40'a kadar çıkabilir.")
+              doc.add_paragraph("- Büyük motorlarda şalt sayısı 20'ye çekildi.")
               doc.add_paragraph(
                   "VN = 0,33 × QP × (PÜST + 1) / ((PÜST − PALT) × S)"
               )
