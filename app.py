@@ -2983,6 +2983,56 @@ if bolum_633_aktif:
         f"V = **{secilen_boyler_hacmi} L** (Emniyetle)"
     )
 
+    # --- BOYLER ISITICI KAPASİTESİ ---
+    st.markdown("**BOYLER ISITICI KAPASİTESİ**")
+    col_q1, col_q2 = st.columns(2)
+    with col_q1:
+        boyler_ms = st.number_input(
+            "Sekonder su debisi (lt/h)",
+            min_value=0.0, step=50.0, value=2750.0,
+            format="%.0f", key="boyler_ms_v38"
+        )
+        boyler_ts_giris = st.number_input(
+            "Sekonder giriş sıcaklığı (°C)",
+            min_value=0.0, max_value=100.0, step=1.0, value=10.0,
+            format="%.0f", key="boyler_ts_giris_v38"
+        )
+        boyler_ts_cikis = st.number_input(
+            "Sekonder çıkış sıcaklığı (°C)",
+            min_value=0.0, max_value=100.0, step=1.0, value=60.0,
+            format="%.0f", key="boyler_ts_cikis_v38"
+        )
+    with col_q2:
+        boyler_mp = st.number_input(
+            "Primer su debisi (lt/h)",
+            min_value=0.0, step=50.0, value=0.0,
+            format="%.0f", key="boyler_mp_v38"
+        )
+        boyler_tp_giris = st.number_input(
+            "Primer giriş sıcaklığı (°C)",
+            min_value=0.0, max_value=150.0, step=1.0, value=80.0,
+            format="%.0f", key="boyler_tp_giris_v38"
+        )
+        boyler_tp_cikis = st.number_input(
+            "Primer çıkış sıcaklığı (°C)",
+            min_value=0.0, max_value=150.0, step=1.0, value=60.0,
+            format="%.0f", key="boyler_tp_cikis_v38"
+        )
+
+    boyler_c = 1.0
+    boyler_delta_ts = boyler_ts_cikis - boyler_ts_giris
+    boyler_delta_tp = boyler_tp_giris - boyler_tp_cikis
+    boyler_q_kcal_h = boyler_ms * boyler_c * boyler_delta_ts
+    boyler_q_kw = boyler_q_kcal_h * 0.001163
+    boyler_mp_gerekli = (boyler_q_kcal_h / (boyler_c * boyler_delta_tp)) if boyler_delta_tp > 0 else 0.0
+
+    st.markdown(
+        f"Q = {boyler_ms:.0f} lt/h × 1 kCal/kg.°C × ({boyler_ts_cikis:.0f}-{boyler_ts_giris:.0f}) °C"
+    )
+    st.markdown(
+        f"**Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW**"
+    )
+
     faktor_satirlari = [{
         "Parametre": "Kullanma eş zaman faktörü",
         "Değer": f"{kullanma_es_faktoru:.2f}",
@@ -4171,6 +4221,26 @@ if st.button("Raporu Oluştur (.docx)"):
             emniyet_par.add_run(" (Emniyetle)")
             if es_zaman_faktoru is not None:
                 doc.add_paragraph(f"Excel eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
+
+            # Boyler ısıtıcı kapasitesi
+            boyler_baslik = doc.add_paragraph()
+            boyler_baslik_run = boyler_baslik.add_run("BOYLER ISITICI KAPASİTESİ")
+            boyler_baslik_run.bold = True
+            boyler_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
+
+            doc.add_paragraph("Q = ms × c × Δts = mp × c × Δtp")
+            doc.add_paragraph("Q : İletilmesi gereken toplam ısı miktarı. (kCal/h)")
+            doc.add_paragraph("ms : Sekonder su debisi (lt/h)")
+            doc.add_paragraph("mp : Primer su debisi (lt/h)")
+            doc.add_paragraph("c : Suyun özgül ısısı. (°C) [1 kCal/kg.°C]")
+            doc.add_paragraph("Δts : Sekonder devre giriş-çıkış suyu sıcaklık farkı. (°C)")
+            doc.add_paragraph("Δtp : Primer devre giriş-çıkış suyu sıcaklık farkı. (°C)")
+            doc.add_paragraph(
+                f"Q = {boyler_ms:.0f} lt/h × 1 kCal/kg.°C × "
+                f"({boyler_ts_cikis:.0f}-{boyler_ts_giris:.0f}) °C"
+            )
+            q_par = doc.add_paragraph()
+            q_par.add_run(f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW").bold = True
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
 
