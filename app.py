@@ -4736,8 +4736,7 @@ if st.button("Raporu Oluştur (.docx)"):
             )
             q_par = doc.add_paragraph()
             q_par.add_run(
-                f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw_hesaplanan:.2f} kW "
-                f"(hesaplanan) → {int(boyler_q_kw)} kW (nihai)"
+                f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {int(boyler_q_kw)} kW"
             ).bold = True
 
             # Boyler / eşanjör seçimi
