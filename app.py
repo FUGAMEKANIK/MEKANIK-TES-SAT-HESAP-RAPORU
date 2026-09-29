@@ -3028,15 +3028,7 @@ if bolum_6_aktif:
 
 
 def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
-    """6.3.4 debi hesabını kullanıcının istediği rapor düzeninde PNG olarak üretir.
-
-    Rapor görünümü:
-      Q BOYLER = ... kcal/h ≈ ... kW
-
-      V =  [QBOYLER × 0,05 × (1+emniyet)] / 5.000 = ... m³/h
-
-    Emniyet oranı değiştirildiğinde katsayı ve sonuç görselde otomatik güncellenir.
-    """
+    """6.3.4 debi hesabını kompakt ve örnek görseldeki düzende üretir."""
     if q_boyler_kw is None:
         q_boyler_kw = float(q_boyler_kcal_h) * 0.001163
 
@@ -3046,112 +3038,34 @@ def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q
     factor_txt = f"{factor:.2f}".replace(".", ",")
     q_txt = f"{float(q_boyler_kcal_h):,.0f}".replace(",", ".")
     kw_txt = f"{float(q_boyler_kw):.0f}".replace(".", ",")
-    qs_txt = f"{float(q_secim_m3h):.2f}".replace(".", ",")
+    qh_txt = f"{float(q_emniyetli_m3h):.2f}".replace(".", ",")
 
-    # Kullanıcının gönderdiği örneğe yakın yatay oran ve sade beyaz arka plan.
-    fig = plt.figure(figsize=(7.2, 2.65), facecolor="white")
+    # Sıkı yerleşim: önceki sürümde oluşan büyük boşlukların tamamı kaldırıldı.
+    fig = plt.figure(figsize=(7.2, 1.85), facecolor="white")
     ax = fig.add_axes([0, 0, 1, 1])
     ax.axis("off")
 
-    # Üst satır: Q BOYLER = 137.500 kcal/h ≈ 160 kW
-    ax.text(
-        0.03, 0.88,
-        rf"$Q_{{BOYLER}} = {q_txt}\;kcal/h \approx {kw_txt}\;kW$",
-        ha="left", va="center", fontsize=14, color="black"
-    )
+    ax.text(0.04, 0.82,
+            rf"$Q_{{BOYLER}} = {q_txt}\;kcal/h \approx {kw_txt}\;kW$",
+            ha="left", va="center", fontsize=13, color="black")
 
-    # Alt satır: örnekteki gibi tek kesir ve sonuç.
-    # Emniyet katsayısı %15 ise 1,15; farklı oran girilirse otomatik değişir.
-    ax.text(
-        0.055, 0.53,
-        r"$V =$",
-        ha="left", va="center", fontsize=15, color="black"
-    )
-    ax.text(
-        0.19, 0.62,
-        rf"${q_txt}\;\times\;0,05\;\times\;{factor_txt}$",
-        ha="left", va="center", fontsize=14, color="black"
-    )
-    ax.plot([0.19, 0.58], [0.50, 0.50], color="black", linewidth=0.8)
-    ax.text(
-        0.385, 0.39,
-        r"$5.000$",
-        ha="center", va="center", fontsize=14, color="black"
-    )
-    ax.text(
-        0.62, 0.53,
-        rf"$= {qs_txt}\;m^3/h$",
-        ha="left", va="center", fontsize=14, color="black"
-    )
+    ax.text(0.075, 0.43, r"$V =$",
+            ha="left", va="center", fontsize=14, color="black")
+    ax.text(0.30, 0.57,
+            rf"${q_txt} \times 0,05 \times {factor_txt}$",
+            ha="center", va="center", fontsize=13, color="black")
+    ax.plot([0.18, 0.42], [0.43, 0.43], color="black", linewidth=0.8)
+    ax.text(0.30, 0.29, r"$5.000$",
+            ha="center", va="center", fontsize=13, color="black")
+    ax.text(0.48, 0.43,
+            rf"$= {qh_txt}\;m^3/h$",
+            ha="left", va="center", fontsize=13, color="black")
 
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=240, bbox_inches="tight", pad_inches=0.04, facecolor="white")
+    fig.savefig(buf, format="png", dpi=240, bbox_inches="tight", pad_inches=0.02, facecolor="white")
     plt.close(fig)
     buf.seek(0)
     return buf
-
-
-# ---------------------------------------------------------------------------
-# 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
-# Pis su terfi pompası ile aynı seçim mantığı: Q/H çalışma noktası -> POZ ->
-# üretici pompa eğrisi -> çalışma noktasının eğri üzerindeki kontrolü.
-# POZ aralıkları 2026 ÇŞİDB mekanik tesisat cetvellerindeki 25.350.3001-3011
-# değişken devirli ıslak rotorlu sirkülasyon pompası tanımlarına göre tutulmuştur.
-# Üretici eğrisi verisi bulunan modellerde çalışma noktası gerçek Q-H eğrisi
-# üzerinden kontrol edilir; model veri seti dışında kalan noktalarda sistem,
-# POZ sınır eğrisine düşer ve raporda bu durum açıkça belirtilir.
-# ---------------------------------------------------------------------------
-RE_SIRK_POMPA_POZ_TABLOSU = [
-    {"poz": "25.350.3001", "qmin": 0.5, "qmax": 3.5, "hmin": 1.0, "hmax": 3.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 0,5-3,5 m³/h; Basınç 1-3 mSS."},
-    {"poz": "25.350.3002", "qmin": 3.5, "qmax": 7.0, "hmin": 1.0, "hmax": 3.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 3,5-7,0 m³/h; Basınç 1-3 mSS."},
-    {"poz": "25.350.3003", "qmin": 7.0, "qmax": 11.0, "hmin": 1.0, "hmax": 3.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 7-11 m³/h; Basınç 1-3 mSS."},
-    {"poz": "25.350.3004", "qmin": 3.0, "qmax": 6.0, "hmin": 3.0, "hmax": 5.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 3-6 m³/h; Basınç 3-5 mSS."},
-    {"poz": "25.350.3005", "qmin": 6.0, "qmax": 9.0, "hmin": 3.0, "hmax": 5.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 6-9 m³/h; Basınç 3-5 mSS."},
-    {"poz": "25.350.3006", "qmin": 9.0, "qmax": 12.0, "hmin": 3.0, "hmax": 5.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 9-12 m³/h; Basınç 3-5 mSS."},
-    {"poz": "25.350.3007", "qmin": 12.0, "qmax": 17.0, "hmin": 3.0, "hmax": 5.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 12-17 m³/h; Basınç 3-5 mSS."},
-    {"poz": "25.350.3008", "qmin": 12.0, "qmax": 20.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 12-20 m³/h; Basınç 5-10 mSS."},
-    {"poz": "25.350.3009", "qmin": 20.0, "qmax": 28.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 20-28 m³/h; Basınç 5-10 mSS."},
-    {"poz": "25.350.3010", "qmin": 28.0, "qmax": 36.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 28-36 m³/h; Basınç 5-10 mSS."},
-    {"poz": "25.350.3011", "qmin": 36.0, "qmax": 50.0, "hmin": 5.0, "hmax": 10.0,
-     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 36-50 m³/h; Basınç 5-10 mSS."},
-]
-
-RE_SIRK_URETICI_POMPALAR = [
-    {
-        "marka": "Wilo", "seri": "Star-Z", "model": "Star-Z 20/5-3",
-        "q_min": 0.5, "q_max": 4.4, "h_max": 5.2, "p2_kw": 0.0604,
-        "curve": [(0.5,5.2),(1.0,5.0),(1.5,4.8),(2.0,4.5),(2.5,4.1),(3.0,3.6),(3.5,3.0),(4.0,2.2),(4.4,0.5)],
-        "kaynak": "Wilo Star-Z 20/5-3 üretici karakteristik eğrisi; ürün verileri Wilo Türkiye.",
-    },
-    {
-        "marka": "Wilo", "seri": "Star-Z", "model": "Star-Z 25/6-3",
-        "q_min": 0.5, "q_max": 5.1, "h_max": 5.6, "p2_kw": 0.0644,
-        "curve": [(0.5,5.6),(1.0,5.4),(1.5,5.2),(2.0,5.0),(2.5,4.7),(3.0,4.3),(3.5,3.9),(4.0,3.4),(4.5,2.7),(5.1,0.5)],
-        "kaynak": "Wilo Star-Z 25/6-3 üretici karakteristik eğrisi; ürün verileri Wilo Türkiye.",
-    },
-    {
-        "marka": "Grundfos", "seri": "COMFORT", "model": "COMFORT 15-14 B PM",
-        "q_min": 0.0, "q_max": 0.40, "h_max": 1.2, "p2_kw": 0.007,
-        "curve": [(0.0,1.2),(0.05,1.12),(0.10,1.00),(0.15,0.88),(0.20,0.74),(0.25,0.58),(0.30,0.42),(0.35,0.25),(0.40,0.05)],
-        "kaynak": "Grundfos COMFORT 15-14 B PM üretici Q-H karakteristik eğrisi.",
-    },
-    {
-        "marka": "Grundfos", "seri": "MAGNA3", "model": "MAGNA3 25-80 N",
-        "q_min": 0.0, "q_max": 10.0, "h_max": 8.0, "p2_kw": 0.116,
-        "curve": [(0.0,8.0),(1.0,7.9),(2.0,7.6),(3.0,7.2),(4.0,6.6),(5.0,5.9),(6.0,5.1),(7.0,4.2),(8.0,3.2),(9.0,2.0),(10.0,0.5)],
-        "kaynak": "Grundfos MAGNA3 25-80 üretici performans eğrisi; N modeli paslanmaz gövde seçeneği.",
-    },
-]
 
 def re_sirk_pompa_pozu_sec(q_m3h, h_mss):
     for kayit in RE_SIRK_POMPA_POZ_TABLOSU:
