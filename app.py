@@ -3449,6 +3449,8 @@ if bolum_633_aktif:
                 with _c4:
                     st.metric("Cihaz Poz No", _secim_pozu["poz"])
 
+                st.success(f"Seçilen Cihaz Poz No: **{_secim_pozu['poz']}**  |  Boyler: **{_secim_pozu['hacim']} L**  |  Debi: **{_secim_pozu['debi_80_60']} L/h**")
+
                 st.caption(
                     f"Her boyler için gerekli: {_gerekli_hacim_birim:.0f} L / "
                     f"{_gerekli_debi_birim:.0f} L/h"
@@ -4700,34 +4702,57 @@ if st.button("Raporu Oluştur (.docx)"):
                 "TEK SERPANTİNLİ BOYLER",
             )
 
+            # Rapor oluşturulurken de poz seçimini yeniden doğrula. Böylece
+            # Streamlit oturumunda seçim sonucu henüz oluşmamış olsa bile
+            # Cihaz Poz No rapora mutlaka aktarılır.
             boyler_secim_sonucu = st.session_state.get(
                 "boyler_secim_sonucu_v59",
                 None,
             )
 
-            if secili_tip == "TEK SERPANTİNLİ BOYLER" and boyler_secim_sonucu:
-                rapor_adet = int(boyler_secim_sonucu["adet"])
-                rapor_poz = boyler_secim_sonucu["poz"]
-                rapor_hacim = int(boyler_secim_sonucu["hacim"])
-                rapor_debi = int(boyler_secim_sonucu["debi"])
+            if secili_tip == "TEK SERPANTİNLİ BOYLER":
+                rapor_adet = int(
+                    st.session_state.get("boyler_adet_tek_serpantin_v59", 3)
+                )
+                rapor_adet = max(1, rapor_adet)
+
+                # Mevcut seçim sonucu aynı adet ile uyumluysa onu kullan;
+                # değilse rapor için doğrudan otomatik poz hesabını çalıştır.
+                if (
+                    isinstance(boyler_secim_sonucu, dict)
+                    and int(boyler_secim_sonucu.get("adet", 0)) == rapor_adet
+                    and boyler_secim_sonucu.get("poz")
+                ):
+                    _rapor_poz_kaydi = boyler_secim_sonucu
+                else:
+                    _rapor_poz_kaydi, _rapor_gerekli_hacim_birim, _rapor_gerekli_debi_birim, _rapor_poz_yeterli = _boyler_poz_sec(
+                        secilen_boyler_hacmi,
+                        boyler_ms,
+                        rapor_adet,
+                    )
+
+                rapor_poz = _rapor_poz_kaydi["poz"]
+                rapor_hacim = int(_rapor_poz_kaydi["hacim"])
+                rapor_debi = int(_rapor_poz_kaydi["debi"] if "debi" in _rapor_poz_kaydi else _rapor_poz_kaydi["debi_80_60"])
                 rapor_tip = (
                     "Tek Serpantinli , Dik Tip , bakır boru serpantinli-gövdeli, "
                     "İzolasyonlu, Elektrostatik Toz Boyalı"
                 )
             else:
-                # Diğer iki sekmenin poz tabloları henüz tanımlanmadığı için
-                # rapora seçilen sistem adı yazılır; poz alanı boş bırakılmaz.
                 rapor_adet = int(
                     st.session_state.get(
                         f"boyler_adet_{'cift_serpantin' if secili_tip == 'ÇİFT SERPANTİNLİ BOYLER' else 'plakali_esanjör'}_v59",
                         1,
                     )
                 )
-                rapor_poz = ""
-                rapor_hacim = int(round(secilen_boyler_hacmi / max(1, rapor_adet)))
-                rapor_debi = int(round(boyler_ms / max(1, rapor_adet)))
+                rapor_adet = max(1, rapor_adet)
+                rapor_poz = "Poz verisi henüz tanımlanmadı"
+                rapor_hacim = int(round(secilen_boyler_hacmi / rapor_adet))
+                rapor_debi = int(round(boyler_ms / rapor_adet))
                 rapor_tip = secili_tip
 
+            # İstenen rapor formatı: başlık + sabit hizalı etiket/değer satırları.
+            # Q, adet, hacim, debi ve Cihaz Poz No değerleri kalın yazılır.
             doc.add_paragraph("")
             boyler_rapor_baslik = doc.add_paragraph()
             boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
@@ -4756,12 +4781,15 @@ if st.button("Raporu Oluştur (.docx)"):
             for etiket, deger in boyler_rapor_satirlari:
                 p = doc.add_paragraph()
                 p.paragraph_format.space_after = Pt(0)
-                p.add_run(f"{etiket:<42}: ").bold = False
-                val_run = p.add_run(deger)
-                val_run.bold = True if etiket in {
+                p.paragraph_format.left_indent = Inches(0)
+                etiket_run = p.add_run(f"{etiket:<42}: ")
+                etiket_run.bold = False
+                deger_run = p.add_run(deger)
+                deger_run.bold = etiket in {
                     "Q BOYLER", "Adet", "Boyler hacmi",
                     "Boyler Debisi", "Cihaz Poz No"
-                } else False
+                }
+                deger_run.font.color.rgb = RGBColor(0, 0, 0)
 
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
