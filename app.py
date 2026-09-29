@@ -112,6 +112,7 @@ def add_toc(paragraph):
 
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
+# v46: Hiyerarşik bölüm seçimleri yukarı/aşağı yönde bağımsız çalışır.
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
 # RAPORA DAHİL EDİLECEK NUMARALI BÖLÜM SEÇİMLERİ
@@ -217,8 +218,32 @@ bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value
 bolum_632_aktif = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", value=True, key="rapor_bolum_632")
 bolum_633_aktif = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", value=True, key="rapor_bolum_633")
 
-# 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
-bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif or bolum_633_aktif)
+# Hiyerarşik seçim güvenliği:
+# Bir alt bölüm tek başına seçildiğinde üst bölümler de otomatik olarak
+# aktif kabul edilir. Böylece seçim sırası önemli olmaz; kullanıcı
+# yukarıdan aşağıya veya aşağıdan yukarıya seçim yapabilir.
+# TÜMÜNÜ KALDIR sonrasında bütün checkbox'lar False kaldığı için hiçbir
+# bölüm kendiliğinden tekrar açılmaz.
+bolum_51_aktif = bolum_51_aktif
+bolum_5_aktif = bolum_5_aktif or bolum_51_aktif
+
+bolum_61_aktif = bolum_61_aktif or bolum_611_aktif
+bolum_62_aktif = bolum_62_aktif or bolum_621_aktif or bolum_622_aktif
+bolum_63_aktif = bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif
+
+# 6 ana bölümü, herhangi bir alt bölümü seçilmişse otomatik aktif olur.
+bolum_6_aktif = (
+    bolum_6_aktif
+    or bolum_61_aktif
+    or bolum_611_aktif
+    or bolum_62_aktif
+    or bolum_621_aktif
+    or bolum_622_aktif
+    or bolum_63_aktif
+    or bolum_631_aktif
+    or bolum_632_aktif
+    or bolum_633_aktif
+)
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
