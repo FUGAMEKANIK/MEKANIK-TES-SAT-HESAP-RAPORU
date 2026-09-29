@@ -3028,51 +3028,64 @@ if bolum_6_aktif:
 
 
 def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
-    """6.3.4 debi hesabını iki aşamalı olarak, kullanıcının verdiği örnek düzende PNG üretir.
+    """6.3.4 debi hesabını kullanıcının istediği rapor düzeninde PNG olarak üretir.
 
-    1) Emniyetsiz temel debi: QBOYLER x 0,05 / 5.000
-    2) Emniyetli debi: temel debi x (1 + emniyet oranı)
-    3) Pompa seçim debisi ayrıca gösterilir.
+    Rapor görünümü:
+      Q BOYLER = ... kcal/h ≈ ... kW
+
+      V =  [QBOYLER × 0,05 × (1+emniyet)] / 5.000 = ... m³/h
+
+    Emniyet oranı değiştirildiğinde katsayı ve sonuç görselde otomatik güncellenir.
     """
     if q_boyler_kw is None:
         q_boyler_kw = float(q_boyler_kcal_h) * 0.001163
 
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(figsize=(7.2, 2.85), facecolor="white")
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.axis("off")
-
     factor = 1.0 + float(emniyet_orani) / 100.0
     factor_txt = f"{factor:.2f}".replace(".", ",")
     q_txt = f"{float(q_boyler_kcal_h):,.0f}".replace(",", ".")
-    qt_txt = f"{float(q_temsiz_m3h):.2f}".replace(".", ",")
-    qe_txt = f"{float(q_emniyetli_m3h):.2f}".replace(".", ",")
+    kw_txt = f"{float(q_boyler_kw):.0f}".replace(".", ",")
     qs_txt = f"{float(q_secim_m3h):.2f}".replace(".", ",")
 
+    # Kullanıcının gönderdiği örneğe yakın yatay oran ve sade beyaz arka plan.
+    fig = plt.figure(figsize=(7.2, 2.65), facecolor="white")
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis("off")
+
+    # Üst satır: Q BOYLER = 137.500 kcal/h ≈ 160 kW
     ax.text(
-        0.50, 0.86,
-        r"$V_0 = \dfrac{Q_{BOYLER} \times 0,05}{5.000}$",
-        ha="center", va="center", fontsize=16, color="black"
+        0.03, 0.88,
+        rf"$Q_{{BOYLER}} = {q_txt}\;kcal/h \approx {kw_txt}\;kW$",
+        ha="left", va="center", fontsize=14, color="black"
+    )
+
+    # Alt satır: örnekteki gibi tek kesir ve sonuç.
+    # Emniyet katsayısı %15 ise 1,15; farklı oran girilirse otomatik değişir.
+    ax.text(
+        0.055, 0.53,
+        r"$V =$",
+        ha="left", va="center", fontsize=15, color="black"
     )
     ax.text(
-        0.50, 0.60,
-        rf"$V_0 = \dfrac{{{q_txt} \times 0,05}}{{5.000}} = {qt_txt}\;m^3/h$",
-        ha="center", va="center", fontsize=16, color="black"
+        0.19, 0.62,
+        rf"${q_txt}\;\times\;0,05\;\times\;{factor_txt}$",
+        ha="left", va="center", fontsize=14, color="black"
     )
+    ax.plot([0.19, 0.58], [0.50, 0.50], color="black", linewidth=0.8)
     ax.text(
-        0.50, 0.34,
-        rf"$V = V_0 \times {factor_txt} = {qt_txt} \times {factor_txt} = {qe_txt}\;m^3/h$",
-        ha="center", va="center", fontsize=16, color="black"
-    )
-    ax.text(
-        0.50, 0.10,
-        rf"$V_{{seçim}} = {qs_txt}\;m^3/h$",
+        0.385, 0.39,
+        r"$5.000$",
         ha="center", va="center", fontsize=14, color="black"
+    )
+    ax.text(
+        0.62, 0.53,
+        rf"$= {qs_txt}\;m^3/h$",
+        ha="left", va="center", fontsize=14, color="black"
     )
 
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=240, bbox_inches="tight", pad_inches=0.05, facecolor="white")
+    fig.savefig(buf, format="png", dpi=240, bbox_inches="tight", pad_inches=0.04, facecolor="white")
     plt.close(fig)
     buf.seek(0)
     return buf
@@ -5952,7 +5965,7 @@ if st.button("Raporu Oluştur (.docx)"):
                 par = doc.add_paragraph()
                 par.paragraph_format.left_indent = Inches(0.15)
                 par.paragraph_format.space_before = Pt(0)
-                par.paragraph_format.space_after = Pt(2)
+                par.paragraph_format.space_after = Pt(1)
                 r1 = par.add_run(f"{label} ")
                 r1.font.name = "Arial"
                 r1.font.size = Pt(11)
@@ -5963,21 +5976,9 @@ if st.button("Raporu Oluştur (.docx)"):
                 r2.bold = bool(bold_value)
                 return par
 
-            _hesap_notu = doc.add_paragraph()
-            _hesap_notu.paragraph_format.space_before = Pt(2)
-            _hesap_notu.paragraph_format.space_after = Pt(6)
-            _rn = _hesap_notu.add_run(
-                f"Emniyetsiz debi: {_rs_qt:.2f} m³/h → "
-                f"%{float(_rs_rapor.get('emniyet_orani', 15.0)):.0f} emniyet uygulanması → "
-                f"Emniyetli debi: {_rs_qh:.2f} m³/h → "
-                f"Pompa seçim debisi: {_rs_qs:.2f} m³/h"
-            )
-            _rn.font.name = "Arial"
-            _rn.font.size = Pt(10.5)
-
             _baslik = doc.add_paragraph()
-            _baslik.paragraph_format.space_before = Pt(4)
-            _baslik.paragraph_format.space_after = Pt(5)
+            _baslik.paragraph_format.space_before = Pt(2)
+            _baslik.paragraph_format.space_after = Pt(3)
             _br = _baslik.add_run("Seçilen Pompa:")
             _br.font.name = "Arial"
             _br.font.size = Pt(11.5)
