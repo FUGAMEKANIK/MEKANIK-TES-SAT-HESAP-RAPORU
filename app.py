@@ -3464,7 +3464,8 @@ if bolum_633_aktif:
         {"poz": "25.175.2511", "hacim": 1500},
         {"poz": "25.175.2512", "hacim": 2000},
         {"poz": "25.175.2513", "hacim": 2500},
-        {"poz": "25.175.2514", "hacim": 3000},
+        # Poz 25.175.2514 için kullanılacak emniyetli kapasite: V = 3250 L
+        {"poz": "25.175.2514", "hacim": 3250},
     ]
 
     AKUMULASYON_TANKI_TIP = (
@@ -3782,7 +3783,7 @@ if bolum_633_aktif:
                 # hesaplanır. V84'te eski session-state anahtarı özellikle
                 # kullanılmıyor.
                 _akum_otomatik_oneri = (
-                    min(100, max(1, int(math.ceil(_akum_gerekli / 3000.0))))
+                    min(100, max(1, int(math.ceil(_akum_gerekli / 3250.0))))
                     if _akum_gerekli > 0 else 1
                 )
                 _akum_adet_key = "plakali_akumulasyon_adedi_v84"
