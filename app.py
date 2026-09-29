@@ -145,38 +145,113 @@ def _tum_bolumleri_kaldir():
     for _anahtar in BOLUM_SECIM_ANAHTARLARI:
         st.session_state[_anahtar] = False
 
-col_toplu_1, col_toplu_2 = st.columns(2)
-with col_toplu_1:
-    st.button(
-        "☑ TÜMÜNÜ SEÇ",
-        key="rapor_tumunu_sec_v54",
-        on_click=_tum_bolumleri_sec,
-        use_container_width=True,
-    )
-with col_toplu_2:
-    st.button(
-        "☐ TÜMÜNÜ KALDIR",
-        key="rapor_tumunu_kaldir_v54",
-        on_click=_tum_bolumleri_kaldir,
-        use_container_width=True,
+# ---------------------------------------------------------------------------
+# SOL MENÜ / BÖLÜM NAVİGASYONU
+# ---------------------------------------------------------------------------
+# Bölüm seçimleri artık sol menüde tutulur. Bölüm adları aynı zamanda
+# sayfadaki ilgili başlığa bağlantıdır; böylece tıklandığında doğrudan
+# seçilen bölüme gidilir. Checkbox'lar rapora dahil/hariç mantığını korur.
+_BOLUM_NAV = [
+    ("1. Kapak Bilgileri", "bolum_1", None),
+    ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
+    ("3. Mekanik Tesisat Proje Kapsamı", "bolum_3", "rapor_bolum_3"),
+    ("4. Tesiste Kullanılacak Isı İletim Akışkanları", "bolum_4", "rapor_bolum_4"),
+    ("5. İklim, Konfor Şartları ve Tasarım Kriterleri", "bolum_5", "rapor_bolum_5"),
+    ("5.1 Dış Hava Tasarım Kriterleri", "bolum_51", "rapor_bolum_51"),
+    ("6. Sıhhi Tesisat", "bolum_6", "rapor_bolum_6"),
+    ("6.1 Sıhhi Tesisat Ön Bilgiler", "bolum_61", "rapor_bolum_61"),
+    ("6.1.1 Temiz Su Hesabı", "bolum_611", "rapor_bolum_611"),
+    ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
+    ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
+    ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
+    ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
+    ("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", "bolum_631", "rapor_bolum_631"),
+    ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
+    ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
+]
+
+with st.sidebar:
+    st.markdown("## 📑 PROJE BÖLÜMLERİ")
+    st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.button(
+            "☑ TÜMÜNÜ SEÇ",
+            key="rapor_tumunu_sec_v92",
+            on_click=_tum_bolumleri_sec,
+            use_container_width=True,
+        )
+    with c2:
+        st.button(
+            "☐ TÜMÜNÜ KALDIR",
+            key="rapor_tumunu_kaldir_v92",
+            on_click=_tum_bolumleri_kaldir,
+            use_container_width=True,
+        )
+
+    st.markdown("### Bölümler")
+    for _baslik, _anchor, _key in _BOLUM_NAV:
+        if _key is None:
+            st.markdown(
+                f'<a class="proje-nav-tab proje-nav-ana" href="#{_anchor}">🏠 {_baslik}</a>',
+                unsafe_allow_html=True,
+            )
+        else:
+            # Bölüm adı doğrudan tıklanabilir sekmedir; altındaki checkbox
+            # yalnızca rapora dahil/hariç kararını verir.
+            st.markdown(
+                f'<a class="proje-nav-tab" href="#{_anchor}">▸ {_baslik}</a>',
+                unsafe_allow_html=True,
+            )
+            st.checkbox("Rapora dahil", key=_key)
+
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] { min-width: 330px; max-width: 380px; }
+        [data-testid="stSidebar"] .proje-nav-tab {
+            display:block;
+            margin:2px 0 3px 0;
+            padding:5px 8px;
+            border-radius:6px;
+            text-decoration:none !important;
+            font-size:0.80rem;
+            color:inherit;
+            background:rgba(128,128,128,0.08);
+        }
+        [data-testid="stSidebar"] .proje-nav-tab:hover {
+            background:rgba(128,128,128,0.18);
+        }
+        [data-testid="stSidebar"] .proje-nav-ana {
+            margin-left:0;
+            font-weight:600;
+            background:rgba(70,120,200,0.10);
+        }
+        [data-testid="stSidebar"] [data-testid="stCheckbox"] {
+            margin-bottom:0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
 
-
-bolum_2_aktif_ui = st.checkbox("2. Uygulanacak Standart ve Yönetmelikler", key="rapor_bolum_2")
-bolum_3_aktif_ui = st.checkbox("3. Mekanik Tesisat Proje Kapsamı", key="rapor_bolum_3")
-bolum_4_aktif_ui = st.checkbox("4. Tesiste Kullanılacak Isı İletim Akışkanları", key="rapor_bolum_4")
-bolum_5_aktif_ui = st.checkbox("5. İklim, Konfor Şartları ve Tasarım Kriterleri", key="rapor_bolum_5")
-bolum_51_aktif_ui = st.checkbox("5.1 Dış Hava Tasarım Kriterleri", key="rapor_bolum_51")
-bolum_6_aktif_ui = st.checkbox("6. Sıhhi Tesisat", key="rapor_bolum_6")
-bolum_61_aktif_ui = st.checkbox("6.1 Sıhhi Tesisat Ön Bilgiler", key="rapor_bolum_61")
-bolum_611_aktif_ui = st.checkbox("6.1.1 Temiz Su Hesabı", key="rapor_bolum_611")
-bolum_62_aktif_ui = st.checkbox("6.2 Pis Su Tesisatı Esasları", key="rapor_bolum_62")
-bolum_621_aktif_ui = st.checkbox("6.2.1 Pis Su Hesabı", key="rapor_bolum_621")
-bolum_622_aktif_ui = st.checkbox("6.2.2 Pis Su Terfi Pompaları", key="rapor_bolum_622")
-bolum_63_aktif_ui = st.checkbox("6.3 Sıhhi Tesisat Cihaz Seçimleri", key="rapor_bolum_63")
-bolum_631_aktif_ui = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", key="rapor_bolum_631")
-bolum_632_aktif_ui = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", key="rapor_bolum_632")
-bolum_633_aktif_ui = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", key="rapor_bolum_633")
+# Ana ekranda kullanılacak eski değişken adları korunuyor.
+bolum_2_aktif_ui = st.session_state.get("rapor_bolum_2", False)
+bolum_3_aktif_ui = st.session_state.get("rapor_bolum_3", False)
+bolum_4_aktif_ui = st.session_state.get("rapor_bolum_4", False)
+bolum_5_aktif_ui = st.session_state.get("rapor_bolum_5", False)
+bolum_51_aktif_ui = st.session_state.get("rapor_bolum_51", False)
+bolum_6_aktif_ui = st.session_state.get("rapor_bolum_6", False)
+bolum_61_aktif_ui = st.session_state.get("rapor_bolum_61", False)
+bolum_611_aktif_ui = st.session_state.get("rapor_bolum_611", False)
+bolum_62_aktif_ui = st.session_state.get("rapor_bolum_62", False)
+bolum_621_aktif_ui = st.session_state.get("rapor_bolum_621", False)
+bolum_622_aktif_ui = st.session_state.get("rapor_bolum_622", False)
+bolum_63_aktif_ui = st.session_state.get("rapor_bolum_63", False)
+bolum_631_aktif_ui = st.session_state.get("rapor_bolum_631", False)
+bolum_632_aktif_ui = st.session_state.get("rapor_bolum_632", False)
+bolum_633_aktif_ui = st.session_state.get("rapor_bolum_633", False)
 
 # ---------------------------------------------------------------------------
 # ALT GRUPLAR İÇİN TOPLU SEÇİM BUTONLARI
@@ -279,6 +354,7 @@ depolama_faktoru = 0.0
 hidrofor_hesaplari = []
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
+st.markdown('<div id="bolum_1"></div>', unsafe_allow_html=True)
 st.header("1. Kapak Bilgileri")
 sirket_adi = st.text_input(
     "Şirket / Kuruluş İsmi",
@@ -294,6 +370,7 @@ tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
 if bolum_2_aktif:
   # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
+  st.markdown('<div id="bolum_2"></div>', unsafe_allow_html=True)
   st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_2_aktif else "Hariç"))
   st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
@@ -445,6 +522,7 @@ if bolum_2_aktif:
 
 if bolum_3_aktif:
   # --- 3. SEKME / BÖLÜM: MEKANİK TESİSAT PROJE KAPSAMI ---
+  st.markdown('<div id="bolum_3"></div>', unsafe_allow_html=True)
   st.header("3. MEKANİK TESİSAT PROJE KAPSAMI")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_3_aktif else "Hariç"))
   st.write(
@@ -534,6 +612,7 @@ rej_boyler = st.session_state.get("rej_boyler_v53", "80/60")
 
 if bolum_4_aktif:
   # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
+  st.markdown('<div id="bolum_4"></div>', unsafe_allow_html=True)
   st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_4_aktif else "Hariç"))
   st.write(
@@ -672,9 +751,11 @@ if bolum_4_aktif:
 
 if bolum_5_aktif:
   # --- 5. BÖLÜM: İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+  st.markdown('<div id="bolum_5"></div>', unsafe_allow_html=True)
   st.header("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_5_aktif else "Hariç"))
   if bolum_51_aktif:
+    st.markdown('<div id="bolum_51"></div>', unsafe_allow_html=True)
     st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
 
     iller_listesi = sorted(list(iklim_veritabani.keys()))
@@ -716,9 +797,11 @@ if bolum_6_aktif:
   sih_depo_konumlari = ["Bodrum kat"]
 
   # --- 6. BÖLÜM: SIHHİ TESİSAT ---
+  st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
   st.header("6. SIHHİ TESİSAT")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_6_aktif else "Hariç"))
   if bolum_61_aktif:
+    st.markdown('<div id="bolum_61"></div>', unsafe_allow_html=True)
     st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
     st.write(
         "Raporun 6.1 maddesinde yer almasını istediğiniz ön bilgi esaslarını"
@@ -905,11 +988,13 @@ if bolum_6_aktif:
     )
 
   # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+  st.markdown('<div id="bolum_611"></div>', unsafe_allow_html=True)
   st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
 
 
   if bolum_62_aktif:
     # --- 6.2 PİS SU TESİSATI ---
+    st.markdown('<div id="bolum_62"></div>', unsafe_allow_html=True)
     st.subheader("6.2 PİS SU TESİSATI ESASLARI")
     pissu_keys = [
         "pissu_sec_1",
@@ -1001,6 +1086,7 @@ if bolum_6_aktif:
         ("300", "-", '12"', "(518.400-1.440.000)"),
     ]
 
+    st.markdown('<div id="bolum_621"></div>', unsafe_allow_html=True)
     st.subheader("6.2.1 Pis Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
     pissu_t1_data = [
         ("KULLANMA YERİ", "YÜKLEME BİRİMİ"),
@@ -1028,6 +1114,7 @@ if bolum_6_aktif:
     # ---------------------------------------------------------------------------
     # 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
     # ---------------------------------------------------------------------------
+    st.markdown('<div id="bolum_622"></div>', unsafe_allow_html=True)
     st.subheader(
         "6.2.2 Her Bir Terfi Pompası İçin Özel Debi ve Güç Hesap Modülü"
     )
@@ -1718,7 +1805,9 @@ if bolum_6_aktif:
   if bolum_63_aktif:
     # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
     if bolum_631_aktif:
+        st.markdown('<div id="bolum_63"></div>', unsafe_allow_html=True)
         st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
+        st.markdown('<div id="bolum_631"></div>', unsafe_allow_html=True)
         st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
         poz_gosterilsin_mi = st.checkbox(
@@ -2107,6 +2196,7 @@ if bolum_6_aktif:
         )
 
     if bolum_632_aktif:
+        st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
         st.subheader("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ")
         st.markdown("#### Genel Bilgiler ve Hidrofor Seçim Esasları")
 
@@ -3040,6 +3130,7 @@ sicak_su_gunluk_toplam_litre = 0.0
 sicak_su_yapi_tipi = "Bağımsız Ev"
 
 if bolum_633_aktif:
+    st.markdown('<div id="bolum_633"></div>', unsafe_allow_html=True)
     st.markdown("### • 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI")
     st.caption("Kaynak tüketim değerleri: BOYLER SEÇİMİ.xlsx / Sayfa1")
     sicak_su_yapi_tipi = st.selectbox(
