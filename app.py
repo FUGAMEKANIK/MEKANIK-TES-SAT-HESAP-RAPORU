@@ -2770,6 +2770,7 @@ ES_ZAMAN_FAKTORLERI = {
 }
 
 def sicak_su_aralik_ortalama_10(aralik):
+    """Excel alt-üst aralığının ortalamasını en yakın 10 L'ye yarım-yukarı yuvarlar."""
     if not aralik or str(aralik).strip() == "-":
         return None
     metin = str(aralik).strip().replace("–", "-").replace("—", "-").replace(" ", "")
@@ -2782,7 +2783,7 @@ def sicak_su_aralik_ortalama_10(aralik):
         alt = sayiya_cevir(parcalar[0])
         ust = sayiya_cevir(parcalar[1])
         ort = (alt + ust) / 2.0
-        return int((ort / 10.0) + 0.5) * 10
+        return int((ort + 5.0) // 10.0) * 10
     except (TypeError, ValueError):
         return None
 
@@ -2803,7 +2804,7 @@ if bolum_633_aktif:
     # Kullanım yerleri artık seçim kutusu yerine sabit ve düzenlenebilir bir tablodur.
     # Kullanıcı yalnızca Adet ve Birim Tüketim değerlerini değiştirir.
     # Adet = 0 olan satırlar hesaba dahil edilmez.
-    tablo_key = f"sicak_su_kullanim_tablosu_{sicak_su_yapi_tipi}"
+    tablo_key = f"sicak_su_kullanim_tablosu_v30_{sicak_su_yapi_tipi}"
     satirlar = []
     for kullanim, kaynak_aralik in kaynak_satirlari.items():
         varsayilan = sicak_su_aralik_ortalama_10(kaynak_aralik)
@@ -2828,8 +2829,6 @@ if bolum_633_aktif:
     varsayilan_df = pd.DataFrame(satirlar)
     if tablo_key not in st.session_state:
         st.session_state[tablo_key] = varsayilan_df.copy()
-
-    st.caption("Birim tüketim değerleri Excel'deki alt-üst değerlerin ortalamasının en yakın 10 L'ye yuvarlanmış başlangıç değeridir. İstediğiniz değeri elle değiştirebilirsiniz. Adet = 0 ise satır hesaba dahil edilmez.")
 
     edited_df = st.data_editor(
         st.session_state[tablo_key],
@@ -4054,11 +4053,6 @@ if st.button("Raporu Oluştur (.docx)"):
         doc.add_heading("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", level=2)
         if sicak_su_hesap_detaylari:
             doc.add_paragraph(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
-            doc.add_paragraph(
-                "Birim tüketim değerleri, BOYLER SEÇİMİ.xlsx dosyasındaki alt-üst değerlerin "
-                "aritmetik ortalamasının en yakın 10 L değerine yuvarlanmasıyla başlangıç değeri "
-                "olarak belirlenmiş; kullanıcı tarafından değiştirilebilmektedir."
-            )
             t_sicak = doc.add_table(rows=1, cols=5)
             t_sicak.style = "Table Grid"
             basliklar = ["Kullanım yeri", "Excel aralığı [L]", "Hesapta kullanılan [L]", "Adet", "Toplam [L]"]
