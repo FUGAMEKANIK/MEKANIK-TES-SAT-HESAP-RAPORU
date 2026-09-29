@@ -5903,12 +5903,11 @@ if st.button("Raporu Oluştur (.docx)"):
             _rs_factor_txt = f"{_rs_factor:.2f}".replace(".", ",")
             _rs_qh_txt = f"{_rs_qh:.2f}"
 
-            # Q BOYLER satırı
+            # Q BOYLER satırı — hesap bloğunu sayfanın orta kolonunda toplar.
             _qpar = doc.add_paragraph()
-            _qpar.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            _qpar.paragraph_format.left_indent = Inches(0.15)
+            _qpar.alignment = WD_ALIGN_PARAGRAPH.CENTER
             _qpar.paragraph_format.space_before = Pt(2)
-            _qpar.paragraph_format.space_after = Pt(7)
+            _qpar.paragraph_format.space_after = Pt(6)
             _qr = _qpar.add_run(
                 f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW"
             )
@@ -5916,31 +5915,23 @@ if st.button("Raporu Oluştur (.docx)"):
             _qr.font.size = Pt(11.5)
             _qr.bold = True
 
-            # Kullanıcının örneğindeki kesir düzeni. Courier New kullanılması,
-            # pay/payda ve çizginin Word'de sabit genişlikte hizalanmasını sağlar.
-            _f1 = doc.add_paragraph()
-            _f1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _f1.paragraph_format.space_before = Pt(0)
-            _f1.paragraph_format.space_after = Pt(0)
-            _r = _f1.add_run(
-                f"                 {_rs_q_txt} × 0,05 × {_rs_factor_txt}"
-            )
-            _r.font.name = "Courier New"
-            _r.font.size = Pt(10.5)
-
-            _f2 = doc.add_paragraph()
-            _f2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _f2.paragraph_format.space_before = Pt(0)
-            _f2.paragraph_format.space_after = Pt(8)
-            _r = _f2.add_run(
-                f"V = -------------------------------- = {_rs_qh_txt} m³/h\n"
+            # Formül tek bir sabit genişlikli blokta tutulur; böylece pay,
+            # çizgi, payda ve sonuç aynı merkez ekseninde görünür.
+            _formul = doc.add_paragraph()
+            _formul.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _formul.paragraph_format.space_before = Pt(0)
+            _formul.paragraph_format.space_after = Pt(7)
+            _fr = _formul.add_run(
+                f"              {_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
+                f"V = ------------------------------- = {_rs_qh_txt} m³/h\n"
                 f"                         5.000"
             )
-            _r.font.name = "Courier New"
-            _r.font.size = Pt(10.5)
+            _fr.font.name = "Courier New"
+            _fr.font.size = Pt(10.5)
 
-            # Seçilen Pompa başlığı
+            # Seçilen Pompa başlığı ve altındaki değerler aynı sol hizada başlar.
             _baslik = doc.add_paragraph()
+            _baslik.paragraph_format.left_indent = Inches(0.35)
             _baslik.paragraph_format.space_before = Pt(0)
             _baslik.paragraph_format.space_after = Pt(3)
             _br = _baslik.add_run("Seçilen Pompa :")
@@ -5948,14 +5939,14 @@ if st.button("Raporu Oluştur (.docx)"):
             _br.font.size = Pt(11.5)
             _br.bold = True
 
-            # Kullanıcının istediği ':' biçimi; Cihaz Poz No ise '=' biçiminde kalır.
+            # Etiketler tek bir kolon gibi hizalanır; değerler de aynı kolondan başlar.
             def _rs_rapor_satiri(label, value, bold_value=False, equals=False):
                 par = doc.add_paragraph()
-                par.paragraph_format.left_indent = Inches(0.35)
+                par.paragraph_format.left_indent = Inches(0.10)
                 par.paragraph_format.space_before = Pt(0)
                 par.paragraph_format.space_after = Pt(1)
-                r1 = par.add_run(f"{label:<9}")
-                r1.font.name = "Arial"
+                r1 = par.add_run(f"{label:<12}")
+                r1.font.name = "Courier New"
                 r1.font.size = Pt(11)
                 r1.bold = True
                 sep = " = " if equals else ": "
