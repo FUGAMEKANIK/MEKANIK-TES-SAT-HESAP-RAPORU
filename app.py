@@ -5942,17 +5942,22 @@ if st.button("Raporu Oluştur (.docx)"):
             _qr.font.size = Pt(11.5)
             _qr.bold = True
 
+            # Q BOYLER ile formül arasında yaklaşık bir Enter mesafesi.
+            _formula_spacer = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 0)
+            _formula_spacer.paragraph_format.line_spacing = 1.0
+            _formula_spacer.add_run(" ").font.size = Pt(10.5)
+
             # Formül: Word'de dağılmaması için üç sabit kolon kullanılır.
             # V= sola yaslı, pay ve payda mevcut örneğe göre bir karakter sola alınır.
             _ft = _rs_cell.add_table(rows=1, cols=3)
             _ft.autofit = False
             _ft.alignment = WD_TABLE_ALIGNMENT.LEFT
             _ft.columns[0].width = Inches(0.55)
-            _ft.columns[1].width = Inches(3.35)
-            _ft.columns[2].width = Inches(2.35)
+            _ft.columns[1].width = Inches(3.00)
+            _ft.columns[2].width = Inches(2.70)
             _fc = _ft.rows[0].cells
             for _c in _fc:
-                _c.width = Inches(0.55) if _c is _fc[0] else (Inches(3.35) if _c is _fc[1] else Inches(2.35))
+                _c.width = Inches(0.55) if _c is _fc[0] else (Inches(3.00) if _c is _fc[1] else Inches(2.70))
                 _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 _tcPr = _c._tc.get_or_add_tcPr()
                 _b = _tcPr.first_child_found_in("w:tcBorders")
@@ -5973,9 +5978,9 @@ if st.button("Raporu Oluştur (.docx)"):
             _pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
             _pf.paragraph_format.space_before = Pt(0); _pf.paragraph_format.space_after = Pt(0)
             _rf = _pf.add_run(
-                f" {_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
+                f"{_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
                 f"-------------------------------\n"
-                f"             5.000"
+                f"          5.000"
             )
             _rf.font.name="Courier New"; _rf.font.size=Pt(10.5)
 
@@ -6023,13 +6028,13 @@ if st.button("Raporu Oluştur (.docx)"):
                     _p.paragraph_format.space_after = Pt(0)
                     _p.paragraph_format.line_spacing = 1.0
                 p1.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                r1 = p1.add_run(label); r1.font.name="Arial"; r1.font.size=Pt(11); r1.bold=True
+                r1 = p1.add_run(label); r1.font.name="Arial"; r1.font.size=Pt(11); r1.bold=False; r1.font.color.rgb = RGBColor(0,0,0)
                 p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                r2 = p2.add_run("=" if equals else ":"); r2.font.name="Arial"; r2.font.size=Pt(11); r2.bold=True
+                r2 = p2.add_run("=" if equals else ":"); r2.font.name="Arial"; r2.font.size=Pt(11); r2.bold=False; r2.font.color.rgb = RGBColor(0,0,0)
                 p3.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                r3 = p3.add_run(str(value)); r3.font.name="Arial"; r3.font.size=Pt(11); r3.bold=bool(bold_value)
+                r3 = p3.add_run(str(value)); r3.font.name="Arial"; r3.font.size=Pt(11); r3.bold=False; r3.font.color.rgb = RGBColor(0,0,0)
 
-            _pump_row("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h")
+            _pump_row("V", f"{_rs_rapor.get('q_m3h', 0.0):.2f} m³/h")
             _pump_row("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS")
             _pump_row("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW")
             _pump_row("Adet", _rs_rapor.get("adet_str", ""))
