@@ -3223,8 +3223,16 @@ if bolum_633_aktif:
         f"V = **{secilen_boyler_hacmi} L** (Emniyetle)"
     )
 
-    # --- BOYLER ISITICI KAPASİTESİ ---
-    st.markdown("**BOYLER ISITICI KAPASİTESİ**")
+    # --- BOYLER / EŞANJÖR ISITMA KAPASİTE HESABI ---
+    # Üst bölümde seçilen sisteme göre başlık otomatik değişir.
+    _hesap_basligi_tip = str(
+        st.session_state.get("boyler_secili_tip_v57", "TEK SERPANTİNLİ BOYLER")
+    )
+    if _hesap_basligi_tip == "PLAKALI EŞANJÖR":
+        _hesap_basligi = "PLAKALI EŞANJÖR ISITMA KAPASİTE HESABI:"
+    else:
+        _hesap_basligi = "BOYLER ISITMA KAPASİTE HESABI:"
+    st.markdown(f"**{_hesap_basligi}**")
     col_q1, col_q2 = st.columns(2)
     with col_q1:
         boyler_ms = st.number_input(
@@ -4863,9 +4871,18 @@ if st.button("Raporu Oluştur (.docx)"):
             if es_zaman_faktoru is not None:
                 doc.add_paragraph(f"Excel eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
 
-            # Boyler ısıtıcı kapasitesi
+            # Boyler / eşanjör ısıtma kapasite hesabı başlığı
+            # Seçilen sisteme göre raporda da otomatik değişir.
+            _rapor_hesap_tip = str(
+                st.session_state.get("boyler_secili_tip_v57", "TEK SERPANTİNLİ BOYLER")
+            )
+            _rapor_hesap_basligi = (
+                "PLAKALI EŞANJÖR ISITMA KAPASİTE HESABI:"
+                if _rapor_hesap_tip == "PLAKALI EŞANJÖR"
+                else "BOYLER ISITMA KAPASİTE HESABI:"
+            )
             boyler_baslik = doc.add_paragraph()
-            boyler_baslik_run = boyler_baslik.add_run("BOYLER ISITICI KAPASİTESİ")
+            boyler_baslik_run = boyler_baslik.add_run(_rapor_hesap_basligi)
             boyler_baslik_run.bold = True
             boyler_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
 
