@@ -5890,37 +5890,57 @@ if st.button("Raporu Oluştur (.docx)"):
 
             _rs_qb = float(_rs_rapor.get("q_boyler_kcal_h", 0.0))
             _rs_qb_kw = float(_rs_rapor.get("q_boyler_kw", _rs_qb * 0.001163))
-            _rs_qt = float(_rs_rapor.get("q_temsiz_m3h", 0.0))
             _rs_qh = float(_rs_rapor.get("q_hesap_m3h", 0.0))
-            _rs_qs = float(_rs_rapor.get("q_m3h", 0.0))
-
-            # RAPOR DÜZENİ: Kullanıcının verdiği örnekteki görünüm birebir korunur.
-            # Formül resim olarak değil, Word metni olarak yazılır; böylece satırlar
-            # Word sayfasında dağılmaz ve hizalama bozulmaz.
             _rs_q_txt = f"{_rs_qb:,.0f}"
             _rs_kw_txt = f"{_rs_qb_kw:.0f}".replace(".", ",")
             _rs_factor = 1.0 + float(_rs_rapor.get("emniyet_orani", 15.0)) / 100.0
             _rs_factor_txt = f"{_rs_factor:.2f}".replace(".", ",")
             _rs_qh_txt = f"{_rs_qh:.2f}"
 
-            # Q BOYLER satırı — hesap bloğunu sayfanın orta kolonunda toplar.
-            _qpar = doc.add_paragraph()
-            _qpar.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _qpar.paragraph_format.space_before = Pt(2)
-            _qpar.paragraph_format.space_after = Pt(6)
-            _qr = _qpar.add_run(
-                f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW"
-            )
+            # TÜM 6.3.4 ÇIKTISINI TEK BİR ÇERÇEVESİZ HÜCREDE TOPLA.
+            # Böylece Word'deki ayrı paragraf/table akışlarından kaynaklanan
+            # büyük boşluklar oluşmaz; formül ve pompa bilgileri tek blok halinde kalır.
+            _rs_tbl = doc.add_table(rows=1, cols=1)
+            _rs_tbl.autofit = False
+            _rs_tbl.allow_autofit = False
+            _rs_cell = _rs_tbl.cell(0, 0)
+            _rs_cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+            _rs_tbl.columns[0].width = Inches(6.9)
+
+            # Tablo kenarlıklarını tamamen kaldır.
+            _tbl_pr = _rs_tbl._tbl.tblPr
+            _tbl_borders = _tbl_pr.first_child_found_in("w:tblBorders")
+            if _tbl_borders is None:
+                _tbl_borders = OxmlElement("w:tblBorders")
+                _tbl_pr.append(_tbl_borders)
+            for _edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+                _el = _tbl_borders.find(qn(f"w:{_edge}"))
+                if _el is None:
+                    _el = OxmlElement(f"w:{_edge}")
+                    _tbl_borders.append(_el)
+                _el.set(qn("w:val"), "nil")
+
+            def _rs_cell_paragraph(alignment=WD_ALIGN_PARAGRAPH.LEFT, before=0, after=0):
+                _p = _rs_cell.add_paragraph()
+                _p.alignment = alignment
+                _p.paragraph_format.space_before = Pt(before)
+                _p.paragraph_format.space_after = Pt(after)
+                _p.paragraph_format.line_spacing = 1.0
+                return _p
+
+            # İlk boş paragrafı temizle.
+            _rs_cell.paragraphs[0].text = ""
+            _rs_cell.paragraphs[0].paragraph_format.space_before = Pt(0)
+            _rs_cell.paragraphs[0].paragraph_format.space_after = Pt(0)
+
+            _qpar = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 5)
+            _qr = _qpar.add_run(f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW")
             _qr.font.name = "Arial"
             _qr.font.size = Pt(11.5)
             _qr.bold = True
 
-            # Formül tek bir sabit genişlikli blokta tutulur; böylece pay,
-            # çizgi, payda ve sonuç aynı merkez ekseninde görünür.
-            _formul = doc.add_paragraph()
-            _formul.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _formul.paragraph_format.space_before = Pt(0)
-            _formul.paragraph_format.space_after = Pt(7)
+            # Formül tam merkezde ve tek blok halinde.
+            _formul = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 8)
             _fr = _formul.add_run(
                 f"              {_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
                 f"V = ------------------------------- = {_rs_qh_txt} m³/h\n"
@@ -5929,40 +5949,74 @@ if st.button("Raporu Oluştur (.docx)"):
             _fr.font.name = "Courier New"
             _fr.font.size = Pt(10.5)
 
-            # Seçilen Pompa başlığı ve altındaki değerler aynı sol hizada başlar.
-            _baslik = doc.add_paragraph()
-            _baslik.paragraph_format.left_indent = Inches(0.35)
-            _baslik.paragraph_format.space_before = Pt(0)
-            _baslik.paragraph_format.space_after = Pt(3)
+            _baslik = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 3)
             _br = _baslik.add_run("Seçilen Pompa :")
             _br.font.name = "Arial"
             _br.font.size = Pt(11.5)
             _br.bold = True
 
-            # Etiketler tek bir kolon gibi hizalanır; değerler de aynı kolondan başlar.
-            def _rs_rapor_satiri(label, value, bold_value=False, equals=False):
-                par = doc.add_paragraph()
-                par.paragraph_format.left_indent = Inches(0.10)
-                par.paragraph_format.space_before = Pt(0)
-                par.paragraph_format.space_after = Pt(1)
-                r1 = par.add_run(f"{label:<12}")
-                r1.font.name = "Courier New"
+            # Etiket ve değerleri iki sabit kolon halinde hizala.
+            _pump_tbl = _rs_cell.add_table(rows=0, cols=3)
+            _pump_tbl.autofit = False
+            _pump_tbl.allow_autofit = False
+            _pump_tbl.columns[0].width = Inches(0.65)
+            _pump_tbl.columns[1].width = Inches(0.20)
+            _pump_tbl.columns[2].width = Inches(5.9)
+
+            def _pump_row(label, value, bold_value=True, equals=False):
+                _cells = _pump_tbl.add_row().cells
+                _cells[0].width = Inches(0.65)
+                _cells[1].width = Inches(0.20)
+                _cells[2].width = Inches(5.9)
+                for _c in _cells:
+                    _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+                p1 = _cells[0].paragraphs[0]
+                p1.paragraph_format.space_before = Pt(0)
+                p1.paragraph_format.space_after = Pt(0)
+                p1.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                r1 = p1.add_run(label)
+                r1.font.name = "Arial"
                 r1.font.size = Pt(11)
                 r1.bold = True
-                sep = " = " if equals else ": "
-                r2 = par.add_run(f"{sep}{value}")
+                p2 = _cells[1].paragraphs[0]
+                p2.paragraph_format.space_before = Pt(0)
+                p2.paragraph_format.space_after = Pt(0)
+                p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r2 = p2.add_run("=" if equals else ":")
                 r2.font.name = "Arial"
                 r2.font.size = Pt(11)
-                r2.bold = bool(bold_value)
-                return par
+                p3 = _cells[2].paragraphs[0]
+                p3.paragraph_format.space_before = Pt(0)
+                p3.paragraph_format.space_after = Pt(0)
+                p3.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                r3 = p3.add_run(value)
+                r3.font.name = "Arial"
+                r3.font.size = Pt(11)
+                r3.bold = bold_value
 
-            _rs_rapor_satiri("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h", True)
-            _rs_rapor_satiri("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS", True)
-            _rs_rapor_satiri("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW", True)
-            _rs_rapor_satiri("Adet", _rs_rapor.get("adet_str", ""), True)
-            _rs_rapor_satiri("Tip", _rs_rapor.get("tip", ""), False)
+            _pump_row("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h")
+            _pump_row("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS")
+            _pump_row("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW")
+            _pump_row("Adet", _rs_rapor.get("adet_str", ""))
+            _pump_row("Tip", _rs_rapor.get("tip", ""), bold_value=False)
             if _rs_rapor.get("poz_rapora_aktar", True):
-                _rs_rapor_satiri("Cihaz Poz No", _rs_rapor.get("poz", ""), True, equals=True)
+                _pump_row("Cihaz Poz No", _rs_rapor.get("poz", ""), bold_value=True, equals=True)
+
+            # İç içe tablo kenarlıklarını da kaldır.
+            _pump_pr = _pump_tbl._tbl.tblPr
+            _pump_borders = _pump_pr.first_child_found_in("w:tblBorders")
+            if _pump_borders is None:
+                _pump_borders = OxmlElement("w:tblBorders")
+                _pump_pr.append(_pump_borders)
+            for _edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+                _el = _pump_borders.find(qn(f"w:{_edge}"))
+                if _el is None:
+                    _el = OxmlElement(f"w:{_edge}")
+                    _pump_borders.append(_el)
+                _el.set(qn("w:val"), "nil")
+
+            _after = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 0)
+            _after.paragraph_format.line_spacing = 1.0
 
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
