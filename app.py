@@ -3494,14 +3494,24 @@ if bolum_633_aktif:
                 "tip": AKUMULASYON_TANKI_TIP,
             }
 
+        # Kullanıcının girdiği adet, toplam gerekli hacmi böler.
+        # Ardından her tank için gerekli hacmi karşılayan EN KÜÇÜK poz seçilir.
+        # Örnek: 14.360 L ihtiyaç ve 8 adet -> 1.795 L/tank -> 2.000 L
+        # (25.175.2512) seçilir ve toplam kapasite 16.000 L olur.
         birim_gerekli = gerekli / float(adet)
-        secilen = AKUMULASYON_TANKI_POZLARI[-1]
+        secilen = None
         for poz in AKUMULASYON_TANKI_POZLARI:
             if float(poz["hacim"]) >= birim_gerekli:
                 secilen = poz
                 break
 
+        # İstenen adet çok az ise son poz bile yetersiz kalabilir. Bu durumda
+        # son poz seçilir ve program açıkça yetersizlik durumunu bildirir.
+        if secilen is None:
+            secilen = AKUMULASYON_TANKI_POZLARI[-1]
+
         toplam = int(adet * float(secilen["hacim"]))
+        yeterli = toplam >= gerekli
         return {
             "poz": secilen["poz"],
             "hacim": int(secilen["hacim"]),
@@ -3509,6 +3519,7 @@ if bolum_633_aktif:
             "toplam_hacim": toplam,
             "gerekli_hacim": gerekli,
             "birim_gerekli_hacim": birim_gerekli,
+            "yeterli": yeterli,
             "tip": AKUMULASYON_TANKI_TIP,
         }
 
@@ -3765,24 +3776,35 @@ if bolum_633_aktif:
                 )
                 _akum_gerekli = float(toplam_tuketim) * float(_akum_katsayisi)
 
-                # Tank adedi kullanıcı tarafından seçilir. İlk açılışta, mevcut
-                # gereksinimi karşılayan otomatik adet önerilir; kullanıcı bunu
-                # 1, 2, 3 ... şeklinde değiştirebilir.
-                _akum_otomatik_oneri = _akumulasyon_tanki_sec(_akum_gerekli, 1)["adet"]
-                if _akum_gerekli > 0:
-                    _akum_otomatik_oneri = min(100, max(1, int(math.ceil(_akum_gerekli / 3000.0))))
-                _akum_adet_key = "plakali_akumulasyon_adedi_v79"
+                # Tank adedi kullanıcı tarafından belirlenir.
+                # ÖNEMLİ: Adet değiştiğinde eski poz/kapasite tutulmaz; seçim
+                # her Streamlit çalışmasında güncel toplam ihtiyaca göre yeniden
+                # hesaplanır. V84'te eski session-state anahtarı özellikle
+                # kullanılmıyor.
+                _akum_otomatik_oneri = (
+                    min(100, max(1, int(math.ceil(_akum_gerekli / 3000.0))))
+                    if _akum_gerekli > 0 else 1
+                )
+                _akum_adet_key = "plakali_akumulasyon_adedi_v84"
                 if _akum_adet_key not in st.session_state:
                     st.session_state[_akum_adet_key] = int(_akum_otomatik_oneri)
+
                 _akum_adet = st.number_input(
                     "Akümülasyon tankı adedi",
                     min_value=1,
                     max_value=100,
                     step=1,
                     key=_akum_adet_key,
-                    help="Tank adedini siz belirlersiniz. Program bu adede göre uygun tank hacmini pozlardan otomatik seçer.",
+                    help=(
+                        "Adedi değiştirince toplam gerekli hacim bu adede bölünür; "
+                        "program uygun tank hacmini ve Cihaz Poz No'yu otomatik yeniden seçer."
+                    ),
                 )
-                _akum_secim = _akumulasyon_tanki_sec(_akum_gerekli, int(_akum_adet))
+
+                # Adet değiştiği anda poz ve kapasite doğrudan bu değerden hesaplanır.
+                _akum_secim = _akumulasyon_tanki_sec(
+                    _akum_gerekli, int(_akum_adet)
+                )
 
                 st.markdown("**1. SICAK SU AKÜMÜLASYON TANKI SEÇİMİ**")
                 _a1, _a2, _a3, _a4 = st.columns(4)
@@ -3790,12 +3812,21 @@ if bolum_633_aktif:
                 with _a2: st.metric("Tank hacmi", f"{_akum_secim['hacim']} L")
                 with _a3: st.metric("Adet", int(_akum_adet))
                 with _a4: st.metric("Cihaz Poz No", _akum_secim["poz"])
-                st.success(
+                _akum_sonuc_metni = (
                     f"Akümülasyon tankı: **{int(_akum_adet)} adet × {_akum_secim['hacim']} L** | "
                     f"Toplam: **{_akum_secim['toplam_hacim']} L** | Cihaz Poz No: **{_akum_secim['poz']}**"
                 )
+                if _akum_secim.get("yeterli", False):
+                    st.success(_akum_sonuc_metni)
+                else:
+                    st.warning(
+                        _akum_sonuc_metni +
+                        "\n\n⚠️ Seçilen adet ile son pozun toplam kapasitesi gerekli hacmi karşılamıyor. "
+                        "Tank adedini artırın."
+                    )
                 st.caption(
                     f"Tank başına gerekli hacim: {_akum_secim.get('birim_gerekli_hacim', 0):.0f} L | "
+                    f"Seçilen tank toplam kapasitesi: {_akum_secim['toplam_hacim']:.0f} L | "
                     f"Tank tipi: {_akum_secim.get('tip', AKUMULASYON_TANKI_TIP)}"
                 )
                 st.session_state["plakali_akumulasyon_secim_sonucu_v75"] = _akum_secim
