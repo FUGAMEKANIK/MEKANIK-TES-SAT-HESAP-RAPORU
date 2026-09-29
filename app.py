@@ -3027,36 +3027,48 @@ if bolum_6_aktif:
 
 
 
-def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_hesap_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
-    """6.3.4 formülünü, kullanıcının verdiği örnekteki matematiksel düzende PNG olarak üretir."""
+def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
+    """6.3.4 debi hesabını iki aşamalı olarak, kullanıcının verdiği örnek düzende PNG üretir.
+
+    1) Emniyetsiz temel debi: QBOYLER x 0,05 / 5.000
+    2) Emniyetli debi: temel debi x (1 + emniyet oranı)
+    3) Pompa seçim debisi ayrıca gösterilir.
+    """
     if q_boyler_kw is None:
         q_boyler_kw = float(q_boyler_kcal_h) * 0.001163
 
     import matplotlib.pyplot as plt
-    from matplotlib import rcParams
 
-    # Kullanıcının gönderdiği görsele yakın, sade beyaz zeminli matematik düzeni.
-    fig = plt.figure(figsize=(7.2, 2.05), facecolor="white")
+    fig = plt.figure(figsize=(7.2, 2.85), facecolor="white")
     ax = fig.add_axes([0, 0, 1, 1])
     ax.axis("off")
 
     factor = 1.0 + float(emniyet_orani) / 100.0
     factor_txt = f"{factor:.2f}".replace(".", ",")
     q_txt = f"{float(q_boyler_kcal_h):,.0f}".replace(",", ".")
-    qh_txt = f"{float(q_hesap_m3h):.2f}".replace(".", ",")
+    qt_txt = f"{float(q_temsiz_m3h):.2f}".replace(".", ",")
+    qe_txt = f"{float(q_emniyetli_m3h):.2f}".replace(".", ",")
     qs_txt = f"{float(q_secim_m3h):.2f}".replace(".", ",")
 
-    # İlk satır: genel formül
     ax.text(
-        0.50, 0.72,
-        rf"$V = \dfrac{{Q_{{BOYLER}} \times 0,05 \times {factor_txt}}}{{5.000}}$",
-        ha="center", va="center", fontsize=17, color="black"
+        0.50, 0.86,
+        r"$V_0 = \dfrac{Q_{BOYLER} \times 0,05}{5.000}$",
+        ha="center", va="center", fontsize=16, color="black"
     )
-    # İkinci satır: gerçek proje hesabı
     ax.text(
-        0.50, 0.31,
-        rf"$V = \dfrac{{{q_txt} \times 0,05 \times {factor_txt}}}{{5.000}} = {qh_txt}\;m^3/h$",
-        ha="center", va="center", fontsize=17, color="black"
+        0.50, 0.60,
+        rf"$V_0 = \dfrac{{{q_txt} \times 0,05}}{{5.000}} = {qt_txt}\;m^3/h$",
+        ha="center", va="center", fontsize=16, color="black"
+    )
+    ax.text(
+        0.50, 0.34,
+        rf"$V = V_0 \times {factor_txt} = {qt_txt} \times {factor_txt} = {qe_txt}\;m^3/h$",
+        ha="center", va="center", fontsize=16, color="black"
+    )
+    ax.text(
+        0.50, 0.10,
+        rf"$V_{{seçim}} = {qs_txt}\;m^3/h$",
+        ha="center", va="center", fontsize=14, color="black"
     )
 
     buf = io.BytesIO()
@@ -4287,31 +4299,46 @@ if bolum_634_aktif:
         help="Re-sirkülasyon debisi hesabında QBOYLER × 0,05 × (1 + emniyet oranı) kullanılır. Varsayılan %15'tir."
     )
 
-    _rs_q_hesap = (
-        _rs_q_boyler * 0.05 * (1.0 + float(re_sirk_emniyet) / 100.0) / 5000.0
+    # 1. AŞAMA: emniyet katsayısı uygulanmadan temel re-sirkülasyon debisi
+    _rs_q_temsiz = (
+        _rs_q_boyler * 0.05 / 5000.0
         if _rs_q_boyler > 0 else 0.0
     )
+    # 2. AŞAMA: temel debiye kullanıcı tarafından girilen emniyet oranı uygulanır.
+    _rs_q_hesap = _rs_q_temsiz * (1.0 + float(re_sirk_emniyet) / 100.0)
 
     if _rs_q_boyler <= 0:
         st.warning("Önce 6.3.3 bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
+        _rs_q_temsiz = 0.0
         _rs_q_hesap = 0.0
     else:
         st.success(
             f"Seçilen boyler ısı yükü: **{_rs_q_boyler:,.0f} kcal/h ≈ {_rs_q_boyler_kw:,.0f} kW**".replace(",", ".")
         )
         st.markdown(
-            f"**Otomatik hesap:** V = ({_rs_q_boyler:,.0f} × 0,05 × 1,{float(re_sirk_emniyet)/100+1:.2f}) / 5.000 = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
+            f"**1. Aşama — Emniyetsiz debi:** V₀ = ({_rs_q_boyler:,.0f} × 0,05) / 5.000 = **{_rs_q_temsiz:.2f} m³/h**".replace(",", ".")
+        )
+        st.markdown(
+            f"**2. Aşama — Emniyetli debi:** V = {_rs_q_temsiz:.2f} × (1 + %{float(re_sirk_emniyet):.0f}) = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
         )
 
-    # Hesaplanan debi otomatik olarak alana gelir; kullanıcı isterse değiştirebilir.
+    # Hesaplanan emniyetli debiyi aşağıdaki pompa seçim debisi alanına otomatik aktar.
+    # Kullanıcı alanı elle değiştirmişse, sonraki rerun'larda manuel değer korunur.
+    _rs_prev_auto = st.session_state.get("re_sirk_q_auto_prev_v100")
+    _rs_q_key = "re_sirk_q_v99"
+    _rs_mevcut_q = st.session_state.get(_rs_q_key)
+    if _rs_mevcut_q is None or (_rs_prev_auto is not None and abs(float(_rs_mevcut_q) - float(_rs_prev_auto)) < 1e-9):
+        st.session_state[_rs_q_key] = float(_rs_q_hesap)
+    st.session_state["re_sirk_q_auto_prev_v100"] = float(_rs_q_hesap)
+
+    st.markdown("#### Pompa Seçim Debisi")
     re_sirk_q = st.number_input(
         "Re-sirkülasyon Debisi V [m³/h]",
         min_value=0.0,
-        value=float(_rs_q_hesap),
         step=0.01,
         format="%.2f",
-        key="re_sirk_q_v99",
-        help="Otomatik hesaplanan değer gelir; proje hesabınıza göre elle değiştirebilirsiniz."
+        key=_rs_q_key,
+        help="Emniyetli debi otomatik olarak bu alana aktarılır. İsterseniz değeri elle değiştirebilirsiniz."
     )
 
     re_sirk_h = st.number_input(
@@ -4399,6 +4426,7 @@ if bolum_634_aktif:
         "q_boyler_kcal_h": _rs_q_boyler,
         "q_boyler_kw": _rs_q_boyler_kw,
         "emniyet_orani": float(re_sirk_emniyet),
+        "q_temsiz_m3h": float(_rs_q_temsiz),
         "q_hesap_m3h": float(_rs_q_hesap),
         "q_m3h": float(re_sirk_q),
         "h_mss": float(re_sirk_h),
@@ -5902,13 +5930,14 @@ if st.button("Raporu Oluştur (.docx)"):
 
             _rs_qb = float(_rs_rapor.get("q_boyler_kcal_h", 0.0))
             _rs_qb_kw = float(_rs_rapor.get("q_boyler_kw", _rs_qb * 0.001163))
+            _rs_qt = float(_rs_rapor.get("q_temsiz_m3h", 0.0))
             _rs_qh = float(_rs_rapor.get("q_hesap_m3h", 0.0))
             _rs_qs = float(_rs_rapor.get("q_m3h", 0.0))
 
             # Kullanıcının gönderdiği görsel düzeninde formül mutlaka rapora eklenir.
             if _rs_qb > 0:
                 _formul_buf = re_sirk_formul_gorseli_png(
-                    _rs_qb, _rs_qh, _rs_qs, _rs_qb_kw,
+                    _rs_qb, _rs_qt, _rs_qh, _rs_qs, _rs_qb_kw,
                     float(_rs_rapor.get("emniyet_orani", 15.0))
                 )
                 _formul_par = doc.add_paragraph()
@@ -5934,6 +5963,18 @@ if st.button("Raporu Oluştur (.docx)"):
                 r2.bold = bool(bold_value)
                 return par
 
+            _hesap_notu = doc.add_paragraph()
+            _hesap_notu.paragraph_format.space_before = Pt(2)
+            _hesap_notu.paragraph_format.space_after = Pt(6)
+            _rn = _hesap_notu.add_run(
+                f"Emniyetsiz debi: {_rs_qt:.2f} m³/h → "
+                f"%{float(_rs_rapor.get('emniyet_orani', 15.0)):.0f} emniyet uygulanması → "
+                f"Emniyetli debi: {_rs_qh:.2f} m³/h → "
+                f"Pompa seçim debisi: {_rs_qs:.2f} m³/h"
+            )
+            _rn.font.name = "Arial"
+            _rn.font.size = Pt(10.5)
+
             _baslik = doc.add_paragraph()
             _baslik.paragraph_format.space_before = Pt(4)
             _baslik.paragraph_format.space_after = Pt(5)
@@ -5949,3 +5990,27 @@ if st.button("Raporu Oluştur (.docx)"):
             _rs_rapor_satiri("Tip", _rs_rapor.get("tip", ""), False)
             if _rs_rapor.get("poz_rapora_aktar", True):
                 _rs_rapor_satiri("Cihaz Poz No", _rs_rapor.get("poz", ""), True)
+
+
+    # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
+    rapor_word_stillerini_uygula(doc)
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    st.success("Hesap raporu başarıyla hazırlandı!")
+
+    dosya_adi = (
+        f"{aktif_is.replace(' ', '_')}_Rapor.docx"
+        if is_adi
+        else "Mekanik_Uygulama_Raporu.docx"
+    )
+
+    st.download_button(
+        label="📥 Word Dosyasını İndir (.docx)",
+        data=buffer,
+        file_name=dosya_adi,
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        key="rapor_word_indir_v101",
+    )
