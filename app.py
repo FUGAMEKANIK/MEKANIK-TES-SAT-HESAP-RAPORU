@@ -5174,7 +5174,7 @@ if st.button("Raporu Oluştur (.docx)"):
             boyler_rapor_baslik = doc.add_paragraph()
             boyler_rapor_baslik.paragraph_format.space_after = Pt(4)
             boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
-                "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ:" if secili_tip == "PLAKALI EŞANJÖR" else "Kullanma Sıcak Suyu Boyleri:"
+                "Kullanma Sıcak Suyu Boyleri:" if secili_tip != "PLAKALI EŞANJÖR" else ""
             )
             boyler_rapor_baslik_run.bold = True
             boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
@@ -5206,14 +5206,12 @@ if st.button("Raporu Oluştur (.docx)"):
                 # 1. ekipman: Akümülasyon tankı
                 doc.add_paragraph("")
                 akum_baslik = doc.add_paragraph()
-                akum_baslik_run = akum_baslik.add_run("SICAK SU AKÜMÜLASYON TANKI")
+                akum_baslik_run = akum_baslik.add_run("SICAK SU AKÜMÜLASYON TANKI SEÇİMİ:")
                 akum_baslik_run.bold = True
                 akum_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
                 akum_baslik_run.font.name = "Arial"
                 akum_baslik_run.font.size = Pt(11)
                 boyler_rapor_satirlari = [
-                    ("Gerekli akümülasyon hacmi", f"{_akum_gerekli_rapor:.0f} L"),
-                    ("Akümülasyon katsayısı", f"{_akum_katsayi_rapor:.2f}"),
                     ("Tank hacmi", f"{_akum_hacim_rapor} L (PN 10)"),
                     ("Adet", str(_akum_adet_rapor)),
                     ("Tip", _akum_tip_rapor),
@@ -5222,9 +5220,9 @@ if st.button("Raporu Oluştur (.docx)"):
                     boyler_rapor_satirlari.append(("Cihaz Poz No", _akum_rapor.get("poz", "")))
 
                 # 2. ekipman: Plakalı eşanjör
+                # Raporda ayrı, tam genişlikte bir seçim başlığı olarak gösterilir.
                 boyler_rapor_satirlari.extend([
-                    ("", ""),
-                    ("KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ", ""),
+                    ("__PLAKALI_ESANJOR_BASLIK__", ""),
                     ("Q", f"{boyler_q_kcal_h:.0f} kcal/h ≈ {int(boyler_q_kw)} kW"),
                     ("Primer Devre", "80 / 60 °C sıcak su (Kazan)"),
                     ("Seconder Devre", "10 / 60 °C sıcak su"),
@@ -5277,6 +5275,39 @@ if st.button("Raporu Oluştur (.docx)"):
 
             for satir_no, (etiket, deger) in enumerate(boyler_rapor_satirlari):
                 hucreler = boyler_tablo.rows[satir_no].cells
+
+                # Plakalı eşanjör seçim başlığı: üç hücre birleştirilir,
+                # böylece başlık sayfa genişliğine yayılır.
+                if etiket == "__PLAKALI_ESANJOR_BASLIK__":
+                    hucre = hucreler[0].merge(hucreler[1]).merge(hucreler[2])
+                    hucre.width = sum(kolon_genislikleri)
+                    hucre.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+                    tcPr = hucre._tc.get_or_add_tcPr()
+                    tcBorders = tcPr.first_child_found_in("w:tcBorders")
+                    if tcBorders is None:
+                        tcBorders = OxmlElement("w:tcBorders")
+                        tcPr.append(tcBorders)
+                    for kenar in ("top", "left", "bottom", "right", "insideH", "insideV"):
+                        el = tcBorders.find(qn(f"w:{kenar}"))
+                        if el is None:
+                            el = OxmlElement(f"w:{kenar}")
+                            tcBorders.append(el)
+                        el.set(qn("w:val"), "nil")
+
+                    p_baslik = hucre.paragraphs[0]
+                    p_baslik.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    p_baslik.paragraph_format.space_before = Pt(12)
+                    p_baslik.paragraph_format.space_after = Pt(8)
+                    run_baslik = p_baslik.add_run(
+                        "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ SEÇİMİ:"
+                    )
+                    run_baslik.font.name = "Arial"
+                    run_baslik.font.size = Pt(12)
+                    run_baslik.bold = True
+                    run_baslik.font.color.rgb = RGBColor(0, 0, 0)
+                    continue
+
                 for hucre, genislik in zip(hucreler, kolon_genislikleri):
                     hucre.width = genislik
                     hucre.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
@@ -5295,24 +5326,24 @@ if st.button("Raporu Oluştur (.docx)"):
 
                 p_etiket = hucreler[0].paragraphs[0]
                 p_etiket.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                p_etiket.paragraph_format.space_after = Pt(0)
-                p_etiket.paragraph_format.space_before = Pt(0)
+                p_etiket.paragraph_format.space_after = Pt(3)
+                p_etiket.paragraph_format.space_before = Pt(3)
                 run_etiket = p_etiket.add_run(etiket)
                 run_etiket.font.name = "Arial"
                 run_etiket.font.size = Pt(10.5)
 
                 p_iki_nokta = hucreler[1].paragraphs[0]
                 p_iki_nokta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p_iki_nokta.paragraph_format.space_after = Pt(0)
-                p_iki_nokta.paragraph_format.space_before = Pt(0)
+                p_iki_nokta.paragraph_format.space_after = Pt(3)
+                p_iki_nokta.paragraph_format.space_before = Pt(3)
                 run_iki_nokta = p_iki_nokta.add_run(":")
                 run_iki_nokta.font.name = "Arial"
                 run_iki_nokta.font.size = Pt(10.5)
 
                 p_deger = hucreler[2].paragraphs[0]
                 p_deger.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                p_deger.paragraph_format.space_after = Pt(0)
-                p_deger.paragraph_format.space_before = Pt(0)
+                p_deger.paragraph_format.space_after = Pt(3)
+                p_deger.paragraph_format.space_before = Pt(3)
                 run_deger = p_deger.add_run(deger)
                 run_deger.font.name = "Arial"
                 run_deger.font.size = Pt(10.5)
