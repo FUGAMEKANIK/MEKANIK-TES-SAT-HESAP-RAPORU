@@ -3767,11 +3767,32 @@ if bolum_633_aktif:
                 # 1) Akümülasyon tankı, 2) Plakalı eşanjör.
                 # AKÜMÜLASYON TANKI GEREKLİ HACMİ
                 # Kaynak doğrudan yukarıdaki "Ortalama Ani Sıcak Su İhtiyacı"
-                # hesabındaki emniyetli hacimdir: V = ... L (Emniyetle).
-                # Günlük toplam tüketim veya ayrı bir akümülasyon katsayısı
-                # kullanılmaz. Yukarıdaki V değeri kullanıcı tarafından elle
-                # değiştirilmişse, burada da aynı değer esas alınır.
-                _akum_gerekli = float(secilen_boyler_hacmi)
+                # hesabındaki emniyetli V değeridir (ör. V = 3500 L).
+                # Akümülasyon tankı seçim katsayısı bu değere ayrıca uygulanır:
+                # Gerekli akümülasyon hacmi = V (Emniyetle) × katsayı.
+                # Böylece katsayı 1.00 ise 3500 L, katsayı 0.50 ise 1750 L,
+                # katsayı 1.50 ise 5250 L esas alınır.
+                _akum_katsayi_key = "plakali_akumulasyon_katsayisi_v86"
+                _akum_katsayisi = st.number_input(
+                    "Akümülasyon tankı seçim katsayısı",
+                    min_value=0.0,
+                    max_value=10.0,
+                    step=0.10,
+                    format="%.2f",
+                    value=float(st.session_state.get(_akum_katsayi_key, 1.0)),
+                    key=_akum_katsayi_key,
+                    help=(
+                        "Akümülasyon tankı gerekli hacmi = Ortalama Ani Sıcak Su İhtiyacı "
+                        "(V, Emniyetle) × bu katsayı."
+                    ),
+                )
+                _akum_kaynak_v = float(secilen_boyler_hacmi_hesaplanan)
+                _akum_gerekli = _akum_kaynak_v * float(_akum_katsayisi)
+
+                st.caption(
+                    f"Akümülasyon hesabı: V = {_akum_kaynak_v:.0f} L (Emniyetle) × "
+                    f"{_akum_katsayisi:.2f} = **{_akum_gerekli:.0f} L**"
+                )
 
                 # Tank adedi kullanıcı tarafından belirlenir. İlk açılışta,
                 # 3250 L emniyetli poz kapasitesi üzerinden toplam ihtiyacı
@@ -3812,7 +3833,10 @@ if bolum_633_aktif:
                 ]
                 _akum_poz_degerleri = [poz["poz"] for poz in AKUMULASYON_TANKI_POZLARI]
                 _akum_secim_signature = (
-                    round(float(_akum_gerekli), 6), int(_akum_adet)
+                    round(float(_akum_kaynak_v), 6),
+                    round(float(_akum_katsayisi), 6),
+                    round(float(_akum_gerekli), 6),
+                    int(_akum_adet),
                 )
                 _akum_prev_signature_key = "plakali_akumulasyon_secim_signature_v85"
                 _akum_poz_key = "plakali_akumulasyon_poz_secimi_v85"
