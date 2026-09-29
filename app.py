@@ -178,6 +178,43 @@ bolum_632_aktif_ui = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİM�
 bolum_633_aktif_ui = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", key="rapor_bolum_633")
 
 # ---------------------------------------------------------------------------
+# ALT GRUPLAR İÇİN TOPLU SEÇİM BUTONLARI
+# ---------------------------------------------------------------------------
+def _toplu_secim_butonlari(anahtarlar, grup_adi=None):
+    """Alt checkbox grubunu güvenli biçimde topluca seç/kaldır."""
+    if not anahtarlar:
+        return
+
+    # Widget anahtarları sabit olmalı; hash() kullanmıyoruz.
+    grup_imza = grup_adi or "_".join(anahtarlar)
+    sec_key = f"alt_grup_sec_v55_{grup_imza}"
+    kaldir_key = f"alt_grup_kaldir_v55_{grup_imza}"
+
+    def _grubu_sec():
+        for anahtar in anahtarlar:
+            st.session_state[anahtar] = True
+
+    def _grubu_kaldir():
+        for anahtar in anahtarlar:
+            st.session_state[anahtar] = False
+
+    col_sec, col_kaldir = st.columns(2)
+    with col_sec:
+        st.button(
+            "☑ TÜMÜNÜ SEÇ",
+            key=sec_key,
+            on_click=_grubu_sec,
+            use_container_width=True,
+        )
+    with col_kaldir:
+        st.button(
+            "☐ TÜMÜNÜ KALDIR",
+            key=kaldir_key,
+            on_click=_grubu_kaldir,
+            use_container_width=True,
+        )
+
+# ---------------------------------------------------------------------------
 # HİYERARŞİK AKTİFLİK
 # ---------------------------------------------------------------------------
 # Burada checkbox Session State'lerini değiştirmiyoruz.
