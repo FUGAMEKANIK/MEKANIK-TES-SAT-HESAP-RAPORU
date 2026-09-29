@@ -139,9 +139,42 @@ def _tum_bolumleri_sec():
   for anahtar in BOLUM_SECIM_ANAHTARLARI:
     st.session_state[anahtar] = True
 
-def _tum_bolumleri_sil():
+def _tum_bolumleri_kaldir():
   for anahtar in BOLUM_SECIM_ANAHTARLARI:
     st.session_state[anahtar] = False
+
+# Her seçim grubunda kullanılacak "TÜMÜNÜ SEÇ / TÜMÜNÜ KALDIR" butonları.
+# Buton callback'i, ilgili checkbox'lar oluşturulmadan önce Session State'i günceller.
+_toplu_secim_grup_sayaci = 0
+
+def _toplu_secim_butonlari(anahtarlar):
+  global _toplu_secim_grup_sayaci
+  _toplu_secim_grup_sayaci += 1
+  grup_id = _toplu_secim_grup_sayaci
+
+  def _sec():
+    for anahtar in anahtarlar:
+      st.session_state[anahtar] = True
+
+  def _kaldir():
+    for anahtar in anahtarlar:
+      st.session_state[anahtar] = False
+
+  col_sec, col_kaldir = st.columns(2)
+  with col_sec:
+    st.button(
+        "☑ TÜMÜNÜ SEÇ",
+        key=f"toplu_sec_v43_{grup_id}",
+        on_click=_sec,
+        use_container_width=True,
+    )
+  with col_kaldir:
+    st.button(
+        "☐ TÜMÜNÜ KALDIR",
+        key=f"toplu_kaldir_v43_{grup_id}",
+        on_click=_kaldir,
+        use_container_width=True,
+    )
 
 col_toplu_1, col_toplu_2 = st.columns(2)
 with col_toplu_1:
@@ -153,9 +186,9 @@ with col_toplu_1:
   )
 with col_toplu_2:
   st.button(
-      "☐ TÜMÜNÜ SİL",
-      key="rapor_tumunu_sil_v42",
-      on_click=_tum_bolumleri_sil,
+      "☐ TÜMÜNÜ KALDIR",
+      key="rapor_tumunu_kaldir_v43",
+      on_click=_tum_bolumleri_kaldir,
       use_container_width=True,
   )
 
