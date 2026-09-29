@@ -2854,7 +2854,7 @@ if bolum_633_aktif:
         birim = float(SICAK_SU_ORNEK_ORTALAMA_TUKETIMLERI[sicak_su_yapi_tipi].get(kullanim, 0))
         satirlar.append({
             "Kullanım Yeri": kullanim,
-            "Excel Aralığı [L]": str(kaynak_aralik),
+            "Standart Aralığı [L]": str(kaynak_aralik),
             "Birim Tüketim [L]": birim,
             "Adet": 0,
         })
@@ -2863,7 +2863,7 @@ if bolum_633_aktif:
     # Kaynak değeri olmadığı için başlangıç değeri 0 L'dir ve kullanıcı elle girer.
     satirlar.append({
         "Kullanım Yeri": "Engelli",
-        "Excel Aralığı [L]": "Kaynakta yok",
+        "Standart Aralığı [L]": "Kaynakta yok",
         "Birim Tüketim [L]": 0.0,
         "Adet": 0,
     })
@@ -2880,7 +2880,7 @@ if bolum_633_aktif:
         use_container_width=True,
         column_config={
             "Kullanım Yeri": st.column_config.TextColumn("Kullanım Yeri", disabled=True),
-            "Excel Aralığı [L]": st.column_config.TextColumn("Excel Aralığı [L]", disabled=True),
+            "Standart Aralığı [L]": st.column_config.TextColumn("Standart Aralığı [L]", disabled=True),
             "Birim Tüketim [L]": st.column_config.NumberColumn(
                 "Birim Tüketim [L]", min_value=0, step=10, format="%.0f L"
             ),
@@ -2977,7 +2977,7 @@ if bolum_633_aktif:
         f"Depolama Faktörü = **{depolama_faktoru:.2f}**"
     )
     st.markdown(
-        f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_tuketim:,.0f} = **{hesaplanan_boyler_hacmi:,.0f} L**".replace(',', '.')
+        f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_tuketim:,.3f} = **{hesaplanan_boyler_hacmi:,.3f} L**".replace(',', '.')
     )
     st.markdown(
         f"V = **{secilen_boyler_hacmi:,.0f} L (Emniyetle)**".replace(',', '.')
@@ -3001,7 +3001,7 @@ if bolum_633_aktif:
     for _, row in aktif_sonuc_df.iterrows():
         sicak_su_hesap_detaylari.append({
             "kullanim": str(row["Kullanım Yeri"]),
-            "kaynak_aralik": str(row["Excel Aralığı [L]"]),
+            "kaynak_aralik": str(row["Standart Aralığı [L]"]),
             "birim_degeri": float(row["Birim Tüketim [L]"]),
             "miktar": float(row["Adet"]),
             "toplam_litre": float(row["Toplam [L/gün]"]),
@@ -3009,7 +3009,7 @@ if bolum_633_aktif:
 
     st.markdown("**Hesaplanan kullanım yerleri**")
     st.dataframe(
-        aktif_sonuc_df[["Kullanım Yeri", "Excel Aralığı [L]", "Birim Tüketim [L]", "Adet", "Toplam [L/gün]"]],
+        aktif_sonuc_df[["Kullanım Yeri", "Standart Aralığı [L]", "Birim Tüketim [L]", "Adet", "Toplam [L/gün]"]],
         hide_index=True,
         use_container_width=True,
     )
@@ -4118,10 +4118,13 @@ if st.button("Raporu Oluştur (.docx)"):
     if bolum_633_aktif:
         doc.add_heading("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", level=2)
         if sicak_su_hesap_detaylari:
-            doc.add_paragraph(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
+            yapi_tip_par = doc.add_paragraph()
+            yapi_tip_run = yapi_tip_par.add_run(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
+            yapi_tip_run.bold = True
+            yapi_tip_run.font.color.rgb = RGBColor(0, 0, 0)
             t_sicak = doc.add_table(rows=1, cols=5)
             t_sicak.style = "Table Grid"
-            basliklar = ["Kullanım yeri", "Excel aralığı [L]", "Hesapta kullanılan [L]", "Adet", "Toplam [L]"]
+            basliklar = ["Kullanım yeri", "Standart aralığı [L]", "Hesapta kullanılan [L]", "Adet", "Toplam [L]"]
             for i, baslik in enumerate(basliklar):
                 t_sicak.rows[0].cells[i].text = baslik
             for detay in sicak_su_hesap_detaylari:
@@ -4135,10 +4138,12 @@ if st.button("Raporu Oluştur (.docx)"):
             toplam[0].text = "GENEL TOPLAM"
             toplam[4].text = f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", ".")
 
-            # Ortalama Ani Sıcak Su İhtiyacı
+            # Tablonun bir satır altında Ortalama Ani Sıcak Su İhtiyacı başlığı
+            doc.add_paragraph("")
             ortalama_ani_baslik = doc.add_paragraph()
             run = ortalama_ani_baslik.add_run("Ortalama Ani Sıcak Su İhtiyacı:")
             run.bold = True
+            run.font.color.rgb = RGBColor(0, 0, 0)
 
             faktor_par = doc.add_paragraph()
             faktor_par.add_run("Kullanma Eş Zaman Faktörü = ")
@@ -4150,8 +4155,8 @@ if st.button("Raporu Oluştur (.docx)"):
             run = faktor_par.add_run(f"{depolama_faktoru:.2f}")
             run.bold = True
 
-            toplam_litre_fmt = f"{sicak_su_gunluk_toplam_litre:,.0f}".replace(",", ".")
-            hesaplanan_fmt = f"{hesaplanan_boyler_hacmi:,.0f}".replace(",", ".")
+            toplam_litre_fmt = f"{sicak_su_gunluk_toplam_litre:,.3f}".replace(",", ".")
+            hesaplanan_fmt = f"{hesaplanan_boyler_hacmi:,.3f}".replace(",", ".")
             formula_par = doc.add_paragraph()
             formula_par.add_run(
                 f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_litre_fmt} = "
