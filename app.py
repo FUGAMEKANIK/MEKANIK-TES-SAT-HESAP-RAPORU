@@ -3256,15 +3256,57 @@ if bolum_633_aktif:
     boyler_delta_ts = boyler_ts_cikis - boyler_ts_giris
     boyler_delta_tp = boyler_tp_giris - boyler_tp_cikis
     boyler_q_kcal_h = boyler_ms * boyler_c * boyler_delta_ts
-    boyler_q_kw = boyler_q_kcal_h * 0.001163
-    boyler_mp_gerekli = (boyler_q_kcal_h / (boyler_c * boyler_delta_tp)) if boyler_delta_tp > 0 else 0.0
+
+    # kCal/h -> kW dönüşümü: önce gerçek/küsüratlı değer gösterilir.
+    # Ardından en yakın tam sayıya yuvarlanır ve kullanıcıya nihai Q BOYLER
+    # değerini elle değiştirebileceği bir alan verilir.
+    boyler_q_kw_hesaplanan = boyler_q_kcal_h * 0.001163
+    boyler_q_kw_yuvarlanmis = int(math.floor(boyler_q_kw_hesaplanan + 0.5)) if boyler_q_kw_hesaplanan >= 0 else int(math.ceil(boyler_q_kw_hesaplanan - 0.5))
+
+    boyler_q_kw_key = "boyler_q_kw_final_v63"
+    boyler_q_kw_prev_key = "boyler_q_kw_hesaplanan_onceki_v63"
+    boyler_q_kw_manual_key = f"{boyler_q_kw_key}__manual"
+
+    if boyler_q_kw_key not in st.session_state:
+        st.session_state[boyler_q_kw_key] = boyler_q_kw_yuvarlanmis
+        st.session_state[boyler_q_kw_manual_key] = False
+        st.session_state[boyler_q_kw_prev_key] = float(boyler_q_kw_hesaplanan)
+    else:
+        onceki_hesaplanan = float(
+            st.session_state.get(boyler_q_kw_prev_key, boyler_q_kw_hesaplanan)
+        )
+        hesap_degisiti = abs(float(boyler_q_kw_hesaplanan) - onceki_hesaplanan) > 1e-9
+        if hesap_degisiti and not st.session_state.get(boyler_q_kw_manual_key, False):
+            st.session_state[boyler_q_kw_key] = boyler_q_kw_yuvarlanmis
+        st.session_state[boyler_q_kw_prev_key] = float(boyler_q_kw_hesaplanan)
+
+    def _boyler_q_kw_manuel_degisti():
+        st.session_state[boyler_q_kw_manual_key] = True
 
     st.markdown(
         f"Q = {boyler_ms:.0f} lt/h × 1 kCal/kg.°C × ({boyler_ts_cikis:.0f}-{boyler_ts_giris:.0f}) °C"
     )
     st.markdown(
-        f"**Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW**"
+        f"Q = {boyler_q_kcal_h:.0f} kcal/h → **{boyler_q_kw_hesaplanan:.2f} kW** (hesaplanan küsüratlı değer)"
     )
+    boyler_q_kw = st.number_input(
+        "Nihai Q BOYLER (yuvarlanmış kW) — elle değiştirebilirsiniz",
+        min_value=0,
+        step=1,
+        format="%d",
+        key=boyler_q_kw_key,
+        on_change=_boyler_q_kw_manuel_degisti,
+        help=(
+            f"Hesaplanan değer: {boyler_q_kw_hesaplanan:.2f} kW. "
+            f"Otomatik yuvarlanan değer: {boyler_q_kw_yuvarlanmis} kW. "
+            "Bu alanda değiştirdiğiniz nihai tam sayı hesap raporuna aktarılır."
+        ),
+    )
+    st.caption(
+        f"Otomatik yuvarlanan değer: {boyler_q_kw_yuvarlanmis} kW  |  "
+        f"Rapor ve nihai seçim değeri: {int(boyler_q_kw)} kW"
+    )
+    boyler_mp_gerekli = (boyler_q_kcal_h / (boyler_c * boyler_delta_tp)) if boyler_delta_tp > 0 else 0.0
 
     faktor_satirlari = [{
         "Parametre": "Kullanma eş zaman faktörü",
@@ -3349,7 +3391,7 @@ if bolum_633_aktif:
     boyler_secim_ortak_bilgiler = {
         "Gerekli boyler hacmi": f"{secilen_boyler_hacmi} L",
         "Toplam günlük sıcak su tüketimi": f"{int(round(toplam_tuketim))} L/gün",
-        "Hesaplanan ısı yükü": f"{boyler_q_kw:.1f} kW",
+        "Hesaplanan ısı yükü": f"{int(boyler_q_kw)} kW",
         "Sekonder giriş / çıkış": f"{boyler_ts_giris:.0f} / {boyler_ts_cikis:.0f} °C",
         "Primer giriş / çıkış": f"{boyler_tp_giris:.0f} / {boyler_tp_cikis:.0f} °C",
     }
@@ -3397,7 +3439,7 @@ if bolum_633_aktif:
             with _bilgi_cols[0]:
                 st.metric("Gerekli hacim", f"{secilen_boyler_hacmi} L")
             with _bilgi_cols[1]:
-                st.metric("Isı yükü", f"{boyler_q_kw:.1f} kW")
+                st.metric("Isı yükü", f"{int(boyler_q_kw)} kW")
             with _bilgi_cols[2]:
                 st.metric("Günlük tüketim", f"{int(round(toplam_tuketim))} L/gün")
 
@@ -4693,7 +4735,10 @@ if st.button("Raporu Oluştur (.docx)"):
                 f"({boyler_ts_cikis:.0f}-{boyler_ts_giris:.0f}) °C"
             )
             q_par = doc.add_paragraph()
-            q_par.add_run(f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW").bold = True
+            q_par.add_run(
+                f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw_hesaplanan:.2f} kW "
+                f"(hesaplanan) → {int(boyler_q_kw)} kW (nihai)"
+            ).bold = True
 
             # Boyler / eşanjör seçimi
             # Kullanıcının istediği rapor formatı:
@@ -4766,8 +4811,10 @@ if st.button("Raporu Oluştur (.docx)"):
             boyler_rapor_baslik_run.font.name = "Arial"
             boyler_rapor_baslik_run.font.size = Pt(11)
 
+            # Q BOYLER burada kullanıcı tarafından elle değiştirilmiş nihai tam sayıdır.
+            # Rapor her zaman bu değeri kullanır; küsüratlı hesap ayrıca yukarıda gösterilir.
             boyler_rapor_satirlari = [
-                ("Q BOYLER", f"{boyler_q_kw:.1f} kW"),
+                ("Q BOYLER", f"{int(boyler_q_kw)} kW"),
                 (
                     "Isıtıcı Akışkan ( Kazan )",
                     f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
