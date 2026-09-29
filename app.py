@@ -3044,14 +3044,34 @@ if bolum_633_aktif:
             min_value=0.0, step=50.0, value=0.0,
             format="%.0f", key="boyler_mp_v38"
         )
+
+        # 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI bölümünde
+        # seçilen Boyler Isıtma Rejimi (ör. 80/60 veya 70/50),
+        # burada primer giriş/çıkış sıcaklıklarına otomatik aktarılır.
+        try:
+            boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = [
+                float(x.strip()) for x in str(rej_boyler).split("/", 1)
+            ]
+        except (ValueError, AttributeError):
+            boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = 80.0, 60.0
+
+        boyler_rejim_key = "boyler_primer_rejim_v40"
+        if st.session_state.get(boyler_rejim_key) != str(rej_boyler):
+            st.session_state["boyler_tp_giris_v38"] = boyler_tp_giris_kaynak
+            st.session_state["boyler_tp_cikis_v38"] = boyler_tp_cikis_kaynak
+            st.session_state[boyler_rejim_key] = str(rej_boyler)
+        else:
+            st.session_state.setdefault("boyler_tp_giris_v38", boyler_tp_giris_kaynak)
+            st.session_state.setdefault("boyler_tp_cikis_v38", boyler_tp_cikis_kaynak)
+
         boyler_tp_giris = st.number_input(
             "Primer giriş sıcaklığı (°C)",
-            min_value=0.0, max_value=150.0, step=1.0, value=80.0,
+            min_value=0.0, max_value=150.0, step=1.0,
             format="%.0f", key="boyler_tp_giris_v38"
         )
         boyler_tp_cikis = st.number_input(
             "Primer çıkış sıcaklığı (°C)",
-            min_value=0.0, max_value=150.0, step=1.0, value=60.0,
+            min_value=0.0, max_value=150.0, step=1.0,
             format="%.0f", key="boyler_tp_cikis_v38"
         )
 
