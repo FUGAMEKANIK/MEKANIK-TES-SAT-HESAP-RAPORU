@@ -3465,44 +3465,64 @@ if bolum_633_aktif:
             # bölünür; her iki şartı da sağlayan en küçük poz seçilir.
             if _tab_prefix == "tek_serpantin":
                 _secim_pozu, _gerekli_hacim_birim, _gerekli_debi_birim, _poz_yeterli = _boyler_poz_sec(
-                    secilen_boyler_hacmi,
-                    boyler_ms,
-                    _boyler_adet,
+                    secilen_boyler_hacmi, boyler_ms, _boyler_adet
                 )
                 _boyler_secim_sonucu_key = "boyler_secim_sonucu_v59"
                 st.session_state[_boyler_secim_sonucu_key] = {
-                    "tip": _tip_adi,
-                    "adet": int(_boyler_adet),
-                    "poz": _secim_pozu["poz"],
-                    "hacim": int(_secim_pozu["hacim"]),
+                    "tip": _tip_adi, "adet": int(_boyler_adet),
+                    "poz": _secim_pozu["poz"], "hacim": int(_secim_pozu["hacim"]),
                     "debi": int(_secim_pozu["debi_80_60"]),
                     "gerekli_hacim_birim": _gerekli_hacim_birim,
-                    "gerekli_debi_birim": _gerekli_debi_birim,
-                    "poz_yeterli": _poz_yeterli,
+                    "gerekli_debi_birim": _gerekli_debi_birim, "poz_yeterli": _poz_yeterli,
                 }
-
                 st.markdown("**Otomatik Boyler Seçimi**")
                 _c1, _c2, _c3, _c4 = st.columns(4)
-                with _c1:
-                    st.metric("Adet", int(_boyler_adet))
-                with _c2:
-                    st.metric("Boyler hacmi", f"{_secim_pozu['hacim']} L")
-                with _c3:
-                    st.metric("Boyler debisi", f"{_secim_pozu['debi_80_60']} L/h")
-                with _c4:
-                    st.metric("Cihaz Poz No", _secim_pozu["poz"])
-
+                with _c1: st.metric("Adet", int(_boyler_adet))
+                with _c2: st.metric("Boyler hacmi", f"{_secim_pozu['hacim']} L")
+                with _c3: st.metric("Boyler debisi", f"{_secim_pozu['debi_80_60']} L/h")
+                with _c4: st.metric("Cihaz Poz No", _secim_pozu["poz"])
                 st.success(f"Seçilen Cihaz Poz No: **{_secim_pozu['poz']}**  |  Boyler: **{_secim_pozu['hacim']} L**  |  Debi: **{_secim_pozu['debi_80_60']} L/h**")
+                st.caption(f"Her boyler için gerekli: {_gerekli_hacim_birim:.0f} L / {_gerekli_debi_birim:.0f} L/h")
+                if not _poz_yeterli: st.warning("Hesaplanan gereksinim 25.175.1613 pozunun kapasite/debi sınırını aşıyor.")
 
-                st.caption(
-                    f"Her boyler için gerekli: {_gerekli_hacim_birim:.0f} L / "
-                    f"{_gerekli_debi_birim:.0f} L/h"
+            elif _tab_prefix == "cift_serpantin":
+                # Çift serpantin: Kazan alt serpantinde, güneş üst serpantinde çalışır.
+                _gunes_rejim_key = "boyler_gunes_rejimi_v66"
+                _gunes_rejim = st.selectbox(
+                    "Isıtıcı Akışkan (Güneş) Rejimi:",
+                    ["60/40", "70/50", "80/60"],
+                    index=0, key=_gunes_rejim_key,
                 )
-                if not _poz_yeterli:
-                    st.warning(
-                        "Hesaplanan gereksinim 25.175.1613 pozunun kapasite/debi sınırını "
-                        "aşıyor. Daha büyük kapasite için özel ürün seçimi gerekir."
-                    )
+                _cift_poz, _cift_gerekli_hacim, _cift_gerekli_debi, _cift_yeterli = _cift_boyler_poz_sec(
+                    secilen_boyler_hacmi, boyler_ms, _boyler_adet
+                )
+                _cift_sonuc = {
+                    "tip": _tip_adi, "adet": int(_boyler_adet),
+                    "poz": _cift_poz["poz"], "hacim": int(_cift_poz["hacim"]),
+                    "alt_debi": int(_cift_poz["alt_debi"]), "ust_debi": int(_cift_poz["ust_debi"]),
+                    "gerekli_hacim_birim": _cift_gerekli_hacim,
+                    "gerekli_debi_birim": _cift_gerekli_debi, "poz_yeterli": _cift_yeterli,
+                    "gunes_rejimi": _gunes_rejim,
+                }
+                st.session_state["boyler_cift_secim_sonucu_v66"] = _cift_sonuc
+                st.markdown("**Otomatik Çift Serpantinli Boyler Seçimi**")
+                _c1, _c2, _c3, _c4, _c5 = st.columns(5)
+                with _c1: st.metric("Adet", int(_boyler_adet))
+                with _c2: st.metric("Boyler hacmi", f"{_cift_poz['hacim']} L")
+                with _c3: st.metric("Alt serpantin", f"{_cift_poz['alt_debi']} L/h")
+                with _c4: st.metric("Üst serpantin", f"{_cift_poz['ust_debi']} L/h")
+                with _c5: st.metric("Cihaz Poz No", _cift_poz["poz"])
+                st.success(
+                    f"Seçilen Cihaz Poz No: **{_cift_poz['poz']}** | "
+                    f"Boyler: **{_cift_poz['hacim']} L** | "
+                    f"Alt: **{_cift_poz['alt_debi']} L/h** | Üst: **{_cift_poz['ust_debi']} L/h**"
+                )
+                st.caption(
+                    f"Her boyler için gerekli hacim: {_cift_gerekli_hacim:.0f} L | "
+                    f"Toplam gerekli serpantin debisi: {_cift_gerekli_debi:.0f} L/h"
+                )
+                if not _cift_yeterli:
+                    st.warning("Hesaplanan gereksinim 25.175.1714 pozunun sınırlarını aşıyor; özel ürün seçimi gerekir.")
 
             # Seçim yöntemi / manuel alanı:
             # kullanıcı tarafından verilecek kapasite ve ürün tabloları
@@ -4756,45 +4776,47 @@ if st.button("Raporu Oluştur (.docx)"):
             )
 
             if secili_tip == "TEK SERPANTİNLİ BOYLER":
-                rapor_adet = int(
-                    st.session_state.get("boyler_adet_tek_serpantin_v59", 3)
-                )
-                rapor_adet = max(1, rapor_adet)
-
-                # Mevcut seçim sonucu aynı adet ile uyumluysa onu kullan;
-                # değilse rapor için doğrudan otomatik poz hesabını çalıştır.
-                if (
-                    isinstance(boyler_secim_sonucu, dict)
-                    and int(boyler_secim_sonucu.get("adet", 0)) == rapor_adet
-                    and boyler_secim_sonucu.get("poz")
-                ):
+                rapor_adet = max(1, int(st.session_state.get("boyler_adet_tek_serpantin_v59", 3)))
+                if isinstance(boyler_secim_sonucu, dict) and int(boyler_secim_sonucu.get("adet", 0)) == rapor_adet and boyler_secim_sonucu.get("poz"):
                     _rapor_poz_kaydi = boyler_secim_sonucu
                 else:
-                    _rapor_poz_kaydi, _rapor_gerekli_hacim_birim, _rapor_gerekli_debi_birim, _rapor_poz_yeterli = _boyler_poz_sec(
-                        secilen_boyler_hacmi,
-                        boyler_ms,
-                        rapor_adet,
-                    )
-
+                    _rapor_poz_kaydi, _, _, _ = _boyler_poz_sec(secilen_boyler_hacmi, boyler_ms, rapor_adet)
                 rapor_poz = _rapor_poz_kaydi["poz"]
                 rapor_hacim = int(_rapor_poz_kaydi["hacim"])
-                rapor_debi = int(_rapor_poz_kaydi["debi"] if "debi" in _rapor_poz_kaydi else _rapor_poz_kaydi["debi_80_60"])
+                rapor_debi = int(_rapor_poz_kaydi.get("debi", _rapor_poz_kaydi.get("debi_80_60", 0)))
                 rapor_tip = (
-                    "Tek Bakır Boru Serpantinli, Dik Tip , Gövdesi İzolasyonlu, "
+                    "Tek Bakır Boru Serpantinli, Dik Tip, Gövdesi İzolasyonlu, "
+                    "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
+                )
+                rapor_gunes_satiri = False
+                rapor_alt_debi = rapor_ust_debi = 0
+                rapor_gunes_rejimi = ""
+            elif secili_tip == "ÇİFT SERPANTİNLİ BOYLER":
+                rapor_adet = max(1, int(st.session_state.get("boyler_adet_cift_serpantin_v59", 3)))
+                _cift_kayit = st.session_state.get("boyler_cift_secim_sonucu_v66")
+                if not (isinstance(_cift_kayit, dict) and int(_cift_kayit.get("adet", 0)) == rapor_adet and _cift_kayit.get("poz")):
+                    _cift_poz, _, _, _ = _cift_boyler_poz_sec(secilen_boyler_hacmi, boyler_ms, rapor_adet)
+                    _cift_kayit = {"poz":_cift_poz["poz"], "hacim":_cift_poz["hacim"], "alt_debi":_cift_poz["alt_debi"], "ust_debi":_cift_poz["ust_debi"], "adet":rapor_adet, "gunes_rejimi":st.session_state.get("boyler_gunes_rejimi_v66", "60/40")}
+                rapor_poz = _cift_kayit["poz"]
+                rapor_hacim = int(_cift_kayit["hacim"])
+                rapor_debi = int(_cift_kayit["alt_debi"] + _cift_kayit["ust_debi"])
+                rapor_alt_debi = int(_cift_kayit["alt_debi"])
+                rapor_ust_debi = int(_cift_kayit["ust_debi"])
+                rapor_gunes_rejimi = _cift_kayit.get("gunes_rejimi", "60/40")
+                rapor_gunes_satiri = True
+                rapor_tip = (
+                    "Çift Bakır Boru Serpantinli, Dik Tip, Gövdesi İzolasyonlu, "
                     "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
                 )
             else:
-                rapor_adet = int(
-                    st.session_state.get(
-                        f"boyler_adet_{'cift_serpantin' if secili_tip == 'ÇİFT SERPANTİNLİ BOYLER' else 'plakali_esanjör'}_v59",
-                        1,
-                    )
-                )
-                rapor_adet = max(1, rapor_adet)
+                rapor_adet = max(1, int(st.session_state.get("boyler_adet_plakali_esanjör_v59", 1)))
                 rapor_poz = "Poz verisi henüz tanımlanmadı"
                 rapor_hacim = int(round(secilen_boyler_hacmi / rapor_adet))
                 rapor_debi = int(round(boyler_ms / rapor_adet))
                 rapor_tip = secili_tip
+                rapor_gunes_satiri = False
+                rapor_alt_debi = rapor_ust_debi = 0
+                rapor_gunes_rejimi = ""
 
             # İstenen rapor formatı: etiket / iki nokta / değer şeklinde
             # üç sütunlu, sabit genişlikli ve hizalı tablo. Böylece etiket
@@ -4815,19 +4837,24 @@ if st.button("Raporu Oluştur (.docx)"):
             boyler_rapor_satirlari = [
                 ("Q BOYLER", f"{int(boyler_q_kw)} kW"),
                 (
-                    "Isıtıcı Akışkan ( Kazan )",
+                    "Isıtıcı Akışkan (Kazan)",
                     f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
                 ),
-                (
-                    "Isıtılan Akışkan",
-                    f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
-                ),
+            ]
+            if rapor_gunes_satiri:
+                boyler_rapor_satirlari.append((
+                    "Isıtıcı Akışkan (Güneş)",
+                    f"{rapor_gunes_rejimi.replace('/', '/')} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
+                ))
+            boyler_rapor_satirlari.extend([
+                ("Isıtılan Akışkan", f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)"),
                 ("Adet", str(rapor_adet)),
                 ("Tip", rapor_tip),
                 ("Boyler hacmi", f"{rapor_hacim} lt"),
-                ("Boyler Debisi", f"{rapor_debi} lt/h"),
-                ("Cihaz Poz No", rapor_poz),
-            ]
+            ])
+            if not rapor_gunes_satiri:
+                boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
+            boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
 
             # Word tablosu kullanıyoruz; kenarlıkları kaldırarak düz metin
             # görünümü korunur, ancak üç kolon sayesinde tüm satırlar simetrik
@@ -4842,7 +4869,7 @@ if st.button("Raporu Oluştur (.docx)"):
             kolon_genislikleri = [Inches(2.15), Inches(0.18), Inches(4.65)]
             kalin_etiketler = {
                 "Q BOYLER", "Adet", "Boyler hacmi",
-                "Boyler Debisi", "Cihaz Poz No"
+                "Boyler Debisi", "Alt serpantin debisi", "Üst serpantin debisi", "Cihaz Poz No"
             }
 
             for satir_no, (etiket, deger) in enumerate(boyler_rapor_satirlari):
