@@ -3027,27 +3027,40 @@ if bolum_6_aktif:
 
 
 
-def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_hesap_m3h, q_secim_m3h, q_boyler_kw=None):
-    """6.3.4 hesabını rapora görsel/formül olarak aktarır."""
+def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_hesap_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
+    """6.3.4 formülünü, kullanıcının verdiği örnekteki matematiksel düzende PNG olarak üretir."""
     if q_boyler_kw is None:
         q_boyler_kw = float(q_boyler_kcal_h) * 0.001163
-    fig, ax = plt.subplots(figsize=(8.0, 3.25))
+
+    import matplotlib.pyplot as plt
+    from matplotlib import rcParams
+
+    # Kullanıcının gönderdiği görsele yakın, sade beyaz zeminli matematik düzeni.
+    fig = plt.figure(figsize=(7.2, 2.05), facecolor="white")
+    ax = fig.add_axes([0, 0, 1, 1])
     ax.axis("off")
-    q_txt = f"{q_boyler_kcal_h:,.0f}".replace(",", ".")
-    kw_txt = f"{q_boyler_kw:,.0f}".replace(",", ".")
-    qh_txt = f"{q_hesap_m3h:.2f}"
-    qs_txt = f"{q_secim_m3h:.2f}"
-    ax.text(0.50, 0.86, "KULLANMA SICAK SU RE-SİRKULASYON POMPASI DEBİ HESABI",
-            ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(0.50, 0.65, f"Q BOYLER = {q_txt} kcal/h ≈ {kw_txt} kW",
-            ha="center", va="center", fontsize=12)
-    ax.text(0.50, 0.43, f"V = ({q_txt} × 0,05 × 1,15) / 5.000",
-            ha="center", va="center", fontsize=13)
-    ax.text(0.50, 0.23, f"V = {qh_txt} m³/h  →  Seçilen pompa debisi V = {qs_txt} m³/h",
-            ha="center", va="center", fontsize=12, fontweight="bold")
-    fig.tight_layout()
+
+    factor = 1.0 + float(emniyet_orani) / 100.0
+    factor_txt = f"{factor:.2f}".replace(".", ",")
+    q_txt = f"{float(q_boyler_kcal_h):,.0f}".replace(",", ".")
+    qh_txt = f"{float(q_hesap_m3h):.2f}".replace(".", ",")
+    qs_txt = f"{float(q_secim_m3h):.2f}".replace(".", ",")
+
+    # İlk satır: genel formül
+    ax.text(
+        0.50, 0.72,
+        rf"$V = \dfrac{{Q_{{BOYLER}} \times 0,05 \times {factor_txt}}}{{5.000}}$",
+        ha="center", va="center", fontsize=17, color="black"
+    )
+    # İkinci satır: gerçek proje hesabı
+    ax.text(
+        0.50, 0.31,
+        rf"$V = \dfrac{{{q_txt} \times 0,05 \times {factor_txt}}}{{5.000}} = {qh_txt}\;m^3/h$",
+        ha="center", va="center", fontsize=17, color="black"
+    )
+
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=220, bbox_inches="tight", facecolor="white")
+    fig.savefig(buf, format="png", dpi=240, bbox_inches="tight", pad_inches=0.05, facecolor="white")
     plt.close(fig)
     buf.seek(0)
     return buf
@@ -4261,84 +4274,119 @@ re_sirkulasyon_pompa_sonucu = {}
 if bolum_634_aktif:
     st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
     st.markdown("### • 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ")
-    st.caption("Q değeri seçilmiş boylerden otomatik alınır. Seçim mantığı pis su pompası modülündeki Q/H → Cihaz Poz No → üretici Q-H eğrisi yaklaşımıyla uygulanır.")
+    st.caption("Q değeri seçilmiş boylerden otomatik alınır. Emniyet oranı ve hesaplanan debi kullanıcı tarafından gerektiğinde değiştirilebilir.")
 
     _rs_q_boyler = float(st.session_state.get("boyler_q_kcal_h_v97", 0.0))
     _rs_q_boyler_kw = _rs_q_boyler * 0.001163
-    _rs_q_hesap = (_rs_q_boyler * 0.05 * 1.15 / 5000.0) if _rs_q_boyler > 0 else 0.0
+
+    # Emniyet oranı: varsayılan %15, kullanıcı tarafından değiştirilebilir.
+    re_sirk_emniyet = st.number_input(
+        "Emniyet Oranı (%)",
+        min_value=0.0, max_value=100.0, value=15.0, step=1.0,
+        key="re_sirk_emniyet_v99",
+        help="Re-sirkülasyon debisi hesabında QBOYLER × 0,05 × (1 + emniyet oranı) kullanılır. Varsayılan %15'tir."
+    )
+
+    _rs_q_hesap = (
+        _rs_q_boyler * 0.05 * (1.0 + float(re_sirk_emniyet) / 100.0) / 5000.0
+        if _rs_q_boyler > 0 else 0.0
+    )
 
     if _rs_q_boyler <= 0:
         st.warning("Önce 6.3.3 bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
-        re_sirk_q = 0.1
+        _rs_q_hesap = 0.0
     else:
         st.success(
             f"Seçilen boyler ısı yükü: **{_rs_q_boyler:,.0f} kcal/h ≈ {_rs_q_boyler_kw:,.0f} kW**".replace(",", ".")
         )
         st.markdown(
-            f"**Hesaplanan re-sirkülasyon debisi:** "
-            f"V = ({_rs_q_boyler:,.0f} × 0,05 × 1,15) / 5.000 = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
-        )
-        # Hesaplanan debiye göre bir üst pratik pompa debisi gösterilir.
-        _rs_standart_debiler = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
-        _rs_q_secim = next((x for x in _rs_standart_debiler if x >= _rs_q_hesap), _rs_q_hesap)
-        re_sirk_q = float(_rs_q_secim)
-
-    _rs_c1, _rs_c2 = st.columns(2)
-    with _rs_c1:
-        st.number_input(
-            "Hesaplanan re-sirkülasyon debisi V [m³/h]",
-            min_value=0.0, value=float(_rs_q_hesap), step=0.01, format="%.2f",
-            disabled=True, key="re_sirk_q_hesap_v98"
-        )
-    with _rs_c2:
-        re_sirk_h = st.number_input(
-            "Basma Yüksekliği H [mSS]", min_value=0.5, max_value=20.0, value=5.0, step=0.5,
-            key="re_sirk_h_v98"
+            f"**Otomatik hesap:** V = ({_rs_q_boyler:,.0f} × 0,05 × 1,{float(re_sirk_emniyet)/100+1:.2f}) / 5.000 = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
         )
 
-    st.info(f"Pompa seçim debisi: **V = {re_sirk_q:.2f} m³/h** | Hesaplanan debi: **{_rs_q_hesap:.2f} m³/h**")
+    # Hesaplanan debi otomatik olarak alana gelir; kullanıcı isterse değiştirebilir.
+    re_sirk_q = st.number_input(
+        "Re-sirkülasyon Debisi V [m³/h]",
+        min_value=0.0,
+        value=float(_rs_q_hesap),
+        step=0.01,
+        format="%.2f",
+        key="re_sirk_q_v99",
+        help="Otomatik hesaplanan değer gelir; proje hesabınıza göre elle değiştirebilirsiniz."
+    )
+
+    re_sirk_h = st.number_input(
+        "Basma Yüksekliği H [mSS]", min_value=0.5, max_value=20.0, value=5.0, step=0.5,
+        key="re_sirk_h_v99"
+    )
 
     _rs_c3, _rs_c4 = st.columns(2)
     with _rs_c3:
-        re_sirk_as = st.selectbox("Asıl Pompa Adedi", [1,2,3], index=0, key="re_sirk_as_v98")
+        re_sirk_as = st.selectbox("Asıl Pompa Adedi", [1,2,3], index=0, key="re_sirk_as_v99")
     with _rs_c4:
-        re_sirk_yedek = st.selectbox("Yedek Pompa Adedi", [1], index=0, key="re_sirk_yedek_v98")
+        re_sirk_yedek = st.selectbox("Yedek Pompa Adedi", [1], index=0, key="re_sirk_yedek_v99")
 
     re_sirk_marka = st.selectbox(
-        "Re-sirkülasyon pompası üreticisi / seçim modu",
+        "Pompa Markası / Seçim Modu",
         ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
-        index=0, key="re_sirk_marka_v98",
+        index=0, key="re_sirk_marka_v99",
     )
 
-    # Cihaz Poz No, hesaplanan debiden bağımsız olarak seçilen pompanın Q/H çalışma
-    # noktası ve üretici eğrisi ile birlikte değerlendirilir. Örnekte 2 m³/h / 5 mSS
-    # çalışma noktası için 25.350.3004 pozunun rapora aktarılması hedeflenir.
-    re_sirk_poz, re_sirk_poz_tanim, re_sirk_poz_durum = re_sirk_pompa_pozu_sec(float(re_sirk_q), float(re_sirk_h))
-    # Kullanıcı örneğindeki 2 m³/h - 5 mSS pompa seçiminde 25.350.3004 pozunu
-    # kullanabilmek için, 3-5 mSS bandında bir sonraki uygun poz bandı esas alınır.
-    if re_sirk_q < 3.0 and 3.0 <= float(re_sirk_h) <= 5.0:
-        _poz3004 = next((x for x in RE_SIRK_POMPA_POZ_TABLOSU if x["poz"] == "25.350.3004"), None)
-        if _poz3004:
-            re_sirk_poz, re_sirk_poz_tanim, re_sirk_poz_durum = _poz3004["poz"], _poz3004["tanim"], "UYGUN"
+    # ------------------------------------------------------------------
+    # POZ NUMARASI SEÇİMİ — otomatik veya manuel
+    # ------------------------------------------------------------------
+    st.markdown("#### Cihaz Poz Numarası Seçimi")
+    _rs_poz_modu = st.radio(
+        "Poz seçim yöntemi",
+        ["Otomatik Poz Seçimi", "Manuel Poz Seçimi"],
+        horizontal=True,
+        key="re_sirk_poz_modu_v99",
+        label_visibility="collapsed",
+    )
 
-    re_sirk_model = re_sirk_uretici_sec(float(_rs_q_hesap), float(re_sirk_h), re_sirk_marka) if re_sirk_poz_durum == "UYGUN" and _rs_q_hesap > 0 else None
+    _rs_otomatik_poz, _rs_otomatik_tanim, _rs_otomatik_durum = re_sirk_pompa_pozu_sec(float(re_sirk_q), float(re_sirk_h))
+    if _rs_poz_modu == "Manuel Poz Seçimi":
+        _rs_poz_opsiyonlari = [x["poz"] for x in RE_SIRK_POMPA_POZ_TABLOSU]
+        _rs_mevcut_poz = st.session_state.get("re_sirk_poz_manuel_v99", _rs_otomatik_poz)
+        if _rs_mevcut_poz not in _rs_poz_opsiyonlari:
+            _rs_mevcut_poz = _rs_poz_opsiyonlari[0]
+        re_sirk_poz = st.selectbox(
+            "Cihaz Poz No",
+            _rs_poz_opsiyonlari,
+            index=_rs_poz_opsiyonlari.index(_rs_mevcut_poz),
+            key="re_sirk_poz_manuel_v99",
+        )
+        _rs_poz_kayit = next(x for x in RE_SIRK_POMPA_POZ_TABLOSU if x["poz"] == re_sirk_poz)
+        re_sirk_poz_tanim = _rs_poz_kayit["tanim"]
+        re_sirk_poz_durum = "UYGUN"
+    else:
+        re_sirk_poz = _rs_otomatik_poz
+        re_sirk_poz_tanim = _rs_otomatik_tanim
+        re_sirk_poz_durum = _rs_otomatik_durum
+
+    re_sirk_poz_rapora_aktar = st.checkbox(
+        "Cihaz Poz Numarasını Hesap Raporuna Aktar",
+        value=True,
+        key="re_sirk_poz_rapora_aktar_v99",
+    )
 
     if re_sirk_poz_durum == "UYGUN":
-        st.success(f"✅ Uygun Cihaz Poz No: **{re_sirk_poz}**")
+        st.success(f"✅ Seçilen Cihaz Poz No: **{re_sirk_poz}**")
     else:
-        st.error("❌ HATA: Re-sirkülasyon pompası çalışma noktası poz sınırları dışındadır!")
+        st.error("❌ HATA: Re-sirkülasyon pompası çalışma noktası otomatik poz sınırları dışındadır. Manuel poz seçimi ile müdahale edebilirsiniz.")
     st.info(f"📌 **Poz Tanımı:** {re_sirk_poz_tanim}")
 
+    # Üretici/model program ekranında görünür; rapora aktarılmaz.
+    re_sirk_model = re_sirk_uretici_sec(float(re_sirk_q), float(re_sirk_h), re_sirk_marka) if re_sirk_q > 0 else None
     re_curve = []
     if re_sirk_model:
         st.success(
-            f"Üretici seçimi: **{re_sirk_model['marka']} {re_sirk_model['model']}** | "
-            f"Çalışma noktası: **{_rs_q_hesap:.2f} m³/h, {re_sirk_model['h_calisma']:.2f} mSS**"
+            f"Üretici / Model: **{re_sirk_model['marka']} {re_sirk_model['model']}** | "
+            f"Çalışma noktası: **{re_sirk_q:.2f} m³/h, {re_sirk_model['h_calisma']:.2f} mSS**"
         )
         re_curve = re_sirk_model["curve"]
         re_graph = pompa_grafigi_png(
             [x[0] for x in re_curve], [x[1] for x in re_curve],
-            float(_rs_q_hesap), float(re_sirk_model["h_calisma"]),
+            float(re_sirk_q), float(re_sirk_model["h_calisma"]),
             f"{re_sirk_model['marka']} {re_sirk_model['model']} - Üretici Q-H Eğrisi", anonim=False,
         )
         st.image(re_graph, caption=f"{re_sirk_model['marka']} {re_sirk_model['model']} - Pompa Performans Eğrisi", use_container_width=True)
@@ -4350,6 +4398,7 @@ if bolum_634_aktif:
     re_sirkulasyon_pompa_sonucu = {
         "q_boyler_kcal_h": _rs_q_boyler,
         "q_boyler_kw": _rs_q_boyler_kw,
+        "emniyet_orani": float(re_sirk_emniyet),
         "q_hesap_m3h": float(_rs_q_hesap),
         "q_m3h": float(re_sirk_q),
         "h_mss": float(re_sirk_h),
@@ -4360,6 +4409,7 @@ if bolum_634_aktif:
         "poz": re_sirk_poz,
         "poz_tanim": re_sirk_poz_tanim,
         "poz_durumu": re_sirk_poz_durum,
+        "poz_rapora_aktar": bool(re_sirk_poz_rapora_aktar),
         "marka": re_sirk_model["marka"] if re_sirk_model else "",
         "model": re_sirk_model["model"] if re_sirk_model else "",
         "guc_kw": float(re_sirk_model["p2_kw"]) if re_sirk_model else 0.20,
@@ -4369,12 +4419,12 @@ if bolum_634_aktif:
         "pompa_kaynak": re_sirk_model["kaynak"] if re_sirk_model else "Doğrulanmış üretici eğrisi bulunamadı",
         "q_secim_m3h": float(re_sirk_q),
     }
-    st.session_state["re_sirkulasyon_pompa_sonucu_v98"] = re_sirkulasyon_pompa_sonucu
+    st.session_state["re_sirkulasyon_pompa_sonucu_v99"] = re_sirkulasyon_pompa_sonucu
 
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
 
-  _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v98", {})
+  _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
   gecersiz_var = any(
       p["poz_durumu"] != "UYGUN" for p in psp_parametreleri.values()
   ) or (bolum_634_aktif and _re_sirk_rapor_kontrol and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN")
@@ -5846,89 +5896,56 @@ if st.button("Raporu Oluştur (.docx)"):
 
     # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
     if bolum_634_aktif:
-        _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v98", {})
+        _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
         if _rs_rapor:
             doc.add_heading("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", level=2)
-            doc.add_paragraph("Re-sirkülasyon pompası debisi, seçilmiş boylerin ısı yükünden otomatik olarak hesaplanmış; ardından uygun pompa Q-H çalışma noktası ve Cihaz Poz No seçimi yapılmıştır.")
 
-            # HESAP FORMÜLÜ GÖRSELİ — RAPORDA MUTLAKA YER ALIR
             _rs_qb = float(_rs_rapor.get("q_boyler_kcal_h", 0.0))
             _rs_qb_kw = float(_rs_rapor.get("q_boyler_kw", _rs_qb * 0.001163))
             _rs_qh = float(_rs_rapor.get("q_hesap_m3h", 0.0))
-            _rs_qs = float(_rs_rapor.get("q_secim_m3h", _rs_rapor.get("q_m3h", 0.0)))
+            _rs_qs = float(_rs_rapor.get("q_m3h", 0.0))
+
+            # Kullanıcının gönderdiği görsel düzeninde formül mutlaka rapora eklenir.
             if _rs_qb > 0:
-                _formul_buf = re_sirk_formul_gorseli_png(_rs_qb, _rs_qh, _rs_qs, _rs_qb_kw)
-                doc.add_picture(_formul_buf, width=Inches(6.4))
-                doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-            rs_tablo = doc.add_table(rows=0, cols=3)
-            rs_tablo.style = "Table Grid"
-            rs_satirlar = [
-                ("Boyler Q", f"{_rs_rapor.get('q_boyler_kcal_h', 0.0):,.0f} kcal/h ≈ {_rs_rapor.get('q_boyler_kw', 0.0):,.0f} kW".replace(",", ".")),
-                ("Hesaplanan Debi V", f"{_rs_rapor.get('q_hesap_m3h', 0.0):.2f} m³/h"),
-                ("Seçilen Pompa Debisi V", f"{_rs_rapor.get('q_m3h', 0.0):.2f} m³/h"),
-                ("Basma Yüksekliği H", f"{_rs_rapor.get('h_mss', 0.0):.2f} mSS"),
-                ("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW"),
-                ("Adet", _rs_rapor.get("adet_str", "")),
-                ("Tip", _rs_rapor.get("tip", "")),
-                ("Üretici", _rs_rapor.get("marka", "")),
-                ("Model", _rs_rapor.get("model", "")),
-                ("Cihaz Poz No", _rs_rapor.get("poz", "")),
-            ]
-            for etiket, deger in rs_satirlar:
-                hucreler = rs_tablo.add_row().cells
-                hucreler[0].text = etiket
-                hucreler[1].text = ":"
-                hucreler[2].text = str(deger)
-            for row in rs_tablo.rows:
-                row.cells[0].width = Inches(2.15)
-                row.cells[1].width = Inches(0.18)
-                row.cells[2].width = Inches(4.65)
-                for j, cell in enumerate(row.cells):
-                    for par in cell.paragraphs:
-                        for run in par.runs:
-                            run.font.name = "Arial"
-                            run.font.size = Pt(10.5)
-                            if j == 0:
-                                run.bold = True
-                            run.font.color.rgb = RGBColor(0,0,0)
-
-            curve = _rs_rapor.get("pompa_curve", [])
-            if curve:
-                q_curve = [p[0] for p in curve]
-                h_curve = [p[1] for p in curve]
-                grafik_buf = pompa_grafigi_png(
-                    q_curve, h_curve,
-                    _rs_rapor.get("q_m3h", 0.0),
-                    _rs_rapor.get("h_calisma", _rs_rapor.get("h_mss", 0.0)),
-                    f"{_rs_rapor.get('marka','')} {_rs_rapor.get('model','')} - Üretici Q-H Eğrisi",
-                    anonim=True,
+                _formul_buf = re_sirk_formul_gorseli_png(
+                    _rs_qb, _rs_qh, _rs_qs, _rs_qb_kw,
+                    float(_rs_rapor.get("emniyet_orani", 15.0))
                 )
-                doc.add_paragraph("Pompa Performans Eğrisi:")
-                doc.add_picture(grafik_buf, width=Inches(6.2))
-                doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            if _rs_rapor.get("pompa_kaynak"):
-                doc.add_paragraph(f"Pompa eğrisi kaynağı: {_rs_rapor['pompa_kaynak']}")
+                _formul_par = doc.add_paragraph()
+                _formul_par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _formul_par.paragraph_format.space_before = Pt(2)
+                _formul_par.paragraph_format.space_after = Pt(6)
+                _formul_run = _formul_par.add_run()
+                _formul_run.add_picture(_formul_buf, width=Inches(5.9))
 
-    rapor_word_stillerini_uygula(doc)
+            # RAPOR DÜZENİ: Kullanıcının verdiği örnekle aynı satır düzeni; tablo çizgileri yok.
+            def _rs_rapor_satiri(label, value, bold_value=False):
+                par = doc.add_paragraph()
+                par.paragraph_format.left_indent = Inches(0.15)
+                par.paragraph_format.space_before = Pt(0)
+                par.paragraph_format.space_after = Pt(2)
+                r1 = par.add_run(f"{label} ")
+                r1.font.name = "Arial"
+                r1.font.size = Pt(11)
+                r1.bold = True
+                r2 = par.add_run(f"= {value}")
+                r2.font.name = "Arial"
+                r2.font.size = Pt(11)
+                r2.bold = bool(bold_value)
+                return par
 
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
+            _baslik = doc.add_paragraph()
+            _baslik.paragraph_format.space_before = Pt(4)
+            _baslik.paragraph_format.space_after = Pt(5)
+            _br = _baslik.add_run("Seçilen Pompa:")
+            _br.font.name = "Arial"
+            _br.font.size = Pt(11.5)
+            _br.bold = True
 
-    st.success("6.3.1 Kullanma Soğuk Suyu Deposu raporu başarıyla hazırlandı!")
-
-    dosya_adi = (
-        f"{aktif_is.replace(' ', '_')}_Rapor.docx"
-        if is_adi
-        else "Mekanik_Uygulama_Raporu.docx"
-    )
-
-    st.download_button(
-        label="📥 Word Dosyasını İndir (.docx)",
-        data=buffer,
-        file_name=dosya_adi,
-        mime=(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ),
-    )
+            _rs_rapor_satiri("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h", True)
+            _rs_rapor_satiri("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS", True)
+            _rs_rapor_satiri("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW", True)
+            _rs_rapor_satiri("Adet", _rs_rapor.get("adet_str", ""), True)
+            _rs_rapor_satiri("Tip", _rs_rapor.get("tip", ""), False)
+            if _rs_rapor.get("poz_rapora_aktar", True):
+                _rs_rapor_satiri("Cihaz Poz No", _rs_rapor.get("poz", ""), True)
