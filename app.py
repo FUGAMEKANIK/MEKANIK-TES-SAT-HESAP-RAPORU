@@ -2625,8 +2625,8 @@ if bolum_6_aktif:
         
                         # Pompa elektrik gücü, nihai debi ve alt basınca göre otomatik hesaplanır.
                         # Alt bölümler bağımsız seçilebildiği için değerleri tekrar güvenceye al.
-                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, vp_pompa_m3h))
-                        p_alt_mss = float(st.session_state.get(palt_final_key, p_alt_mss))
+                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, st.session_state.get(f"hidrofor_{i}_vp_manuel", 0.0)))
+                        p_alt_mss = float(st.session_state.get(palt_final_key, st.session_state.get(f"hidrofor_{i}_palt_manuel", 0.0)))
                         h_calisma = p_alt_mss
                         hidrofor_pompa_hesap = pompa_hidrolik_hesap(vp_pompa_m3h, h_calisma, 0.60, 0.90)
                         hesaplanan_guc_kw = float(hidrofor_pompa_hesap["motor_secim_kw"])
@@ -2675,8 +2675,8 @@ if bolum_6_aktif:
                     if egrisi_aktif:
                         st.markdown("#### • Pompa Performans Eğrisi:")
                         # Bu bölümdeki nihai değerler pompa eğrisine de aktarılır.
-                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, vp_pompa_m3h))
-                        h_calisma = float(st.session_state.get(palt_final_key, p_alt_mss))
+                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, st.session_state.get(f"hidrofor_{i}_vp_manuel", 0.0)))
+                        h_calisma = float(st.session_state.get(palt_final_key, st.session_state.get(f"hidrofor_{i}_palt_manuel", 0.0)))
                         hq_egrisi, hh_egrisi, hq_baslik, hq_model = hidrofor_pompa_secim_egrisi(
                             vp_pompa_m3h, h_calisma, hidrofor_marka_secimi
                         )
