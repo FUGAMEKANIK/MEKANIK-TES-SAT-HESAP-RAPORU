@@ -2968,7 +2968,41 @@ if bolum_633_aktif:
     toplam_tuketim = float(sicak_su_gunluk_toplam_litre)
     es_zamanli_tuketim = toplam_tuketim * float(kullanma_es_faktoru)
     hesaplanan_boyler_hacmi = es_zamanli_tuketim * float(depolama_faktoru)
-    secilen_boyler_hacmi = int(math.ceil(hesaplanan_boyler_hacmi / 50.0) * 50) if hesaplanan_boyler_hacmi > 0 else 0
+    secilen_boyler_hacmi_hesaplanan = int(math.ceil(hesaplanan_boyler_hacmi / 50.0) * 50) if hesaplanan_boyler_hacmi > 0 else 0
+
+    # Boyler hacmi ile aşağıdaki sekonder su debisi iki yönlü senkron çalışır.
+    # İlk açılışta üstte hesaplanan emniyetli hacim aşağıya aktarılır.
+    # Kullanıcı aşağıdaki değeri değiştirirse üstteki emniyetli değer de aynı değere döner.
+    boyler_sync_key = "boyler_ms_v39"
+    prev_upper_key = "sicak_su_emniyet_hacmi_v39"
+    prev_lower_key = "boyler_ms_onceki_v39"
+
+    if boyler_sync_key not in st.session_state:
+        st.session_state[boyler_sync_key] = float(secilen_boyler_hacmi_hesaplanan)
+        st.session_state[prev_lower_key] = float(secilen_boyler_hacmi_hesaplanan)
+        st.session_state[prev_upper_key] = float(secilen_boyler_hacmi_hesaplanan)
+
+    mevcut_alt_deger = float(st.session_state.get(boyler_sync_key, secilen_boyler_hacmi_hesaplanan))
+    onceki_ust_deger = float(st.session_state.get(prev_upper_key, secilen_boyler_hacmi_hesaplanan))
+    onceki_alt_deger = float(st.session_state.get(prev_lower_key, mevcut_alt_deger))
+    ust_degisti = abs(float(secilen_boyler_hacmi_hesaplanan) - onceki_ust_deger) > 1e-9
+    alt_degisti = abs(mevcut_alt_deger - onceki_alt_deger) > 1e-9
+
+    if alt_degisti and not ust_degisti:
+        # Alt bölüm kullanıcı tarafından değiştirildi: üstteki emniyetli hacmi güncelle.
+        secilen_boyler_hacmi = int(round(mevcut_alt_deger))
+    elif ust_degisti and not alt_degisti:
+        # Üstteki hesap değişti: alt bölümü yeni emniyetli hacme getir.
+        st.session_state[boyler_sync_key] = float(secilen_boyler_hacmi_hesaplanan)
+        secilen_boyler_hacmi = int(secilen_boyler_hacmi_hesaplanan)
+    elif alt_degisti and ust_degisti:
+        # Aynı turda iki değişiklik varsa kullanıcının alt bölümdeki manuel değeri önceliklidir.
+        secilen_boyler_hacmi = int(round(mevcut_alt_deger))
+    else:
+        secilen_boyler_hacmi = int(round(mevcut_alt_deger))
+
+    st.session_state[prev_upper_key] = float(secilen_boyler_hacmi_hesaplanan)
+    st.session_state[prev_lower_key] = float(st.session_state.get(boyler_sync_key, secilen_boyler_hacmi))
 
     st.markdown(
         f"Kullanma Eş Zaman Faktörü = **{kullanma_es_faktoru:.2f}**"
@@ -2989,9 +3023,11 @@ if bolum_633_aktif:
     with col_q1:
         boyler_ms = st.number_input(
             "Sekonder su debisi (lt/h)",
-            min_value=0.0, step=50.0, value=2750.0,
-            format="%.0f", key="boyler_ms_v38"
+            min_value=0.0, step=50.0,
+            format="%.0f", key=boyler_sync_key
         )
+        # Kullanıcının alt değeri üstteki hacimle senkronize edilsin.
+        secilen_boyler_hacmi = int(round(boyler_ms))
         boyler_ts_giris = st.number_input(
             "Sekonder giriş sıcaklığı (°C)",
             min_value=0.0, max_value=100.0, step=1.0, value=10.0,
