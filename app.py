@@ -2846,7 +2846,7 @@ if bolum_633_aktif:
     # Kullanım yerleri artık seçim kutusu yerine sabit ve düzenlenebilir bir tablodur.
     # Kullanıcı yalnızca Adet ve Birim Tüketim değerlerini değiştirir.
     # Adet = 0 olan satırlar hesaba dahil edilmez.
-    tablo_key = f"sicak_su_kullanim_tablosu_v31_{sicak_su_yapi_tipi}"
+    tablo_key = f"sicak_su_kullanim_tablosu_v32_{sicak_su_yapi_tipi}"
     satirlar = []
     for kullanim, kaynak_aralik in kaynak_satirlari.items():
         # Başlangıç değeri doğrudan kullanıcının ilgili yapı tipi için
@@ -2926,18 +2926,41 @@ if bolum_633_aktif:
     else:
         varsayilan_es = float(kullanma_es_faktoru_kaynak or 0.0)
 
+    # Faktör widget'larını yapı tipine göre sıfırlamak için sabit widget anahtarları
+    # kullanıyoruz. Streamlit'te bir widget key'i mevcutsa, sonradan verilen
+    # `value=` varsayılanı mevcut değeri değiştirmez. Bu nedenle yapı tipi veya
+    # apartman daire sayısı değiştiğinde Session State'i açıkça güncelliyoruz.
+    faktor_signature = (
+        f"Apartman_{konut_sayisi}" if sicak_su_yapi_tipi == "Apartman"
+        else sicak_su_yapi_tipi
+    )
+    faktor_onceki_signature = st.session_state.get("sicak_su_faktor_signature_v33")
+    faktor_key_es = "sicak_su_kullanma_es_faktoru_v33"
+    faktor_key_dep = "sicak_su_depolama_faktoru_v33"
+
+    if faktor_onceki_signature != faktor_signature:
+        st.session_state[faktor_key_es] = float(varsayilan_es)
+        st.session_state[faktor_key_dep] = float(depolama_faktoru_kaynak or 0.0)
+        st.session_state["sicak_su_faktor_signature_v33"] = faktor_signature
+    else:
+        # İlk çalıştırmada değerlerin mutlaka kaynak tablodan gelmesini garanti et.
+        if faktor_key_es not in st.session_state:
+            st.session_state[faktor_key_es] = float(varsayilan_es)
+        if faktor_key_dep not in st.session_state:
+            st.session_state[faktor_key_dep] = float(depolama_faktoru_kaynak or 0.0)
+
     col_f1, col_f2 = st.columns(2)
     with col_f1:
         kullanma_es_faktoru = st.number_input(
             "Kullanım Eş Zaman Faktörü",
-            min_value=0.0, max_value=1.0, value=varsayilan_es, step=0.01,
-            format="%.2f", key="sicak_su_kullanma_es_faktoru"
+            min_value=0.0, max_value=1.0, step=0.01,
+            format="%.2f", key=faktor_key_es
         )
     with col_f2:
         depolama_faktoru = st.number_input(
             "Depolama Faktörü",
-            min_value=0.0, max_value=10.0, value=float(depolama_faktoru_kaynak or 0.0), step=0.01,
-            format="%.2f", key="sicak_su_depolama_faktoru"
+            min_value=0.0, max_value=10.0, step=0.01,
+            format="%.2f", key=faktor_key_dep
         )
 
     st.markdown("**Boyler hacmi hesabı**")
