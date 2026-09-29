@@ -3067,11 +3067,44 @@ def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q
     buf.seek(0)
     return buf
 
+# 6.3.4 Re-sirkülasyon pompası Cihaz Poz No tablosu
+# 2026 ÇŞİDB mekanik tesisat poz aralıkları esas alınmıştır.
+RE_SIRK_POMPA_POZ_TABLOSU = [
+    {"poz":"25.350.3001", "qmin":0.5, "qmax":3.5, "hmin":1.0, "hmax":3.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (0,5-3,5 m³/h) (1-3 mSS)."},
+    {"poz":"25.350.3002", "qmin":3.5, "qmax":7.0, "hmin":1.0, "hmax":3.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (3,5-7,0 m³/h) (1-3 mSS)."},
+    {"poz":"25.350.3003", "qmin":7.0, "qmax":11.0, "hmin":1.0, "hmax":3.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (7-11 m³/h) (1-3 mSS)."},
+    {"poz":"25.350.3004", "qmin":3.0, "qmax":6.0, "hmin":3.0, "hmax":5.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (3-6 m³/h) (3-5 mSS)."},
+    {"poz":"25.350.3005", "qmin":6.0, "qmax":9.0, "hmin":3.0, "hmax":5.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (6-9 m³/h) (3-5 mSS)."},
+    {"poz":"25.350.3006", "qmin":9.0, "qmax":12.0, "hmin":3.0, "hmax":5.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (9-12 m³/h) (3-5 mSS)."},
+    {"poz":"25.350.3007", "qmin":12.0, "qmax":17.0, "hmin":3.0, "hmax":5.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (12-17 m³/h) (3-5 mSS)."},
+    {"poz":"25.350.3008", "qmin":12.0, "qmax":20.0, "hmin":5.0, "hmax":10.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (12-20 m³/h) (5-10 mSS)."},
+    {"poz":"25.350.3009", "qmin":20.0, "qmax":28.0, "hmin":5.0, "hmax":10.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (20-28 m³/h) (5-10 mSS)."},
+    {"poz":"25.350.3010", "qmin":28.0, "qmax":36.0, "hmin":5.0, "hmax":10.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (28-36 m³/h) (5-10 mSS)."},
+    {"poz":"25.350.3011", "qmin":36.0, "qmax":50.0, "hmin":5.0, "hmax":10.0, "tanim":"Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası (36-50 m³/h) (5-10 mSS)."},
+]
+
+# Wilo / Grundfos program içi seçim verileri. Marka-model ekranda gösterilir; rapora aktarılmaz.
+RE_SIRK_URETICI_POMPALAR = [
+    {"marka":"Wilo", "model":"Wilo-Stratos MAXO-Z 25/0,5-6", "p2_kw":0.20, "curve":[(0.0,6.0),(1.0,5.8),(2.0,5.3),(3.0,4.6),(4.0,3.6),(5.0,2.5)], "kaynak":"Wilo"},
+    {"marka":"Wilo", "model":"Wilo-Stratos MAXO-Z 30/0,5-8", "p2_kw":0.25, "curve":[(0.0,8.0),(1.0,7.7),(2.0,7.2),(3.0,6.5),(4.0,5.6),(5.0,4.5),(6.0,3.2)], "kaynak":"Wilo"},
+    {"marka":"Grundfos", "model":"Grundfos MAGNA3 25-60", "p2_kw":0.18, "curve":[(0.0,6.0),(1.0,5.8),(2.0,5.2),(3.0,4.5),(4.0,3.6),(5.0,2.5)], "kaynak":"Grundfos"},
+    {"marka":"Grundfos", "model":"Grundfos MAGNA3 25-80", "p2_kw":0.25, "curve":[(0.0,8.0),(1.0,7.7),(2.0,7.1),(3.0,6.4),(4.0,5.5),(5.0,4.4),(6.0,3.1)], "kaynak":"Grundfos"},
+]
+
 def re_sirk_pompa_pozu_sec(q_m3h, h_mss):
-    for kayit in RE_SIRK_POMPA_POZ_TABLOSU:
-        if kayit["qmin"] <= q_m3h <= kayit["qmax"] and kayit["hmin"] <= h_mss <= kayit["hmax"]:
-            return kayit["poz"], kayit["tanim"], "UYGUN"
-    return "SINIR DIŞI", "Girilen re-sirkülasyon pompası çalışma noktası 25.350.3001-3011 poz kapasite sınırları dışındadır!", "GECERSIZ"
+    # Önce H çalışma bandını sağlayan poz grubu bulunur; ardından gerekli Q'yu
+    # karşılayan en küçük poz seçilir. Böylece örneğin Q=2 m³/h, H=5 mSS
+    # için H=3-5 bandındaki 25.350.3004 seçilebilir.
+    h_uygun = [k for k in RE_SIRK_POMPA_POZ_TABLOSU if k["hmin"] <= h_mss <= k["hmax"]]
+    if not h_uygun:
+        return "SINIR DIŞI", "Girilen H çalışma noktası 25.350.3001-3011 poz basınç aralıkları dışındadır!", "GECERSIZ"
+
+    q_uygun = [k for k in h_uygun if q_m3h <= k["qmax"]]
+    if q_uygun:
+        secilen = min(q_uygun, key=lambda k: k["qmax"])
+        return secilen["poz"], secilen["tanim"], "UYGUN"
+
+    return "SINIR DIŞI", "Girilen Q çalışma noktası 25.350.3001-3011 poz kapasite sınırları dışındadır!", "GECERSIZ"
 
 def re_sirk_egri_degeri(curve, q):
     if not curve or q < curve[0][0] or q > curve[-1][0]:
