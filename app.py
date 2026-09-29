@@ -1,3 +1,4 @@
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from datetime import datetime
 import io
 import json
@@ -4751,15 +4752,19 @@ if st.button("Raporu Oluştur (.docx)"):
                 rapor_debi = int(round(boyler_ms / rapor_adet))
                 rapor_tip = secili_tip
 
-            # İstenen rapor formatı: başlık + sabit hizalı etiket/değer satırları.
-            # Q, adet, hacim, debi ve Cihaz Poz No değerleri kalın yazılır.
+            # İstenen rapor formatı: etiket / iki nokta / değer şeklinde
+            # üç sütunlu, sabit genişlikli ve hizalı tablo. Böylece etiket
+            # uzunlukları değişse bile iki nokta üst üste ve değerler kaymaz.
             doc.add_paragraph("")
             boyler_rapor_baslik = doc.add_paragraph()
+            boyler_rapor_baslik.paragraph_format.space_after = Pt(4)
             boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
                 "Kullanma Sıcak Suyu Boyleri:"
             )
             boyler_rapor_baslik_run.bold = True
             boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
+            boyler_rapor_baslik_run.font.name = "Arial"
+            boyler_rapor_baslik_run.font.size = Pt(11)
 
             boyler_rapor_satirlari = [
                 ("Q BOYLER", f"{boyler_q_kw:.1f} kW"),
@@ -4778,18 +4783,67 @@ if st.button("Raporu Oluştur (.docx)"):
                 ("Cihaz Poz No", rapor_poz),
             ]
 
-            for etiket, deger in boyler_rapor_satirlari:
-                p = doc.add_paragraph()
-                p.paragraph_format.space_after = Pt(0)
-                p.paragraph_format.left_indent = Inches(0)
-                etiket_run = p.add_run(f"{etiket:<42}: ")
-                etiket_run.bold = False
-                deger_run = p.add_run(deger)
-                deger_run.bold = etiket in {
-                    "Q BOYLER", "Adet", "Boyler hacmi",
-                    "Boyler Debisi", "Cihaz Poz No"
-                }
-                deger_run.font.color.rgb = RGBColor(0, 0, 0)
+            # Word tablosu kullanıyoruz; kenarlıkları kaldırarak düz metin
+            # görünümü korunur, ancak üç kolon sayesinde tüm satırlar simetrik
+            # ve profesyonel biçimde hizalanır.
+            boyler_tablo = doc.add_table(
+                rows=len(boyler_rapor_satirlari), cols=3
+            )
+            boyler_tablo.autofit = False
+            boyler_tablo.allow_autofit = False
+
+            # Sayfa genişliğine göre: etiket 2.15", iki nokta 0.18", değer kalan alan.
+            kolon_genislikleri = [Inches(2.15), Inches(0.18), Inches(4.65)]
+            kalin_etiketler = {
+                "Q BOYLER", "Adet", "Boyler hacmi",
+                "Boyler Debisi", "Cihaz Poz No"
+            }
+
+            for satir_no, (etiket, deger) in enumerate(boyler_rapor_satirlari):
+                hucreler = boyler_tablo.rows[satir_no].cells
+                for hucre, genislik in zip(hucreler, kolon_genislikleri):
+                    hucre.width = genislik
+                    hucre.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    # Tablo kenarlıklarını tamamen kaldır.
+                    tcPr = hucre._tc.get_or_add_tcPr()
+                    tcBorders = tcPr.first_child_found_in("w:tcBorders")
+                    if tcBorders is None:
+                        tcBorders = OxmlElement("w:tcBorders")
+                        tcPr.append(tcBorders)
+                    for kenar in ("top", "left", "bottom", "right", "insideH", "insideV"):
+                        el = tcBorders.find(qn(f"w:{kenar}"))
+                        if el is None:
+                            el = OxmlElement(f"w:{kenar}")
+                            tcBorders.append(el)
+                        el.set(qn("w:val"), "nil")
+
+                p_etiket = hucreler[0].paragraphs[0]
+                p_etiket.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                p_etiket.paragraph_format.space_after = Pt(0)
+                p_etiket.paragraph_format.space_before = Pt(0)
+                run_etiket = p_etiket.add_run(etiket)
+                run_etiket.font.name = "Arial"
+                run_etiket.font.size = Pt(10.5)
+
+                p_iki_nokta = hucreler[1].paragraphs[0]
+                p_iki_nokta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p_iki_nokta.paragraph_format.space_after = Pt(0)
+                p_iki_nokta.paragraph_format.space_before = Pt(0)
+                run_iki_nokta = p_iki_nokta.add_run(":")
+                run_iki_nokta.font.name = "Arial"
+                run_iki_nokta.font.size = Pt(10.5)
+
+                p_deger = hucreler[2].paragraphs[0]
+                p_deger.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                p_deger.paragraph_format.space_after = Pt(0)
+                p_deger.paragraph_format.space_before = Pt(0)
+                run_deger = p_deger.add_run(deger)
+                run_deger.font.name = "Arial"
+                run_deger.font.size = Pt(10.5)
+                run_deger.font.color.rgb = RGBColor(0, 0, 0)
+                run_deger.bold = etiket in kalin_etiketler
+
+            doc.add_paragraph("").paragraph_format.space_after = Pt(0)
 
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
