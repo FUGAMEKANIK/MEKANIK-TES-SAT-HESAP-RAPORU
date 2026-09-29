@@ -3445,6 +3445,80 @@ if bolum_633_aktif:
         {"poz": "25.175.1714", "hacim": 3000, "alt_debi": 3330, "ust_debi": 1530, "alt_debi_70_50": 0, "ust_debi_70_50": 0},
     ]
 
+
+    # -----------------------------------------------------------------------
+    # PLAKALI EŞANJÖR VE AKÜMÜLASYON TANKI POZ VERİTABANLARI
+    # Poz açıklamalarındaki kapasite / primer basınç kaybı değerleri esas alınır.
+    # -----------------------------------------------------------------------
+    AKUMULASYON_TANKI_POZLARI = [
+        {"poz": "25.175.2501", "hacim": 100},
+        {"poz": "25.175.2502", "hacim": 150},
+        {"poz": "25.175.2503", "hacim": 200},
+        {"poz": "25.175.2504", "hacim": 300},
+        {"poz": "25.175.2505", "hacim": 350},
+        {"poz": "25.175.2506", "hacim": 500},
+        {"poz": "25.175.2507", "hacim": 600},
+        {"poz": "25.175.2508", "hacim": 800},
+        {"poz": "25.175.2509", "hacim": 1000},
+        {"poz": "25.175.2510", "hacim": 1250},
+        {"poz": "25.175.2511", "hacim": 1500},
+        {"poz": "25.175.2512", "hacim": 2000},
+        {"poz": "25.175.2513", "hacim": 2500},
+        {"poz": "25.175.2514", "hacim": 3000},
+    ]
+
+    AKUMULASYON_TANKI_TIP = (
+        "Kendinden poliüretan izoleli, içi epoxy kaplı, "
+        "katodik koruma donanımlı."
+    )
+
+    def _akumulasyon_tanki_sec(gerekli_hacim_litre):
+        """Gerekli hacmi sağlayan tek tip tank + adet kombinasyonunu seçer.
+        Öncelik: en az fazla kapasite; eşitlikte daha az tank adedi.
+        """
+        gerekli = max(0.0, float(gerekli_hacim_litre))
+        if gerekli <= 0:
+            poz = AKUMULASYON_TANKI_POZLARI[0]
+            return {"poz": poz["poz"], "hacim": poz["hacim"], "adet": 0,
+                    "toplam_hacim": 0, "gerekli_hacim": gerekli}
+        adaylar = []
+        for poz in AKUMULASYON_TANKI_POZLARI:
+            adet = max(1, int(math.ceil(gerekli / float(poz["hacim"]))))
+            toplam = adet * float(poz["hacim"])
+            adaylar.append((toplam - gerekli, adet, -poz["hacim"], poz, toplam))
+        _, _, _, poz, toplam = min(adaylar, key=lambda x: (x[0], x[1], x[2]))
+        return {
+            "poz": poz["poz"], "hacim": int(poz["hacim"]), "adet": int(math.ceil(gerekli / float(poz["hacim"]))),
+            "toplam_hacim": int(toplam), "gerekli_hacim": gerekli,
+            "tip": AKUMULASYON_TANKI_TIP,
+        }
+
+    PLAKALI_ESANJOR_POZLARI = [
+        {"poz": "25.220.2101", "q_kcal_h": 20000, "primer_dp_mss": 0.5},
+        {"poz": "25.220.2102", "q_kcal_h": 50000, "primer_dp_mss": 1.0},
+        {"poz": "25.220.2103", "q_kcal_h": 75000, "primer_dp_mss": 1.5},
+        {"poz": "25.220.2104", "q_kcal_h": 100000, "primer_dp_mss": 2.0},
+        {"poz": "25.220.2105", "q_kcal_h": 200000, "primer_dp_mss": 3.0},
+        {"poz": "25.220.2106", "q_kcal_h": 300000, "primer_dp_mss": 3.0},
+        {"poz": "25.220.2107", "q_kcal_h": 400000, "primer_dp_mss": 3.0},
+        {"poz": "25.220.2108", "q_kcal_h": 500000, "primer_dp_mss": 3.0},
+        {"poz": "25.220.2109", "q_kcal_h": 600000, "primer_dp_mss": 3.0},
+        {"poz": "25.220.2110", "q_kcal_h": 700000, "primer_dp_mss": 4.0},
+        {"poz": "25.220.2111", "q_kcal_h": 800000, "primer_dp_mss": 4.0},
+        {"poz": "25.220.2112", "q_kcal_h": 900000, "primer_dp_mss": 4.0},
+        {"poz": "25.220.2113", "q_kcal_h": 1000000, "primer_dp_mss": 4.0},
+    ]
+
+    def _plakali_esanjör_poz_sec(q_kcal_h):
+        """Poz açıklamasındaki kapasiteye en yakın plakalı eşanjörü seçer.
+        Eşit uzaklıkta alt kapasite tercih edilir (850.000 -> 800.000).
+        """
+        q = max(0.0, float(q_kcal_h))
+        return min(
+            PLAKALI_ESANJOR_POZLARI,
+            key=lambda p: (abs(float(p["q_kcal_h"]) - q), float(p["q_kcal_h"])),
+        )
+
     def _cift_boyler_poz_sec(hacim_toplam_litre, debi_toplam_lph, adet):
         """Çift serpantinli boyler için otomatik poz seçimi."""
         adet = max(1, int(adet))
@@ -3651,6 +3725,75 @@ if bolum_633_aktif:
                 )
                 if not _cift_yeterli:
                     st.warning("Hesaplanan gereksinim 25.175.1714 pozunun sınırlarını aşıyor; özel ürün seçimi gerekir.")
+
+            elif _tab_prefix == "plakali_esanjör":
+                # Plakalı eşanjör sistemi iki ekipmandan oluşur:
+                # 1) Akümülasyon tankı, 2) Plakalı eşanjör.
+                _akum_katsayi_key = "plakali_akumulasyon_katsayisi_v75"
+                _akum_katsayisi = st.number_input(
+                    "Akümülasyon / depolama katsayısı",
+                    min_value=0.0,
+                    value=float(st.session_state.get(_akum_katsayi_key, 1.0)),
+                    step=0.1,
+                    format="%.2f",
+                    key=_akum_katsayi_key,
+                    help="Gerekli akümülasyon hacmi = günlük sıcak su tüketimi × bu katsayı.",
+                )
+                _akum_gerekli = float(toplam_tuketim) * float(_akum_katsayi)
+                _akum_secim = _akumulasyon_tanki_sec(_akum_gerekli)
+
+                st.markdown("**1. SICAK SU AKÜMÜLASYON TANKI SEÇİMİ**")
+                _a1, _a2, _a3, _a4 = st.columns(4)
+                with _a1: st.metric("Gerekli hacim", f"{_akum_gerekli:.0f} L")
+                with _a2: st.metric("Tank hacmi", f"{_akum_secim['hacim']} L")
+                with _a3: st.metric("Adet", _akum_secim["adet"])
+                with _a4: st.metric("Cihaz Poz No", _akum_secim["poz"])
+                st.success(
+                    f"Akümülasyon tankı: **{_akum_secim['adet']} adet × {_akum_secim['hacim']} L** | "
+                    f"Toplam: **{_akum_secim['toplam_hacim']} L** | Cihaz Poz No: **{_akum_secim['poz']}**"
+                )
+                st.caption(f"Tank tipi: {_akum_secim['tip']}")
+                st.session_state["plakali_akumulasyon_secim_sonucu_v75"] = _akum_secim
+
+                st.markdown("**2. KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ**")
+                _plaka_poz = _plakali_esanjör_poz_sec(boyler_q_kcal_h)
+                _plaka_adet_key = "boyler_adet_plakali_esanjör_v59"
+                _plaka_adet = st.number_input(
+                    "Plakalı eşanjör adedi", min_value=1, value=2, step=1,
+                    key=_plaka_adet_key,
+                )
+                _plaka_sonuc = {
+                    "tip": _tip_adi,
+                    "adet": int(_plaka_adet),
+                    "poz": _plaka_poz["poz"],
+                    "q_kcal_h": int(_plaka_poz["q_kcal_h"]),
+                    "q_kw": _plaka_poz["q_kcal_h"] * 0.001163,
+                    "primer_dp_mss": float(_plaka_poz["primer_dp_mss"]),
+                    # Poz açıklamalarında primer kayıp açıkça tanımlıdır.
+                    # Sekonder kayıp ayrıca poz açıklamasında verilmediği için
+                    # rapordaki proje kabulü 4 mSS olarak tutulur.
+                    "sekonder_dp_mss": 4.0,
+                    "q_hesap_kcal_h": float(boyler_q_kcal_h),
+                    "primer_rejim": "80/60 °C sıcak su (Kazan)",
+                    "sekonder_rejim": "10/60 °C sıcak su",
+                }
+                st.session_state["plakali_esanjör_secim_sonucu_v75"] = _plaka_sonuc
+                _p1, _p2, _p3, _p4 = st.columns(4)
+                with _p1: st.metric("Hesaplanan Q", f"{boyler_q_kcal_h:,.0f} kcal/h".replace(",", "."))
+                with _p2: st.metric("Poz kapasitesi", f"{_plaka_poz['q_kcal_h']:,.0f} kcal/h".replace(",", "."))
+                with _p3: st.metric("Primer ΔP", f"{_plaka_poz['primer_dp_mss']:g} mSS")
+                with _p4: st.metric("Cihaz Poz No", _plaka_poz["poz"])
+                st.success(
+                    f"Seçilen Cihaz Poz No: **{_plaka_poz['poz']}** | "
+                    f"Kapasite: **{_plaka_poz['q_kcal_h']:,.0f} kcal/h** | "
+                    f"Primer ΔP: **{_plaka_poz['primer_dp_mss']:g} mSS** | "
+                    f"Sekonder ΔP: **4 mSS**".replace(",", ".")
+                )
+                st.info(
+                    "Poz açıklamalarındaki kapasite ve primer basınç kaybı otomatik alınır. "
+                    "Sekonder basınç kaybı poz açıklamasında ayrı bir değer olarak yer almadığı için "
+                    "mevcut proje kabulü olan 4 mSS uygulanır."
+                )
 
             # Seçim yöntemi / manuel alanı:
             # kullanıcı tarafından verilecek kapasite ve ürün tabloları
@@ -4951,11 +5094,22 @@ if st.button("Raporu Oluştur (.docx)"):
                     "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
                 )
             else:
-                rapor_adet = max(1, int(st.session_state.get("boyler_adet_plakali_esanjör_v59", 1)))
-                rapor_poz = "Poz verisi henüz tanımlanmadı"
+                rapor_adet = max(1, int(st.session_state.get("boyler_adet_plakali_esanjör_v59", 2)))
+                _plaka_kayit = st.session_state.get("plakali_esanjör_secim_sonucu_v75")
+                if not (isinstance(_plaka_kayit, dict) and _plaka_kayit.get("poz")):
+                    _plaka_poz_rapor = _plakali_esanjör_poz_sec(boyler_q_kcal_h)
+                    _plaka_kayit = {
+                        "poz": _plaka_poz_rapor["poz"],
+                        "q_kcal_h": _plaka_poz_rapor["q_kcal_h"],
+                        "q_kw": _plaka_poz_rapor["q_kcal_h"] * 0.001163,
+                        "primer_dp_mss": _plaka_poz_rapor["primer_dp_mss"],
+                        "sekonder_dp_mss": 4.0,
+                        "adet": rapor_adet,
+                    }
+                rapor_poz = _plaka_kayit["poz"]
                 rapor_hacim = int(round(secilen_boyler_hacmi / rapor_adet))
                 rapor_debi = int(round(boyler_ms / rapor_adet))
-                rapor_tip = secili_tip
+                rapor_tip = "Plakalı eşanjör"
                 rapor_gunes_satiri = False
                 rapor_alt_debi = rapor_ust_debi = 0
                 rapor_gunes_rejimi = ""
@@ -4967,7 +5121,7 @@ if st.button("Raporu Oluştur (.docx)"):
             boyler_rapor_baslik = doc.add_paragraph()
             boyler_rapor_baslik.paragraph_format.space_after = Pt(4)
             boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
-                "Kullanma Sıcak Suyu Boyleri:"
+                "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ:" if secili_tip == "PLAKALI EŞANJÖR" else "Kullanma Sıcak Suyu Boyleri:"
             )
             boyler_rapor_baslik_run.bold = True
             boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
@@ -4976,28 +5130,69 @@ if st.button("Raporu Oluştur (.docx)"):
 
             # Q BOYLER burada kullanıcı tarafından elle değiştirilmiş nihai tam sayıdır.
             # Rapor her zaman bu değeri kullanır; küsüratlı hesap ayrıca yukarıda gösterilir.
-            boyler_rapor_satirlari = [
-                ("Q BOYLER", f"{int(boyler_q_kw)} kW"),
-                (
-                    "Isıtıcı Akışkan (Kazan)",
-                    f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
-                ),
-            ]
-            if rapor_gunes_satiri:
-                boyler_rapor_satirlari.append((
-                    "Isıtıcı Akışkan (Güneş)",
-                    f"{rapor_gunes_rejimi.replace('/', '/')} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
-                ))
-            boyler_rapor_satirlari.extend([
-                ("Isıtılan Akışkan", f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)"),
-                ("Adet", str(rapor_adet)),
-                ("Tip", rapor_tip),
-                ("Boyler hacmi", f"{rapor_hacim} lt"),
-            ])
-            if not rapor_gunes_satiri:
-                boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
-            if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
-                boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
+            if secili_tip == "PLAKALI EŞANJÖR":
+                _plaka_rapor = st.session_state.get("plakali_esanjör_secim_sonucu_v75", {})
+                _plaka_poz_rapor = _plaka_rapor.get("poz", rapor_poz)
+                _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(boyler_q_kcal_h)))
+                _plaka_kw_rapor = _plaka_rapor.get("q_kw", _plaka_q_rapor * 0.001163)
+                _plaka_primer_dp = float(_plaka_rapor.get("primer_dp_mss", 4.0))
+                _plaka_sekonder_dp = float(_plaka_rapor.get("sekonder_dp_mss", 4.0))
+                _akum_rapor = st.session_state.get("plakali_akumulasyon_secim_sonucu_v75", {})
+                _akum_katsayi_rapor = float(st.session_state.get("plakali_akumulasyon_katsayisi_v75", 1.0))
+                _akum_gerekli_rapor = float(_akum_rapor.get("gerekli_hacim", toplam_tuketim * _akum_katsayi_rapor))
+                _akum_hacim_rapor = int(_akum_rapor.get("hacim", 100))
+                _akum_adet_rapor = int(_akum_rapor.get("adet", max(1, math.ceil(_akum_gerekli_rapor / _akum_hacim_rapor))))
+                _akum_toplam_rapor = int(_akum_rapor.get("toplam_hacim", _akum_adet_rapor * _akum_hacim_rapor))
+
+                boyler_rapor_baslik.clear() if False else None
+                # Plakalı eşanjör sisteminde rapor iki ayrı ekipman halinde gösterilir.
+                boyler_rapor_baslik_run.text = "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ"
+                boyler_rapor_satirlari = [
+                    ("Q", f"{boyler_q_kcal_h:.0f} kcal/h ≈ {int(boyler_q_kw)} kW"),
+                    ("Primer Devre", "80 / 60 °C sıcak su (Kazan)"),
+                    ("Seconder Devre", "10 / 60 °C sıcak su"),
+                    ("Primer Devre Basınç Kaybı", f"{_plaka_primer_dp:g} mSS"),
+                    ("Seconder Devre Basınç Kaybı", f"{_plaka_sekonder_dp:g} mSS"),
+                    ("Tip", "Plakalı eşanjör."),
+                    ("Adet", str(rapor_adet)),
+                ]
+                if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
+                    boyler_rapor_satirlari.append(("Cihaz Poz No", _plaka_poz_rapor))
+                # Akümülasyon tankı ayrı ekipman olarak rapora eklenir.
+                boyler_rapor_satirlari.extend([
+                    ("", ""),
+                    ("SICAK SU AKÜMÜLASYON TANKI", ""),
+                    ("Gerekli akümülasyon hacmi", f"{_akum_gerekli_rapor:.0f} L"),
+                    ("Akümülasyon katsayısı", f"{_akum_katsayi_rapor:.2f}"),
+                    ("Tank hacmi", f"{_akum_hacim_rapor} L (PN 10)"),
+                    ("Adet", str(_akum_adet_rapor)),
+                    ("Tip", _akum_rapor.get("tip", AKUMULASYON_TANKI_TIP)),
+                ])
+                if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
+                    boyler_rapor_satirlari.append(("Cihaz Poz No", _akum_rapor.get("poz", "")))
+            else:
+                boyler_rapor_satirlari = [
+                    ("Q BOYLER", f"{int(boyler_q_kw)} kW"),
+                    (
+                        "Isıtıcı Akışkan (Kazan)",
+                        f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
+                    ),
+                ]
+                if rapor_gunes_satiri:
+                    boyler_rapor_satirlari.append((
+                        "Isıtıcı Akışkan (Güneş)",
+                        f"{rapor_gunes_rejimi.replace('/', '/')} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
+                    ))
+                boyler_rapor_satirlari.extend([
+                    ("Isıtılan Akışkan", f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)"),
+                    ("Adet", str(rapor_adet)),
+                    ("Tip", rapor_tip),
+                    ("Boyler hacmi", f"{rapor_hacim} lt"),
+                ])
+                if not rapor_gunes_satiri:
+                    boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
+                if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
+                    boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
 
             # Word tablosu kullanıyoruz; kenarlıkları kaldırarak düz metin
             # görünümü korunur, ancak üç kolon sayesinde tüm satırlar simetrik
@@ -5012,7 +5207,7 @@ if st.button("Raporu Oluştur (.docx)"):
             kolon_genislikleri = [Inches(2.15), Inches(0.18), Inches(4.65)]
             kalin_etiketler = {
                 "Q BOYLER", "Adet", "Boyler hacmi",
-                "Boyler Debisi", "Alt serpantin debisi", "Üst serpantin debisi", "Cihaz Poz No"
+                "Boyler Debisi", "Alt serpantin debisi", "Üst serpantin debisi", "Cihaz Poz No", "Q", "Primer Devre", "Seconder Devre", "Primer Devre Basınç Kaybı", "Seconder Devre Basınç Kaybı", "SICAK SU AKÜMÜLASYON TANKI", "Gerekli akümülasyon hacmi", "Tank hacmi"
             }
 
             for satir_no, (etiket, deger) in enumerate(boyler_rapor_satirlari):
