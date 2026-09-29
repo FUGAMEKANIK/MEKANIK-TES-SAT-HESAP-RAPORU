@@ -3479,8 +3479,18 @@ if bolum_633_aktif:
         gerekli = max(0.0, float(gerekli_hacim_litre))
         if gerekli <= 0:
             poz = AKUMULASYON_TANKI_POZLARI[0]
-            return {"poz": poz["poz"], "hacim": poz["hacim"], "adet": 0,
-                    "toplam_hacim": 0, "gerekli_hacim": gerekli}
+            # İlk Streamlit çalıştırmasında toplam tüketim henüz oluşmamış
+            # olabilir. Bu durumda da seçim sözlüğü tüm beklenen anahtarları
+            # içermeli; aksi halde st.caption() gibi sonraki satırlarda
+            # KeyError oluşur.
+            return {
+                "poz": poz["poz"],
+                "hacim": int(poz["hacim"]),
+                "adet": 0,
+                "toplam_hacim": 0,
+                "gerekli_hacim": gerekli,
+                "tip": AKUMULASYON_TANKI_TIP,
+            }
         adaylar = []
         for poz in AKUMULASYON_TANKI_POZLARI:
             adet = max(1, int(math.ceil(gerekli / float(poz["hacim"]))))
@@ -3752,7 +3762,7 @@ if bolum_633_aktif:
                     f"Akümülasyon tankı: **{_akum_secim['adet']} adet × {_akum_secim['hacim']} L** | "
                     f"Toplam: **{_akum_secim['toplam_hacim']} L** | Cihaz Poz No: **{_akum_secim['poz']}**"
                 )
-                st.caption(f"Tank tipi: {_akum_secim['tip']}")
+                st.caption(f"Tank tipi: {_akum_secim.get('tip', AKUMULASYON_TANKI_TIP)}")
                 st.session_state["plakali_akumulasyon_secim_sonucu_v75"] = _akum_secim
 
                 st.markdown("**2. KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ**")
