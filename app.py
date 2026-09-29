@@ -5290,7 +5290,16 @@ if st.button("Raporu Oluştur (.docx)"):
             if secili_tip == "PLAKALI EŞANJÖR":
                 _plaka_rapor = st.session_state.get("plakali_esanjör_secim_sonucu_v75", {})
                 _plaka_poz_rapor = _plaka_rapor.get("poz", rapor_poz)
-                _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(float(boyler_q_kcal_h) / float(max(1, _plaka_calisma_adet_rapor)))))
+                # Rapor oluşturulurken çalışma adedi doğrudan kayıtlı seçimden
+                # alınır; böylece önceki oturumdan kalan/olmayan bir değişken
+                # nedeniyle NameError oluşmaz. Yedek eşanjör kapasite hesabına
+                # hiçbir zaman dahil edilmez.
+                _plaka_calisma_adet_rapor = max(
+                    1,
+                    int(_plaka_rapor.get("calisma_adet", rapor_adet - 1 if rapor_adet > 1 else rapor_adet))
+                )
+                _plaka_q_birim_rapor = float(boyler_q_kcal_h) / float(_plaka_calisma_adet_rapor)
+                _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(_plaka_q_birim_rapor)))
                 _plaka_kw_rapor = _plaka_rapor.get("q_kw", _plaka_q_rapor * 0.001163)
                 _plaka_primer_dp = float(_plaka_rapor.get("primer_dp_mss", 4.0))
                 _plaka_sekonder_dp = _plaka_primer_dp
