@@ -3172,6 +3172,98 @@ if bolum_633_aktif:
         f"V = **{secilen_boyler_hacmi} L** (Emniyetle)"
     )
 
+    # -----------------------------------------------------------------------
+    # BOYLER / EŞANJÖR SEÇİMİ
+    # -----------------------------------------------------------------------
+    # Üstte yapılan sıcak su ihtiyacı hesabının sonuçları bu üç seçim
+    # sekmesinde ortak referans olarak kullanılacaktır. Ekipman/poz seçimleri
+    # daha sonra her sekmenin kendi veri tabanına bağlanabilir.
+    st.markdown("### • BOYLER / EŞANJÖR SEÇİMİ")
+
+    boyler_tip_tabs = st.tabs([
+        "TEK SERPANTİNLİ BOYLER",
+        "ÇİFT SERPANTİNLİ BOYLER",
+        "PLAKALI EŞANJÖR",
+    ])
+
+    boyler_secim_ortak_bilgiler = {
+        "Gerekli boyler hacmi": f"{secilen_boyler_hacmi} L",
+        "Toplam günlük sıcak su tüketimi": f"{int(round(toplam_tuketim))} L/gün",
+        "Hesaplanan ısı yükü": f"{boyler_q_kw:.1f} kW",
+        "Sekonder giriş / çıkış": f"{boyler_ts_giris:.0f} / {boyler_ts_cikis:.0f} °C",
+        "Primer giriş / çıkış": f"{boyler_tp_giris:.0f} / {boyler_tp_cikis:.0f} °C",
+    }
+
+    for _tab_index, _tab in enumerate(boyler_tip_tabs):
+        with _tab:
+            if _tab_index == 0:
+                _tab_prefix = "tek_serpantin"
+                _tab_title = "Tek Serpantinli Boyler Seçimi"
+            elif _tab_index == 1:
+                _tab_prefix = "cift_serpantin"
+                _tab_title = "Çift Serpantinli Boyler Seçimi"
+            else:
+                _tab_prefix = "plakali_esanjör"
+                _tab_title = "Plakalı Eşanjör Seçimi"
+
+            st.markdown(f"#### {_tab_title}")
+            st.caption(
+                "Seçim kriterleri, yukarıdaki sıcak su ihtiyacı ve ısı yükü "
+                "hesabından otomatik olarak alınacaktır."
+            )
+
+            # Ortak hesap sonuçlarını her sekmede göster.
+            _bilgi_cols = st.columns(3)
+            with _bilgi_cols[0]:
+                st.metric("Gerekli hacim", f"{secilen_boyler_hacmi} L")
+            with _bilgi_cols[1]:
+                st.metric("Isı yükü", f"{boyler_q_kw:.1f} kW")
+            with _bilgi_cols[2]:
+                st.metric("Günlük tüketim", f"{int(round(toplam_tuketim))} L/gün")
+
+            with st.expander("Hesap kriterlerini göster", expanded=False):
+                st.table(
+                    pd.DataFrame(
+                        list(boyler_secim_ortak_bilgiler.items()),
+                        columns=["Hesap Kriteri", "Değer"],
+                    )
+                )
+
+            # Şimdilik seçim altyapısı. Gerçek üretici/poz seçenekleri,
+            # kullanıcı tarafından verilecek kapasite ve ürün tabloları
+            # üzerinden bu alanlara bağlanacaktır.
+            _secim_key = f"boyler_secim_{_tab_prefix}_v56"
+            _manuel_key = f"boyler_manuel_kapasite_{_tab_prefix}_v56"
+
+            st.markdown("**Seçim**")
+            _secim_modu = st.radio(
+                "Seçim yöntemi",
+                ["Otomatik hesaplanan değeri kullan", "Manuel seçim"],
+                horizontal=True,
+                key=_secim_key,
+            )
+
+            if _secim_modu == "Otomatik hesaplanan değeri kullan":
+                st.info(
+                    f"Önerilen hesap değeri: **{secilen_boyler_hacmi} L** "
+                    f"({secilen_boyler_hacmi / 1000:.2f} m³). "
+                    "Ürün/poz tablosu eklendiğinde en uygun ürün otomatik seçilecektir."
+                )
+            else:
+                st.number_input(
+                    "Manuel seçilecek kapasite [L]",
+                    min_value=0.0,
+                    value=float(secilen_boyler_hacmi),
+                    step=50.0,
+                    key=_manuel_key,
+                )
+
+            st.caption(
+                "Not: Bu sekmelerdeki gerçek marka/model/poz seçimleri, "
+                "kapasite tabloları tanımlandığında hesap sonuçlarına göre "
+                "otomatik eşleştirilecektir."
+            )
+
     # --- BOYLER ISITICI KAPASİTESİ ---
     st.markdown("**BOYLER ISITICI KAPASİTESİ**")
     col_q1, col_q2 = st.columns(2)
