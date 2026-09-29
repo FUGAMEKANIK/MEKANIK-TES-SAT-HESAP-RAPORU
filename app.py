@@ -3661,10 +3661,15 @@ if bolum_633_aktif:
                 )
 
             _adet_key = f"boyler_adet_{_tab_prefix}_v59"
+            _adet_label = (
+                "Plakalı eşanjör adedi"
+                if _tab_prefix == "plakali_esanjör"
+                else "Boyler adedi"
+            )
             _boyler_adet = st.number_input(
-                "Boyler adedi",
+                _adet_label,
                 min_value=1,
-                value=3,
+                value=3 if _tab_prefix != "plakali_esanjör" else 2,
                 step=1,
                 key=_adet_key,
             )
@@ -3767,14 +3772,13 @@ if bolum_633_aktif:
 
                 st.markdown("**2. KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ**")
                 _plaka_poz = _plakali_esanjör_poz_sec(boyler_q_kcal_h)
-                _plaka_adet_key = "boyler_adet_plakali_esanjör_v59"
-                _plaka_adet = st.number_input(
-                    "Plakalı eşanjör adedi", min_value=1, value=2, step=1,
-                    key=_plaka_adet_key,
-                )
+                # Plakalı eşanjör adedi, üstteki ortak adet kontrolünden alınır.
+                # Aynı Streamlit key'i ile ikinci bir number_input oluşturulmaz;
+                # bu, StreamlitDuplicateElementKey hatasının kaynağını ortadan kaldırır.
+                _plaka_adet = int(_boyler_adet)
                 _plaka_sonuc = {
                     "tip": _tip_adi,
-                    "adet": int(_plaka_adet),
+                    "adet": _plaka_adet,
                     "poz": _plaka_poz["poz"],
                     "q_kcal_h": int(_plaka_poz["q_kcal_h"]),
                     "q_kw": _plaka_poz["q_kcal_h"] * 0.001163,
