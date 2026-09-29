@@ -3739,7 +3739,7 @@ if bolum_633_aktif:
                     key=_akum_katsayi_key,
                     help="Gerekli akümülasyon hacmi = günlük sıcak su tüketimi × bu katsayı.",
                 )
-                _akum_gerekli = float(toplam_tuketim) * float(_akum_katsayi)
+                _akum_gerekli = float(toplam_tuketim) * float(_akum_katsayisi)
                 _akum_secim = _akumulasyon_tanki_sec(_akum_gerekli)
 
                 st.markdown("**1. SICAK SU AKÜMÜLASYON TANKI SEÇİMİ**")
