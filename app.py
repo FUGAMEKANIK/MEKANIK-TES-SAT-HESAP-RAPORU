@@ -2977,10 +2977,10 @@ if bolum_633_aktif:
         f"Depolama Faktörü = **{depolama_faktoru:.2f}**"
     )
     st.markdown(
-        f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_tuketim:,.3f} = **{hesaplanan_boyler_hacmi:,.3f} L**".replace(',', '.')
+        f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {int(round(toplam_tuketim))} = **{int(round(hesaplanan_boyler_hacmi))} L**"
     )
     st.markdown(
-        f"V = **{secilen_boyler_hacmi:,.0f} L (Emniyetle)**".replace(',', '.')
+        f"V = **{secilen_boyler_hacmi} L** (Emniyetle)"
     )
 
     faktor_satirlari = [{
@@ -4155,8 +4155,8 @@ if st.button("Raporu Oluştur (.docx)"):
             run = faktor_par.add_run(f"{depolama_faktoru:.2f}")
             run.bold = True
 
-            toplam_litre_fmt = f"{sicak_su_gunluk_toplam_litre:,.3f}".replace(",", ".")
-            hesaplanan_fmt = f"{hesaplanan_boyler_hacmi:,.3f}".replace(",", ".")
+            toplam_litre_fmt = str(int(round(sicak_su_gunluk_toplam_litre)))
+            hesaplanan_fmt = str(int(round(hesaplanan_boyler_hacmi)))
             formula_par = doc.add_paragraph()
             formula_par.add_run(
                 f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_litre_fmt} = "
@@ -4166,7 +4166,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
             emniyet_par = doc.add_paragraph()
             emniyet_par.add_run("V = ")
-            run = emniyet_par.add_run(f"{secilen_boyler_hacmi:,.0f} L".replace(",", "."))
+            run = emniyet_par.add_run(f"{secilen_boyler_hacmi} L")
             run.bold = True
             emniyet_par.add_run(" (Emniyetle)")
             if es_zaman_faktoru is not None:
