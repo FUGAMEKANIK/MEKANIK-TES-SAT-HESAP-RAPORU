@@ -200,11 +200,19 @@ with st.sidebar:
         else:
             # Bölüm adı doğrudan tıklanabilir sekmedir; altındaki checkbox
             # yalnızca rapora dahil/hariç kararını verir.
-            st.markdown(
-                f'<a class="proje-nav-tab" href="#{_anchor}">▸ {_baslik}</a>',
-                unsafe_allow_html=True,
-            )
-            st.checkbox("Rapora dahil", key=_key)
+            # Başlık ve rapora dahil/kaldır kontrolü aynı satırda tutulur.
+            _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
+            with _c_nav:
+                st.markdown(
+                    f'<a class="proje-nav-tab" href="#{_anchor}">▸ {_baslik}</a>',
+                    unsafe_allow_html=True,
+                )
+            with _c_chk:
+                st.checkbox(
+                    "",
+                    key=_key,
+                    label_visibility="collapsed",
+                )
 
     st.markdown(
         """
@@ -212,11 +220,11 @@ with st.sidebar:
         [data-testid="stSidebar"] { min-width: 330px; max-width: 380px; }
         [data-testid="stSidebar"] .proje-nav-tab {
             display:block;
-            margin:2px 0 3px 0;
-            padding:5px 8px;
+            margin:3px 0 4px 0;
+            padding:7px 8px;
             border-radius:6px;
             text-decoration:none !important;
-            font-size:0.80rem;
+            font-size:0.92rem;
             color:inherit;
             background:rgba(128,128,128,0.08);
         }
@@ -230,6 +238,8 @@ with st.sidebar:
         }
         [data-testid="stSidebar"] [data-testid="stCheckbox"] {
             margin-bottom:0;
+            transform:scale(1.05);
+            transform-origin:center;
         }
         </style>
         """,
