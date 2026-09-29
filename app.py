@@ -3448,7 +3448,7 @@ if bolum_633_aktif:
 
     # -----------------------------------------------------------------------
     # PLAKALI EŞANJÖR VE AKÜMÜLASYON TANKI POZ VERİTABANLARI
-    # Poz açıklamalarındaki kapasite / primer basınç kaybı değerleri esas alınır.
+    # Poz açıklamalarındaki kapasite ve tek basınç kaybı değeri esas alınır; aynı değer primer ve sekonder devreye uygulanır.
     # -----------------------------------------------------------------------
     AKUMULASYON_TANKI_POZLARI = [
         {"poz": "25.175.2501", "hacim": 100},
@@ -3541,14 +3541,12 @@ if bolum_633_aktif:
     ]
 
     def _plakali_esanjör_poz_sec(q_kcal_h):
-        """Poz açıklamasındaki kapasiteye en yakın plakalı eşanjörü seçer.
-        Eşit uzaklıkta alt kapasite tercih edilir (850.000 -> 800.000).
-        """
+        """Eşanjör başına gerekli ısı yükünü karşılayan en küçük pozu seçer."""
         q = max(0.0, float(q_kcal_h))
-        return min(
-            PLAKALI_ESANJOR_POZLARI,
-            key=lambda p: (abs(float(p["q_kcal_h"]) - q), float(p["q_kcal_h"])),
-        )
+        for poz in PLAKALI_ESANJOR_POZLARI:
+            if float(poz["q_kcal_h"]) >= q:
+                return poz
+        return PLAKALI_ESANJOR_POZLARI[-1]
 
     def _cift_boyler_poz_sec(hacim_toplam_litre, debi_toplam_lph, adet):
         """Çift serpantinli boyler için otomatik poz seçimi."""
@@ -3905,13 +3903,13 @@ if bolum_633_aktif:
                 st.session_state["plakali_akumulasyon_secim_sonucu_v75"] = _akum_secim
 
                 st.markdown("**2. KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ**")
-                _plaka_poz = _plakali_esanjör_poz_sec(boyler_q_kcal_h)
-                # Plakalı eşanjör adedi, üstteki ortak adet kontrolünden alınır.
-                # Aynı Streamlit key'i ile ikinci bir number_input oluşturulmaz;
-                # bu, StreamlitDuplicateElementKey hatasının kaynağını ortadan kaldırır.
-                _plaka_calisma_adet = int(_boyler_adet)
+                # Toplam ısıtma yükü, yedek hariç çalışan plakalı eşanjör adedine bölünür.
+                # Her eşanjör için gerekli kapasiteye göre poz seçilir.
+                _plaka_calisma_adet = max(1, int(_boyler_adet))
                 _plaka_yedek_adet = 1
                 _plaka_toplam_adet = _plaka_calisma_adet + _plaka_yedek_adet
+                _plaka_q_birim = float(boyler_q_kcal_h) / float(_plaka_calisma_adet)
+                _plaka_poz = _plakali_esanjör_poz_sec(_plaka_q_birim)
                 _plaka_adet = _plaka_toplam_adet
                 _plaka_sonuc = {
                     "tip": _tip_adi,
@@ -3925,14 +3923,15 @@ if bolum_633_aktif:
                     # Poz açıklamalarında primer kayıp açıkça tanımlıdır.
                     # Sekonder kayıp ayrıca poz açıklamasında verilmediği için
                     # rapordaki proje kabulü 4 mSS olarak tutulur.
-                    "sekonder_dp_mss": 4.0,
-                    "q_hesap_kcal_h": float(boyler_q_kcal_h),
+                    "sekonder_dp_mss": float(_plaka_poz["primer_dp_mss"]),
+                    "q_hesap_kcal_h": float(_plaka_q_birim),
+                    "q_toplam_kcal_h": float(boyler_q_kcal_h),
                     "primer_rejim": "80/60 °C sıcak su (Kazan)",
                     "sekonder_rejim": "10/60 °C sıcak su",
                 }
                 st.session_state["plakali_esanjör_secim_sonucu_v75"] = _plaka_sonuc
                 _p1, _p2, _p3, _p4 = st.columns(4)
-                with _p1: st.metric("Hesaplanan Q", f"{boyler_q_kcal_h:,.0f} kcal/h".replace(",", "."))
+                with _p1: st.metric("Eşanjör başına Q", f"{_plaka_q_birim:,.0f} kcal/h".replace(",", "."))
                 with _p2: st.metric("Poz kapasitesi", f"{_plaka_poz['q_kcal_h']:,.0f} kcal/h".replace(",", "."))
                 with _p3: st.metric("Primer ΔP", f"{_plaka_poz['primer_dp_mss']:g} mSS")
                 with _p4: st.metric("Toplam adet", _plaka_toplam_adet)
@@ -5252,13 +5251,14 @@ if st.button("Raporu Oluştur (.docx)"):
                 rapor_adet = max(1, int(st.session_state.get("boyler_adet_plakali_esanjör_v59", 2)))
                 _plaka_kayit = st.session_state.get("plakali_esanjör_secim_sonucu_v75")
                 if not (isinstance(_plaka_kayit, dict) and _plaka_kayit.get("poz")):
-                    _plaka_poz_rapor = _plakali_esanjör_poz_sec(boyler_q_kcal_h)
+                    _plaka_q_birim_rapor = float(boyler_q_kcal_h) / float(max(1, rapor_adet))
+                    _plaka_poz_rapor = _plakali_esanjör_poz_sec(_plaka_q_birim_rapor)
                     _plaka_kayit = {
                         "poz": _plaka_poz_rapor["poz"],
                         "q_kcal_h": _plaka_poz_rapor["q_kcal_h"],
                         "q_kw": _plaka_poz_rapor["q_kcal_h"] * 0.001163,
                         "primer_dp_mss": _plaka_poz_rapor["primer_dp_mss"],
-                        "sekonder_dp_mss": 4.0,
+                        "sekonder_dp_mss": float(_plaka_poz_rapor["primer_dp_mss"]),
                         "calisma_adet": rapor_adet,
                         "yedek_adet": 1,
                         "adet": rapor_adet + 1,
@@ -5290,10 +5290,10 @@ if st.button("Raporu Oluştur (.docx)"):
             if secili_tip == "PLAKALI EŞANJÖR":
                 _plaka_rapor = st.session_state.get("plakali_esanjör_secim_sonucu_v75", {})
                 _plaka_poz_rapor = _plaka_rapor.get("poz", rapor_poz)
-                _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(boyler_q_kcal_h)))
+                _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(float(boyler_q_kcal_h) / float(max(1, _plaka_calisma_adet_rapor)))))
                 _plaka_kw_rapor = _plaka_rapor.get("q_kw", _plaka_q_rapor * 0.001163)
                 _plaka_primer_dp = float(_plaka_rapor.get("primer_dp_mss", 4.0))
-                _plaka_sekonder_dp = float(_plaka_rapor.get("sekonder_dp_mss", 4.0))
+                _plaka_sekonder_dp = _plaka_primer_dp
 
                 _akum_rapor = st.session_state.get("plakali_akumulasyon_secim_sonucu_v75", {})
                 _akum_katsayi_rapor = float(st.session_state.get("plakali_akumulasyon_katsayisi_v75", 1.0))
@@ -5327,7 +5327,7 @@ if st.button("Raporu Oluştur (.docx)"):
                 # Raporda ayrı, tam genişlikte bir seçim başlığı olarak gösterilir.
                 boyler_rapor_satirlari.extend([
                     ("__PLAKALI_ESANJOR_BASLIK__", ""),
-                    ("Q", f"{boyler_q_kcal_h:.0f} kcal/h ≈ {int(boyler_q_kw)} kW"),
+                    ("Q", f"{_plaka_q_rapor:.0f} kcal/h ≈ {int(_plaka_kw_rapor)} kW (eşanjör başına)"),
                     ("Primer Devre", "80 / 60 °C sıcak su (Kazan)"),
                     ("Seconder Devre", "10 / 60 °C sıcak su"),
                     ("Primer Devre Basınç Kaybı", f"{_plaka_primer_dp:g} mSS"),
