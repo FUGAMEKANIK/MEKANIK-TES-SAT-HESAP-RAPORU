@@ -3367,6 +3367,38 @@ if bolum_633_aktif:
         )
 
 # -----------------------------------------------------------------------
+    # ÇİFT SERPANTİNLİ BOYLER POZ VERİTABANI - 25.175.1701 ... 25.175.1714
+    # Çift Bakır Serpantinli Dik Boyler. Alt serpantin = kazan, üst serpantin = güneş.
+    # -----------------------------------------------------------------------
+    CIFT_SERPANTINLI_BOYLER_POZLARI = [
+        {"poz": "25.175.1701", "hacim": 160,  "alt_debi": 221,  "ust_debi": 119, "alt_debi_70_50": 73,  "ust_debi_70_50": 36},
+        {"poz": "25.175.1702", "hacim": 200,  "alt_debi": 272,  "ust_debi": 150, "alt_debi_70_50": 87,  "ust_debi_70_50": 48},
+        {"poz": "25.175.1703", "hacim": 300,  "alt_debi": 289,  "ust_debi": 180, "alt_debi_70_50": 102, "ust_debi_70_50": 58},
+        {"poz": "25.175.1704", "hacim": 350,  "alt_debi": 336,  "ust_debi": 190, "alt_debi_70_50": 123, "ust_debi_70_50": 62},
+        {"poz": "25.175.1705", "hacim": 500,  "alt_debi": 476,  "ust_debi": 221, "alt_debi_70_50": 187, "ust_debi_70_50": 73},
+        {"poz": "25.175.1706", "hacim": 600,  "alt_debi": 521,  "ust_debi": 261, "alt_debi_70_50": 208, "ust_debi_70_50": 93},
+        {"poz": "25.175.1707", "hacim": 800,  "alt_debi": 612,  "ust_debi": 340, "alt_debi_70_50": 238, "ust_debi_70_50": 131},
+        {"poz": "25.175.1708", "hacim": 1000, "alt_debi": 663, "ust_debi": 439, "alt_debi_70_50": 255, "ust_debi_70_50": 177},
+        {"poz": "25.175.1709", "hacim": 1250, "alt_debi": 765, "ust_debi": 466, "alt_debi_70_50": 306, "ust_debi_70_50": 188},
+        {"poz": "25.175.1710", "hacim": 1500, "alt_debi": 867, "ust_debi": 493, "alt_debi_70_50": 357, "ust_debi_70_50": 192},
+        {"poz": "25.175.1711", "hacim": 2000, "alt_debi": 1088, "ust_debi": 799, "alt_debi_70_50": 442, "ust_debi_70_50": 215},
+        {"poz": "25.175.1712", "hacim": 2500, "alt_debi": 1309, "ust_debi": 629, "alt_debi_70_50": 544, "ust_debi_70_50": 238},
+        {"poz": "25.175.1713", "hacim": 3000, "alt_debi": 1479, "ust_debi": 697, "alt_debi_70_50": 595, "ust_debi_70_50": 286},
+        {"poz": "25.175.1714", "hacim": 3000, "alt_debi": 3330, "ust_debi": 1530, "alt_debi_70_50": 0, "ust_debi_70_50": 0},
+    ]
+
+    def _cift_boyler_poz_sec(hacim_toplam_litre, debi_toplam_lph, adet):
+        """Çift serpantinli boyler için otomatik poz seçimi."""
+        adet = max(1, int(adet))
+        hacim_birim = float(hacim_toplam_litre) / adet
+        debi_birim = float(debi_toplam_lph) / adet
+        for poz in CIFT_SERPANTINLI_BOYLER_POZLARI:
+            toplam_serpantin_debisi = float(poz["alt_debi"]) + float(poz["ust_debi"])
+            if poz["hacim"] >= hacim_birim and toplam_serpantin_debisi >= debi_birim:
+                return poz, hacim_birim, debi_birim, True
+        return CIFT_SERPANTINLI_BOYLER_POZLARI[-1], hacim_birim, debi_birim, False
+
+# -----------------------------------------------------------------------
     # BOYLER / EŞANJÖR SEÇİMİ
     # -----------------------------------------------------------------------
     # Üstte yapılan sıcak su ihtiyacı hesabının sonuçları bu üç seçim
