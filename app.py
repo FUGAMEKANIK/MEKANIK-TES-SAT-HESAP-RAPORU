@@ -1,4 +1,4 @@
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
 from datetime import datetime
 import io
 import json
