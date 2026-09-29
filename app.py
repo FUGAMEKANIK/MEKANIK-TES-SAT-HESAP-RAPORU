@@ -5933,21 +5933,60 @@ if st.button("Raporu Oluştur (.docx)"):
             _rs_cell.paragraphs[0].paragraph_format.space_before = Pt(0)
             _rs_cell.paragraphs[0].paragraph_format.space_after = Pt(0)
 
-            _qpar = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 5)
+            # Q BOYLER — sayfanın en soluna yaslı.
+            _qpar = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 5)
+            _qpar.paragraph_format.left_indent = Inches(0)
+            _qpar.paragraph_format.first_line_indent = Inches(0)
             _qr = _qpar.add_run(f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW")
             _qr.font.name = "Arial"
             _qr.font.size = Pt(11.5)
             _qr.bold = True
 
-            # Formül tam merkezde ve tek blok halinde.
-            _formul = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 8)
-            _fr = _formul.add_run(
-                f"              {_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
-                f"V = ------------------------------- = {_rs_qh_txt} m³/h\n"
-                f"                         5.000"
+            # Formül: Word'de dağılmaması için üç sabit kolon kullanılır.
+            # V= sola yaslı, pay ve payda mevcut örneğe göre bir karakter sola alınır.
+            _ft = _rs_cell.add_table(rows=1, cols=3)
+            _ft.autofit = False
+            _ft.alignment = WD_TABLE_ALIGNMENT.LEFT
+            _ft.columns[0].width = Inches(0.55)
+            _ft.columns[1].width = Inches(3.35)
+            _ft.columns[2].width = Inches(2.35)
+            _fc = _ft.rows[0].cells
+            for _c in _fc:
+                _c.width = Inches(0.55) if _c is _fc[0] else (Inches(3.35) if _c is _fc[1] else Inches(2.35))
+                _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                _tcPr = _c._tc.get_or_add_tcPr()
+                _b = _tcPr.first_child_found_in("w:tcBorders")
+                if _b is None:
+                    _b = OxmlElement("w:tcBorders"); _tcPr.append(_b)
+                for _edge in ("top","left","bottom","right","insideH","insideV"):
+                    _el = _b.find(qn(f"w:{_edge}"))
+                    if _el is None:
+                        _el = OxmlElement(f"w:{_edge}"); _b.append(_el)
+                    _el.set(qn("w:val"), "nil")
+            _p0 = _fc[0].paragraphs[0]; _p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            _p0.paragraph_format.space_before = Pt(0); _p0.paragraph_format.space_after = Pt(0)
+            _rv = _p0.add_run("V =")
+            _rv.font.name="Courier New"; _rv.font.size=Pt(10.5); _rv.bold=False
+
+            # Orta hücrede pay / çizgi / payda. Pay ve payda bir karakter sola çekildi.
+            _pf = _fc[1].paragraphs[0]
+            _pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            _pf.paragraph_format.space_before = Pt(0); _pf.paragraph_format.space_after = Pt(0)
+            _rf = _pf.add_run(
+                f" {_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
+                f"-------------------------------\n"
+                f"             5.000"
             )
-            _fr.font.name = "Courier New"
-            _fr.font.size = Pt(10.5)
+            _rf.font.name="Courier New"; _rf.font.size=Pt(10.5)
+
+            _pr = _fc[2].paragraphs[0]
+            _pr.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            _pr.paragraph_format.space_before = Pt(0); _pr.paragraph_format.space_after = Pt(0)
+            _rq = _pr.add_run(f"= {_rs_qh_txt} m³/h")
+            _rq.font.name="Courier New"; _rq.font.size=Pt(10.5)
+
+            _sp = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 4)
+            _sp.paragraph_format.line_spacing = 1.0
 
             _baslik = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 3)
             _br = _baslik.add_run("Seçilen Pompa :")
@@ -5955,44 +5994,40 @@ if st.button("Raporu Oluştur (.docx)"):
             _br.font.size = Pt(11.5)
             _br.bold = True
 
-            # Etiket ve değerleri iki sabit kolon halinde hizala.
+            # Etiket, ayraç ve değer tek bir sabit tablo üzerinde hizalanır.
             _pump_tbl = _rs_cell.add_table(rows=0, cols=3)
             _pump_tbl.autofit = False
             _pump_tbl.allow_autofit = False
-            _pump_tbl.columns[0].width = Inches(0.65)
+            _pump_tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+            _pump_tbl.columns[0].width = Inches(1.20)
             _pump_tbl.columns[1].width = Inches(0.20)
-            _pump_tbl.columns[2].width = Inches(5.9)
+            _pump_tbl.columns[2].width = Inches(5.50)
 
             def _pump_row(label, value, bold_value=True, equals=False):
                 _cells = _pump_tbl.add_row().cells
-                _cells[0].width = Inches(0.65)
-                _cells[1].width = Inches(0.20)
-                _cells[2].width = Inches(5.9)
-                for _c in _cells:
+                for _c, _w in zip(_cells, (1.20, 0.20, 5.50)):
+                    _c.width = Inches(_w)
                     _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
-                p1 = _cells[0].paragraphs[0]
-                p1.paragraph_format.space_before = Pt(0)
-                p1.paragraph_format.space_after = Pt(0)
+                    _tcPr = _c._tc.get_or_add_tcPr()
+                    _b = _tcPr.first_child_found_in("w:tcBorders")
+                    if _b is None:
+                        _b = OxmlElement("w:tcBorders"); _tcPr.append(_b)
+                    for _edge in ("top","left","bottom","right","insideH","insideV"):
+                        _el = _b.find(qn(f"w:{_edge}"))
+                        if _el is None:
+                            _el = OxmlElement(f"w:{_edge}"); _b.append(_el)
+                        _el.set(qn("w:val"), "nil")
+                p1, p2, p3 = (_cells[0].paragraphs[0], _cells[1].paragraphs[0], _cells[2].paragraphs[0])
+                for _p in (p1,p2,p3):
+                    _p.paragraph_format.space_before = Pt(0)
+                    _p.paragraph_format.space_after = Pt(0)
+                    _p.paragraph_format.line_spacing = 1.0
                 p1.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                r1 = p1.add_run(label)
-                r1.font.name = "Arial"
-                r1.font.size = Pt(11)
-                r1.bold = True
-                p2 = _cells[1].paragraphs[0]
-                p2.paragraph_format.space_before = Pt(0)
-                p2.paragraph_format.space_after = Pt(0)
+                r1 = p1.add_run(label); r1.font.name="Arial"; r1.font.size=Pt(11); r1.bold=True
                 p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                r2 = p2.add_run("=" if equals else ":")
-                r2.font.name = "Arial"
-                r2.font.size = Pt(11)
-                p3 = _cells[2].paragraphs[0]
-                p3.paragraph_format.space_before = Pt(0)
-                p3.paragraph_format.space_after = Pt(0)
+                r2 = p2.add_run("=" if equals else ":"); r2.font.name="Arial"; r2.font.size=Pt(11); r2.bold=True
                 p3.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                r3 = p3.add_run(value)
-                r3.font.name = "Arial"
-                r3.font.size = Pt(11)
-                r3.bold = bold_value
+                r3 = p3.add_run(str(value)); r3.font.name="Arial"; r3.font.size=Pt(11); r3.bold=bool(bold_value)
 
             _pump_row("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h")
             _pump_row("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS")
@@ -6002,18 +6037,19 @@ if st.button("Raporu Oluştur (.docx)"):
             if _rs_rapor.get("poz_rapora_aktar", True):
                 _pump_row("Cihaz Poz No", _rs_rapor.get("poz", ""), bold_value=True, equals=True)
 
-            # İç içe tablo kenarlıklarını da kaldır.
-            _pump_pr = _pump_tbl._tbl.tblPr
-            _pump_borders = _pump_pr.first_child_found_in("w:tblBorders")
-            if _pump_borders is None:
-                _pump_borders = OxmlElement("w:tblBorders")
-                _pump_pr.append(_pump_borders)
-            for _edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
-                _el = _pump_borders.find(qn(f"w:{_edge}"))
-                if _el is None:
-                    _el = OxmlElement(f"w:{_edge}")
-                    _pump_borders.append(_el)
-                _el.set(qn("w:val"), "nil")
+            # Pompa performans eğrisi rapora eklenir; marka/model adı raporda gösterilmez.
+            _rs_curve = _rs_rapor.get("pompa_curve", [])
+            if _rs_curve:
+                _egri_sp = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 6, 2)
+                _er = _egri_sp.add_run("Pompa Performans Eğrisi")
+                _er.font.name = "Arial"; _er.font.size = Pt(11.5); _er.bold = True
+                _egri_png = pompa_grafigi_png(
+                    [x[0] for x in _rs_curve], [x[1] for x in _rs_curve],
+                    float(_rs_rapor.get("q_m3h", 0.0)), float(_rs_rapor.get("h_mss", 0.0)),
+                    "Pompa Performans Eğrisi", anonim=True,
+                )
+                _pic = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 0)
+                _pic.add_run().add_picture(_egri_png, width=Inches(5.8))
 
             _after = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 0)
             _after.paragraph_format.line_spacing = 1.0
