@@ -463,6 +463,16 @@ if bolum_3_aktif:
       height=80,
   )
 
+# -----------------------------------------------------------------------------
+# BÖLÜM 4 SEÇİMİ KAPALI OLSA BİLE KULLANILAN GÜVENLİ VARSAYILANLAR
+# -----------------------------------------------------------------------------
+# 6.3.3 Boyler hesabı, 4. bölümün rapora dahil edilip edilmediğinden bağımsız
+# çalışabilir. Bu nedenle rej_boyler değişkeni mutlaka önceden tanımlı olmalıdır.
+# Böylece "TÜMÜNÜ KALDIR" sonrasında yalnızca 6.3.3 tekrar açıldığında
+# NameError oluşmaz. 4. bölüm açılırsa aşağıdaki selectbox değeri bunu günceller.
+st.session_state.setdefault("rej_boyler_v41", "80/60")
+rej_boyler = st.session_state.get("rej_boyler_v41", "80/60")
+
 if bolum_4_aktif:
   # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
   st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
@@ -559,9 +569,7 @@ if bolum_4_aktif:
         "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
     )
     # Boyler ısıtma rejimi varsayılan olarak 80/60 olsun.
-    # Yeni anahtar kullanıldığı için önceki sürümlerde seçilmiş 70/50 vb. değerler
-    # yeni varsayılanı etkilemez; kullanıcı değiştirdikten sonra seçimi korunur.
-    st.session_state.setdefault("rej_boyler_v41", "80/60")
+    # Seçim bölüm 4 kapalıyken de korunur; bölüm tekrar açıldığında aynı değer gelir.
     rej_boyler = st.selectbox(
         "Boyler Isıtma Rejimi:",
         sicaklik_secenekleri,
@@ -3118,10 +3126,13 @@ if bolum_633_aktif:
         # değiştirebilir; ancak üstteki Boyler Isıtma Rejimi değişirse bu
         # alanlar yeni rejime otomatik olarak senkronlanır.
         try:
-            boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = [
-                float(x.strip()) for x in str(rej_boyler).split("/", 1)
-            ]
-        except (ValueError, AttributeError):
+            rej_metni = str(rej_boyler or "80/60").strip()
+            parcalar = rej_metni.replace(",", ".").split("/", 1)
+            if len(parcalar) != 2:
+                raise ValueError
+            boyler_tp_giris_kaynak = float(parcalar[0].strip())
+            boyler_tp_cikis_kaynak = float(parcalar[1].strip())
+        except (ValueError, TypeError, AttributeError):
             boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = 80.0, 60.0
 
         # v42: Eski v38 anahtarlarındaki 0 değerlerini taşımamak için yeni
