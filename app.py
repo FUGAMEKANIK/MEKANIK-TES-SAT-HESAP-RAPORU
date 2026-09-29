@@ -3492,6 +3492,16 @@ if bolum_633_aktif:
     )
     _boyler_alt_sekme_index = _boyler_alt_sekme_labels.index(_boyler_alt_sekme)
 
+    # Boyler / eşanjör Cihaz Poz No bilgisinin raporda gösterilip gösterilmeyeceği
+    # kullanıcı tercihine bırakılır. Varsayılan True ile mevcut davranış korunur.
+    boyler_poz_rapora_eklensin_key = "boyler_poz_rapora_eklensin_v72"
+    boyler_poz_rapora_eklensin = st.checkbox(
+        "Cihaz Poz Numarasını Hesap Raporunda Göster",
+        value=bool(st.session_state.get(boyler_poz_rapora_eklensin_key, True)),
+        key=boyler_poz_rapora_eklensin_key,
+        help="İşaretli ise seçilen tek/çift serpantinli boyler veya plakalı eşanjörün Cihaz Poz No bilgisi rapora eklenir. İşaretli değilse raporda gösterilmez.",
+    )
+
     # Üst seçim ile alt seçim arasında tam senkronizasyon.
     _boyler_secili_tip_from_alt = _boyler_alt_sekme_labels[_boyler_alt_sekme_index]
     if st.session_state.get("boyler_secili_tip_v57") != _boyler_secili_tip_from_alt:
@@ -4975,7 +4985,8 @@ if st.button("Raporu Oluştur (.docx)"):
             ])
             if not rapor_gunes_satiri:
                 boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
-            boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
+            if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
+                boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
 
             # Word tablosu kullanıyoruz; kenarlıkları kaldırarak düz metin
             # görünümü korunur, ancak üç kolon sayesinde tüm satırlar simetrik
