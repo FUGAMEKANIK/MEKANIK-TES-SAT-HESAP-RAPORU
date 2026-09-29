@@ -3223,16 +3223,10 @@ if bolum_633_aktif:
         f"V = **{secilen_boyler_hacmi} L** (Emniyetle)"
     )
 
-    # --- BOYLER / EŞANJÖR ISITMA KAPASİTE HESABI ---
-    # Üst bölümde seçilen sisteme göre başlık otomatik değişir.
-    _hesap_basligi_tip = str(
-        st.session_state.get("boyler_secili_tip_v57", "TEK SERPANTİNLİ BOYLER")
-    )
-    if _hesap_basligi_tip == "PLAKALI EŞANJÖR":
-        _hesap_basligi = "PLAKALI EŞANJÖR ISITMA KAPASİTE HESABI:"
-    else:
-        _hesap_basligi = "BOYLER ISITMA KAPASİTE HESABI:"
-    st.markdown(f"**{_hesap_basligi}**")
+    # --- BOYLER ISITICI KAPASİTESİ ---
+    # Bu başlık PROGRAM EKRANINDA sabit kalır.
+    # İstenen özel başlıklar yalnızca oluşturulan RAPORDA kullanılır.
+    st.markdown("**BOYLER ISITICI KAPASİTESİ**")
     col_q1, col_q2 = st.columns(2)
     with col_q1:
         boyler_ms = st.number_input(
