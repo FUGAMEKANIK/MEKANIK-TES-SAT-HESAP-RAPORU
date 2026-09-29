@@ -2909,7 +2909,8 @@ if bolum_633_aktif:
     # BOYLER SEÇİMİ.xlsx / Sayfa1 içindeki faktörler.
     # Kullanıcı tarafından verilen hesap bağıntısı:
     # V = Kullanma Eş Zaman Faktörü x Depolama Faktörü x Toplam Tüketim
-    # Sonuç emniyetli seçim için 100 L'nin bir üst katına yuvarlanır.
+    # Sonuç emniyetli seçim için 50 L'nin bir üst katına yuvarlanır.
+    # 0 L sonucu 0 L olarak korunur.
     kullanma_es_faktoru_kaynak = KULLANMA_ES_FAKTORLERI.get(sicak_su_yapi_tipi)
     depolama_faktoru_kaynak = DEPOLAMA_FAKTORLERI.get(sicak_su_yapi_tipi)
     es_zaman_faktoru = None
@@ -2934,14 +2935,14 @@ if bolum_633_aktif:
         f"Apartman_{konut_sayisi}" if sicak_su_yapi_tipi == "Apartman"
         else sicak_su_yapi_tipi
     )
-    faktor_onceki_signature = st.session_state.get("sicak_su_faktor_signature_v33")
-    faktor_key_es = "sicak_su_kullanma_es_faktoru_v33"
-    faktor_key_dep = "sicak_su_depolama_faktoru_v33"
+    faktor_onceki_signature = st.session_state.get("sicak_su_faktor_signature_v34")
+    faktor_key_es = "sicak_su_kullanma_es_faktoru_v34"
+    faktor_key_dep = "sicak_su_depolama_faktoru_v34"
 
     if faktor_onceki_signature != faktor_signature:
         st.session_state[faktor_key_es] = float(varsayilan_es)
         st.session_state[faktor_key_dep] = float(depolama_faktoru_kaynak or 0.0)
-        st.session_state["sicak_su_faktor_signature_v33"] = faktor_signature
+        st.session_state["sicak_su_faktor_signature_v34"] = faktor_signature
     else:
         # İlk çalıştırmada değerlerin mutlaka kaynak tablodan gelmesini garanti et.
         if faktor_key_es not in st.session_state:
@@ -2963,11 +2964,11 @@ if bolum_633_aktif:
             format="%.2f", key=faktor_key_dep
         )
 
-    st.markdown("**Boyler hacmi hesabı**")
+    st.markdown("**Ortalama Ani Sıcak Su İhtiyacı:**")
     toplam_tuketim = float(sicak_su_gunluk_toplam_litre)
     es_zamanli_tuketim = toplam_tuketim * float(kullanma_es_faktoru)
     hesaplanan_boyler_hacmi = es_zamanli_tuketim * float(depolama_faktoru)
-    secilen_boyler_hacmi = int(((hesaplanan_boyler_hacmi + 99.999999) // 100) * 100) if hesaplanan_boyler_hacmi > 0 else 0
+    secilen_boyler_hacmi = int(math.ceil(hesaplanan_boyler_hacmi / 50.0) * 50) if hesaplanan_boyler_hacmi > 0 else 0
 
     st.markdown(
         f"Kullanma Eş Zaman Faktörü = **{kullanma_es_faktoru:.2f}**"
