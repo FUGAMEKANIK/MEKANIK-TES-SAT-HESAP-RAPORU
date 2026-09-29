@@ -3287,6 +3287,14 @@ if bolum_633_aktif:
     # daha sonra her sekmenin kendi veri tabanına bağlanabilir.
     st.markdown("### • BOYLER / EŞANJÖR SEÇİMİ")
 
+    # Rapor için tek bir boyler/eşanjör sistemi seçilir.
+    # Varsayılan: Tek Serpantinli Boyler.
+    boyler_secili_tip_key = "boyler_secili_tip_v57"
+    st.session_state.setdefault(
+        boyler_secili_tip_key,
+        "TEK SERPANTİNLİ BOYLER",
+    )
+
     boyler_tip_tabs = st.tabs([
         "TEK SERPANTİNLİ BOYLER",
         "ÇİFT SERPANTİNLİ BOYLER",
@@ -3306,14 +3314,34 @@ if bolum_633_aktif:
             if _tab_index == 0:
                 _tab_prefix = "tek_serpantin"
                 _tab_title = "Tek Serpantinli Boyler Seçimi"
+                _tip_adi = "TEK SERPANTİNLİ BOYLER"
             elif _tab_index == 1:
                 _tab_prefix = "cift_serpantin"
                 _tab_title = "Çift Serpantinli Boyler Seçimi"
+                _tip_adi = "ÇİFT SERPANTİNLİ BOYLER"
             else:
                 _tab_prefix = "plakali_esanjör"
                 _tab_title = "Plakalı Eşanjör Seçimi"
+                _tip_adi = "PLAKALI EŞANJÖR"
 
             st.markdown(f"#### {_tab_title}")
+
+            _rapor_sec_key = f"boyler_raporda_kullan_{_tab_prefix}_v58"
+            if st.button(
+                "✓ BU SİSTEMİ RAPORDA KULLAN",
+                key=_rapor_sec_key,
+                use_container_width=True,
+            ):
+                st.session_state[boyler_secili_tip_key] = _tip_adi
+                st.rerun()
+
+            if st.session_state.get(boyler_secili_tip_key) == _tip_adi:
+                st.success("Bu sistem raporda kullanılacak şekilde seçildi.")
+            else:
+                st.caption(
+                    f"Raporda şu anda kullanılan sistem: "
+                    f"{st.session_state.get(boyler_secili_tip_key, 'TEK SERPANTİNLİ BOYLER')}"
+                )
             st.caption(
                 "Seçim kriterleri, yukarıdaki sıcak su ihtiyacı ve ısı yükü "
                 "hesabından otomatik olarak alınacaktır."
@@ -4567,6 +4595,55 @@ if st.button("Raporu Oluştur (.docx)"):
             )
             q_par = doc.add_paragraph()
             q_par.add_run(f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW").bold = True
+
+            # Boyler / eşanjör seçimi
+            doc.add_paragraph("")
+            secim_baslik = doc.add_paragraph()
+            secim_baslik_run = secim_baslik.add_run("BOYLER / EŞANJÖR SEÇİMİ")
+            secim_baslik_run.bold = True
+            secim_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
+
+            secili_tip = st.session_state.get(
+                "boyler_secili_tip_v57",
+                "TEK SERPANTİNLİ BOYLER",
+            )
+
+            tip_prefix = {
+                "TEK SERPANTİNLİ BOYLER": "tek_serpantin",
+                "ÇİFT SERPANTİNLİ BOYLER": "cift_serpantin",
+                "PLAKALI EŞANJÖR": "plakali_esanjör",
+            }.get(secili_tip, "tek_serpantin")
+
+            secim_key = f"boyler_secim_{tip_prefix}_v56"
+            manuel_key = f"boyler_manuel_kapasite_{tip_prefix}_v56"
+            secim_modu = st.session_state.get(
+                secim_key,
+                "Otomatik hesaplanan değeri kullan",
+            )
+
+            if secim_modu == "Manuel seçim":
+                secim_hacmi = float(
+                    st.session_state.get(manuel_key, secilen_boyler_hacmi)
+                )
+            else:
+                secim_hacmi = float(secilen_boyler_hacmi)
+
+            secim_tablo = doc.add_table(rows=0, cols=2)
+            secim_tablo.style = "Table Grid"
+
+            for etiket, deger in [
+                ("Seçilen sistem", secili_tip),
+                ("Seçim yöntemi", secim_modu),
+                ("Seçilen kapasite", f"{secim_hacmi:.0f} L ({secim_hacmi / 1000:.2f} m³)"),
+                ("Hesaplanan ısı yükü", f"{boyler_q_kw:.1f} kW"),
+                ("Günlük sıcak su ihtiyacı", f"{toplam_tuketim:.0f} L/gün"),
+                ("Primer rejim", f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} °C"),
+                ("Sekonder rejim", f"{boyler_ts_giris:.0f}/{boyler_ts_cikis:.0f} °C"),
+            ]:
+                cells = secim_tablo.add_row().cells
+                cells[0].text = etiket
+                cells[1].text = deger
+
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
 
