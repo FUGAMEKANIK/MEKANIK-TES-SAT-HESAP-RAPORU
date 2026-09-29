@@ -16,7 +16,7 @@ import streamlit as st
 # Türkçe ay isimleri için sözlük
 aylar = {
     1: "Ocak",
-    2: "Şubat",
+    2: "Şubat",A
     3: "Mart",
     4: "Nisan",
     5: "Mayıs",
@@ -529,6 +529,7 @@ if bolum_3_aktif:
 # Böylece "TÜMÜNÜ KALDIR" sonrasında yalnızca 6.3.3 tekrar açıldığında
 # NameError oluşmaz. 4. bölüm açılırsa aşağıdaki selectbox değeri bunu günceller.
 st.session_state.setdefault("rej_boyler_v53", "80/60")
+st.session_state.setdefault("rej_gunes_ist_v68", "60/40")
 rej_boyler = st.session_state.get("rej_boyler_v53", "80/60")
 
 if bolum_4_aktif:
@@ -578,6 +579,7 @@ if bolum_4_aktif:
       "chk_k_sicak",
       "chk_doseme",
       "chk_kizgin",
+      "chk_gunes_ist",
   ]
   _toplu_secim_butonlari(akiskan_keys)
 
@@ -614,6 +616,18 @@ if bolum_4_aktif:
 
     chk_buhar = st.checkbox("9. Buhar tesisatı", key="chk_buhar", value=False)
     rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
+
+    chk_gunes_ist = st.checkbox(
+        "11. Güneş Enerjisi Isıtma Tesisatı",
+        key="chk_gunes_ist",
+        value=True,
+    )
+    rej_gunes_ist = st.selectbox(
+        "Güneş Enerjisi Isıtma Rejimi:",
+        ["60/40"],
+        index=0,
+        key="rej_gunes_ist_v68",
+    )
 
   with col2:
     chk_ks_sog = st.checkbox(
@@ -806,6 +820,28 @@ if bolum_6_aktif:
         ],
         default=["Dik tip hijyenik tek serpantinli boyler"],
     )
+
+    # Üstteki sıcak su üretim yöntemi aşağıdaki BOYLER / EŞANJÖR SEÇİMİ
+    # bölümünün ana seçimidir. Tek/çift serpantin seçimi alt sekmeye otomatik
+    # aktarılır; böylece aynı seçim iki kez yapılmaz.
+    _ust_boyler_tip_map = {
+        "Dik tip hijyenik tek serpantinli boyler": "TEK SERPANTİNLİ BOYLER",
+        "Dik tip hijyenik çift serpantinli boyler": "ÇİFT SERPANTİNLİ BOYLER",
+        "Plakalı eşanjör akümülasyon tankı": "PLAKALI EŞANJÖR",
+    }
+    _ust_secili_boylerler = [
+        _ust_boyler_tip_map[x]
+        for x in sih_sicak_su_yontemleri
+        if x in _ust_boyler_tip_map
+    ]
+    if len(_ust_secili_boylerler) == 1:
+        st.session_state["boyler_secili_tip_v57"] = _ust_secili_boylerler[0]
+    elif "Dik tip hijyenik çift serpantinli boyler" in sih_sicak_su_yontemleri:
+        # İki boyler tipi aynı anda seçilmişse daha özel olan çift serpantinli
+        # boyler alt hesapta esas alınır.
+        st.session_state["boyler_secili_tip_v57"] = "ÇİFT SERPANTİNLİ BOYLER"
+    elif len(_ust_secili_boylerler) > 0:
+        st.session_state["boyler_secili_tip_v57"] = _ust_secili_boylerler[-1]
     sih_sec_8 = st.checkbox(
         "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
         " dağıtım boruları PPRC tipte seçilecektir.",
@@ -3524,12 +3560,15 @@ if bolum_633_aktif:
                 if not _poz_yeterli: st.warning("Hesaplanan gereksinim 25.175.1613 pozunun kapasite/debi sınırını aşıyor.")
 
             elif _tab_prefix == "cift_serpantin":
-                # Çift serpantin: Kazan alt serpantinde, güneş üst serpantinde çalışır.
-                _gunes_rejim_key = "boyler_gunes_rejimi_v66"
-                _gunes_rejim = st.selectbox(
-                    "Isıtıcı Akışkan (Güneş) Rejimi:",
-                    ["60/40", "70/50", "80/60"],
-                    index=0, key=_gunes_rejim_key,
+                # Çift serpantin: alt serpantin kazan, üst serpantin güneştir.
+                # Güneş rejimi Bölüm 4'teki 11. maddeden otomatik aktarılır.
+                _gunes_rejim = str(
+                    st.session_state.get("rej_gunes_ist_v68", "60/40")
+                )
+                st.session_state["boyler_gunes_rejimi_v66"] = _gunes_rejim
+                st.info(
+                    f"Güneş serpantini rejimi: **{_gunes_rejim} °C sıcak su** "
+                    "(Bölüm 4'ten otomatik aktarılır.)"
                 )
                 _cift_poz, _cift_gerekli_hacim, _cift_gerekli_debi, _cift_yeterli = _cift_boyler_poz_sec(
                     secilen_boyler_hacmi, boyler_ms, _boyler_adet
@@ -4840,7 +4879,12 @@ if st.button("Raporu Oluştur (.docx)"):
                 rapor_debi = int(_cift_kayit["alt_debi"] + _cift_kayit["ust_debi"])
                 rapor_alt_debi = int(_cift_kayit["alt_debi"])
                 rapor_ust_debi = int(_cift_kayit["ust_debi"])
-                rapor_gunes_rejimi = _cift_kayit.get("gunes_rejimi", "60/40")
+                rapor_gunes_rejimi = str(
+                    st.session_state.get(
+                        "rej_gunes_ist_v68",
+                        _cift_kayit.get("gunes_rejimi", "60/40"),
+                    )
+                )
                 rapor_gunes_satiri = True
                 rapor_tip = (
                     "Çift Bakır Boru Serpantinli, Dik Tip, Gövdesi İzolasyonlu, "
