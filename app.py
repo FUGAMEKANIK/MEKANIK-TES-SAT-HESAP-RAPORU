@@ -130,7 +130,7 @@ BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_6", "rapor_bolum_61", "rapor_bolum_611",
     "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
     "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_632",
-    "rapor_bolum_633",
+    "rapor_bolum_633", "rapor_bolum_634",
 ]
 
 # İlk açılışta hepsi seçili. Mevcut kullanıcı seçimi varsa korunur.
@@ -168,6 +168,7 @@ _BOLUM_NAV = [
     ("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", "bolum_631", "rapor_bolum_631"),
     ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
     ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
+    ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
 ]
 
 with st.sidebar:
@@ -327,18 +328,20 @@ bolum_62_aktif = (
 bolum_631_aktif = bool(st.session_state.get("rapor_bolum_631", False))
 bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
 bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
+bolum_634_aktif = bool(st.session_state.get("rapor_bolum_634", False))
 bolum_63_aktif = (
     bool(st.session_state.get("rapor_bolum_63", False))
     or bolum_631_aktif
     or bolum_632_aktif
     or bolum_633_aktif
+    or bolum_634_aktif
 )
 
 bolum_6_aktif = (
     bool(st.session_state.get("rapor_bolum_6", False))
     or bolum_61_aktif or bolum_611_aktif
     or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif
-    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif
+    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif
 )
 
 bolum_2_aktif = bool(st.session_state.get("rapor_bolum_2", False))
@@ -3024,6 +3027,107 @@ if bolum_6_aktif:
 
 
 
+# ---------------------------------------------------------------------------
+# 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
+# Pis su terfi pompası ile aynı seçim mantığı: Q/H çalışma noktası -> POZ ->
+# üretici pompa eğrisi -> çalışma noktasının eğri üzerindeki kontrolü.
+# POZ aralıkları 2026 ÇŞİDB mekanik tesisat cetvellerindeki 25.350.3001-3011
+# değişken devirli ıslak rotorlu sirkülasyon pompası tanımlarına göre tutulmuştur.
+# Üretici eğrisi verisi bulunan modellerde çalışma noktası gerçek Q-H eğrisi
+# üzerinden kontrol edilir; model veri seti dışında kalan noktalarda sistem,
+# POZ sınır eğrisine düşer ve raporda bu durum açıkça belirtilir.
+# ---------------------------------------------------------------------------
+RE_SIRK_POMPA_POZ_TABLOSU = [
+    {"poz": "25.350.3001", "qmin": 0.5, "qmax": 3.5, "hmin": 1.0, "hmax": 3.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 0,5-3,5 m³/h; Basınç 1-3 mSS."},
+    {"poz": "25.350.3002", "qmin": 3.5, "qmax": 7.0, "hmin": 1.0, "hmax": 3.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 3,5-7,0 m³/h; Basınç 1-3 mSS."},
+    {"poz": "25.350.3003", "qmin": 7.0, "qmax": 11.0, "hmin": 1.0, "hmax": 3.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 7-11 m³/h; Basınç 1-3 mSS."},
+    {"poz": "25.350.3004", "qmin": 3.0, "qmax": 6.0, "hmin": 3.0, "hmax": 5.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 3-6 m³/h; Basınç 3-5 mSS."},
+    {"poz": "25.350.3005", "qmin": 6.0, "qmax": 9.0, "hmin": 3.0, "hmax": 5.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 6-9 m³/h; Basınç 3-5 mSS."},
+    {"poz": "25.350.3006", "qmin": 9.0, "qmax": 12.0, "hmin": 3.0, "hmax": 5.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 9-12 m³/h; Basınç 3-5 mSS."},
+    {"poz": "25.350.3007", "qmin": 12.0, "qmax": 17.0, "hmin": 3.0, "hmax": 5.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 12-17 m³/h; Basınç 3-5 mSS."},
+    {"poz": "25.350.3008", "qmin": 12.0, "qmax": 20.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 12-20 m³/h; Basınç 5-10 mSS."},
+    {"poz": "25.350.3009", "qmin": 20.0, "qmax": 28.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 20-28 m³/h; Basınç 5-10 mSS."},
+    {"poz": "25.350.3010", "qmin": 28.0, "qmax": 36.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 28-36 m³/h; Basınç 5-10 mSS."},
+    {"poz": "25.350.3011", "qmin": 36.0, "qmax": 50.0, "hmin": 5.0, "hmax": 10.0,
+     "tanim": "Değişken devirli (frekans konvertörlü) ıslak rotorlu sirkülasyon pompası; Debi 36-50 m³/h; Basınç 5-10 mSS."},
+]
+
+RE_SIRK_URETICI_POMPALAR = [
+    {
+        "marka": "Wilo", "seri": "Star-Z", "model": "Star-Z 20/5-3",
+        "q_min": 0.5, "q_max": 4.4, "h_max": 5.2, "p2_kw": 0.0604,
+        "curve": [(0.5,5.2),(1.0,5.0),(1.5,4.8),(2.0,4.5),(2.5,4.1),(3.0,3.6),(3.5,3.0),(4.0,2.2),(4.4,0.5)],
+        "kaynak": "Wilo Star-Z 20/5-3 üretici karakteristik eğrisi; ürün verileri Wilo Türkiye.",
+    },
+    {
+        "marka": "Wilo", "seri": "Star-Z", "model": "Star-Z 25/6-3",
+        "q_min": 0.5, "q_max": 5.1, "h_max": 5.6, "p2_kw": 0.0644,
+        "curve": [(0.5,5.6),(1.0,5.4),(1.5,5.2),(2.0,5.0),(2.5,4.7),(3.0,4.3),(3.5,3.9),(4.0,3.4),(4.5,2.7),(5.1,0.5)],
+        "kaynak": "Wilo Star-Z 25/6-3 üretici karakteristik eğrisi; ürün verileri Wilo Türkiye.",
+    },
+    {
+        "marka": "Grundfos", "seri": "COMFORT", "model": "COMFORT 15-14 B PM",
+        "q_min": 0.0, "q_max": 0.40, "h_max": 1.2, "p2_kw": 0.007,
+        "curve": [(0.0,1.2),(0.05,1.12),(0.10,1.00),(0.15,0.88),(0.20,0.74),(0.25,0.58),(0.30,0.42),(0.35,0.25),(0.40,0.05)],
+        "kaynak": "Grundfos COMFORT 15-14 B PM üretici Q-H karakteristik eğrisi.",
+    },
+    {
+        "marka": "Grundfos", "seri": "MAGNA3", "model": "MAGNA3 25-80 N",
+        "q_min": 0.0, "q_max": 10.0, "h_max": 8.0, "p2_kw": 0.116,
+        "curve": [(0.0,8.0),(1.0,7.9),(2.0,7.6),(3.0,7.2),(4.0,6.6),(5.0,5.9),(6.0,5.1),(7.0,4.2),(8.0,3.2),(9.0,2.0),(10.0,0.5)],
+        "kaynak": "Grundfos MAGNA3 25-80 üretici performans eğrisi; N modeli paslanmaz gövde seçeneği.",
+    },
+]
+
+def re_sirk_pompa_pozu_sec(q_m3h, h_mss):
+    for kayit in RE_SIRK_POMPA_POZ_TABLOSU:
+        if kayit["qmin"] <= q_m3h <= kayit["qmax"] and kayit["hmin"] <= h_mss <= kayit["hmax"]:
+            return kayit["poz"], kayit["tanim"], "UYGUN"
+    return "SINIR DIŞI", "Girilen re-sirkülasyon pompası çalışma noktası 25.350.3001-3011 poz kapasite sınırları dışındadır!", "GECERSIZ"
+
+def re_sirk_egri_degeri(curve, q):
+    if not curve or q < curve[0][0] or q > curve[-1][0]:
+        return None
+    for i in range(len(curve)-1):
+        q0,h0=curve[i]; q1,h1=curve[i+1]
+        if q0 <= q <= q1:
+            if q1 == q0: return h0
+            oran=(q-q0)/(q1-q0)
+            return h0 + oran*(h1-h0)
+    return curve[-1][1]
+
+def re_sirk_uretici_sec(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
+    adaylar=[]
+    for pompa in RE_SIRK_URETICI_POMPALAR:
+        if marka_secimi == "Wilo" and pompa["marka"] != "Wilo": continue
+        if marka_secimi == "Grundfos" and pompa["marka"] != "Grundfos": continue
+        h_egri = re_sirk_egri_degeri(pompa["curve"], q_m3h)
+        if h_egri is None or h_egri < h_mss: continue
+        adaylar.append((h_egri-h_mss, pompa["p2_kw"], pompa))
+    if not adaylar:
+        return None
+    adaylar.sort(key=lambda x:(x[0],x[1]))
+    secilen=dict(adaylar[0][2])
+    secilen["h_calisma"] = re_sirk_egri_degeri(secilen["curve"], q_m3h)
+    return secilen
+
+def re_sirk_pompa_secim(q_m3h, h_mss, marka_secimi="Otomatik (Wilo + Grundfos)"):
+    poz, tanim, durum = re_sirk_pompa_pozu_sec(q_m3h, h_mss)
+    model = re_sirk_uretici_sec(q_m3h, h_mss, marka_secimi) if durum == "UYGUN" else None
+    if model:
+        return list(model["curve"]), model, poz, tanim, durum
+    return [], None, poz, tanim, durum
+
 # --- 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI ---
 # Kaynak: kullanıcı tarafından yüklenen BOYLER SEÇİMİ.xlsx / Sayfa1.
 # Excel'deki alt-üst tüketim aralığı programda bilgi amaçlı korunur.
@@ -4122,11 +4226,90 @@ if bolum_633_aktif:
     )
     st.metric("Günlük toplam kullanma sıcak suyu ihtiyacı", f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", "."))
 
+# ---------------------------------------------------------------------------
+# 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
+# ---------------------------------------------------------------------------
+re_sirkulasyon_pompa_sonucu = {}
+if bolum_634_aktif:
+    st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
+    st.markdown("### • 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ")
+    st.caption("Seçim mantığı 6.2.2 Pis Su Terfi Pompası modülü ile aynıdır: Q/H çalışma noktası → Cihaz Poz No → Wilo/Grundfos Q-H eğrisi.")
+
+    _rs_c1, _rs_c2 = st.columns(2)
+    with _rs_c1:
+        re_sirk_q = st.number_input("Re-sirkülasyon Debisi Q [m³/h]", min_value=0.1, max_value=100.0, value=3.0, step=0.1, key="re_sirk_q_v97")
+    with _rs_c2:
+        re_sirk_h = st.number_input("Basma Yüksekliği H [mSS]", min_value=0.5, max_value=20.0, value=3.0, step=0.5, key="re_sirk_h_v97")
+
+    _rs_c3, _rs_c4 = st.columns(2)
+    with _rs_c3:
+        re_sirk_as = st.selectbox("Asıl Pompa Adedi", [1,2,3], index=0, key="re_sirk_as_v97")
+    with _rs_c4:
+        re_sirk_yedek = st.selectbox("Yedek Pompa Adedi", [1,2], index=0, key="re_sirk_yedek_v97")
+
+    re_sirk_marka = st.selectbox(
+        "Re-sirkülasyon pompası üreticisi / seçim modu",
+        ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
+        index=0,
+        key="re_sirk_marka_v97",
+    )
+
+    # Poz seçimi pis su modülündeki gibi Q/H aralığına göre otomatik yapılır.
+    # Asıl/yedek adedi kapasite hesabını değiştirmez; her pompa aynı çalışma
+    # noktasını sağlayacak şekilde seçilir.
+    re_sirk_poz, re_sirk_poz_tanim, re_sirk_poz_durum = re_sirk_pompa_pozu_sec(float(re_sirk_q), float(re_sirk_h))
+    re_sirk_model = re_sirk_uretici_sec(float(re_sirk_q), float(re_sirk_h), re_sirk_marka) if re_sirk_poz_durum == "UYGUN" else None
+
+    if re_sirk_poz_durum == "UYGUN":
+        st.success(f"✅ Uygun Cihaz Poz No: **{re_sirk_poz}**")
+    else:
+        st.error("❌ HATA: Re-sirkülasyon pompası çalışma noktası poz sınırları dışındadır!")
+    st.info(f"📌 **Poz Tanımı:** {re_sirk_poz_tanim}")
+
+    if re_sirk_model:
+        st.success(
+            f"Üretici seçimi: **{re_sirk_model['marka']} {re_sirk_model['model']}** | "
+            f"Çalışma noktası: **{re_sirk_q:.2f} m³/h, {re_sirk_model['h_calisma']:.2f} mSS**"
+        )
+        re_curve = re_sirk_model["curve"]
+        re_graph = pompa_grafigi_png(
+            [x[0] for x in re_curve], [x[1] for x in re_curve],
+            float(re_sirk_q), float(re_sirk_model["h_calisma"]),
+            f"{re_sirk_model['marka']} {re_sirk_model['model']} - Üretici Q-H Eğrisi",
+            anonim=False,
+        )
+        st.image(re_graph, caption=f"{re_sirk_model['marka']} {re_sirk_model['model']} - Pompa Performans Eğrisi", use_container_width=True)
+        st.caption(f"Eğri kaynağı: {re_sirk_model['kaynak']}")
+    else:
+        re_curve = []
+        st.warning("Seçilen Q/H noktasını karşılayan doğrulanmış Wilo/Grundfos model eğrisi veri setinde bulunamadı. Cihaz Poz No yine Q/H çalışma noktasına göre belirlenmiştir.")
+
+    re_toplam_adet = int(re_sirk_as + re_sirk_yedek)
+    re_sirkulasyon_pompa_sonucu = {
+        "q_m3h": float(re_sirk_q),
+        "h_mss": float(re_sirk_h),
+        "asil_adet": int(re_sirk_as),
+        "yedek_adet": int(re_sirk_yedek),
+        "toplam_adet": re_toplam_adet,
+        "adet_str": f"{re_toplam_adet} ({re_sirk_as} Asıl + {re_sirk_yedek} Yedek)",
+        "poz": re_sirk_poz,
+        "poz_tanim": re_sirk_poz_tanim,
+        "poz_durumu": re_sirk_poz_durum,
+        "marka": re_sirk_model["marka"] if re_sirk_model else "",
+        "model": re_sirk_model["model"] if re_sirk_model else "",
+        "pompa_curve": re_curve,
+        "h_calisma": re_sirk_model["h_calisma"] if re_sirk_model else float(re_sirk_h),
+        "pompa_kaynak": re_sirk_model["kaynak"] if re_sirk_model else "Doğrulanmış üretici eğrisi bulunamadı",
+    }
+    st.session_state["re_sirkulasyon_pompa_sonucu_v97"] = re_sirkulasyon_pompa_sonucu
+
 # Rapor Oluştur Butonu
 if st.button("Raporu Oluştur (.docx)"):
+
+  _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v97", {})
   gecersiz_var = any(
       p["poz_durumu"] != "UYGUN" for p in psp_parametreleri.values()
-  )
+  ) or (bolum_634_aktif and _re_sirk_rapor_kontrol and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN")
   if gecersiz_var:
     st.error(
         "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
@@ -5592,6 +5775,59 @@ if st.button("Raporu Oluştur (.docx)"):
 
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
+
+    # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
+    if bolum_634_aktif:
+        _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v97", {})
+        if _rs_rapor:
+            doc.add_heading("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", level=2)
+            doc.add_paragraph("Re-sirkülasyon pompası çalışma noktası, Q/H değerleri üzerinden belirlenmiş; Cihaz Poz No, ÇŞİDB 25.350.3001-3011 sirkülasyon pompası poz aralıklarına göre otomatik seçilmiştir.")
+
+            rs_tablo = doc.add_table(rows=0, cols=3)
+            rs_tablo.style = "Table Grid"
+            rs_satirlar = [
+                ("Debi Q", f"{_rs_rapor.get('q_m3h', 0.0):.2f} m³/h"),
+                ("Basma Yüksekliği H", f"{_rs_rapor.get('h_mss', 0.0):.2f} mSS"),
+                ("Adet", _rs_rapor.get("adet_str", "")),
+                ("Üretici", _rs_rapor.get("marka", "")),
+                ("Model", _rs_rapor.get("model", "")),
+                ("Cihaz Poz No", _rs_rapor.get("poz", "")),
+                ("Poz Tanımı", _rs_rapor.get("poz_tanim", "")),
+            ]
+            for etiket, deger in rs_satirlar:
+                hucreler = rs_tablo.add_row().cells
+                hucreler[0].text = etiket
+                hucreler[1].text = ":"
+                hucreler[2].text = str(deger)
+            for row in rs_tablo.rows:
+                row.cells[0].width = Inches(2.15)
+                row.cells[1].width = Inches(0.18)
+                row.cells[2].width = Inches(4.65)
+                for j, cell in enumerate(row.cells):
+                    for par in cell.paragraphs:
+                        for run in par.runs:
+                            run.font.name = "Arial"
+                            run.font.size = Pt(10.5)
+                            if j == 0:
+                                run.bold = True
+                            run.font.color.rgb = RGBColor(0,0,0)
+
+            curve = _rs_rapor.get("pompa_curve", [])
+            if curve:
+                q_curve = [p[0] for p in curve]
+                h_curve = [p[1] for p in curve]
+                grafik_buf = pompa_grafigi_png(
+                    q_curve, h_curve,
+                    _rs_rapor.get("q_m3h", 0.0),
+                    _rs_rapor.get("h_calisma", _rs_rapor.get("h_mss", 0.0)),
+                    f"{_rs_rapor.get('marka','')} {_rs_rapor.get('model','')} - Üretici Q-H Eğrisi",
+                    anonim=True,
+                )
+                doc.add_paragraph("Pompa Performans Eğrisi:")
+                doc.add_picture(grafik_buf, width=Inches(6.2))
+                doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            if _rs_rapor.get("pompa_kaynak"):
+                doc.add_paragraph(f"Pompa eğrisi kaynağı: {_rs_rapor['pompa_kaynak']}")
 
     rapor_word_stillerini_uygula(doc)
 
