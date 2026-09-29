@@ -139,24 +139,33 @@ def _tum_bolumleri_sec():
   for anahtar in BOLUM_SECIM_ANAHTARLARI:
     st.session_state[anahtar] = True
 
-def _tum_bolumleri_kaldir():
+def _tum_bolumleri_sil():
   for anahtar in BOLUM_SECIM_ANAHTARLARI:
     st.session_state[anahtar] = False
 
-# Her seçim grubunda kullanılacak "TÜMÜNÜ SEÇ / TÜMÜNÜ KALDIR" butonları.
-# Buton callback'i, ilgili checkbox'lar oluşturulmadan önce Session State'i günceller.
-_toplu_secim_grup_sayaci = 0
 
-def _toplu_secim_butonlari(anahtarlar):
-  global _toplu_secim_grup_sayaci
-  _toplu_secim_grup_sayaci += 1
-  grup_id = _toplu_secim_grup_sayaci
+def _toplu_secim_butonlari(anahtarlar, grup_adi=None):
+  """Bir checkbox grubunu güvenli biçimde topluca seç/kaldır.
 
-  def _sec():
+  Butonlar callback ile çalışır. Callback, ilgili checkbox widget'ları
+  ekranda oluşturulmadan önce Session State'i güncellediği için,
+  toplu işlem sonrasında tek tek checkbox'ların değiştirilmesi güvenlidir.
+  """
+  if not anahtarlar:
+    return
+
+  # Aynı sayfada birden fazla grup bulunduğu için buton anahtarları
+  # grubun checkbox anahtarlarından deterministik olarak üretilir.
+  grup_imza = grup_adi or "_".join(anahtarlar)
+  grup_imza = str(abs(hash(grup_imza)))
+  sec_key = f"toplu_sec_{grup_imza}"
+  kaldir_key = f"toplu_kaldir_{grup_imza}"
+
+  def _grubu_sec():
     for anahtar in anahtarlar:
       st.session_state[anahtar] = True
 
-  def _kaldir():
+  def _grubu_kaldir():
     for anahtar in anahtarlar:
       st.session_state[anahtar] = False
 
@@ -164,15 +173,15 @@ def _toplu_secim_butonlari(anahtarlar):
   with col_sec:
     st.button(
         "☑ TÜMÜNÜ SEÇ",
-        key=f"toplu_sec_v43_{grup_id}",
-        on_click=_sec,
+        key=sec_key,
+        on_click=_grubu_sec,
         use_container_width=True,
     )
   with col_kaldir:
     st.button(
         "☐ TÜMÜNÜ KALDIR",
-        key=f"toplu_kaldir_v43_{grup_id}",
-        on_click=_kaldir,
+        key=kaldir_key,
+        on_click=_grubu_kaldir,
         use_container_width=True,
     )
 
@@ -187,8 +196,8 @@ with col_toplu_1:
 with col_toplu_2:
   st.button(
       "☐ TÜMÜNÜ KALDIR",
-      key="rapor_tumunu_kaldir_v43",
-      on_click=_tum_bolumleri_kaldir,
+      key="rapor_tumunu_sil_v42",
+      on_click=_tum_bolumleri_sil,
       use_container_width=True,
   )
 
