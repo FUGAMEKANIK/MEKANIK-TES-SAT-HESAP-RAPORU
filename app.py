@@ -5894,42 +5894,76 @@ if st.button("Raporu Oluştur (.docx)"):
             _rs_qh = float(_rs_rapor.get("q_hesap_m3h", 0.0))
             _rs_qs = float(_rs_rapor.get("q_m3h", 0.0))
 
-            # Kullanıcının gönderdiği görsel düzeninde formül mutlaka rapora eklenir.
-            if _rs_qb > 0:
-                _formul_buf = re_sirk_formul_gorseli_png(
-                    _rs_qb, _rs_qt, _rs_qh, _rs_qs, _rs_qb_kw,
-                    float(_rs_rapor.get("emniyet_orani", 15.0))
-                )
-                _formul_par = doc.add_paragraph()
-                _formul_par.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                _formul_par.paragraph_format.space_before = Pt(2)
-                _formul_par.paragraph_format.space_after = Pt(6)
-                _formul_run = _formul_par.add_run()
-                _formul_run.add_picture(_formul_buf, width=Inches(5.9))
+            # RAPOR DÜZENİ: Kullanıcının verdiği örnekteki görünüm birebir korunur.
+            # Formül resim olarak değil, Word metni olarak yazılır; böylece satırlar
+            # Word sayfasında dağılmaz ve hizalama bozulmaz.
+            _rs_q_txt = f"{_rs_qb:,.0f}"
+            _rs_kw_txt = f"{_rs_qb_kw:.0f}".replace(".", ",")
+            _rs_factor = 1.0 + float(_rs_rapor.get("emniyet_orani", 15.0)) / 100.0
+            _rs_factor_txt = f"{_rs_factor:.2f}".replace(".", ",")
+            _rs_qh_txt = f"{_rs_qh:.2f}"
 
-            # RAPOR DÜZENİ: Kullanıcının verdiği örnekle aynı satır düzeni; tablo çizgileri yok.
-            def _rs_rapor_satiri(label, value, bold_value=False):
+            # Q BOYLER satırı
+            _qpar = doc.add_paragraph()
+            _qpar.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            _qpar.paragraph_format.left_indent = Inches(0.15)
+            _qpar.paragraph_format.space_before = Pt(2)
+            _qpar.paragraph_format.space_after = Pt(7)
+            _qr = _qpar.add_run(
+                f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW"
+            )
+            _qr.font.name = "Arial"
+            _qr.font.size = Pt(11.5)
+            _qr.bold = True
+
+            # Kullanıcının örneğindeki kesir düzeni. Courier New kullanılması,
+            # pay/payda ve çizginin Word'de sabit genişlikte hizalanmasını sağlar.
+            _f1 = doc.add_paragraph()
+            _f1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _f1.paragraph_format.space_before = Pt(0)
+            _f1.paragraph_format.space_after = Pt(0)
+            _r = _f1.add_run(
+                f"                 {_rs_q_txt} × 0,05 × {_rs_factor_txt}"
+            )
+            _r.font.name = "Courier New"
+            _r.font.size = Pt(10.5)
+
+            _f2 = doc.add_paragraph()
+            _f2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _f2.paragraph_format.space_before = Pt(0)
+            _f2.paragraph_format.space_after = Pt(8)
+            _r = _f2.add_run(
+                f"V = -------------------------------- = {_rs_qh_txt} m³/h\n"
+                f"                         5.000"
+            )
+            _r.font.name = "Courier New"
+            _r.font.size = Pt(10.5)
+
+            # Seçilen Pompa başlığı
+            _baslik = doc.add_paragraph()
+            _baslik.paragraph_format.space_before = Pt(0)
+            _baslik.paragraph_format.space_after = Pt(3)
+            _br = _baslik.add_run("Seçilen Pompa :")
+            _br.font.name = "Arial"
+            _br.font.size = Pt(11.5)
+            _br.bold = True
+
+            # Kullanıcının istediği ':' biçimi; Cihaz Poz No ise '=' biçiminde kalır.
+            def _rs_rapor_satiri(label, value, bold_value=False, equals=False):
                 par = doc.add_paragraph()
-                par.paragraph_format.left_indent = Inches(0.15)
+                par.paragraph_format.left_indent = Inches(0.35)
                 par.paragraph_format.space_before = Pt(0)
                 par.paragraph_format.space_after = Pt(1)
-                r1 = par.add_run(f"{label} ")
+                r1 = par.add_run(f"{label:<9}")
                 r1.font.name = "Arial"
                 r1.font.size = Pt(11)
                 r1.bold = True
-                r2 = par.add_run(f"= {value}")
+                sep = " = " if equals else ": "
+                r2 = par.add_run(f"{sep}{value}")
                 r2.font.name = "Arial"
                 r2.font.size = Pt(11)
                 r2.bold = bool(bold_value)
                 return par
-
-            _baslik = doc.add_paragraph()
-            _baslik.paragraph_format.space_before = Pt(2)
-            _baslik.paragraph_format.space_after = Pt(3)
-            _br = _baslik.add_run("Seçilen Pompa:")
-            _br.font.name = "Arial"
-            _br.font.size = Pt(11.5)
-            _br.bold = True
 
             _rs_rapor_satiri("V", f"{_rs_rapor.get('q_m3h', 0.0):g} m³/h", True)
             _rs_rapor_satiri("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS", True)
@@ -5937,7 +5971,7 @@ if st.button("Raporu Oluştur (.docx)"):
             _rs_rapor_satiri("Adet", _rs_rapor.get("adet_str", ""), True)
             _rs_rapor_satiri("Tip", _rs_rapor.get("tip", ""), False)
             if _rs_rapor.get("poz_rapora_aktar", True):
-                _rs_rapor_satiri("Cihaz Poz No", _rs_rapor.get("poz", ""), True)
+                _rs_rapor_satiri("Cihaz Poz No", _rs_rapor.get("poz", ""), True, equals=True)
 
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
