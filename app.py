@@ -5365,7 +5365,14 @@ if st.button("Raporu Oluştur (.docx)"):
                     ("Tip", rapor_tip),
                     ("Boyler hacmi", f"{rapor_hacim} lt"),
                 ])
-                if not rapor_gunes_satiri:
+                if rapor_gunes_satiri:
+                    # Çift serpantinli boylerde iki serpantin debisi ayrı ayrı rapora aktarılır.
+                    boyler_rapor_satirlari.extend([
+                        ("Alt serpantin debisi", f"{rapor_alt_debi} lt/h"),
+                        ("Üst serpantin debisi", f"{rapor_ust_debi} lt/h"),
+                    ])
+                else:
+                    # Tek serpantinli boylerde tek debi gösterilir.
                     boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
                 if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
                     boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
