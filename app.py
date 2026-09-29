@@ -5317,7 +5317,7 @@ if st.button("Raporu Oluştur (.docx)"):
                 _plaka_toplam_adet_rapor = int(_plaka_rapor.get("adet", _plaka_calisma_adet_rapor + _plaka_yedek_adet_rapor))
 
                 # 1. ekipman: Akümülasyon tankı
-                doc.add_paragraph("")
+                # Önceki boş paragraf kaldırıldı; başlık Q hesabına daha yakın konumlanır.
                 akum_baslik = doc.add_paragraph()
                 akum_baslik_run = akum_baslik.add_run("SICAK SU AKÜMÜLASYON TANKI SEÇİMİ:")
                 akum_baslik_run.bold = True
