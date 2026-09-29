@@ -3185,24 +3185,28 @@ if bolum_633_aktif:
         except (ValueError, TypeError, AttributeError):
             boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = 80.0, 60.0
 
-        # v42: Eski v38 anahtarlarındaki 0 değerlerini taşımamak için yeni
-        # widget anahtarları kullanılıyor. Böylece program ilk açıldığında
-        # 80/60 mutlaka görünür.
-        boyler_rejim_key = "boyler_primer_rejim_v42"
-        boyler_tp_giris_key = "boyler_tp_giris_v42"
-        boyler_tp_cikis_key = "boyler_tp_cikis_v42"
+        # v52: Boyler rejimi ile primer giriş/çıkış sıcaklıklarını doğrudan
+        # ve güvenli şekilde senkronize et. Eski v38/v42 session_state
+        # anahtarlarını kullanmıyoruz; böylece daha önce kalmış 0/0 değerleri
+        # yeni rejimin üzerine yazamaz.
+        boyler_rejim_key = "boyler_primer_rejim_v52"
+        boyler_tp_giris_key = "boyler_tp_giris_v52"
+        boyler_tp_cikis_key = "boyler_tp_cikis_v52"
+        secili_rejim = str(rej_boyler or "80/60")
+        onceki_rejim = st.session_state.get(boyler_rejim_key)
 
-        if boyler_rejim_key not in st.session_state:
-            st.session_state[boyler_rejim_key] = str(rej_boyler)
-            st.session_state[boyler_tp_giris_key] = boyler_tp_giris_kaynak
-            st.session_state[boyler_tp_cikis_key] = boyler_tp_cikis_kaynak
-        elif st.session_state.get(boyler_rejim_key) != str(rej_boyler):
-            st.session_state[boyler_tp_giris_key] = boyler_tp_giris_kaynak
-            st.session_state[boyler_tp_cikis_key] = boyler_tp_cikis_kaynak
-            st.session_state[boyler_rejim_key] = str(rej_boyler)
+        # İlk açılışta veya rejim değiştiğinde primer sıcaklıklarını seçilen
+        # rejime birebir aktar. İlk açılışın varsayılanı 80/60'tır.
+        if onceki_rejim is None or onceki_rejim != secili_rejim:
+            st.session_state[boyler_tp_giris_key] = float(boyler_tp_giris_kaynak)
+            st.session_state[boyler_tp_cikis_key] = float(boyler_tp_cikis_kaynak)
+            st.session_state[boyler_rejim_key] = secili_rejim
         else:
-            st.session_state.setdefault(boyler_tp_giris_key, boyler_tp_giris_kaynak)
-            st.session_state.setdefault(boyler_tp_cikis_key, boyler_tp_cikis_kaynak)
+            # Eski/boş session değerleri kalmışsa güvenli varsayılanı geri yükle.
+            if boyler_tp_giris_key not in st.session_state:
+                st.session_state[boyler_tp_giris_key] = float(boyler_tp_giris_kaynak)
+            if boyler_tp_cikis_key not in st.session_state:
+                st.session_state[boyler_tp_cikis_key] = float(boyler_tp_cikis_kaynak)
 
         boyler_tp_giris = st.number_input(
             "Primer giriş sıcaklığı (°C)",
