@@ -16,7 +16,7 @@ import streamlit as st
 # Türkçe ay isimleri için sözlük
 aylar = {
     1: "Ocak",
-    2: "Şubat",A
+    2: "Şubat",
     3: "Mart",
     4: "Nisan",
     5: "Mayıs",
