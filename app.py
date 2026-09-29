@@ -115,6 +115,50 @@ st.title("Mühendislik Proje Raporu Otomasyonu")
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
 
 # RAPORA DAHİL EDİLECEK NUMARALI BÖLÜM SEÇİMLERİ
+# Toplu seçim anahtarları. Butonlar checkbox'lar oluşturulmadan önce çalıştırılır;
+# böylece Streamlit Session State üzerinden tüm seçimler güvenli şekilde güncellenir.
+BOLUM_SECIM_ANAHTARLARI = [
+    "rapor_bolum_2",
+    "rapor_bolum_3",
+    "rapor_bolum_4",
+    "rapor_bolum_5",
+    "rapor_bolum_51",
+    "rapor_bolum_6",
+    "rapor_bolum_61",
+    "rapor_bolum_611",
+    "rapor_bolum_62",
+    "rapor_bolum_621",
+    "rapor_bolum_622",
+    "rapor_bolum_63",
+    "rapor_bolum_631",
+    "rapor_bolum_632",
+    "rapor_bolum_633",
+]
+
+def _tum_bolumleri_sec():
+  for anahtar in BOLUM_SECIM_ANAHTARLARI:
+    st.session_state[anahtar] = True
+
+def _tum_bolumleri_sil():
+  for anahtar in BOLUM_SECIM_ANAHTARLARI:
+    st.session_state[anahtar] = False
+
+col_toplu_1, col_toplu_2 = st.columns(2)
+with col_toplu_1:
+  st.button(
+      "☑ TÜMÜNÜ SEÇ",
+      key="rapor_tumunu_sec_v42",
+      on_click=_tum_bolumleri_sec,
+      use_container_width=True,
+  )
+with col_toplu_2:
+  st.button(
+      "☐ TÜMÜNÜ SİL",
+      key="rapor_tumunu_sil_v42",
+      on_click=_tum_bolumleri_sil,
+      use_container_width=True,
+  )
+
 bolum_2_aktif = st.checkbox("2. Uygulanacak Standart ve Yönetmelikler", value=True, key="rapor_bolum_2")
 bolum_3_aktif = st.checkbox("3. Mekanik Tesisat Proje Kapsamı", value=True, key="rapor_bolum_3")
 bolum_4_aktif = st.checkbox("4. Tesiste Kullanılacak Isı İletim Akışkanları", value=True, key="rapor_bolum_4")
@@ -133,34 +177,6 @@ bolum_633_aktif = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", 
 
 # 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
 bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif or bolum_633_aktif)
-
-
-def _toplu_checkbox_ayarla(anahtarlar, durum):
-  for anahtar in anahtarlar:
-    st.session_state[anahtar] = durum
-
-
-def _toplu_secim_butonlari(
-    anahtarlar, kolon_basliklari=("☑ TÜMÜNÜ SEÇ", "☐ TÜMÜNÜ KALDIR")
-):
-  c1, c2 = st.columns(2)
-  with c1:
-    st.button(
-        kolon_basliklari[0],
-        key=f"toplu_sec_{anahtarlar[0]}",
-        on_click=_toplu_checkbox_ayarla,
-        args=(anahtarlar, True),
-        use_container_width=True,
-    )
-  with c2:
-    st.button(
-        kolon_basliklari[1],
-        key=f"toplu_kaldir_{anahtarlar[0]}",
-        on_click=_toplu_checkbox_ayarla,
-        args=(anahtarlar, False),
-        use_container_width=True,
-    )
-
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
