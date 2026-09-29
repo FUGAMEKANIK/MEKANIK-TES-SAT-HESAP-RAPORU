@@ -4133,13 +4133,37 @@ if st.button("Raporu Oluştur (.docx)"):
                 hucre[4].text = f"{detay['toplam_litre']:.0f}"
             toplam = t_sicak.add_row().cells
             toplam[0].text = "GENEL TOPLAM"
-            toplam[4].text = f"{sicak_su_gunluk_toplam_litre:.0f} L/gün"
-            doc.add_paragraph(f"Kullanma Eş Zaman Faktörü = {kullanma_es_faktoru:.2f}")
-            doc.add_paragraph(f"Depolama Faktörü = {depolama_faktoru:.2f}")
-            doc.add_paragraph(
-                f"V = {depolama_faktoru:.2f} x {kullanma_es_faktoru:.2f} x {sicak_su_gunluk_toplam_litre:.0f} = {hesaplanan_boyler_hacmi:.0f} L"
+            toplam[4].text = f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", ".")
+
+            # Ortalama Ani Sıcak Su İhtiyacı
+            ortalama_ani_baslik = doc.add_paragraph()
+            run = ortalama_ani_baslik.add_run("Ortalama Ani Sıcak Su İhtiyacı:")
+            run.bold = True
+
+            faktor_par = doc.add_paragraph()
+            faktor_par.add_run("Kullanma Eş Zaman Faktörü = ")
+            run = faktor_par.add_run(f"{kullanma_es_faktoru:.2f}")
+            run.bold = True
+
+            faktor_par = doc.add_paragraph()
+            faktor_par.add_run("Depolama Faktörü = ")
+            run = faktor_par.add_run(f"{depolama_faktoru:.2f}")
+            run.bold = True
+
+            toplam_litre_fmt = f"{sicak_su_gunluk_toplam_litre:,.0f}".replace(",", ".")
+            hesaplanan_fmt = f"{hesaplanan_boyler_hacmi:,.0f}".replace(",", ".")
+            formula_par = doc.add_paragraph()
+            formula_par.add_run(
+                f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_litre_fmt} = "
             )
-            doc.add_paragraph(f"V = {secilen_boyler_hacmi:.0f} L (Emniyetle)")
+            run = formula_par.add_run(f"{hesaplanan_fmt} L")
+            run.bold = True
+
+            emniyet_par = doc.add_paragraph()
+            emniyet_par.add_run("V = ")
+            run = emniyet_par.add_run(f"{secilen_boyler_hacmi:,.0f} L".replace(",", "."))
+            run.bold = True
+            emniyet_par.add_run(" (Emniyetle)")
             if es_zaman_faktoru is not None:
                 doc.add_paragraph(f"Excel eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
         else:
