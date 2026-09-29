@@ -3279,7 +3279,51 @@ if bolum_633_aktif:
         })
     st.dataframe(pd.DataFrame(faktor_satirlari), hide_index=True, use_container_width=True)
 
+    
     # -----------------------------------------------------------------------
+    # BOYLER POZ VERİTABANI - 25.175.1601 ... 25.175.1613
+    # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı 2026 mekanik tesisat
+    # birim fiyat tariflerindeki Tek Bakır Serpantinli Dik Boyler değerleri.
+    # Seçim, her boyler için gerekli hacim ve debiyi birlikte kontrol eder.
+    # -----------------------------------------------------------------------
+    TEK_SERPANTINLI_BOYLER_POZLARI = [
+        {"poz": "25.175.1601", "hacim": 160,  "debi_80_60": 221},
+        {"poz": "25.175.1602", "hacim": 200,  "debi_80_60": 272},
+        {"poz": "25.175.1603", "hacim": 300,  "debi_80_60": 289},
+        {"poz": "25.175.1604", "hacim": 350,  "debi_80_60": 336},
+        {"poz": "25.175.1605", "hacim": 500,  "debi_80_60": 476},
+        {"poz": "25.175.1606", "hacim": 600,  "debi_80_60": 521},
+        {"poz": "25.175.1607", "hacim": 800,  "debi_80_60": 612},
+        {"poz": "25.175.1608", "hacim": 1000, "debi_80_60": 663},
+        {"poz": "25.175.1609", "hacim": 1250, "debi_80_60": 765},
+        {"poz": "25.175.1610", "hacim": 1500, "debi_80_60": 867},
+        {"poz": "25.175.1611", "hacim": 2000, "debi_80_60": 1088},
+        {"poz": "25.175.1612", "hacim": 2500, "debi_80_60": 1309},
+        {"poz": "25.175.1613", "hacim": 3000, "debi_80_60": 1479},
+    ]
+
+    def _boyler_poz_sec(hacim_toplam_litre, debi_toplam_lph, adet):
+        """Her boyler için gerekli hacim ve debiyi karşılayan ilk poz."""
+        adet = max(1, int(adet))
+        hacim_birim = float(hacim_toplam_litre) / adet
+        debi_birim = float(debi_toplam_lph) / adet
+
+        for poz in TEK_SERPANTINLI_BOYLER_POZLARI:
+            if (
+                poz["hacim"] >= hacim_birim
+                and poz["debi_80_60"] >= debi_birim
+            ):
+                return poz, hacim_birim, debi_birim, True
+
+        # Tablo sınırı aşılırsa son poz gösterilir ve uyarı verilir.
+        return (
+            TEK_SERPANTINLI_BOYLER_POZLARI[-1],
+            hacim_birim,
+            debi_birim,
+            False,
+        )
+
+# -----------------------------------------------------------------------
     # BOYLER / EŞANJÖR SEÇİMİ
     # -----------------------------------------------------------------------
     # Üstte yapılan sıcak su ihtiyacı hesabının sonuçları bu üç seçim
@@ -3364,7 +3408,58 @@ if bolum_633_aktif:
                     )
                 )
 
-            # Şimdilik seçim altyapısı. Gerçek üretici/poz seçenekleri,
+            _adet_key = f"boyler_adet_{_tab_prefix}_v59"
+            _boyler_adet = st.number_input(
+                "Boyler adedi",
+                min_value=1,
+                value=3,
+                step=1,
+                key=_adet_key,
+            )
+
+            # Tek serpantinli boyler için poz seçimi:
+            # toplam gerekli hacim ve toplam hesaplanan debi, girilen adet sayısına
+            # bölünür; her iki şartı da sağlayan en küçük poz seçilir.
+            if _tab_prefix == "tek_serpantin":
+                _secim_pozu, _gerekli_hacim_birim, _gerekli_debi_birim, _poz_yeterli = _boyler_poz_sec(
+                    secilen_boyler_hacmi,
+                    boyler_ms,
+                    _boyler_adet,
+                )
+                _boyler_secim_sonucu_key = "boyler_secim_sonucu_v59"
+                st.session_state[_boyler_secim_sonucu_key] = {
+                    "tip": _tip_adi,
+                    "adet": int(_boyler_adet),
+                    "poz": _secim_pozu["poz"],
+                    "hacim": int(_secim_pozu["hacim"]),
+                    "debi": int(_secim_pozu["debi_80_60"]),
+                    "gerekli_hacim_birim": _gerekli_hacim_birim,
+                    "gerekli_debi_birim": _gerekli_debi_birim,
+                    "poz_yeterli": _poz_yeterli,
+                }
+
+                st.markdown("**Otomatik Boyler Seçimi**")
+                _c1, _c2, _c3, _c4 = st.columns(4)
+                with _c1:
+                    st.metric("Adet", int(_boyler_adet))
+                with _c2:
+                    st.metric("Boyler hacmi", f"{_secim_pozu['hacim']} L")
+                with _c3:
+                    st.metric("Boyler debisi", f"{_secim_pozu['debi_80_60']} L/h")
+                with _c4:
+                    st.metric("Cihaz Poz No", _secim_pozu["poz"])
+
+                st.caption(
+                    f"Her boyler için gerekli: {_gerekli_hacim_birim:.0f} L / "
+                    f"{_gerekli_debi_birim:.0f} L/h"
+                )
+                if not _poz_yeterli:
+                    st.warning(
+                        "Hesaplanan gereksinim 25.175.1613 pozunun kapasite/debi sınırını "
+                        "aşıyor. Daha büyük kapasite için özel ürün seçimi gerekir."
+                    )
+
+            # Seçim yöntemi / manuel alanı:
             # kullanıcı tarafından verilecek kapasite ve ürün tabloları
             # üzerinden bu alanlara bağlanacaktır.
             _secim_key = f"boyler_secim_{_tab_prefix}_v56"
@@ -3394,9 +3489,10 @@ if bolum_633_aktif:
                 )
 
             st.caption(
-                "Not: Bu sekmelerdeki gerçek marka/model/poz seçimleri, "
-                "kapasite tabloları tanımlandığında hesap sonuçlarına göre "
-                "otomatik eşleştirilecektir."
+                "Tek serpantinli boyler poz seçimi 25.175.1601–25.175.1613 "
+                "aralığındaki hacim ve 80/60 °C sıcak su debisi değerlerine göre "
+                "otomatik yapılır. Çift serpantinli boyler ve plakalı eşanjör "
+                "tabloları ayrı poz verileri tanımlandığında aynı mantıkla bağlanacaktır."
             )
 
 
@@ -4597,52 +4693,75 @@ if st.button("Raporu Oluştur (.docx)"):
             q_par.add_run(f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {boyler_q_kw:.0f} kW").bold = True
 
             # Boyler / eşanjör seçimi
-            doc.add_paragraph("")
-            secim_baslik = doc.add_paragraph()
-            secim_baslik_run = secim_baslik.add_run("BOYLER / EŞANJÖR SEÇİMİ")
-            secim_baslik_run.bold = True
-            secim_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-
+            # Kullanıcının istediği rapor formatı:
+            # Q, primer/sekonder rejim, adet, tip, hacim, debi ve Cihaz Poz No.
             secili_tip = st.session_state.get(
                 "boyler_secili_tip_v57",
                 "TEK SERPANTİNLİ BOYLER",
             )
 
-            tip_prefix = {
-                "TEK SERPANTİNLİ BOYLER": "tek_serpantin",
-                "ÇİFT SERPANTİNLİ BOYLER": "cift_serpantin",
-                "PLAKALI EŞANJÖR": "plakali_esanjör",
-            }.get(secili_tip, "tek_serpantin")
-
-            secim_key = f"boyler_secim_{tip_prefix}_v56"
-            manuel_key = f"boyler_manuel_kapasite_{tip_prefix}_v56"
-            secim_modu = st.session_state.get(
-                secim_key,
-                "Otomatik hesaplanan değeri kullan",
+            boyler_secim_sonucu = st.session_state.get(
+                "boyler_secim_sonucu_v59",
+                None,
             )
 
-            if secim_modu == "Manuel seçim":
-                secim_hacmi = float(
-                    st.session_state.get(manuel_key, secilen_boyler_hacmi)
+            if secili_tip == "TEK SERPANTİNLİ BOYLER" and boyler_secim_sonucu:
+                rapor_adet = int(boyler_secim_sonucu["adet"])
+                rapor_poz = boyler_secim_sonucu["poz"]
+                rapor_hacim = int(boyler_secim_sonucu["hacim"])
+                rapor_debi = int(boyler_secim_sonucu["debi"])
+                rapor_tip = (
+                    "Tek Serpantinli , Dik Tip , bakır boru serpantinli-gövdeli, "
+                    "İzolasyonlu, Elektrostatik Toz Boyalı"
                 )
             else:
-                secim_hacmi = float(secilen_boyler_hacmi)
+                # Diğer iki sekmenin poz tabloları henüz tanımlanmadığı için
+                # rapora seçilen sistem adı yazılır; poz alanı boş bırakılmaz.
+                rapor_adet = int(
+                    st.session_state.get(
+                        f"boyler_adet_{'cift_serpantin' if secili_tip == 'ÇİFT SERPANTİNLİ BOYLER' else 'plakali_esanjör'}_v59",
+                        1,
+                    )
+                )
+                rapor_poz = ""
+                rapor_hacim = int(round(secilen_boyler_hacmi / max(1, rapor_adet)))
+                rapor_debi = int(round(boyler_ms / max(1, rapor_adet)))
+                rapor_tip = secili_tip
 
-            secim_tablo = doc.add_table(rows=0, cols=2)
-            secim_tablo.style = "Table Grid"
+            doc.add_paragraph("")
+            boyler_rapor_baslik = doc.add_paragraph()
+            boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
+                "Kullanma Sıcak Suyu Boyleri:"
+            )
+            boyler_rapor_baslik_run.bold = True
+            boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
 
-            for etiket, deger in [
-                ("Seçilen sistem", secili_tip),
-                ("Seçim yöntemi", secim_modu),
-                ("Seçilen kapasite", f"{secim_hacmi:.0f} L ({secim_hacmi / 1000:.2f} m³)"),
-                ("Hesaplanan ısı yükü", f"{boyler_q_kw:.1f} kW"),
-                ("Günlük sıcak su ihtiyacı", f"{toplam_tuketim:.0f} L/gün"),
-                ("Primer rejim", f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} °C"),
-                ("Sekonder rejim", f"{boyler_ts_giris:.0f}/{boyler_ts_cikis:.0f} °C"),
-            ]:
-                cells = secim_tablo.add_row().cells
-                cells[0].text = etiket
-                cells[1].text = deger
+            boyler_rapor_satirlari = [
+                ("Q BOYLER", f"{boyler_q_kw:.1f} kW"),
+                (
+                    "Isıtıcı Akışkan ( Kazan )",
+                    f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
+                ),
+                (
+                    "Isıtılan Akışkan",
+                    f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
+                ),
+                ("Adet", str(rapor_adet)),
+                ("Tip", rapor_tip),
+                ("Boyler hacmi", f"{rapor_hacim} lt"),
+                ("Boyler Debisi", f"{rapor_debi} lt/h"),
+                ("Cihaz Poz No", rapor_poz),
+            ]
+
+            for etiket, deger in boyler_rapor_satirlari:
+                p = doc.add_paragraph()
+                p.paragraph_format.space_after = Pt(0)
+                p.add_run(f"{etiket:<42}: ").bold = False
+                val_run = p.add_run(deger)
+                val_run.bold = True if etiket in {
+                    "Q BOYLER", "Adet", "Boyler hacmi",
+                    "Boyler Debisi", "Cihaz Poz No"
+                } else False
 
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
