@@ -2338,8 +2338,13 @@ if bolum_6_aktif:
                 tank_poz = ""; guc = float(st.session_state.get(guc_final_key, 0.0))
                 hidrofor_poz = str(st.session_state.get(poz_final_key, "") or "").strip()
                 hidrofor_poz_aciklama = HIDROFOR_TIP_METINLERI.get(toplam_pompa, "Hidrofor")
+                # Hesaplama sekmesi kapalıyken de bu değişkenler tanımlı olmalı.
+                # Pompa eğrisi yalnızca kendi sekmesi açıldığında hesaplanır.
                 h_calisma = p_alt_mss
-                hq_egrisi, hh_egrisi, hq_baslik, hq_model = hidrofor_pompa_secim_egrisi(vp_pompa_m3h, h_calisma, hidrofor_marka_secimi)
+                hq_egrisi = []
+                hh_egrisi = []
+                hq_baslik = ""
+                hq_model = None
                 poz_rapora_eklensin_mi_hid = bool(st.session_state.get(f"hidrofor_poz_rapor_chk_{sekme_kodu}", True))
 
                 with section_tabs[0]:
