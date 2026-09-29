@@ -3266,18 +3266,24 @@ if bolum_633_aktif:
     boyler_q_kw_key = "boyler_q_kw_final_v63"
     boyler_q_kw_prev_key = "boyler_q_kw_hesaplanan_onceki_v63"
     boyler_q_kw_manual_key = f"{boyler_q_kw_key}__manual"
+    # Otomatik Q değerini hangi girişlerin ürettiğini takip et. Böylece
+    # önceki Streamlit oturumundan kalan (ör. 3 kW) değer yeni hesaba taşınmaz.
+    # Kullanıcı aynı hesap üzerinde elle değiştirirse o değer korunur.
+    boyler_q_kw_imza_key = "boyler_q_kw_hesap_imza_v68"
+    boyler_q_kw_hesap_imzasi = (
+        round(float(boyler_ms), 6),
+        round(float(boyler_ts_giris), 6),
+        round(float(boyler_ts_cikis), 6),
+    )
+    onceki_imza = st.session_state.get(boyler_q_kw_imza_key)
+    hesap_girdileri_degisti = onceki_imza != boyler_q_kw_hesap_imzasi
 
-    if boyler_q_kw_key not in st.session_state:
+    if boyler_q_kw_key not in st.session_state or hesap_girdileri_degisti:
         st.session_state[boyler_q_kw_key] = boyler_q_kw_yuvarlanmis
         st.session_state[boyler_q_kw_manual_key] = False
         st.session_state[boyler_q_kw_prev_key] = float(boyler_q_kw_hesaplanan)
+        st.session_state[boyler_q_kw_imza_key] = boyler_q_kw_hesap_imzasi
     else:
-        onceki_hesaplanan = float(
-            st.session_state.get(boyler_q_kw_prev_key, boyler_q_kw_hesaplanan)
-        )
-        hesap_degisiti = abs(float(boyler_q_kw_hesaplanan) - onceki_hesaplanan) > 1e-9
-        if hesap_degisiti and not st.session_state.get(boyler_q_kw_manual_key, False):
-            st.session_state[boyler_q_kw_key] = boyler_q_kw_yuvarlanmis
         st.session_state[boyler_q_kw_prev_key] = float(boyler_q_kw_hesaplanan)
 
     def _boyler_q_kw_manuel_degisti():
