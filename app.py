@@ -2703,9 +2703,10 @@ if bolum_6_aktif:
 
 # --- 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI ---
 # Kaynak: kullanıcı tarafından yüklenen BOYLER SEÇİMİ.xlsx / Sayfa1.
-# Excel'deki alt-üst tüketim aralığı korunur. Hesap başlangıç değeri,
-# aralığın ortalamasının en yakın 10 L'ye yuvarlanmış halidir ve kullanıcı
-# tarafından elle değiştirilebilir.
+# Excel'deki alt-üst tüketim aralığı programda bilgi amaçlı korunur.
+# Başlangıç birim tüketim değerleri, kullanıcının ayrı ayrı sağladığı
+# yapı tipi tablolarındaki ortalama tüketim değerlerinden alınmıştır.
+# Kullanıcı bu değerleri tabloda manuel olarak değiştirebilir.
 SICAK_SU_EXCEL_VERILERI = {
     "Bağımsız Ev": {
         "Özel Lavabo": "7,5 -9", "Genel Lavabo": "-", "Banyo": "90-250",
@@ -2741,6 +2742,47 @@ SICAK_SU_EXCEL_VERILERI = {
         "Özel Lavabo": "7,5 -9", "Genel Lavabo": "40-54", "Banyo": "-",
         "Bulaşık Makinası": "75-450", "Evye": "70-90", "Çamaşır Teknesi": "-",
         "Çamaşır Makinası": "-", "Duş": "750-1000",
+    },
+}
+
+# Kullanıcının ayrı ayrı sağladığı yapı tipi tablolarındaki ortalama birim
+# tüketim değerleri. Program bu değerleri doğrudan başlangıç değeri olarak
+# kullanır; kullanıcı yine tabloda manuel olarak değiştirebilir.
+SICAK_SU_ORNEK_ORTALAMA_TUKETIMLERI = {
+    "Bağımsız Ev": {
+        "Özel Lavabo": 9, "Genel Lavabo": 0, "Banyo": 150,
+        "Bulaşık Makinası": 50, "Evye": 45, "Çamaşır Teknesi": 80,
+        "Çamaşır Makinası": 80, "Duş": 150,
+    },
+    "Apartman": {
+        "Özel Lavabo": 9, "Genel Lavabo": 15, "Banyo": 150,
+        "Bulaşık Makinası": 50, "Evye": 40, "Çamaşır Teknesi": 80,
+        "Çamaşır Makinası": 80, "Duş": 150,
+    },
+    "Hastane": {
+        "Özel Lavabo": 9, "Genel Lavabo": 25, "Banyo": 250,
+        "Bulaşık Makinası": 200, "Evye": 75, "Çamaşır Teknesi": 100,
+        "Çamaşır Makinası": 100, "Duş": 250,
+    },
+    "Otel": {
+        "Özel Lavabo": 9, "Genel Lavabo": 30, "Banyo": 150,
+        "Bulaşık Makinası": 200, "Evye": 75, "Çamaşır Teknesi": 75,
+        "Çamaşır Makinası": 75, "Duş": 250,
+    },
+    "İşyeri": {
+        "Özel Lavabo": 9, "Genel Lavabo": 25, "Banyo": 0,
+        "Bulaşık Makinası": 0, "Evye": 70, "Çamaşır Teknesi": 0,
+        "Çamaşır Makinası": 0, "Duş": 120,
+    },
+    "Okul": {
+        "Özel Lavabo": 9, "Genel Lavabo": 50, "Banyo": 0,
+        "Bulaşık Makinası": 100, "Evye": 50, "Çamaşır Teknesi": 0,
+        "Çamaşır Makinası": 0, "Duş": 250,
+    },
+    "Endüstriyel Tesis": {
+        "Özel Lavabo": 9, "Genel Lavabo": 40, "Banyo": 0,
+        "Bulaşık Makinası": 100, "Evye": 75, "Çamaşır Teknesi": 0,
+        "Çamaşır Makinası": 0, "Duş": 750,
     },
 }
 
@@ -2804,12 +2846,12 @@ if bolum_633_aktif:
     # Kullanım yerleri artık seçim kutusu yerine sabit ve düzenlenebilir bir tablodur.
     # Kullanıcı yalnızca Adet ve Birim Tüketim değerlerini değiştirir.
     # Adet = 0 olan satırlar hesaba dahil edilmez.
-    tablo_key = f"sicak_su_kullanim_tablosu_v30_{sicak_su_yapi_tipi}"
+    tablo_key = f"sicak_su_kullanim_tablosu_v31_{sicak_su_yapi_tipi}"
     satirlar = []
     for kullanim, kaynak_aralik in kaynak_satirlari.items():
-        varsayilan = sicak_su_aralik_ortalama_10(kaynak_aralik)
-        # Kaynakta değer yoksa ("-") kullanıcı tarafından girilebilir; başlangıç 0'dır.
-        birim = float(varsayilan) if varsayilan is not None else 0.0
+        # Başlangıç değeri doğrudan kullanıcının ilgili yapı tipi için
+        # sağladığı ortalama tüketim tablosundan alınır.
+        birim = float(SICAK_SU_ORNEK_ORTALAMA_TUKETIMLERI[sicak_su_yapi_tipi].get(kullanim, 0))
         satirlar.append({
             "Kullanım Yeri": kullanim,
             "Excel Aralığı [L]": str(kaynak_aralik),
