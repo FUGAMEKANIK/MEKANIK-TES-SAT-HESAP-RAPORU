@@ -500,8 +500,15 @@ if bolum_4_aktif:
     chk_boyler = st.checkbox(
         "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
     )
+    # Boyler ısıtma rejimi varsayılan olarak 80/60 olsun.
+    # Yeni anahtar kullanıldığı için önceki sürümlerde seçilmiş 70/50 vb. değerler
+    # yeni varsayılanı etkilemez; kullanıcı değiştirdikten sonra seçimi korunur.
+    st.session_state.setdefault("rej_boyler_v41", "80/60")
     rej_boyler = st.selectbox(
-        "Boyler Isıtma Rejimi:", sicaklik_secenekleri, index=0
+        "Boyler Isıtma Rejimi:",
+        sicaklik_secenekleri,
+        index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v41"]),
+        key="rej_boyler_v41",
     )
 
     chk_k_sicak = st.checkbox(
