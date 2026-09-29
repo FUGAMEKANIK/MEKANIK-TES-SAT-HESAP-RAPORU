@@ -495,8 +495,8 @@ if bolum_3_aktif:
 # çalışabilir. Bu nedenle rej_boyler değişkeni mutlaka önceden tanımlı olmalıdır.
 # Böylece "TÜMÜNÜ KALDIR" sonrasında yalnızca 6.3.3 tekrar açıldığında
 # NameError oluşmaz. 4. bölüm açılırsa aşağıdaki selectbox değeri bunu günceller.
-st.session_state.setdefault("rej_boyler_v41", "80/60")
-rej_boyler = st.session_state.get("rej_boyler_v41", "80/60")
+st.session_state.setdefault("rej_boyler_v53", "80/60")
+rej_boyler = st.session_state.get("rej_boyler_v53", "80/60")
 
 if bolum_4_aktif:
   # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
@@ -598,8 +598,8 @@ if bolum_4_aktif:
     rej_boyler = st.selectbox(
         "Boyler Isıtma Rejimi:",
         sicaklik_secenekleri,
-        index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v41"]),
-        key="rej_boyler_v41",
+        index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v53"]),
+        key="rej_boyler_v53",
     )
 
     chk_k_sicak = st.checkbox(
