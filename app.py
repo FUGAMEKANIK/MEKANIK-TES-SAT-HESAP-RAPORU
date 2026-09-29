@@ -842,6 +842,20 @@ if bolum_6_aktif:
         st.session_state["boyler_secili_tip_v57"] = "ÇİFT SERPANTİNLİ BOYLER"
     elif len(_ust_secili_boylerler) > 0:
         st.session_state["boyler_secili_tip_v57"] = _ust_secili_boylerler[-1]
+
+    # Üst bölümde seçilen boyler tipini aşağıdaki sekme görünümüne de zorla aktar.
+    # st.tabs() aktif sekmeyi programatik olarak değiştiremez; bu nedenle aşağıda
+    # sekme görünümü yatay radio ile oluşturuluyor. Böylece üst seçim yapıldığı
+    # anda alt bölümde aynı sekme aktif hale gelir.
+    _boyler_alt_sekme_index_map = {
+        "TEK SERPANTİNLİ BOYLER": 0,
+        "ÇİFT SERPANTİNLİ BOYLER": 1,
+        "PLAKALI EŞANJÖR": 2,
+    }
+    if st.session_state.get("boyler_secili_tip_v57") in _boyler_alt_sekme_index_map:
+        st.session_state["boyler_alt_sekme_v71"] = _boyler_alt_sekme_index_map[
+            st.session_state["boyler_secili_tip_v57"]
+        ]
     sih_sec_8 = st.checkbox(
         "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal içi"
         " dağıtım boruları PPRC tipte seçilecektir.",
@@ -3456,11 +3470,32 @@ if bolum_633_aktif:
         "TEK SERPANTİNLİ BOYLER",
     )
 
-    boyler_tip_tabs = st.tabs([
+    # st.tabs() ile aktif sekmeyi Python tarafından seçmek mümkün değildir.
+    # Bu nedenle sekme görünümünü yatay radio ile oluşturuyoruz. Üst bölümdeki
+    # seçim her rerun'da bu değeri güncellediği için alt sekme otomatik seçilir.
+    _boyler_alt_sekme_labels = [
         "TEK SERPANTİNLİ BOYLER",
         "ÇİFT SERPANTİNLİ BOYLER",
         "PLAKALI EŞANJÖR",
-    ])
+    ]
+    _boyler_alt_sekme_index = int(
+        st.session_state.get("boyler_alt_sekme_v71", 0)
+    )
+    _boyler_alt_sekme_index = max(0, min(2, _boyler_alt_sekme_index))
+    _boyler_alt_sekme = st.radio(
+        "Boyler / Eşanjör tipi",
+        _boyler_alt_sekme_labels,
+        index=_boyler_alt_sekme_index,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="boyler_alt_sekme_v71",
+    )
+    _boyler_alt_sekme_index = _boyler_alt_sekme_labels.index(_boyler_alt_sekme)
+
+    # Üst seçim ile alt seçim arasında tam senkronizasyon.
+    _boyler_secili_tip_from_alt = _boyler_alt_sekme_labels[_boyler_alt_sekme_index]
+    if st.session_state.get("boyler_secili_tip_v57") != _boyler_secili_tip_from_alt:
+        st.session_state["boyler_secili_tip_v57"] = _boyler_secili_tip_from_alt
 
     boyler_secim_ortak_bilgiler = {
         "Gerekli boyler hacmi": f"{secilen_boyler_hacmi} L",
@@ -3470,8 +3505,12 @@ if bolum_633_aktif:
         "Primer giriş / çıkış": f"{boyler_tp_giris:.0f} / {boyler_tp_cikis:.0f} °C",
     }
 
-    for _tab_index, _tab in enumerate(boyler_tip_tabs):
-        with _tab:
+    for _tab_index in range(3):
+        # Yalnızca aktif sekmenin içeriğini çiz. Böylece üst seçimle belirlenen
+        # sekme gerçekten açılmış/görüntülenmiş olur.
+        if _tab_index != _boyler_alt_sekme_index:
+            continue
+        with st.container():
             if _tab_index == 0:
                 _tab_prefix = "tek_serpantin"
                 _tab_title = "Tek Serpantinli Boyler Seçimi"
