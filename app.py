@@ -112,8 +112,42 @@ def add_toc(paragraph):
 
 
 st.title("Mühendislik Proje Raporu Otomasyonu")
-# v46: Hiyerarşik bölüm seçimleri yukarı/aşağı yönde bağımsız çalışır.
 st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
+
+# Ortak pompa hidrolik/güç hesabı.
+# Bu fonksiyon 6.2.2 bölümü kapalı olsa bile 6.3.2 hidrofor modülü tarafından
+# kullanılabilmelidir; bu nedenle bölüm koşullarının dışında tanımlanmıştır.
+def pompa_hidrolik_hesap(q_m3h, h_mss, pompa_verimi=0.60, motor_verimi=0.90):
+  rho = 1000.0
+  g = 9.81
+  q_m3s = float(q_m3h) / 3600.0
+  h_mss = float(h_mss)
+  pompa_verimi = float(pompa_verimi)
+  motor_verimi = float(motor_verimi)
+
+  p_hid_kw = rho * g * q_m3s * h_mss / 1000.0
+  p_mil_kw = p_hid_kw / pompa_verimi if pompa_verimi > 0 else 0.0
+  p_elektrik_kw = p_mil_kw / motor_verimi if motor_verimi > 0 else 0.0
+
+  motor_kademeleri = [
+      0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5,
+      11.0, 15.0, 18.5, 22.0, 30.0,
+  ]
+  motor_secim = next(
+      (x for x in motor_kademeleri if x >= p_elektrik_kw),
+      motor_kademeleri[-1],
+  )
+
+  return {
+      "q_m3h": float(q_m3h),
+      "h_mss": h_mss,
+      "q_lps": float(q_m3h) / 3.6,
+      "p_hid_kw": p_hid_kw,
+      "p_mil_kw": p_mil_kw,
+      "p_elektrik_kw": p_elektrik_kw,
+      "motor_secim_kw": motor_secim,
+  }
+
 
 # RAPORA DAHİL EDİLECEK NUMARALI BÖLÜM SEÇİMLERİ
 # Toplu seçim anahtarları. Butonlar checkbox'lar oluşturulmadan önce çalıştırılır;
@@ -145,46 +179,34 @@ def _tum_bolumleri_sil():
     st.session_state[anahtar] = False
 
 
-def _toplu_secim_butonlari(anahtarlar, grup_adi=None):
-  """Bir checkbox grubunu güvenli biçimde topluca seç/kaldır.
+def _toplu_secim_butonlari(anahtarlar):
+  """Bir grup checkbox için güvenli toplu seç/kaldır butonları.
 
-  Butonlar callback ile çalışır. Callback, ilgili checkbox widget'ları
-  ekranda oluşturulmadan önce Session State'i güncellediği için,
-  toplu işlem sonrasında tek tek checkbox'ların değiştirilmesi güvenlidir.
+  Buton callback'leri checkbox widget'ları oluşturulmadan önce çalışır;
+  böylece Session State ile widget çakışması oluşmaz.
   """
   if not anahtarlar:
     return
 
-  # Aynı sayfada birden fazla grup bulunduğu için buton anahtarları
-  # grubun checkbox anahtarlarından deterministik olarak üretilir.
-  grup_imza = grup_adi or "_".join(anahtarlar)
-  grup_imza = str(abs(hash(grup_imza)))
-  sec_key = f"toplu_sec_{grup_imza}"
-  kaldir_key = f"toplu_kaldir_{grup_imza}"
+  # Aynı liste birden fazla yerde kullanıldığı için benzersiz ve stabil bir kimlik üret.
+  import hashlib
+  grup_id = hashlib.md5("|".join(map(str, anahtarlar)).encode("utf-8")).hexdigest()[:10]
+  sec_key = f"toplu_sec_{grup_id}"
+  kaldir_key = f"toplu_kaldir_{grup_id}"
 
-  def _grubu_sec():
+  def _sec():
     for anahtar in anahtarlar:
       st.session_state[anahtar] = True
 
-  def _grubu_kaldir():
+  def _kaldir():
     for anahtar in anahtarlar:
       st.session_state[anahtar] = False
 
-  col_sec, col_kaldir = st.columns(2)
-  with col_sec:
-    st.button(
-        "☑ TÜMÜNÜ SEÇ",
-        key=sec_key,
-        on_click=_grubu_sec,
-        use_container_width=True,
-    )
-  with col_kaldir:
-    st.button(
-        "☐ TÜMÜNÜ KALDIR",
-        key=kaldir_key,
-        on_click=_grubu_kaldir,
-        use_container_width=True,
-    )
+  c1, c2 = st.columns(2)
+  with c1:
+    st.button("☑ TÜMÜNÜ SEÇ", key=sec_key, on_click=_sec, use_container_width=True)
+  with c2:
+    st.button("☐ TÜMÜNÜ KALDIR", key=kaldir_key, on_click=_kaldir, use_container_width=True)
 
 col_toplu_1, col_toplu_2 = st.columns(2)
 with col_toplu_1:
@@ -218,32 +240,8 @@ bolum_631_aktif = st.checkbox("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", value
 bolum_632_aktif = st.checkbox("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", value=True, key="rapor_bolum_632")
 bolum_633_aktif = st.checkbox("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", value=True, key="rapor_bolum_633")
 
-# Hiyerarşik seçim güvenliği:
-# Bir alt bölüm tek başına seçildiğinde üst bölümler de otomatik olarak
-# aktif kabul edilir. Böylece seçim sırası önemli olmaz; kullanıcı
-# yukarıdan aşağıya veya aşağıdan yukarıya seçim yapabilir.
-# TÜMÜNÜ KALDIR sonrasında bütün checkbox'lar False kaldığı için hiçbir
-# bölüm kendiliğinden tekrar açılmaz.
-bolum_51_aktif = bolum_51_aktif
-bolum_5_aktif = bolum_5_aktif or bolum_51_aktif
-
-bolum_61_aktif = bolum_61_aktif or bolum_611_aktif
-bolum_62_aktif = bolum_62_aktif or bolum_621_aktif or bolum_622_aktif
-bolum_63_aktif = bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif
-
-# 6 ana bölümü, herhangi bir alt bölümü seçilmişse otomatik aktif olur.
-bolum_6_aktif = (
-    bolum_6_aktif
-    or bolum_61_aktif
-    or bolum_611_aktif
-    or bolum_62_aktif
-    or bolum_621_aktif
-    or bolum_622_aktif
-    or bolum_63_aktif
-    or bolum_631_aktif
-    or bolum_632_aktif
-    or bolum_633_aktif
-)
+# 6.3 ana bölümü, en az bir alt bölüm seçiliyse aktif kalır.
+bolum_63_aktif = bolum_63_aktif and (bolum_631_aktif or bolum_632_aktif or bolum_633_aktif)
 
 # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
 st.header("1. Kapak Bilgileri")
@@ -488,16 +486,6 @@ if bolum_3_aktif:
       height=80,
   )
 
-# -----------------------------------------------------------------------------
-# BÖLÜM 4 SEÇİMİ KAPALI OLSA BİLE KULLANILAN GÜVENLİ VARSAYILANLAR
-# -----------------------------------------------------------------------------
-# 6.3.3 Boyler hesabı, 4. bölümün rapora dahil edilip edilmediğinden bağımsız
-# çalışabilir. Bu nedenle rej_boyler değişkeni mutlaka önceden tanımlı olmalıdır.
-# Böylece "TÜMÜNÜ KALDIR" sonrasında yalnızca 6.3.3 tekrar açıldığında
-# NameError oluşmaz. 4. bölüm açılırsa aşağıdaki selectbox değeri bunu günceller.
-st.session_state.setdefault("rej_boyler_v53", "80/60")
-rej_boyler = st.session_state.get("rej_boyler_v53", "80/60")
-
 if bolum_4_aktif:
   # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
   st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
@@ -594,12 +582,14 @@ if bolum_4_aktif:
         "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
     )
     # Boyler ısıtma rejimi varsayılan olarak 80/60 olsun.
-    # Seçim bölüm 4 kapalıyken de korunur; bölüm tekrar açıldığında aynı değer gelir.
+    # Yeni anahtar kullanıldığı için önceki sürümlerde seçilmiş 70/50 vb. değerler
+    # yeni varsayılanı etkilemez; kullanıcı değiştirdikten sonra seçimi korunur.
+    st.session_state.setdefault("rej_boyler_v41", "80/60")
     rej_boyler = st.selectbox(
         "Boyler Isıtma Rejimi:",
         sicaklik_secenekleri,
-        index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v53"]),
-        key="rej_boyler_v53",
+        index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v41"]),
+        key="rej_boyler_v41",
     )
 
     chk_k_sicak = st.checkbox(
@@ -660,14 +650,6 @@ if bolum_5_aktif:
       st.markdown(f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m.")
 
 if bolum_6_aktif:
-  # 6.3 alt bölümleri, 6.1 kapalı olsa bile bağımsız çalışabilmelidir.
-  # Bu nedenle 6.1 içindeki widgetlar henüz oluşturulmamış olsa dahi
-  # 6.3 tarafında kullanılan değişkenlere güvenli varsayılanlar verilir.
-  # 6.1 açıksa aşağıdaki değerler gerçek kullanıcı seçimleriyle değiştirilir.
-  sih_sec_depo_tipi = True
-  sih_depo_tipleri = ["Paslanmaz Çelik Modüler su deposu"]
-  sih_depo_konumlari = ["Bodrum kat"]
-
   # --- 6. BÖLÜM: SIHHİ TESİSAT ---
   st.header("6. SIHHİ TESİSAT")
   st.caption("Rapor seçimi: " + ("Dahil" if bolum_6_aktif else "Hariç"))
@@ -1634,394 +1616,393 @@ if bolum_6_aktif:
 
   if bolum_63_aktif:
     # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-    if bolum_631_aktif:
-        st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
-        st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
+    st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
+    st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
 
-        poz_gosterilsin_mi = st.checkbox(
-            "Poz numarasını göster",
-            value=True,
-            key="poz_gosterilsin_mi",
-        )
+    poz_gosterilsin_mi = st.checkbox(
+        "Poz numarasını göster",
+        value=True,
+        key="poz_gosterilsin_mi",
+    )
 
-        genel_bilgiler_tab = st.container()
-        with genel_bilgiler_tab:
-            st.markdown("#### Genel Bilgiler")
-            st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
+    genel_bilgiler_tab = st.container()
+    with genel_bilgiler_tab:
+        st.markdown("#### Genel Bilgiler")
+        st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
-            # Hesap türü sekmelerinin daha büyük ve okunabilir görünmesi
-            st.markdown(
-                """
-                <style>
-                div[data-testid="stRadio"] > label {
-                    font-size: 1.15rem !important;
-                    font-weight: 600 !important;
-                }
-                div[data-testid="stRadio"] div[role="radiogroup"] label {
-                    font-size: 1.10rem !important;
-                    font-weight: 500 !important;
-                    min-height: 2rem !important;
-                }
-                div[data-testid="stRadio"] div[role="radiogroup"] label p {
-                    font-size: 1.10rem !important;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            hesap_modu = st.radio(
-                "Su ihtiyacı hesabı türü",
-                ["Genel Su Tüketimi", "Konutlar", "Hastaneler"],
-                horizontal=True,
-                key="su_hesap_modu",
-            )
-
-            su_hesap_detaylari = []
-            secilen_su_kategorileri = []
-            su_gunluk_ihtiyac_litre = 0.0
-            # Rapor oluşturma bölümünde de kullanılacağı için değişken tüm hesap
-            # modlarında tanımlı olmalıdır. Hastane modunda aşağıda özel olarak doldurulur.
-            su_tuketim_secenekleri = {}
-
-            if hesap_modu == "Hastaneler":
-                st.markdown("##### Hastane Su İhtiyacı Hesabı")
-                yatak_sayisi = st.number_input(
-                    "Yatak sayısı", min_value=0, value=100, step=1, key="hastane_yatak_sayisi"
-                )
-                hastane_satirlari = [
-                    ("Hasta", 2.0, 135.0),
-                    ("Personel", 3.0, 45.0),
-                    ("Geçici hasta", 4.0, 15.0),
-                ]
-                # Hastane seçiliyken rapordaki tüketim değerleri tablosunun
-                # oluşturulabilmesi için hastane tüketim seçeneklerini tanımla.
-                su_tuketim_secenekleri = {
-                    cihaz: ("Kişi", tuketim)
-                    for cihaz, _katsayi, tuketim in hastane_satirlari
-                }
-                hastane_tablo = []
-                for cihaz, katsayi, tuketim in hastane_satirlari:
-                    toplam_sayi = yatak_sayisi * katsayi
-                    toplam_litre = toplam_sayi * tuketim
-                    hastane_tablo.append({
-                        "CİHAZ": cihaz,
-                        "Yatak Sayısı": yatak_sayisi,
-                        "katsayı": katsayi,
-                        "TOPLAM sayısı": toplam_sayi,
-                        "Tüketim [lt/gün]": tuketim,
-                        "TOPLAM [lt/gün]": toplam_litre,
-                    })
-                    su_gunluk_ihtiyac_litre += toplam_litre
-                    su_hesap_detaylari.append({
-                        "kategori": cihaz, "birim": "Kişi",
-                        "birim_degeri": tuketim, "miktar": toplam_sayi,
-                        "ihtiyac_litre": toplam_litre,
-                        "yatak_sayisi": yatak_sayisi,
-                        "katsayi": katsayi,
-                    })
-                hastane_tablo.append({
-                    "CİHAZ": "GENEL TOPLAM",
-                    "Yatak Sayısı": "", "katsayı": "",
-                    "TOPLAM sayısı": sum(r["TOPLAM sayısı"] for r in hastane_tablo),
-                    "Tüketim [lt/gün]": "",
-                    "TOPLAM [lt/gün]": su_gunluk_ihtiyac_litre,
-                })
-                st.table(hastane_tablo)
-                su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
-                st.metric("Hastane günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.0f} L/gün".replace(",", "."))
-                st.caption(f"{su_gunluk_ihtiyac_m3:g} m³/gün")
-
-            else:
-                if hesap_modu == "Konutlar":
-                    su_tuketim_secenekleri = {
-                        "Konutlar - Lavabolu": ("Kişi", 70.0),
-                        "Konutlar - Duşlu": ("Kişi", 90.0),
-                        "Konutlar - Küvetli": ("Kişi", 160.0),
-                    }
-                else:
-                    su_tuketim_secenekleri = {
-                        "Fabrikalar": ("Kişi", 45.0),
-                        "Bürolar": ("Kişi", 45.0),
-                        "Okullar - Gündüzlü": ("Kişi", 45.0),
-                        "Okullar - Yatılı": ("Kişi", 135.0),
-                        "Bahçe sulama": ("m²", 1.5),
-                        "Konutlar - Lavabolu": ("Kişi", 70.0),
-                        "Konutlar - Duşlu": ("Kişi", 90.0),
-                        "Konutlar - Küvetli": ("Kişi", 160.0),
-                        "Oteller - Duşlu": ("Kişi", 100.0),
-                        "Oteller - Küvetli": ("Kişi", 175.0),
-                        "Çocuk Yuvaları": ("Kişi", 125.0),
-                        "Kreşler": ("Kişi", 125.0),
-                        "Kışlalar": ("Kişi", 60.0),
-                        "Lokantalar": ("Kişi", 75.0),
-                        "Oto Yıkama - Temizlik": ("Gün", 100.0),
-                        "Askeri binalar - Yatılı": ("Kişi", 135.0),
-                        "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
-                    }
-                st.markdown("##### Su Tüketim Değerleri Tablos")
-                su_tuketim_tablosu = [
-                    {"Kullanım amacı": kategori, "Birim": birim,
-                     "Birim tüketim değeri": f"{deger:g} L/{birim}/gün"}
-                    for kategori, (birim, deger) in su_tuketim_secenekleri.items()
-                ]
-                st.table(su_tuketim_tablosu)
-
-                if hesap_modu == "Konutlar":
-                    hane_kisi_sayisi = st.number_input(
-                        "Hane başına kişi sayısı", min_value=1, value=4, step=1,
-                        key="konut_hane_kisi_sayisi",
-                    )
-                    toplam_hane_sayisi = st.number_input(
-                        "Toplam hane sayısı", min_value=1, value=1, step=1,
-                        key="konut_toplam_hane_sayisi",
-                    )
-                    toplam_kisi_sayisi = hane_kisi_sayisi * toplam_hane_sayisi
-                    st.metric("Toplam kişi sayısı", f"{toplam_kisi_sayisi:,.0f}".replace(",", "."))
-
-                    secilen_konut_kategorisi = st.selectbox(
-                        "Konut tipi / su tüketim kategorisi",
-                        options=list(su_tuketim_secenekleri.keys()),
-                        key="secilen_konut_kategorisi",
-                    )
-                    secilen_su_kategorileri = [secilen_konut_kategorisi]
-                    su_birim, su_birim_degeri = su_tuketim_secenekleri[secilen_konut_kategorisi]
-                    kategori_ihtiyaci_litre = toplam_kisi_sayisi * su_birim_degeri
-                    su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
-                    su_hesap_detaylari.append({
-                        "kategori": secilen_konut_kategorisi, "birim": su_birim,
-                        "birim_degeri": su_birim_degeri, "miktar": toplam_kisi_sayisi,
-                        "ihtiyac_litre": kategori_ihtiyaci_litre,
-                    })
-                    st.caption(
-                        f"Hesap: {toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi = "
-                        f"{toplam_kisi_sayisi:g} kişi × {su_birim_degeri:g} L/kişi-gün"
-                    )
-                    st.markdown("##### Konut Hesap Tablosu")
-                    st.table([{
-                        "Hane başına kişi sayısı": hane_kisi_sayisi,
-                        "Toplam hane sayısı": toplam_hane_sayisi,
-                        "Toplam kişi sayısı": toplam_kisi_sayisi,
-                        "Birim tüketim": f"{su_birim_degeri:g} L/kişi-gün",
-                        "Günlük ihtiyaç": f"{kategori_ihtiyaci_litre:,.0f} L/gün".replace(",", "."),
-                    }])
-                else:
-                    secilen_su_kategorileri = st.multiselect(
-                        "Kullanım amacı / su tüketim kategorileri",
-                        options=list(su_tuketim_secenekleri.keys()),
-                        key="secilen_su_kategorileri",
-                    )
-                    if secilen_su_kategorileri:
-                        for sira, kategori in enumerate(secilen_su_kategorileri):
-                            su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
-                            su_miktari = st.number_input(
-                                f"{kategori} miktarı ({su_birim})", min_value=0.0, value=1.0, step=1.0,
-                                key=f"su_miktari_{sira}",
-                            )
-                            kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
-                            su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
-                            su_hesap_detaylari.append({
-                                "kategori": kategori, "birim": su_birim,
-                                "birim_degeri": su_birim_degeri, "miktar": su_miktari,
-                                "ihtiyac_litre": kategori_ihtiyaci_litre,
-                            })
-                su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
-                st.metric("Günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."))
-                if not secilen_su_kategorileri:
-                    st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
-
-            st.markdown("##### Su Deposu Depolama Süresi ve Gerekli Hacim")
-            depo_sure_gun = st.number_input(
-                "Kaç günlük su ihtiyacı için depo seçilecek?", min_value=1.0,
-                value=1.0, step=1.0, key="depo_sure_gun",
-                help="Depo hacmi, günlük toplam su ihtiyacı ile seçilen gün sayısının çarpımıyla hesaplanır.",
-            )
-            depo_gerekli_hacim_m3 = su_gunluk_ihtiyac_m3 * depo_sure_gun
-            depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
-            secilen_depo_tipi_metni = ", ".join(sih_depo_tipleri) if sih_sec_depo_tipi and sih_depo_tipleri else ""
-            depo_hacmi_basligi = (
-                f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi'
-                if secilen_depo_tipi_metni
-                else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
-            )
-            # Kapasiteye göre otomatik poz seçimi. Hesaplanan hacme en yakın standart kapasite seçilir.
-            # Böylece kapasite her zaman zorunlu olarak bir üst değere yuvarlanmaz; alt kapasite
-            # hesaplanan değere daha yakınsa alt kapasite seçilebilir. Son karar kullanıcıdadır.
-            depo_poz_kapasiteleri = {
-                "Paslanmaz Çelik Modüler su deposu": [
-                    (1.25, "25.150.1201"), (2.50, "25.150.1202"), (3.75, "25.150.1203"),
-                    (5.00, "25.150.1204"), (6.25, "25.150.1205"), (7.50, "25.150.1206"),
-                    (10.0, "25.150.1207"), (12.5, "25.150.1208"), (15.0, "25.150.1209"),
-                    (20.0, "25.150.1210"), (22.5, "25.150.1211"), (25.0, "25.150.1212"),
-                    (30.0, "25.150.1213"), (37.5, "25.150.1214"), (40.0, "25.150.1215"),
-                    (45.0, "25.150.1216"), (50.0, "25.150.1217"), (56.0, "25.150.1218"),
-                    (59.6, "25.150.1219"), (62.0, "25.150.1220"), (75.0, "25.150.1221"),
-                    (90.0, "25.150.1222"), (93.2, "25.150.1223"), (104.2, "25.150.1224"),
-                    (112.0, "25.150.1225"), (121.5, "25.150.1226"),
-                ],
-                "Galvaniz Çelik Modüler su deposu": [
-                    (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
-                    (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
-                    (10.0, "25.150.1307"), (12.5, "25.150.1308"), (15.0, "25.150.1309"),
-                    (20.0, "25.150.1310"), (22.5, "25.150.1311"), (25.0, "25.150.1312"),
-                    (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
-                    (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
-                    (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
-                ],
-                "GRP (Cam Takviyeli Polyester) Modüler su deposu": [
-                    (1.0, "25.150.1601"), (3.0, "25.150.1602"), (5.0, "25.150.1603"),
-                    (10.0, "25.150.1604"), (15.0, "25.150.1605"), (20.0, "25.150.1606"),
-                    (30.0, "25.150.1607"), (40.0, "25.150.1608"), (50.0, "25.150.1609"),
-                    (60.0, "25.150.1610"), (70.0, "25.150.1611"), (80.0, "25.150.1612"),
-                    (90.0, "25.150.1613"), (100.0, "25.150.1614"), (120.0, "25.150.1615"),
-                    (150.0, "25.150.1616"), (180.0, "25.150.1617"), (200.0, "25.150.1618"),
-                    (240.0, "25.150.1619"), (270.0, "25.150.1620"), (300.0, "25.150.1621"),
-                ],
+        # Hesap türü sekmelerinin daha büyük ve okunabilir görünmesi
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stRadio"] > label {
+                font-size: 1.15rem !important;
+                font-weight: 600 !important;
             }
+            div[data-testid="stRadio"] div[role="radiogroup"] label {
+                font-size: 1.10rem !important;
+                font-weight: 500 !important;
+                min-height: 2rem !important;
+            }
+            div[data-testid="stRadio"] div[role="radiogroup"] label p {
+                font-size: 1.10rem !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            otomatik_poz_kayitlari = []
+        hesap_modu = st.radio(
+            "Su ihtiyacı hesabı türü",
+            ["Genel Su Tüketimi", "Konutlar", "Hastaneler"],
+            horizontal=True,
+            key="su_hesap_modu",
+        )
 
-            def en_yakin_kapasite_kaydi(kayitlar, hedef_m3):
-                if not kayitlar:
-                    return None
-                return min(kayitlar, key=lambda kayit: abs(kayit[0] - hedef_m3))
+        su_hesap_detaylari = []
+        secilen_su_kategorileri = []
+        su_gunluk_ihtiyac_litre = 0.0
+        # Rapor oluşturma bölümünde de kullanılacağı için değişken tüm hesap
+        # modlarında tanımlı olmalıdır. Hastane modunda aşağıda özel olarak doldurulur.
+        su_tuketim_secenekleri = {}
 
-            # Her depo tipi için otomatik başlangıç kapasitesi gösterilir. Kullanıcı isterse
-            # kapasiteyi değiştirebilir; son kullanıcı değeri rapora aktarılır.
-            for depo_index, depo_tipi in enumerate(sih_depo_tipleri if sih_sec_depo_tipi else []):
-                kayitlar = depo_poz_kapasiteleri.get(depo_tipi, [])
-                uygun = en_yakin_kapasite_kaydi(kayitlar, depo_gerekli_hacim_m3)
-                if uygun:
-                    otomatik_kapasite, otomatik_poz = uygun
-                    kapasite_key = f"manuel_depo_kapasitesi_{depo_index}"
-                    onceki_otomatik_key = f"onceki_otomatik_depo_kapasitesi_{depo_index}"
-                    poz_key = f"manuel_depo_pozu_{depo_index}"
-                    poz_elle_key = f"depo_pozunu_elle_duzenle_{depo_index}"
-
-                    # Hesap sonucu değiştiğinde, kullanıcı daha önce elle müdahale etmediyse
-                    # giriş alanı yeni otomatik kapasiteyle güncellenir. Elle değiştirilmiş
-                    # değerler korunur.
-                    mevcut_kapasite = st.session_state.get(kapasite_key)
-                    onceki_otomatik = st.session_state.get(onceki_otomatik_key)
-                    if mevcut_kapasite is None or mevcut_kapasite == onceki_otomatik:
-                        st.session_state[kapasite_key] = float(otomatik_kapasite)
-                    st.session_state[onceki_otomatik_key] = float(otomatik_kapasite)
-
-                    st.caption(
-                        f"Otomatik hesaplanan en yakın standart kapasite: {otomatik_kapasite:g} m³ "
-                        f"(hesaplanan ihtiyaç: {depo_gerekli_hacim_m3:g} m³)"
-                    )
-                    manuel_kapasite = st.number_input(
-                        f"{depo_tipi} için depo kapasitesi (m³) — otomatik gelir, elle değiştirilebilir",
-                        min_value=0.001,
-                        step=0.5,
-                        key=kapasite_key,
-                        help="Alan başlangıçta otomatik seçilen en yakın standart kapasiteyle doldurulur. İsterseniz son onay olarak elle değiştirebilirsiniz.",
-                    )
-
-                    kapasiteye_uygun_kayit = en_yakin_kapasite_kaydi(kayitlar, manuel_kapasite)
-                    kapasiteye_uygun_poz = kapasiteye_uygun_kayit[1] if kapasiteye_uygun_kayit else ""
-
-                    poz_elle_duzenle = st.checkbox(
-                        f"{depo_tipi} poz numarasını elle düzenle",
-                        value=False,
-                        key=poz_elle_key,
-                    )
-                    if poz_elle_duzenle:
-                        if poz_key not in st.session_state:
-                            st.session_state[poz_key] = kapasiteye_uygun_poz
-                        manuel_poz = st.text_input(
-                            f"{depo_tipi} için seçilen poz numarası",
-                            key=poz_key,
-                        )
-                        kullanilacak_poz = manuel_poz.strip()
-
-                        # Poz numarası elle değiştirildiğinde parantez içindeki kapasite de
-                        # aynı pozun tanımlı kapasitesinden otomatik olarak alınır.
-                        poz_kapasite_eslesmesi = next(
-                            (kapasite for kapasite, poz in kayitlar if poz == kullanilacak_poz),
-                            None,
-                        )
-                        gosterilecek_kapasite = (
-                            float(poz_kapasite_eslesmesi)
-                            if poz_kapasite_eslesmesi is not None
-                            else float(manuel_kapasite)
-                        )
-                        if poz_kapasite_eslesmesi is None and kullanilacak_poz:
-                            st.warning(
-                                f"{depo_tipi}: '{kullanilacak_poz}' poz numarası kapasite listesinde bulunamadı. "
-                                "Mevcut kapasite değeri kullanılacaktır."
-                            )
-                    else:
-                        # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
-                        # standart kapasiteye göre otomatik olarak yeniden belirlenir.
-                        kullanilacak_poz = kapasiteye_uygun_poz
-                        gosterilecek_kapasite = float(manuel_kapasite)
-                        st.caption(
-                            f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz} "
-                            f"({gosterilecek_kapasite:g} m³)"
-                        )
-
-                    otomatik_poz_kayitlari.append((depo_tipi, gosterilecek_kapasite, kullanilacak_poz))
-                else:
-                    st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
-
-            if poz_gosterilsin_mi and otomatik_poz_kayitlari:
-                for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
-                    st.markdown(
-                        f'<div style="color:#000000;"><strong>Cihaz Poz No:</strong> {secilen_poz} '
-                        f'<strong>(Kapasite: {secilen_kapasite:g} m³)</strong></div>',
-                        unsafe_allow_html=True,
-                    )
-            elif poz_gosterilsin_mi and sih_depo_tipleri:
-                st.warning("Hesaplanan hacim, tanımlı kapasite listesinin üzerindedir.")
-
-            rapor_gosterilecek_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
-            rapor_gosterilecek_kapasite_litre = rapor_gosterilecek_kapasite_m3 * 1000.0
-            depo_hacmi_degeri = (f"{rapor_gosterilecek_kapasite_litre:,.0f} L ({rapor_gosterilecek_kapasite_m3:,.3f} m³)").replace(",", "X").replace(".", ",").replace("X", ".")
-            st.markdown(
-                f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: '
-                f'<strong style="color:#000000;">{depo_hacmi_degeri}</strong>&#39;dir.</div>',
-                unsafe_allow_html=True,
+        if hesap_modu == "Hastaneler":
+            st.markdown("##### Hastane Su İhtiyacı Hesabı")
+            yatak_sayisi = st.number_input(
+                "Yatak sayısı", min_value=0, value=100, step=1, key="hastane_yatak_sayisi"
             )
+            hastane_satirlari = [
+                ("Hasta", 2.0, 135.0),
+                ("Personel", 3.0, 45.0),
+                ("Geçici hasta", 4.0, 15.0),
+            ]
+            # Hastane seçiliyken rapordaki tüketim değerleri tablosunun
+            # oluşturulabilmesi için hastane tüketim seçeneklerini tanımla.
+            su_tuketim_secenekleri = {
+                cihaz: ("Kişi", tuketim)
+                for cihaz, _katsayi, tuketim in hastane_satirlari
+            }
+            hastane_tablo = []
+            for cihaz, katsayi, tuketim in hastane_satirlari:
+                toplam_sayi = yatak_sayisi * katsayi
+                toplam_litre = toplam_sayi * tuketim
+                hastane_tablo.append({
+                    "CİHAZ": cihaz,
+                    "Yatak Sayısı": yatak_sayisi,
+                    "katsayı": katsayi,
+                    "TOPLAM sayısı": toplam_sayi,
+                    "Tüketim [lt/gün]": tuketim,
+                    "TOPLAM [lt/gün]": toplam_litre,
+                })
+                su_gunluk_ihtiyac_litre += toplam_litre
+                su_hesap_detaylari.append({
+                    "kategori": cihaz, "birim": "Kişi",
+                    "birim_degeri": tuketim, "miktar": toplam_sayi,
+                    "ihtiyac_litre": toplam_litre,
+                    "yatak_sayisi": yatak_sayisi,
+                    "katsayi": katsayi,
+                })
+            hastane_tablo.append({
+                "CİHAZ": "GENEL TOPLAM",
+                "Yatak Sayısı": "", "katsayı": "",
+                "TOPLAM sayısı": sum(r["TOPLAM sayısı"] for r in hastane_tablo),
+                "Tüketim [lt/gün]": "",
+                "TOPLAM [lt/gün]": su_gunluk_ihtiyac_litre,
+            })
+            st.table(hastane_tablo)
+            su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+            st.metric("Hastane günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.0f} L/gün".replace(",", "."))
+            st.caption(f"{su_gunluk_ihtiyac_m3:g} m³/gün")
 
-            st.caption(f"Hesap: {su_gunluk_ihtiyac_m3:g} m³/gün × {depo_sure_gun:g} gün = {depo_gerekli_hacim_m3:g} m³ ({depo_gerekli_hacim_litre:g} L)")
-            su_tuketim_tipi = ", ".join(secilen_su_kategorileri) if secilen_su_kategorileri else "Seçim yapılmadı"
-            su_birim = "-"; su_birim_degeri = 0.0; su_miktari = 0.0
+        else:
+            if hesap_modu == "Konutlar":
+                su_tuketim_secenekleri = {
+                    "Konutlar - Lavabolu": ("Kişi", 70.0),
+                    "Konutlar - Duşlu": ("Kişi", 90.0),
+                    "Konutlar - Küvetli": ("Kişi", 160.0),
+                }
+            else:
+                su_tuketim_secenekleri = {
+                    "Fabrikalar": ("Kişi", 45.0),
+                    "Bürolar": ("Kişi", 45.0),
+                    "Okullar - Gündüzlü": ("Kişi", 45.0),
+                    "Okullar - Yatılı": ("Kişi", 135.0),
+                    "Bahçe sulama": ("m²", 1.5),
+                    "Konutlar - Lavabolu": ("Kişi", 70.0),
+                    "Konutlar - Duşlu": ("Kişi", 90.0),
+                    "Konutlar - Küvetli": ("Kişi", 160.0),
+                    "Oteller - Duşlu": ("Kişi", 100.0),
+                    "Oteller - Küvetli": ("Kişi", 175.0),
+                    "Çocuk Yuvaları": ("Kişi", 125.0),
+                    "Kreşler": ("Kişi", 125.0),
+                    "Kışlalar": ("Kişi", 60.0),
+                    "Lokantalar": ("Kişi", 75.0),
+                    "Oto Yıkama - Temizlik": ("Gün", 100.0),
+                    "Askeri binalar - Yatılı": ("Kişi", 135.0),
+                    "Askeri binalar - Yatılı olmayan": ("Kişi", 45.0),
+                }
+            st.markdown("##### Su Tüketim Değerleri Tablos")
+            su_tuketim_tablosu = [
+                {"Kullanım amacı": kategori, "Birim": birim,
+                 "Birim tüketim değeri": f"{deger:g} L/{birim}/gün"}
+                for kategori, (birim, deger) in su_tuketim_secenekleri.items()
+            ]
+            st.table(su_tuketim_tablosu)
 
-        poz_numarasi = ", ".join(k[2] for k in otomatik_poz_kayitlari) if poz_gosterilsin_mi else ""
-        poz_tipi = ", ".join(k[0] for k in otomatik_poz_kayitlari) if poz_gosterilsin_mi else ""
+            if hesap_modu == "Konutlar":
+                hane_kisi_sayisi = st.number_input(
+                    "Hane başına kişi sayısı", min_value=1, value=4, step=1,
+                    key="konut_hane_kisi_sayisi",
+                )
+                toplam_hane_sayisi = st.number_input(
+                    "Toplam hane sayısı", min_value=1, value=1, step=1,
+                    key="konut_toplam_hane_sayisi",
+                )
+                toplam_kisi_sayisi = hane_kisi_sayisi * toplam_hane_sayisi
+                st.metric("Toplam kişi sayısı", f"{toplam_kisi_sayisi:,.0f}".replace(",", "."))
 
-        depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
-        _toplu_secim_butonlari(depo_keys)
+                secilen_konut_kategorisi = st.selectbox(
+                    "Konut tipi / su tüketim kategorisi",
+                    options=list(su_tuketim_secenekleri.keys()),
+                    key="secilen_konut_kategorisi",
+                )
+                secilen_su_kategorileri = [secilen_konut_kategorisi]
+                su_birim, su_birim_degeri = su_tuketim_secenekleri[secilen_konut_kategorisi]
+                kategori_ihtiyaci_litre = toplam_kisi_sayisi * su_birim_degeri
+                su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+                su_hesap_detaylari.append({
+                    "kategori": secilen_konut_kategorisi, "birim": su_birim,
+                    "birim_degeri": su_birim_degeri, "miktar": toplam_kisi_sayisi,
+                    "ihtiyac_litre": kategori_ihtiyaci_litre,
+                })
+                st.caption(
+                    f"Hesap: {toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi = "
+                    f"{toplam_kisi_sayisi:g} kişi × {su_birim_degeri:g} L/kişi-gün"
+                )
+                st.markdown("##### Konut Hesap Tablosu")
+                st.table([{
+                    "Hane başına kişi sayısı": hane_kisi_sayisi,
+                    "Toplam hane sayısı": toplam_hane_sayisi,
+                    "Toplam kişi sayısı": toplam_kisi_sayisi,
+                    "Birim tüketim": f"{su_birim_degeri:g} L/kişi-gün",
+                    "Günlük ihtiyaç": f"{kategori_ihtiyaci_litre:,.0f} L/gün".replace(",", "."),
+                }])
+            else:
+                secilen_su_kategorileri = st.multiselect(
+                    "Kullanım amacı / su tüketim kategorileri",
+                    options=list(su_tuketim_secenekleri.keys()),
+                    key="secilen_su_kategorileri",
+                )
+                if secilen_su_kategorileri:
+                    for sira, kategori in enumerate(secilen_su_kategorileri):
+                        su_birim, su_birim_degeri = su_tuketim_secenekleri[kategori]
+                        su_miktari = st.number_input(
+                            f"{kategori} miktarı ({su_birim})", min_value=0.0, value=1.0, step=1.0,
+                            key=f"su_miktari_{sira}",
+                        )
+                        kategori_ihtiyaci_litre = su_miktari * su_birim_degeri
+                        su_gunluk_ihtiyac_litre += kategori_ihtiyaci_litre
+                        su_hesap_detaylari.append({
+                            "kategori": kategori, "birim": su_birim,
+                            "birim_degeri": su_birim_degeri, "miktar": su_miktari,
+                            "ihtiyac_litre": kategori_ihtiyaci_litre,
+                        })
+            su_gunluk_ihtiyac_m3 = su_gunluk_ihtiyac_litre / 1000.0
+            st.metric("Günlük toplam su ihtiyacı", f"{su_gunluk_ihtiyac_litre:,.2f} L/gün".replace(",", "X").replace(".", ",").replace("X", "."))
+            if not secilen_su_kategorileri:
+                st.info("Hesaplama yapmak için en az bir su tüketim kategorisi seçiniz.")
 
-        depo_sec_1 = st.checkbox(
-            "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
-            "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
-            "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
-            "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
-            "su rezervi sağlayacak şekilde tasarlanacaktır.",
-            key="depo_sec_1",
-            value=True,
+        st.markdown("##### Su Deposu Depolama Süresi ve Gerekli Hacim")
+        depo_sure_gun = st.number_input(
+            "Kaç günlük su ihtiyacı için depo seçilecek?", min_value=1.0,
+            value=1.0, step=1.0, key="depo_sure_gun",
+            help="Depo hacmi, günlük toplam su ihtiyacı ile seçilen gün sayısının çarpımıyla hesaplanır.",
         )
-        depo_sec_2 = st.checkbox(
-            "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-            " önlenmesi için bölme perdeleri yer alacaktır.",
-            key="depo_sec_2",
-            value=True,
+        depo_gerekli_hacim_m3 = su_gunluk_ihtiyac_m3 * depo_sure_gun
+        depo_gerekli_hacim_litre = su_gunluk_ihtiyac_litre * depo_sure_gun
+        secilen_depo_tipi_metni = ", ".join(sih_depo_tipleri) if sih_sec_depo_tipi and sih_depo_tipleri else ""
+        depo_hacmi_basligi = (
+            f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi'
+            if secilen_depo_tipi_metni
+            else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi"
         )
-        depo_sec_3 = st.checkbox(
-            "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
-            " için adam geçiş kapağı (manhole) bulunacaktır.",
-            key="depo_sec_3",
-            value=True,
+        # Kapasiteye göre otomatik poz seçimi. Hesaplanan hacme en yakın standart kapasite seçilir.
+        # Böylece kapasite her zaman zorunlu olarak bir üst değere yuvarlanmaz; alt kapasite
+        # hesaplanan değere daha yakınsa alt kapasite seçilebilir. Son karar kullanıcıdadır.
+        depo_poz_kapasiteleri = {
+            "Paslanmaz Çelik Modüler su deposu": [
+                (1.25, "25.150.1201"), (2.50, "25.150.1202"), (3.75, "25.150.1203"),
+                (5.00, "25.150.1204"), (6.25, "25.150.1205"), (7.50, "25.150.1206"),
+                (10.0, "25.150.1207"), (12.5, "25.150.1208"), (15.0, "25.150.1209"),
+                (20.0, "25.150.1210"), (22.5, "25.150.1211"), (25.0, "25.150.1212"),
+                (30.0, "25.150.1213"), (37.5, "25.150.1214"), (40.0, "25.150.1215"),
+                (45.0, "25.150.1216"), (50.0, "25.150.1217"), (56.0, "25.150.1218"),
+                (59.6, "25.150.1219"), (62.0, "25.150.1220"), (75.0, "25.150.1221"),
+                (90.0, "25.150.1222"), (93.2, "25.150.1223"), (104.2, "25.150.1224"),
+                (112.0, "25.150.1225"), (121.5, "25.150.1226"),
+            ],
+            "Galvaniz Çelik Modüler su deposu": [
+                (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
+                (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
+                (10.0, "25.150.1307"), (12.5, "25.150.1308"), (15.0, "25.150.1309"),
+                (20.0, "25.150.1310"), (22.5, "25.150.1311"), (25.0, "25.150.1312"),
+                (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
+                (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
+                (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
+            ],
+            "GRP (Cam Takviyeli Polyester) Modüler su deposu": [
+                (1.0, "25.150.1601"), (3.0, "25.150.1602"), (5.0, "25.150.1603"),
+                (10.0, "25.150.1604"), (15.0, "25.150.1605"), (20.0, "25.150.1606"),
+                (30.0, "25.150.1607"), (40.0, "25.150.1608"), (50.0, "25.150.1609"),
+                (60.0, "25.150.1610"), (70.0, "25.150.1611"), (80.0, "25.150.1612"),
+                (90.0, "25.150.1613"), (100.0, "25.150.1614"), (120.0, "25.150.1615"),
+                (150.0, "25.150.1616"), (180.0, "25.150.1617"), (200.0, "25.150.1618"),
+                (240.0, "25.150.1619"), (270.0, "25.150.1620"), (300.0, "25.150.1621"),
+            ],
+        }
+
+        otomatik_poz_kayitlari = []
+
+        def en_yakin_kapasite_kaydi(kayitlar, hedef_m3):
+            if not kayitlar:
+                return None
+            return min(kayitlar, key=lambda kayit: abs(kayit[0] - hedef_m3))
+
+        # Her depo tipi için otomatik başlangıç kapasitesi gösterilir. Kullanıcı isterse
+        # kapasiteyi değiştirebilir; son kullanıcı değeri rapora aktarılır.
+        for depo_index, depo_tipi in enumerate(sih_depo_tipleri if sih_sec_depo_tipi else []):
+            kayitlar = depo_poz_kapasiteleri.get(depo_tipi, [])
+            uygun = en_yakin_kapasite_kaydi(kayitlar, depo_gerekli_hacim_m3)
+            if uygun:
+                otomatik_kapasite, otomatik_poz = uygun
+                kapasite_key = f"manuel_depo_kapasitesi_{depo_index}"
+                onceki_otomatik_key = f"onceki_otomatik_depo_kapasitesi_{depo_index}"
+                poz_key = f"manuel_depo_pozu_{depo_index}"
+                poz_elle_key = f"depo_pozunu_elle_duzenle_{depo_index}"
+
+                # Hesap sonucu değiştiğinde, kullanıcı daha önce elle müdahale etmediyse
+                # giriş alanı yeni otomatik kapasiteyle güncellenir. Elle değiştirilmiş
+                # değerler korunur.
+                mevcut_kapasite = st.session_state.get(kapasite_key)
+                onceki_otomatik = st.session_state.get(onceki_otomatik_key)
+                if mevcut_kapasite is None or mevcut_kapasite == onceki_otomatik:
+                    st.session_state[kapasite_key] = float(otomatik_kapasite)
+                st.session_state[onceki_otomatik_key] = float(otomatik_kapasite)
+
+                st.caption(
+                    f"Otomatik hesaplanan en yakın standart kapasite: {otomatik_kapasite:g} m³ "
+                    f"(hesaplanan ihtiyaç: {depo_gerekli_hacim_m3:g} m³)"
+                )
+                manuel_kapasite = st.number_input(
+                    f"{depo_tipi} için depo kapasitesi (m³) — otomatik gelir, elle değiştirilebilir",
+                    min_value=0.001,
+                    step=0.5,
+                    key=kapasite_key,
+                    help="Alan başlangıçta otomatik seçilen en yakın standart kapasiteyle doldurulur. İsterseniz son onay olarak elle değiştirebilirsiniz.",
+                )
+
+                kapasiteye_uygun_kayit = en_yakin_kapasite_kaydi(kayitlar, manuel_kapasite)
+                kapasiteye_uygun_poz = kapasiteye_uygun_kayit[1] if kapasiteye_uygun_kayit else ""
+
+                poz_elle_duzenle = st.checkbox(
+                    f"{depo_tipi} poz numarasını elle düzenle",
+                    value=False,
+                    key=poz_elle_key,
+                )
+                if poz_elle_duzenle:
+                    if poz_key not in st.session_state:
+                        st.session_state[poz_key] = kapasiteye_uygun_poz
+                    manuel_poz = st.text_input(
+                        f"{depo_tipi} için seçilen poz numarası",
+                        key=poz_key,
+                    )
+                    kullanilacak_poz = manuel_poz.strip()
+
+                    # Poz numarası elle değiştirildiğinde parantez içindeki kapasite de
+                    # aynı pozun tanımlı kapasitesinden otomatik olarak alınır.
+                    poz_kapasite_eslesmesi = next(
+                        (kapasite for kapasite, poz in kayitlar if poz == kullanilacak_poz),
+                        None,
+                    )
+                    gosterilecek_kapasite = (
+                        float(poz_kapasite_eslesmesi)
+                        if poz_kapasite_eslesmesi is not None
+                        else float(manuel_kapasite)
+                    )
+                    if poz_kapasite_eslesmesi is None and kullanilacak_poz:
+                        st.warning(
+                            f"{depo_tipi}: '{kullanilacak_poz}' poz numarası kapasite listesinde bulunamadı. "
+                            "Mevcut kapasite değeri kullanılacaktır."
+                        )
+                else:
+                    # Elle düzenleme kapalıyken poz, elle girilen kapasiteye en yakın
+                    # standart kapasiteye göre otomatik olarak yeniden belirlenir.
+                    kullanilacak_poz = kapasiteye_uygun_poz
+                    gosterilecek_kapasite = float(manuel_kapasite)
+                    st.caption(
+                        f"Kapasiteye en yakın otomatik seçilen poz: {kullanilacak_poz} "
+                        f"({gosterilecek_kapasite:g} m³)"
+                    )
+
+                otomatik_poz_kayitlari.append((depo_tipi, gosterilecek_kapasite, kullanilacak_poz))
+            else:
+                st.warning(f"{depo_tipi} için kapasite listesi bulunamadı.")
+
+        if poz_gosterilsin_mi and otomatik_poz_kayitlari:
+            for depo_tipi, secilen_kapasite, secilen_poz in otomatik_poz_kayitlari:
+                st.markdown(
+                    f'<div style="color:#000000;"><strong>Cihaz Poz No:</strong> {secilen_poz} '
+                    f'<strong>(Kapasite: {secilen_kapasite:g} m³)</strong></div>',
+                    unsafe_allow_html=True,
+                )
+        elif poz_gosterilsin_mi and sih_depo_tipleri:
+            st.warning("Hesaplanan hacim, tanımlı kapasite listesinin üzerindedir.")
+
+        rapor_gosterilecek_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
+        rapor_gosterilecek_kapasite_litre = rapor_gosterilecek_kapasite_m3 * 1000.0
+        depo_hacmi_degeri = (f"{rapor_gosterilecek_kapasite_litre:,.0f} L ({rapor_gosterilecek_kapasite_m3:,.3f} m³)").replace(",", "X").replace(".", ",").replace("X", ".")
+        st.markdown(
+            f'<div style="font-size:1.05rem; color:#000000;">{depo_hacmi_basligi}: '
+            f'<strong style="color:#000000;">{depo_hacmi_degeri}</strong>&#39;dir.</div>',
+            unsafe_allow_html=True,
         )
 
-        ek_depo_notu = st.text_area(
-            "İlave Kullanma Soğuk Suyu Deposu Seçim Maddesi (Her satıra bir tane)",
-            "",
-            height=80,
-        )
+        st.caption(f"Hesap: {su_gunluk_ihtiyac_m3:g} m³/gün × {depo_sure_gun:g} gün = {depo_gerekli_hacim_m3:g} m³ ({depo_gerekli_hacim_litre:g} L)")
+        su_tuketim_tipi = ", ".join(secilen_su_kategorileri) if secilen_su_kategorileri else "Seçim yapılmadı"
+        su_birim = "-"; su_birim_degeri = 0.0; su_miktari = 0.0
+
+    poz_numarasi = ", ".join(k[2] for k in otomatik_poz_kayitlari) if poz_gosterilsin_mi else ""
+    poz_tipi = ", ".join(k[0] for k in otomatik_poz_kayitlari) if poz_gosterilsin_mi else ""
+
+    depo_keys = ["depo_sec_1", "depo_sec_2", "depo_sec_3"]
+    _toplu_secim_butonlari(depo_keys)
+
+    depo_sec_1 = st.checkbox(
+        "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
+        "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
+        "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
+        "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
+        "su rezervi sağlayacak şekilde tasarlanacaktır.",
+        key="depo_sec_1",
+        value=True,
+    )
+    depo_sec_2 = st.checkbox(
+        "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+        " önlenmesi için bölme perdeleri yer alacaktır.",
+        key="depo_sec_2",
+        value=True,
+    )
+    depo_sec_3 = st.checkbox(
+        "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+        " için adam geçiş kapağı (manhole) bulunacaktır.",
+        key="depo_sec_3",
+        value=True,
+    )
+
+    ek_depo_notu = st.text_area(
+        "İlave Kullanma Soğuk Suyu Deposu Seçim Maddesi (Her satıra bir tane)",
+        "",
+        height=80,
+    )
 
     if bolum_632_aktif:
         st.subheader("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ")
@@ -2338,13 +2319,8 @@ if bolum_6_aktif:
                 tank_poz = ""; guc = float(st.session_state.get(guc_final_key, 0.0))
                 hidrofor_poz = str(st.session_state.get(poz_final_key, "") or "").strip()
                 hidrofor_poz_aciklama = HIDROFOR_TIP_METINLERI.get(toplam_pompa, "Hidrofor")
-                # Hesaplama sekmesi kapalıyken de bu değişkenler tanımlı olmalı.
-                # Pompa eğrisi yalnızca kendi sekmesi açıldığında hesaplanır.
                 h_calisma = p_alt_mss
-                hq_egrisi = []
-                hh_egrisi = []
-                hq_baslik = ""
-                hq_model = None
+                hq_egrisi, hh_egrisi, hq_baslik, hq_model = hidrofor_pompa_secim_egrisi(vp_pompa_m3h, h_calisma, hidrofor_marka_secimi)
                 poz_rapora_eklensin_mi_hid = bool(st.session_state.get(f"hidrofor_poz_rapor_chk_{sekme_kodu}", True))
 
                 with section_tabs[0]:
@@ -2495,13 +2471,6 @@ if bolum_6_aktif:
                         tank_adedi = max(1, int(st.session_state.get(f"hidrofor_{i}_tank_bolme", 1)))
                         tank_birim_litre = tank_toplam_litre / tank_adedi
 
-                # 6.3.2 bağımsız çalışabilsin: üst hesap bölümleri kapalı olduğunda
-                # bu değişkenler hiç oluşmamış olabilir. Her zaman güvenli nihai değerleri hazırla.
-                vp_pompa_m3h = float(locals().get("vp_pompa_m3h", st.session_state.get(f"hidrofor_{i}_vp_manuel", 0.0)))
-                p_alt_mss = float(locals().get("p_alt_mss", st.session_state.get(f"hidrofor_{i}_palt_manuel", 0.0)))
-                p_ust_mss = float(locals().get("p_ust_mss", st.session_state.get(f"hidrofor_{i}_pust_manuel", 0.0)))
-                tank_toplam_litre = float(locals().get("tank_toplam_litre", st.session_state.get(f"hidrofor_{i}_tank_toplam_ozet", 0.0)))
-
                 with section_tabs[2]:
                     karakteristik_aktif = st.checkbox(
                         "Bu bölümü hesaba ve rapora dahil et", value=True, key=karakteristik_aktif_key
@@ -2624,9 +2593,7 @@ if bolum_6_aktif:
                         )
         
                         # Pompa elektrik gücü, nihai debi ve alt basınca göre otomatik hesaplanır.
-                        # Alt bölümler bağımsız seçilebildiği için değerleri tekrar güvenceye al.
-                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, st.session_state.get(f"hidrofor_{i}_vp_manuel", 0.0)))
-                        p_alt_mss = float(st.session_state.get(palt_final_key, st.session_state.get(f"hidrofor_{i}_palt_manuel", 0.0)))
+                        # Kullanıcı bu alanı elle değiştirmişse manuel değer korunur.
                         h_calisma = p_alt_mss
                         hidrofor_pompa_hesap = pompa_hidrolik_hesap(vp_pompa_m3h, h_calisma, 0.60, 0.90)
                         hesaplanan_guc_kw = float(hidrofor_pompa_hesap["motor_secim_kw"])
@@ -2675,8 +2642,6 @@ if bolum_6_aktif:
                     if egrisi_aktif:
                         st.markdown("#### • Pompa Performans Eğrisi:")
                         # Bu bölümdeki nihai değerler pompa eğrisine de aktarılır.
-                        vp_pompa_m3h = float(st.session_state.get(vp_final_key, st.session_state.get(f"hidrofor_{i}_vp_manuel", 0.0)))
-                        h_calisma = float(st.session_state.get(palt_final_key, st.session_state.get(f"hidrofor_{i}_palt_manuel", 0.0)))
                         hq_egrisi, hh_egrisi, hq_baslik, hq_model = hidrofor_pompa_secim_egrisi(
                             vp_pompa_m3h, h_calisma, hidrofor_marka_secimi
                         )
@@ -3176,37 +3141,30 @@ if bolum_633_aktif:
         # değiştirebilir; ancak üstteki Boyler Isıtma Rejimi değişirse bu
         # alanlar yeni rejime otomatik olarak senkronlanır.
         try:
-            rej_metni = str(rej_boyler or "80/60").strip()
-            parcalar = rej_metni.replace(",", ".").split("/", 1)
-            if len(parcalar) != 2:
-                raise ValueError
-            boyler_tp_giris_kaynak = float(parcalar[0].strip())
-            boyler_tp_cikis_kaynak = float(parcalar[1].strip())
-        except (ValueError, TypeError, AttributeError):
+            boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = [
+                float(x.strip()) for x in str(rej_boyler).split("/", 1)
+            ]
+        except (ValueError, AttributeError):
             boyler_tp_giris_kaynak, boyler_tp_cikis_kaynak = 80.0, 60.0
 
-        # v52: Boyler rejimi ile primer giriş/çıkış sıcaklıklarını doğrudan
-        # ve güvenli şekilde senkronize et. Eski v38/v42 session_state
-        # anahtarlarını kullanmıyoruz; böylece daha önce kalmış 0/0 değerleri
-        # yeni rejimin üzerine yazamaz.
-        boyler_rejim_key = "boyler_primer_rejim_v52"
-        boyler_tp_giris_key = "boyler_tp_giris_v52"
-        boyler_tp_cikis_key = "boyler_tp_cikis_v52"
-        secili_rejim = str(rej_boyler or "80/60")
-        onceki_rejim = st.session_state.get(boyler_rejim_key)
+        # v42: Eski v38 anahtarlarındaki 0 değerlerini taşımamak için yeni
+        # widget anahtarları kullanılıyor. Böylece program ilk açıldığında
+        # 80/60 mutlaka görünür.
+        boyler_rejim_key = "boyler_primer_rejim_v42"
+        boyler_tp_giris_key = "boyler_tp_giris_v42"
+        boyler_tp_cikis_key = "boyler_tp_cikis_v42"
 
-        # İlk açılışta veya rejim değiştiğinde primer sıcaklıklarını seçilen
-        # rejime birebir aktar. İlk açılışın varsayılanı 80/60'tır.
-        if onceki_rejim is None or onceki_rejim != secili_rejim:
-            st.session_state[boyler_tp_giris_key] = float(boyler_tp_giris_kaynak)
-            st.session_state[boyler_tp_cikis_key] = float(boyler_tp_cikis_kaynak)
-            st.session_state[boyler_rejim_key] = secili_rejim
+        if boyler_rejim_key not in st.session_state:
+            st.session_state[boyler_rejim_key] = str(rej_boyler)
+            st.session_state[boyler_tp_giris_key] = boyler_tp_giris_kaynak
+            st.session_state[boyler_tp_cikis_key] = boyler_tp_cikis_kaynak
+        elif st.session_state.get(boyler_rejim_key) != str(rej_boyler):
+            st.session_state[boyler_tp_giris_key] = boyler_tp_giris_kaynak
+            st.session_state[boyler_tp_cikis_key] = boyler_tp_cikis_kaynak
+            st.session_state[boyler_rejim_key] = str(rej_boyler)
         else:
-            # Eski/boş session değerleri kalmışsa güvenli varsayılanı geri yükle.
-            if boyler_tp_giris_key not in st.session_state:
-                st.session_state[boyler_tp_giris_key] = float(boyler_tp_giris_kaynak)
-            if boyler_tp_cikis_key not in st.session_state:
-                st.session_state[boyler_tp_cikis_key] = float(boyler_tp_cikis_kaynak)
+            st.session_state.setdefault(boyler_tp_giris_key, boyler_tp_giris_kaynak)
+            st.session_state.setdefault(boyler_tp_cikis_key, boyler_tp_cikis_kaynak)
 
         boyler_tp_giris = st.number_input(
             "Primer giriş sıcaklığı (°C)",
@@ -4051,178 +4009,177 @@ if st.button("Raporu Oluştur (.docx)"):
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
         doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
-        if bolum_631_aktif:
-          doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
-          doc.add_heading("Genel Bilgiler", level=3)
+        doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
+        doc.add_heading("Genel Bilgiler", level=3)
 
-          # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
-          if sih_sec_depo_tipi and sih_depo_tipleri:
-            if len(sih_depo_tipleri) == 1:
-              dinamik_tip_str = sih_depo_tipleri[0].lower()
-            elif len(sih_depo_tipleri) == 2:
-              dinamik_tip_str = (
-                  f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
-              )
-            else:
-              ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
-              son = sih_depo_tipleri[-1].lower()
-              dinamik_tip_str = f"{ilkler} ve {son}"
+        # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
+        if sih_sec_depo_tipi and sih_depo_tipleri:
+          if len(sih_depo_tipleri) == 1:
+            dinamik_tip_str = sih_depo_tipleri[0].lower()
+          elif len(sih_depo_tipleri) == 2:
+            dinamik_tip_str = (
+                f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
+            )
           else:
-            dinamik_tip_str = "modüler su deposu"
+            ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
+            son = sih_depo_tipleri[-1].lower()
+            dinamik_tip_str = f"{ilkler} ve {son}"
+        else:
+          dinamik_tip_str = "modüler su deposu"
 
-          depo_maddeleri = []
+        depo_maddeleri = []
 
-          # Dinamik Cümle
+        # Dinamik Cümle
+        depo_maddeleri.append(
+            "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
+            f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
+            " tasarlanmıştır."
+        )
+
+        if depo_sec_1:
           depo_maddeleri.append(
-              "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
-              f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
-              " tasarlanmıştır."
+              "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
+              "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
+              "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
+              "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
+              "su rezervi sağlayacak şekilde tasarlanacaktır."
+          )
+        if depo_sec_2:
+          depo_maddeleri.append(
+              "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
+              " önlenmesi için bölme perdeleri yer alacaktır."
+          )
+        if depo_sec_3:
+          depo_maddeleri.append(
+              "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
+              " için adam geçiş kapağı (manhole) bulunacaktır."
           )
 
-          if depo_sec_1:
-            depo_maddeleri.append(
-                "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
-                "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
-                "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
-                "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
-                "su rezervi sağlayacak şekilde tasarlanacaktır."
+        if ek_depo_notu.strip():
+          for ed in ek_depo_notu.split("\n"):
+            if ed.strip():
+              depo_maddeleri.append(ed.strip())
+
+        # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
+        for dm in depo_maddeleri:
+          doc.add_paragraph(dm, style="List Bullet")
+
+        # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
+        doc.add_heading(
+            "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
+            level=3,
+        )
+        doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
+        su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
+        su_tuketim_word_tablosu.style = "Table Grid"
+        baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
+        baslik_hucreleri[0].text = "Kullanım amacı"
+        baslik_hucreleri[1].text = "Birim"
+        baslik_hucreleri[2].text = "Birim tüketim değeri"
+        for kategori, (birim, deger) in su_tuketim_secenekleri.items():
+            hucreler = su_tuketim_word_tablosu.add_row().cells
+            hucreler[0].text = kategori
+            hucreler[1].text = birim
+            hucreler[2].text = f"{deger:g} L/{birim}/gün"
+
+        doc.add_paragraph(
+            "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
+            "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
+            "uygulamaya aktarılmıştır."
+        )
+
+        doc.add_heading("Su İhtiyacı Hesabı", level=4)
+        doc.add_paragraph(
+            "Kullanım amacı / su tüketim kategorileri: "
+            f"{su_tuketim_tipi}"
+        )
+        if su_hesap_detaylari:
+            konut_raporu_mu = hesap_modu == "Konutlar"
+            hastane_raporu_mu = hesap_modu == "Hastaneler"
+            hesap_tablosu = doc.add_table(
+                rows=1,
+                cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
             )
-          if depo_sec_2:
-            depo_maddeleri.append(
-                "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-                " önlenmesi için bölme perdeleri yer alacaktır."
+            hesap_tablosu.style = "Table Grid"
+            hesap_basliklari = hesap_tablosu.rows[0].cells
+            if konut_raporu_mu:
+                basliklar = [
+                    "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
+                    "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
+                ]
+            elif hastane_raporu_mu:
+                basliklar = [
+                    "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
+                    "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
+                ]
+            else:
+                basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
+            for i, baslik in enumerate(basliklar):
+                hesap_basliklari[i].text = baslik
+
+            for detay in su_hesap_detaylari:
+                hucreler = hesap_tablosu.add_row().cells
+                hucreler[0].text = detay["kategori"]
+                if konut_raporu_mu:
+                    hucreler[1].text = f"{hane_kisi_sayisi:g}"
+                    hucreler[2].text = f"{toplam_hane_sayisi:g}"
+                    hucreler[3].text = f"{toplam_kisi_sayisi:g}"
+                    hucreler[4].text = detay["birim"]
+                    hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
+                    hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                    hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
+                elif hastane_raporu_mu:
+                    hucreler[1].text = f"{detay['yatak_sayisi']:g}"
+                    hucreler[2].text = f"{detay['katsayi']:g}"
+                    hucreler[3].text = f"{detay['miktar']:g}"
+                    hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
+                    hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
+                else:
+                    hucreler[1].text = f"{detay['miktar']:g}"
+                    hucreler[2].text = detay["birim"]
+                    hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
+                    hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
+
+            if hastane_raporu_mu:
+                toplam_hucreler = hesap_tablosu.add_row().cells
+                toplam_hucreler[0].text = "GENEL TOPLAM"
+                toplam_hucreler[1].text = ""
+                toplam_hucreler[2].text = ""
+                toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
+                toplam_hucreler[4].text = ""
+                toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
+        else:
+            doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
+        doc.add_paragraph(
+            f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
+            f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
+        )
+        doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
+        doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
+        depo_hacmi_paragrafi = doc.add_paragraph()
+        depo_hacmi_paragrafi.add_run(
+            f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
+            if secilen_depo_tipi_metni
+            else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
+        )
+        rapor_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
+        rapor_kapasite_litre = rapor_kapasite_m3 * 1000.0
+        depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
+            f"{rapor_kapasite_litre:g} L ({rapor_kapasite_m3:g} m³)"
+        )
+        depo_hacmi_kalin.bold = True
+        depo_hacmi_paragrafi.add_run("'dir.")
+        for run in depo_hacmi_paragrafi.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
+        if poz_gosterilsin_mi and poz_numarasi:
+            poz_paragrafi = doc.add_paragraph()
+            poz_paragrafi.add_run("Cihaz Poz No: ")
+            poz_kalin = poz_paragrafi.add_run(
+                f"{poz_numarasi}"
             )
-          if depo_sec_3:
-            depo_maddeleri.append(
-                "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
-                " için adam geçiş kapağı (manhole) bulunacaktır."
-            )
-
-          if ek_depo_notu.strip():
-            for ed in ek_depo_notu.split("\n"):
-              if ed.strip():
-                depo_maddeleri.append(ed.strip())
-
-          # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
-          for dm in depo_maddeleri:
-            doc.add_paragraph(dm, style="List Bullet")
-
-          # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
-          doc.add_heading(
-              "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
-              level=3,
-          )
-          doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
-          su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
-          su_tuketim_word_tablosu.style = "Table Grid"
-          baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
-          baslik_hucreleri[0].text = "Kullanım amacı"
-          baslik_hucreleri[1].text = "Birim"
-          baslik_hucreleri[2].text = "Birim tüketim değeri"
-          for kategori, (birim, deger) in su_tuketim_secenekleri.items():
-              hucreler = su_tuketim_word_tablosu.add_row().cells
-              hucreler[0].text = kategori
-              hucreler[1].text = birim
-              hucreler[2].text = f"{deger:g} L/{birim}/gün"
-
-          doc.add_paragraph(
-              "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-              "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-              "uygulamaya aktarılmıştır."
-          )
-
-          doc.add_heading("Su İhtiyacı Hesabı", level=4)
-          doc.add_paragraph(
-              "Kullanım amacı / su tüketim kategorileri: "
-              f"{su_tuketim_tipi}"
-          )
-          if su_hesap_detaylari:
-              konut_raporu_mu = hesap_modu == "Konutlar"
-              hastane_raporu_mu = hesap_modu == "Hastaneler"
-              hesap_tablosu = doc.add_table(
-                  rows=1,
-                  cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
-              )
-              hesap_tablosu.style = "Table Grid"
-              hesap_basliklari = hesap_tablosu.rows[0].cells
-              if konut_raporu_mu:
-                  basliklar = [
-                      "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
-                      "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
-                  ]
-              elif hastane_raporu_mu:
-                  basliklar = [
-                      "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
-                      "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
-                  ]
-              else:
-                  basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
-              for i, baslik in enumerate(basliklar):
-                  hesap_basliklari[i].text = baslik
-
-              for detay in su_hesap_detaylari:
-                  hucreler = hesap_tablosu.add_row().cells
-                  hucreler[0].text = detay["kategori"]
-                  if konut_raporu_mu:
-                      hucreler[1].text = f"{hane_kisi_sayisi:g}"
-                      hucreler[2].text = f"{toplam_hane_sayisi:g}"
-                      hucreler[3].text = f"{toplam_kisi_sayisi:g}"
-                      hucreler[4].text = detay["birim"]
-                      hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                      hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
-                      hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
-                  elif hastane_raporu_mu:
-                      hucreler[1].text = f"{detay['yatak_sayisi']:g}"
-                      hucreler[2].text = f"{detay['katsayi']:g}"
-                      hucreler[3].text = f"{detay['miktar']:g}"
-                      hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
-                      hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
-                  else:
-                      hucreler[1].text = f"{detay['miktar']:g}"
-                      hucreler[2].text = detay["birim"]
-                      hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                      hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
-
-              if hastane_raporu_mu:
-                  toplam_hucreler = hesap_tablosu.add_row().cells
-                  toplam_hucreler[0].text = "GENEL TOPLAM"
-                  toplam_hucreler[1].text = ""
-                  toplam_hucreler[2].text = ""
-                  toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
-                  toplam_hucreler[4].text = ""
-                  toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
-          else:
-              doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
-          doc.add_paragraph(
-              f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
-              f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
-          )
-          doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
-          doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
-          depo_hacmi_paragrafi = doc.add_paragraph()
-          depo_hacmi_paragrafi.add_run(
-              f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
-              if secilen_depo_tipi_metni
-              else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
-          )
-          rapor_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
-          rapor_kapasite_litre = rapor_kapasite_m3 * 1000.0
-          depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
-              f"{rapor_kapasite_litre:g} L ({rapor_kapasite_m3:g} m³)"
-          )
-          depo_hacmi_kalin.bold = True
-          depo_hacmi_paragrafi.add_run("'dir.")
-          for run in depo_hacmi_paragrafi.runs:
-              run.font.color.rgb = RGBColor(0, 0, 0)
-          if poz_gosterilsin_mi and poz_numarasi:
-              poz_paragrafi = doc.add_paragraph()
-              poz_paragrafi.add_run("Cihaz Poz No: ")
-              poz_kalin = poz_paragrafi.add_run(
-                  f"{poz_numarasi}"
-              )
-              poz_kalin.bold = True
-              for run in poz_paragrafi.runs:
-                  run.font.color.rgb = RGBColor(0, 0, 0)
+            poz_kalin.bold = True
+            for run in poz_paragrafi.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
 
         # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
         if bolum_632_aktif:
