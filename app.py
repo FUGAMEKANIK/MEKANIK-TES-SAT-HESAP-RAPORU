@@ -3765,28 +3765,22 @@ if bolum_633_aktif:
             elif _tab_prefix == "plakali_esanjör":
                 # Plakalı eşanjör sistemi iki ekipmandan oluşur:
                 # 1) Akümülasyon tankı, 2) Plakalı eşanjör.
-                _akum_katsayi_key = "plakali_akumulasyon_katsayisi_v75"
-                _akum_katsayisi = st.number_input(
-                    "Akümülasyon / depolama katsayısı",
-                    min_value=0.0,
-                    value=float(st.session_state.get(_akum_katsayi_key, 1.0)),
-                    step=0.1,
-                    format="%.2f",
-                    key=_akum_katsayi_key,
-                    help="Gerekli akümülasyon hacmi = günlük sıcak su tüketimi × bu katsayı.",
-                )
-                _akum_gerekli = float(toplam_tuketim) * float(_akum_katsayisi)
+                # AKÜMÜLASYON TANKI GEREKLİ HACMİ
+                # Kaynak doğrudan yukarıdaki "Ortalama Ani Sıcak Su İhtiyacı"
+                # hesabındaki emniyetli hacimdir: V = ... L (Emniyetle).
+                # Günlük toplam tüketim veya ayrı bir akümülasyon katsayısı
+                # kullanılmaz. Yukarıdaki V değeri kullanıcı tarafından elle
+                # değiştirilmişse, burada da aynı değer esas alınır.
+                _akum_gerekli = float(secilen_boyler_hacmi)
 
-                # Tank adedi kullanıcı tarafından belirlenir.
-                # ÖNEMLİ: Adet değiştiğinde eski poz/kapasite tutulmaz; seçim
-                # her Streamlit çalışmasında güncel toplam ihtiyaca göre yeniden
-                # hesaplanır. V84'te eski session-state anahtarı özellikle
-                # kullanılmıyor.
+                # Tank adedi kullanıcı tarafından belirlenir. İlk açılışta,
+                # 3250 L emniyetli poz kapasitesi üzerinden toplam ihtiyacı
+                # karşılayacak minimum adet önerilir.
                 _akum_otomatik_oneri = (
                     min(100, max(1, int(math.ceil(_akum_gerekli / 3250.0))))
                     if _akum_gerekli > 0 else 1
                 )
-                _akum_adet_key = "plakali_akumulasyon_adedi_v84"
+                _akum_adet_key = "plakali_akumulasyon_adedi_v85"
                 if _akum_adet_key not in st.session_state:
                     st.session_state[_akum_adet_key] = int(_akum_otomatik_oneri)
 
@@ -3797,15 +3791,68 @@ if bolum_633_aktif:
                     step=1,
                     key=_akum_adet_key,
                     help=(
-                        "Adedi değiştirince toplam gerekli hacim bu adede bölünür; "
-                        "program uygun tank hacmini ve Cihaz Poz No'yu otomatik yeniden seçer."
+                        "Adedi değiştirince gerekli hacim tank adedine bölünür ve "
+                        "uygun tank hacmi/poz otomatik seçilir. Tank hacmini aşağıdaki "
+                        "seçim kutusundan elle değiştirebilirsiniz."
                     ),
                 )
 
-                # Adet değiştiği anda poz ve kapasite doğrudan bu değerden hesaplanır.
-                _akum_secim = _akumulasyon_tanki_sec(
+                # Önce otomatik tank seçimini yap. Mantık: gerekli toplam hacim / adet
+                # ve bu değeri karşılayan bir üst poz kapasitesi.
+                _akum_otomatik_secim = _akumulasyon_tanki_sec(
                     _akum_gerekli, int(_akum_adet)
                 )
+
+                # Tank hacmi/poz kullanıcı tarafından da elle değiştirilebilir.
+                # Adet veya gerekli hacim değiştiğinde seçim otomatik öneriye döner;
+                # kullanıcı seçim kutusunu değiştirdiğinde manuel tercih korunur.
+                _akum_poz_secenekleri = [
+                    f"{poz['hacim']} L | {poz['poz']}"
+                    for poz in AKUMULASYON_TANKI_POZLARI
+                ]
+                _akum_poz_degerleri = [poz["poz"] for poz in AKUMULASYON_TANKI_POZLARI]
+                _akum_secim_signature = (
+                    round(float(_akum_gerekli), 6), int(_akum_adet)
+                )
+                _akum_prev_signature_key = "plakali_akumulasyon_secim_signature_v85"
+                _akum_poz_key = "plakali_akumulasyon_poz_secimi_v85"
+                _akum_otomatik_label = (
+                    f"{_akum_otomatik_secim['hacim']} L | {_akum_otomatik_secim['poz']}"
+                )
+                if st.session_state.get(_akum_prev_signature_key) != _akum_secim_signature:
+                    st.session_state[_akum_poz_key] = _akum_otomatik_label
+                    st.session_state[_akum_prev_signature_key] = _akum_secim_signature
+                elif st.session_state.get(_akum_poz_key) not in _akum_poz_secenekleri:
+                    st.session_state[_akum_poz_key] = _akum_otomatik_label
+
+                _akum_poz_secimi = st.selectbox(
+                    "Tank hacmi / Cihaz Poz No (otomatik veya manuel)",
+                    options=_akum_poz_secenekleri,
+                    key=_akum_poz_key,
+                    help=(
+                        "Program adede göre otomatik seçim yapar. İsterseniz bu listeden "
+                        "tank hacmini ve Cihaz Poz No'yu elle değiştirebilirsiniz."
+                    ),
+                )
+                _akum_secilen_poz_no = _akum_poz_degerleri[
+                    _akum_poz_secenekleri.index(_akum_poz_secimi)
+                ]
+                _akum_manuel_poz = next(
+                    poz for poz in AKUMULASYON_TANKI_POZLARI
+                    if poz["poz"] == _akum_secilen_poz_no
+                )
+
+                _akum_secim = {
+                    "poz": _akum_manuel_poz["poz"],
+                    "hacim": int(_akum_manuel_poz["hacim"]),
+                    "adet": int(_akum_adet),
+                    "toplam_hacim": int(_akum_adet * _akum_manuel_poz["hacim"]),
+                    "gerekli_hacim": _akum_gerekli,
+                    "birim_gerekli_hacim": _akum_gerekli / float(_akum_adet),
+                    "yeterli": int(_akum_adet * _akum_manuel_poz["hacim"]) >= _akum_gerekli,
+                    "tip": AKUMULASYON_TANKI_TIP,
+                    "otomatik_poz": _akum_otomatik_secim["poz"],
+                }
 
                 st.markdown("**1. SICAK SU AKÜMÜLASYON TANKI SEÇİMİ**")
                 _a1, _a2, _a3, _a4 = st.columns(4)
@@ -3817,19 +3864,20 @@ if bolum_633_aktif:
                     f"Akümülasyon tankı: **{int(_akum_adet)} adet × {_akum_secim['hacim']} L** | "
                     f"Toplam: **{_akum_secim['toplam_hacim']} L** | Cihaz Poz No: **{_akum_secim['poz']}**"
                 )
-                if _akum_secim.get("yeterli", False):
+                if _akum_secim["yeterli"]:
                     st.success(_akum_sonuc_metni)
                 else:
                     st.warning(
                         _akum_sonuc_metni +
-                        "\n\n⚠️ Seçilen adet ile son pozun toplam kapasitesi gerekli hacmi karşılamıyor. "
-                        "Tank adedini artırın."
+                        "\n\n⚠️ Seçilen tankların toplam kapasitesi gerekli hacmi karşılamıyor. "
+                        "Tank adedini artırın veya daha büyük tank hacmi seçin."
                     )
                 st.caption(
                     f"Tank başına gerekli hacim: {_akum_secim.get('birim_gerekli_hacim', 0):.0f} L | "
                     f"Seçilen tank toplam kapasitesi: {_akum_secim['toplam_hacim']:.0f} L | "
                     f"Tank tipi: {_akum_secim.get('tip', AKUMULASYON_TANKI_TIP)}"
                 )
+
                 st.session_state["plakali_akumulasyon_secim_sonucu_v75"] = _akum_secim
 
                 st.markdown("**2. KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ**")
