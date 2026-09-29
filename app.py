@@ -4780,8 +4780,8 @@ if st.button("Raporu Oluştur (.docx)"):
                 rapor_hacim = int(_rapor_poz_kaydi["hacim"])
                 rapor_debi = int(_rapor_poz_kaydi["debi"] if "debi" in _rapor_poz_kaydi else _rapor_poz_kaydi["debi_80_60"])
                 rapor_tip = (
-                    "Tek Serpantinli , Dik Tip , bakır boru serpantinli, gövdesi "
-                    "İzolasyonlu, Elektrostatik Toz Boyalı"
+                    "Tek Bakır Boru Serpantinli, Dik Tip , Gövdesi İzolasyonlu, "
+                    "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
                 )
             else:
                 rapor_adet = int(
