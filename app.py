@@ -121,9 +121,15 @@ def _proje_widget_anahtari_mi(anahtar):
 
 
 def _proje_degerini_temizle(deger):
-    """Session State içindeki JSON'a yazılabilecek güvenli değerleri seçer."""
+    """Session State içindeki değerleri proje JSON'una güvenli biçimde dönüştürür."""
     if deger is None or isinstance(deger, (str, int, float, bool)):
         return deger
+    if isinstance(deger, pd.DataFrame):
+        return {
+            "__tip__": "pandas_dataframe",
+            "columns": [str(c) for c in deger.columns],
+            "records": deger.where(pd.notna(deger), None).to_dict(orient="records"),
+        }
     if isinstance(deger, (list, tuple)):
         sonuc = []
         for x in deger:
@@ -157,6 +163,17 @@ def _proje_ayarlarini_topla():
         if temiz is not _GEcersiz_PROJE:
             ayarlar[anahtar] = temiz
     return ayarlar
+
+
+def _proje_degerini_geri_yukle(deger):
+    """Proje JSON'undaki özel veri tiplerini uygulama değerlerine dönüştürür."""
+    if isinstance(deger, dict) and deger.get("__tip__") == "pandas_dataframe":
+        return pd.DataFrame(deger.get("records", []), columns=deger.get("columns"))
+    if isinstance(deger, dict):
+        return {str(k): _proje_degerini_geri_yukle(v) for k, v in deger.items()}
+    if isinstance(deger, list):
+        return [_proje_degerini_geri_yukle(v) for v in deger]
+    return deger
 
 
 def _proje_adi():
@@ -349,7 +366,7 @@ def _proje_ac(proje_id):
         for anahtar, deger in ayarlar.items():
             if _proje_widget_anahtari_mi(anahtar) or anahtar.startswith("proje_"):
                 continue
-            st.session_state[anahtar] = deger
+            st.session_state[anahtar] = _proje_degerini_geri_yukle(deger)
         st.session_state["aktif_proje_id"] = proje.proje_id
         st.session_state["aktif_proje_adi"] = proje.proje_adi
         st.session_state["proje_adi_giris"] = proje.proje_adi
@@ -406,7 +423,7 @@ if isinstance(_bekleyen_dis_proje, dict):
     for _anahtar, _deger in _bekleyen_dis_proje.items():
         if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
             continue
-        st.session_state[_anahtar] = _deger
+        st.session_state[_anahtar] = _proje_degerini_geri_yukle(_deger)
 
 # ---------------------------------------------------------------------------
 # PROJE KONTROL PANELİ
@@ -3827,12 +3844,15 @@ if bolum_633_aktif:
     })
 
     varsayilan_df = pd.DataFrame(satirlar)
-    if tablo_key not in st.session_state:
-        st.session_state[tablo_key] = varsayilan_df.copy()
+    veri_key = f"sicak_su_tablo_veri_{sicak_su_yapi_tipi}"
+    editor_key = f"sicak_su_editor_{sicak_su_yapi_tipi}"
+
+    if veri_key not in st.session_state:
+        st.session_state[veri_key] = varsayilan_df.copy()
 
     edited_df = st.data_editor(
-        st.session_state[tablo_key],
-        key=f"sicak_su_editor_{sicak_su_yapi_tipi}",
+        st.session_state[veri_key],
+        key=editor_key,
         hide_index=True,
         num_rows="fixed",
         use_container_width=True,
@@ -3848,8 +3868,9 @@ if bolum_633_aktif:
         },
     )
 
-    # Düzenlemeleri kalıcı oturum durumuna al.
-    st.session_state[tablo_key] = edited_df.copy()
+    # Widget'ın kendi anahtarına yazmak Streamlit tarafından yasaktır.
+    # Düzenlenen veriyi ayrı bir session-state anahtarında tutuyoruz.
+    st.session_state[veri_key] = edited_df.copy()
 
     # Hesaplanan toplamları ayrı ve okunaklı sonuç tablosunda göster.
     sonuc_df = edited_df.copy()
