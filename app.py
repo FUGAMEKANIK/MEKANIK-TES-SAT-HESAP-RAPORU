@@ -117,6 +117,9 @@ def _proje_widget_anahtari_mi(anahtar):
     # StreamlitValueAssignmentNotAllowedError oluşur.
     if anahtar.startswith("alt_grup_sec_v55_") or anahtar.startswith("alt_grup_kaldir_v55_"):
         return True
+    # data_editor widget anahtarları Streamlit tarafından yönetilir.
+    if "editor" in anahtar.lower():
+        return True
     return False
 
 
@@ -361,6 +364,11 @@ def _is_adi_degisti():
 
 def _proje_ac(proje_id):
     try:
+        # Mevcut data_editor widget durumlarını temizle.
+        for _k in list(st.session_state.keys()):
+            if "editor" in str(_k).lower():
+                st.session_state.pop(_k, None)
+
         proje = _PROJE_YONETICISI.ac(proje_id)
         ayarlar = proje.genel.get("session_state", {}) if isinstance(proje.genel, dict) else {}
         for anahtar, deger in ayarlar.items():
@@ -397,6 +405,10 @@ def _proje_otomatik_kaydet():
 
 
 def _proje_dis_dosyayi_yukle_callback():
+    for _k in list(st.session_state.keys()):
+        if "editor" in str(_k).lower():
+            st.session_state.pop(_k, None)
+
     yuklenen = st.session_state.get("proje_dis_dosya_yukle_v116")
     if yuklenen is None:
         st.session_state["proje_yukleme_bildirimi"] = "Lütfen bir .proje.json dosyası seçin."
@@ -420,6 +432,9 @@ def _proje_dis_dosyayi_yukle_callback():
 
 _bekleyen_dis_proje = st.session_state.pop("proje_dis_dosya_yukle_bekliyor", None)
 if isinstance(_bekleyen_dis_proje, dict):
+    for _k in list(st.session_state.keys()):
+        if "editor" in str(_k).lower():
+            st.session_state.pop(_k, None)
     for _anahtar, _deger in _bekleyen_dis_proje.items():
         if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
             continue
