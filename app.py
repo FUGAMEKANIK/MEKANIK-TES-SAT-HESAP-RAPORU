@@ -5626,15 +5626,11 @@ if _rapor_olustur_sidebar:
       run_is_baslik.font.size = Pt(11)
       run_is_baslik.font.name = "Arial"
 
-      # Proje adı Word'den kopyalanırken başına/sonuna gelen tek tırnakları
-      # raporda göstermiyoruz.
-      _aktif_is_temiz = str(aktif_is).strip().strip("'‘’").strip()
-      run_is = p_is.add_run(_aktif_is_temiz)
+      run_is = p_is.add_run(aktif_is)
       run_is.font.size = Pt(16)
       run_is.font.bold = True
-      run_is.font.italic = True
-      run_is.font.name = "Times New Roman"
-      run_is._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+      run_is.font.italic = False
+      run_is.font.name = "Arial"
       run_is.font.color.rgb = RGBColor(0, 0, 0)
 
       doc.add_paragraph()
@@ -5680,14 +5676,24 @@ if _rapor_olustur_sidebar:
 
     # --- 1. GENEL BİLGİLER ---
     ana_baslik_ekle("1. GENEL BİLGİLER")
-    proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
-    giris_metni = (
-        f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
-        " açıklanmış ve tüm uygulama ve detay projelerine esas teşkil eden"
-        " tasarım kriterleri ve mekanik tesisat sistem çözümleri tespit"
-        " edilmiştir."
+    # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
+    p_giris = doc.add_paragraph()
+    p_giris.add_run("Bu raporda ")
+    if aktif_is:
+        _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
+        _r_proje = p_giris.add_run(_genel_proje_ifade)
+        _r_proje.font.name = "Times New Roman"
+        _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+        _r_proje.font.bold = True
+        _r_proje.font.italic = True
+        _r_proje.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        p_giris.add_run("ilgili proje")
+    p_giris.add_run(
+        " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
+        "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
+        "tesisat sistem çözümleri tespit edilmiştir."
     )
-    doc.add_paragraph(giris_metni)
     yapi_metni = (
         f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
     )
