@@ -1022,66 +1022,14 @@ def enable_update_fields_on_open(doc):
 
 
 def add_toc(paragraph):
+  """Word TOC alanı; başlıklar ve sayfa numaraları Word tarafından güncellenir."""
   run = paragraph.add_run()
-  fldChar1 = OxmlElement("w:fldChar")
-  fldChar1.set(qn("w:fldCharType"), "begin")
-  instrText = OxmlElement("w:instrText")
-  instrText.set(qn("xml:space"), "preserve")
-  instrText.text = 'TOC \\o \"1-4\" \\h \\z \\u'
-  fldChar2 = OxmlElement("w:fldChar")
-  fldChar2.set(qn("w:fldCharType"), "separate")
-  fldChar2.set(qn("w:dirty"), "true")
-  fldChar3 = OxmlElement("w:fldChar")
-  fldChar3.set(qn("w:fldCharType"), "end")
-
-  r = run._r
-  r.append(fldChar1)
-  r.append(instrText)
-  r.append(fldChar2)
-  r.append(fldChar3)
-
-
-st.title("Mühendislik Proje Raporu Otomasyonu")
-if st.session_state.get("aktif_proje_adi"):
-    _durum_ad = st.session_state.get("aktif_proje_adi")
-    _durum_zaman = st.session_state.get("proje_son_kayit_zamani")
-    if _durum_zaman:
-        st.success(f"💾 **Kaydedildi:** {_durum_ad} — Son kayıt: {_durum_zaman}")
-    else:
-        st.info(f"📂 **Açık proje:** {_durum_ad}")
-# v46: Hiyerarşik bölüm seçimleri yukarı/aşağı yönde bağımsız çalışır.
-st.write("Lütfen kurumsal kapak ve ilgili proje bölümlerini doldurun:")
-
-# ---------------------------------------------------------------------------
-# RAPORA DAHİL EDİLECEK NUMARALI BÖLÜM SEÇİMLERİ
-# ---------------------------------------------------------------------------
-# Bölüm seçimi TEK bir kaynaktan yönetilir: st.session_state.
-# Üst/alt checkbox'lar birbirlerini zorla değiştirmez.
-# Alt bölüm seçilirse sadece rapor hiyerarşisinde üst başlıklar otomatik
-# aktif kabul edilir. Böylece yukarıdan-aşağıya ve aşağıdan-yukarıya seçim
-# aynı şekilde çalışır.
-BOLUM_SECIM_ANAHTARLARI = [
-    "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
-    "rapor_bolum_5", "rapor_bolum_51",
-    "rapor_bolum_6", "rapor_bolum_61", "rapor_bolum_611",
-    "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
-    "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_632",
-    "rapor_bolum_633", "rapor_bolum_634",
-]
-
-# İlk açılışta hepsi seçili. Mevcut kullanıcı seçimi varsa korunur.
-for _anahtar in BOLUM_SECIM_ANAHTARLARI:
-    st.session_state.setdefault(_anahtar, True)
-
-
-# 6.3 alt bölümlerinin numarası seçili bölümlere göre dinamik olarak yeniden
-# oluşturulur. Bir bölüm kaldırıldığında sonraki bölüm numarasını otomatik alır.
-_BOLUM_63_COCUKLARI = [
-    ("rapor_bolum_631", "Kullanma Soğuk Suyu Deposu Seçimi"),
-    ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
-    ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
-    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
-]
+  fld_begin = OxmlElement("w:fldChar"); fld_begin.set(qn("w:fldCharType"), "begin"); fld_begin.set(qn("w:dirty"), "true")
+  instr = OxmlElement("w:instrText"); instr.set(qn("xml:space"), "preserve"); instr.text = 'TOC \\o "1-3" \\h \\z \\u'
+  fld_sep = OxmlElement("w:fldChar"); fld_sep.set(qn("w:fldCharType"), "separate")
+  txt = OxmlElement("w:t"); txt.text = "İçindekiler güncelleniyor..."
+  fld_end = OxmlElement("w:fldChar"); fld_end.set(qn("w:fldCharType"), "end"); fld_end.set(qn("w:dirty"), "true")
+  run._r.append(fld_begin); run._r.append(instr); run._r.append(fld_sep); run._r.append(txt); run._r.append(fld_end)
 
 def _63_dinamik_no(anahtar):
     """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
@@ -4006,57 +3954,69 @@ with _t_sihhi:
           return p
 
         def rapor_word_stillerini_uygula(doc):
-          for style_name in [
-              "Normal",
-              "Body Text",
-              "List Paragraph",
-              "List Bullet",
-              "List Number",
-          ]:
+          """Tez/rapor sayfa akışı: başlıklar bölünmez, tablo satırları bölünmez."""
+          for style_name in ["Normal","Body Text","List Paragraph","List Bullet","List Number"]:
             try:
               stl = doc.styles[style_name]
               stl.font.name = "Times New Roman"
               stl._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
               stl.font.size = Pt(12)
+              stl.paragraph_format.widow_control = True
             except KeyError:
               pass
 
           h1 = doc.styles["Heading 1"]
           h1.font.name = "Times New Roman"
           h1._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-          h1.font.size = Pt(14)
-          h1.font.bold = True
+          h1.font.size = Pt(14); h1.font.bold = True
           h1.paragraph_format.page_break_before = True
+          h1.paragraph_format.keep_with_next = True
+          h1.paragraph_format.keep_together = True
 
-          for level in [2, 3, 4]:
+          for level in [2,3,4]:
             h = doc.styles[f"Heading {level}"]
             h.font.name = "Times New Roman"
             h._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-            h.font.size = Pt(12)
-            h.font.bold = True
+            h.font.size = Pt(12); h.font.bold = True
+            h.paragraph_format.keep_with_next = True
+            h.paragraph_format.keep_together = True
+            h.paragraph_format.widow_control = True
 
           for paragraph in doc.paragraphs:
             for run in paragraph.runs:
               run.font.name = "Times New Roman"
               run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
               if paragraph.style and paragraph.style.name.startswith("Heading 1"):
-                run.font.size = Pt(14)
-                run.font.bold = True
+                run.font.size = Pt(14); run.font.bold = True
               elif paragraph.style and paragraph.style.name.startswith("Heading"):
-                run.font.size = Pt(12)
-                run.font.bold = True
+                run.font.size = Pt(12); run.font.bold = True
               elif run.font.size is None:
                 run.font.size = Pt(12)
+            paragraph.paragraph_format.widow_control = True
+            if paragraph.style and paragraph.style.name.startswith("Heading"):
+              paragraph.paragraph_format.keep_with_next = True
+              paragraph.paragraph_format.keep_together = True
 
           for table in doc.tables:
-            for row in table.rows:
+            for row_index, row in enumerate(table.rows):
+              trPr = row._tr.get_or_add_trPr()
+              if trPr.find(qn("w:cantSplit")) is None:
+                trPr.append(OxmlElement("w:cantSplit"))
               for cell in row.cells:
                 for paragraph in cell.paragraphs:
-                  for run in paragraph.runs:
-                    run.font.name = "Times New Roman"
-                    run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                    run.font.size = Pt(12)
+                  paragraph.paragraph_format.widow_control = True
+                  if row_index == 0:
+                    paragraph.paragraph_format.keep_with_next = True
 
+          try:
+            settings = doc.settings.element
+            upd = settings.find(qn("w:updateFields"))
+            if upd is None:
+              upd = OxmlElement("w:updateFields")
+              settings.append(upd)
+            upd.set(qn("w:val"), "true")
+          except Exception:
+            pass
 
 
     def re_sirk_formul_gorseli_png(q_boyler_kcal_h, q_temsiz_m3h, q_emniyetli_m3h, q_secim_m3h, q_boyler_kw=None, emniyet_orani=15.0):
@@ -5494,10 +5454,12 @@ if _rapor_olustur_sidebar:
     doc = Document()
 
     cover_section = doc.sections[0]
-    cover_section.top_margin = Inches(1.5)
-    cover_section.bottom_margin = Inches(1.5)
-    cover_section.left_margin = Inches(1.2)
-    cover_section.right_margin = Inches(1.2)
+    cover_section.top_margin = Inches(1.15)
+    cover_section.bottom_margin = Inches(1.0)
+    cover_section.left_margin = Inches(1.0)
+    cover_section.right_margin = Inches(1.0)
+    cover_section.header_distance = Inches(0.25)
+    cover_section.footer_distance = Inches(0.25)
 
     # 1. SAYFA: KAPAK SAYFASI
     p_sirket = doc.add_paragraph()
@@ -5552,22 +5514,16 @@ if _rapor_olustur_sidebar:
     p_toc = doc.add_paragraph()
     add_toc(p_toc)
 
-    p_bilgi_notu = doc.add_paragraph()
-    run_not = p_bilgi_notu.add_run(
-        "(Not: Belgeyi Word'de açtığınızda üstüne sağ tıklayıp 'Alanı Güncelle'"
-        " diyerek başlıkları ve sayfa numaralarını güncelleyebilirsiniz.)"
-    )
-    run_not.font.size = Pt(9)
-    run_not.font.italic = True
-    run_not.font.color.rgb = RGBColor(128, 128, 128)
 
     # 3. SAYFA: GÖVDE
     doc.add_page_break()
     body_section = doc.add_section()
-    body_section.top_margin = Inches(1.2)
-    body_section.bottom_margin = Inches(1.2)
-    body_section.left_margin = Inches(1.2)
-    body_section.right_margin = Inches(1.2)
+    body_section.top_margin = Inches(0.85)
+    body_section.bottom_margin = Inches(0.75)
+    body_section.left_margin = Inches(1.0)
+    body_section.right_margin = Inches(1.0)
+    body_section.header_distance = Inches(0.25)
+    body_section.footer_distance = Inches(0.25)
 
     # --- 1. GENEL BİLGİLER ---
     doc.add_heading("1. GENEL BİLGİLER", level=1)
