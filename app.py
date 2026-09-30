@@ -312,69 +312,13 @@ def _proje_kaydet_callback():
 
 
 def _yeni_proje_baslat():
-    """Aktif projeyi tamamen kapatır ve uygulamayı gerçek başlangıç varsayılanlarına döndürür."""
-    try:
-        # Yeni proje, eski projenin hiçbir kullanıcı verisini taşımamalıdır.
-        # Streamlit'in o anda çalışan butonlarının anahtarlarını koruyoruz;
-        # diğer tüm session_state değerleri temizleniyor.
-        korunacak = set()
-        for _k in list(st.session_state.keys()):
-            _ks = str(_k).lower()
+    """Yeni proje isteğini işaretler; gerçek session temizliği bir sonraki rerunun
+    başında, widgetlar yeniden oluşturulmadan önce yapılır.
 
-            # Proje değişse bile kurumsal bilgiler korunur.
-            # İşveren/adres alanları ileride farklı anahtarlarla bulunsa bile
-            # bunların silinmemesi için isim kalıpları da korunuyor.
-            _kurumsal_anahtar = (
-                _ks in {
-                    "sirket_adi", "firma_adi", "kurulus_adi",
-                    "isveren", "isveren_adi", "isveren_bilgileri",
-                    "adres", "proje_adresi", "firma_adresi",
-                }
-                or "isveren" in _ks
-                or "adres" in _ks
-                or "sirket" in _ks
-                or "firma" in _ks
-                or "kurulus" in _ks
-            )
+    Bu yaklaşım StreamlitValueAssignmentNotAllowedError oluşmasını önler.
+    """
+    st.session_state["_yeni_proje_sifirlama_bekliyor"] = True
 
-            if _proje_widget_anahtari_mi(_k) or _kurumsal_anahtar:
-                korunacak.add(_k)
-
-        # Yeni Proje butonunun kendi anahtarını da koru; callback sonrasında
-        # Streamlit bu widget'ın durumunu kendisi yönetecek.
-        korunacak.add("proje_yeni_btn_v119")
-
-        _eski_degerler = {
-            _k: st.session_state.get(_k)
-            for _k in korunacak
-            if _k in st.session_state
-        }
-
-        st.session_state.clear()
-
-        # Yalnızca geçici UI widget durumlarını geri koy.
-        for _k, _v in _eski_degerler.items():
-            st.session_state[_k] = _v
-
-        # Yeni proje için proje yönetimi başlangıç durumu.
-        st.session_state["aktif_proje_id"] = ""
-        st.session_state["aktif_proje_adi"] = ""
-        st.session_state["proje_adi_giris"] = ""
-        st.session_state["proje_kaynak"] = ""
-        st.session_state["proje_son_kayit_zamani"] = ""
-        st.session_state["proje_dis_dosya_hazirlandi"] = False
-        st.session_state["proje_dis_dosya_yukle_bekliyor"] = None
-        st.session_state["_proje_adi_manuel"] = False
-        st.session_state["proje_yukleme_bildirimi"] = (
-            "🆕 Yeni proje başlatıldı. Proje bilgileri temizlendi; şirket/işveren/adres bilgileri korundu."
-        )
-
-        # Callback tamamlandıktan sonra uygulamayı baştan çalıştır.
-        # Böylece kapak başlığı, standart seçimleri, hesaplar, tablolar,
-        # boyler/hidrofor değerleri ve rapor seçimleri gerçek varsayılanlarına döner.
-        st.rerun()
-    except Exception as hata:
-        st.session_state["proje_yukleme_bildirimi"] = f"Yeni proje başlatılamadı: {hata}"
 
 
 def _proje_sil(proje_id):
@@ -516,6 +460,49 @@ if isinstance(_bekleyen_dis_proje, dict):
         if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
             continue
         st.session_state[_anahtar] = _proje_degerini_geri_yukle(_deger)
+
+# ---------------------------------------------------------------------------
+# YENİ PROJE İSTEĞİNİ, WIDGETLAR OLUŞMADAN ÖNCE UYGULA
+# ---------------------------------------------------------------------------
+if st.session_state.pop("_yeni_proje_sifirlama_bekliyor", False):
+    # Yeni proje geçişinde korunacak kurumsal bilgiler.
+    _korunacak_kurumsal = {}
+    for _k in list(st.session_state.keys()):
+        _ks = str(_k).lower()
+        _kurumsal = (
+            _ks in {
+                "sirket_adi", "firma_adi", "kurulus_adi",
+                "isveren", "isveren_adi", "isveren_bilgileri",
+                "adres", "proje_adresi", "firma_adresi",
+            }
+            or "isveren" in _ks
+            or "adres" in _ks
+            or "sirket" in _ks
+            or "firma" in _ks
+            or "kurulus" in _ks
+        )
+        if _kurumsal:
+            _korunacak_kurumsal[_k] = st.session_state.get(_k)
+
+    # Eski projenin tüm widget/proje değerlerini kaldır.
+    st.session_state.clear()
+
+    # Kurumsal bilgiler yeni projeye aynen taşınır.
+    for _k, _v in _korunacak_kurumsal.items():
+        st.session_state[_k] = _v
+
+    st.session_state["aktif_proje_id"] = ""
+    st.session_state["aktif_proje_adi"] = ""
+    st.session_state["proje_adi_giris"] = ""
+    st.session_state["proje_kaynak"] = ""
+    st.session_state["proje_son_kayit_zamani"] = ""
+    st.session_state["proje_dis_dosya_hazirlandi"] = False
+    st.session_state["proje_dis_dosya_yukle_bekliyor"] = None
+    st.session_state["_proje_adi_manuel"] = False
+    st.session_state["proje_yukleme_bildirimi"] = (
+        "🆕 Yeni proje başlatıldı. Proje bilgileri temizlendi; "
+        "şirket/işveren/adres bilgileri korundu."
+    )
 
 # ---------------------------------------------------------------------------
 # PROJE KONTROL PANELİ
