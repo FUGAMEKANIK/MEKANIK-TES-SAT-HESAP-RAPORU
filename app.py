@@ -194,6 +194,29 @@ BOLUM_SECIM_ANAHTARLARI = [
 for _anahtar in BOLUM_SECIM_ANAHTARLARI:
     st.session_state.setdefault(_anahtar, True)
 
+
+# 6.3 alt bölümlerinin numarası seçili bölümlere göre dinamik olarak yeniden
+# oluşturulur. Bir bölüm kaldırıldığında sonraki bölüm numarasını otomatik alır.
+_BOLUM_63_COCUKLARI = [
+    ("rapor_bolum_631", "Kullanma Soğuk Suyu Deposu Seçimi"),
+    ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
+    ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
+    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+]
+
+def _63_dinamik_no(anahtar):
+    """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
+    aktifler = [k for k, _ in _BOLUM_63_COCUKLARI if bool(st.session_state.get(k, False))]
+    try:
+        return aktifler.index(anahtar) + 1
+    except ValueError:
+        # Bölüm kapalıysa, açıldığı anda doğal sırasını korusun.
+        return [k for k, _ in _BOLUM_63_COCUKLARI].index(anahtar) + 1
+
+def _63_dinamik_baslik(anahtar):
+    ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
+    return f"6.3.{_63_dinamik_no(anahtar)} {ad}"
+
 def _tum_bolumleri_sec():
     for _anahtar in BOLUM_SECIM_ANAHTARLARI:
         st.session_state[_anahtar] = True
@@ -250,6 +273,8 @@ with st.sidebar:
 
     st.markdown("### Bölümler")
     for _baslik, _anchor, _key in _BOLUM_NAV:
+        if _key in {"rapor_bolum_631", "rapor_bolum_632", "rapor_bolum_633", "rapor_bolum_634"}:
+            _baslik = _63_dinamik_baslik(_key)
         if _key is None:
             st.markdown(
                 f'<a class="proje-nav-tab proje-nav-ana" href="#{_anchor}">🏠 {_baslik}</a>',
@@ -1878,7 +1903,7 @@ if bolum_6_aktif:
         st.markdown('<div id="bolum_63"></div>', unsafe_allow_html=True)
         st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
         st.markdown('<div id="bolum_631"></div>', unsafe_allow_html=True)
-        st.subheader("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ")
+        st.subheader(_63_dinamik_baslik("rapor_bolum_631"))
 
         poz_gosterilsin_mi = st.checkbox(
             "Poz numarasını göster",
@@ -1889,7 +1914,7 @@ if bolum_6_aktif:
         genel_bilgiler_tab = st.container()
         with genel_bilgiler_tab:
             st.markdown("#### Genel Bilgiler")
-            st.markdown("#### 6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
+            st.markdown(f"#### {_63_dinamik_no('rapor_bolum_631')}.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ")
 
             # Hesap türü sekmelerinin daha büyük ve okunabilir görünmesi
             st.markdown(
@@ -2267,7 +2292,7 @@ if bolum_6_aktif:
 
     if bolum_632_aktif:
         st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
-        st.subheader("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ")
+        st.subheader(_63_dinamik_baslik("rapor_bolum_632"))
         st.markdown("#### Genel Bilgiler ve Hidrofor Seçim Esasları")
 
         hidrofor_genel_keys = [f"hidrofor_genel_{i}" for i in range(1, 16)]
@@ -2334,7 +2359,7 @@ if bolum_6_aktif:
             for i, secim in enumerate(hidrofor_tur_listesi, 1):
                 st.markdown(f"**Hidrofor {i}: {secim}**")
                 on_ek = st.text_input(
-                    f"6.3.2.{i} için başlık ön eki / özel tanım (isteğe bağlı)",
+                    f"6.3.{_63_dinamik_no('rapor_bolum_632')}.{i} için başlık ön eki / özel tanım (isteğe bağlı)",
                     key=f"hidrofor_on_ek_{i}",
                     placeholder="Örn.: Blok A, Blok B, Otopark, 1. Etap",
                 ).strip()
@@ -2378,7 +2403,7 @@ if bolum_6_aktif:
                     # Sekmede yalnızca kısa kod gösterilir; tam başlık raporda kullanılır.
                     st.markdown(f"### {sekme_kodu}")
                     st.caption(
-                        f"Program sekmesi: {sekme_kodu} | Rapor başlığı: 6.3.2.{i} {baslik_buyuk}"
+                        f"Program sekmesi: {sekme_kodu} | Rapor başlığı: 6.3.{_63_dinamik_no('rapor_bolum_632')}.{i} {baslik_buyuk}"
                     )
                     st.info(
                         "Bu hidrofor bağımsız bir seçim alanıdır. Aynı türden birden "
@@ -2529,7 +2554,7 @@ if bolum_6_aktif:
         ):
             with tab:
                 st.markdown(f"### {sekme_kodu}")
-                st.caption(f"6.3.2.{i} {baslik}")
+                st.caption(f"6.3.{_63_dinamik_no("rapor_bolum_632")}.{i} {baslik}")
 
                 # Alt bölümler ayrı sekmeler halinde yönetilir. Her sekmenin
                 # içindeki onay kutusu, o bölümün hesaba/rapora dahil edilip
@@ -3330,7 +3355,7 @@ sicak_su_yapi_tipi = "Bağımsız Ev"
 
 if bolum_633_aktif:
     st.markdown('<div id="bolum_633"></div>', unsafe_allow_html=True)
-    st.markdown("### • 6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI")
+    st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_633")}")
     st.caption("Kaynak tüketim değerleri: BOYLER SEÇİMİ.xlsx / Sayfa1")
     sicak_su_yapi_tipi = st.selectbox(
         "Yapı / kullanım tipi",
@@ -4302,7 +4327,7 @@ if bolum_633_aktif:
 re_sirkulasyon_pompa_sonucu = {}
 if bolum_634_aktif:
     st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
-    st.markdown("### • 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ")
+    st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
     st.caption("Q değeri seçilmiş boylerden otomatik alınır. Emniyet oranı ve hesaplanan debi kullanıcı tarafından gerektiğinde değiştirilebilir.")
 
     _rs_q_boyler = float(st.session_state.get("boyler_q_kcal_h_v97", 0.0))
@@ -4325,7 +4350,7 @@ if bolum_634_aktif:
     _rs_q_hesap = _rs_q_temsiz * (1.0 + float(re_sirk_emniyet) / 100.0)
 
     if _rs_q_boyler <= 0:
-        st.warning("Önce 6.3.3 bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
+        st.warning(f"Önce {_63_dinamik_baslik('rapor_bolum_633')} bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
         _rs_q_temsiz = 0.0
         _rs_q_hesap = 0.0
     else:
@@ -5255,7 +5280,7 @@ if st.button("Raporu Oluştur (.docx)"):
       if bolum_63_aktif:
         doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
         if bolum_631_aktif:
-          doc.add_heading("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", level=2)
+          doc.add_heading(_63_dinamik_baslik("rapor_bolum_631"), level=2)
           doc.add_heading("Genel Bilgiler", level=3)
 
           # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
@@ -5312,7 +5337,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
           # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
           doc.add_heading(
-              "6.3.1.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
+              f"6.3.{_63_dinamik_no("rapor_bolum_631")}.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
               level=3,
           )
           doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
@@ -5429,7 +5454,7 @@ if st.button("Raporu Oluştur (.docx)"):
 
         # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
         if bolum_632_aktif:
-          doc.add_heading("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", level=2)
+          doc.add_heading(_63_dinamik_baslik("rapor_bolum_632"), level=2)
 
           genel_bilgiler_basligi = doc.add_paragraph()
           genel_bilgiler_run = genel_bilgiler_basligi.add_run(
@@ -5456,7 +5481,7 @@ if st.button("Raporu Oluştur (.docx)"):
           for hesap in locals().get("hidrofor_hesaplari", []):
               i = hesap["index"]
               ad = hesap["baslik"]
-              doc.add_heading(f"6.3.2.{i} {ad}", level=3)
+              doc.add_heading(f"6.3.{_63_dinamik_no("rapor_bolum_632")}.{i} {ad}", level=3)
 
                   # Alt başlık: Genel Bilgiler başlığı ile aynı görünüm
               if hesap.get("hesaplama_aktif", True):
@@ -5570,7 +5595,7 @@ if st.button("Raporu Oluştur (.docx)"):
                     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
     if bolum_633_aktif:
-        doc.add_heading("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", level=2)
+        doc.add_heading(_63_dinamik_baslik("rapor_bolum_633"), level=2)
         if sicak_su_hesap_detaylari:
             yapi_tip_par = doc.add_paragraph()
             yapi_tip_run = yapi_tip_par.add_run(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
@@ -5943,7 +5968,7 @@ if st.button("Raporu Oluştur (.docx)"):
     if bolum_634_aktif:
         _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
         if _rs_rapor:
-            doc.add_heading("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", level=2)
+            doc.add_heading(_63_dinamik_baslik("rapor_bolum_634"), level=2)
 
             _rs_qb = float(_rs_rapor.get("q_boyler_kcal_h", 0.0))
             _rs_qb_kw = float(_rs_rapor.get("q_boyler_kw", _rs_qb * 0.001163))
