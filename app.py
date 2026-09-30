@@ -21,6 +21,8 @@ from proje_yonetimi import ProjeYoneticisi, guvenli_dosya_adi
 # ---------------------------------------------------------------------------
 # PROGRAM BASLIKLARI - RENKLI VE DUZENLI GORUNUM
 # ---------------------------------------------------------------------------
+st.markdown('<style>\n#sayfa_basi, #sayfa_sonu { scroll-margin-top: 20px; }\n.hizli-navigasyon {\n    position: fixed;\n    right: 18px;\n    bottom: 24px;\n    z-index: 999999;\n    display: flex;\n    flex-direction: column;\n    gap: 7px;\n}\n.hizli-navigasyon a {\n    display: block;\n    min-width: 108px;\n    padding: 8px 11px;\n    text-align: center;\n    text-decoration: none !important;\n    border-radius: 8px;\n    border: 1px solid #B8C7D9;\n    background: rgba(255,255,255,0.96);\n    color: #0B3D91 !important;\n    font-weight: 700;\n    font-size: 13px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.16);\n}\n.hizli-navigasyon a:hover { background: #EAF2F8; }\n@media (max-width: 700px) {\n    .hizli-navigasyon { right: 8px; bottom: 12px; }\n    .hizli-navigasyon a { min-width: 92px; padding: 7px 8px; font-size: 12px; }\n}\n</style>', unsafe_allow_html=True)
+
 st.markdown("""
 <style>
 /* Ana bolum basliklari */
@@ -73,6 +75,17 @@ div[data-testid="stHeading"] h4 {
 }
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div id="sayfa_basi"></div>
+    <div class="hizli-navigasyon">
+        <a href="#sayfa_basi">⬆ Başa Git</a>
+        <a href="#sayfa_sonu">⬇ Sona Git</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------------------------
 # PROJE YÖNETİMİ — KAYDET / FARKLI KAYDET / PROJE AÇ / SİL
@@ -6656,3 +6669,7 @@ if st.button("Raporu Oluştur (.docx)"):
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         key="rapor_word_indir_v101",
     )
+
+
+# SAYFA SONU ANKORU
+st.markdown('<div id="sayfa_sonu"></div>', unsafe_allow_html=True)
