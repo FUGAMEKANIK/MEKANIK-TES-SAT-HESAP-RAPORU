@@ -13,6 +13,63 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
+
+# ---------------------------------------------------------------------------
+# PROGRAM BASLIKLARI - RENKLI VE DUZENLI GORUNUM
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+/* Ana bolum basliklari */
+h1 {
+    color: #0B3D91 !important;
+    font-weight: 800 !important;
+    border-bottom: 3px solid #0B3D91;
+    padding-bottom: 8px;
+    margin-top: 18px !important;
+}
+
+/* 2. seviye basliklar: ana bolumler */
+h2 {
+    color: #0B3D91 !important;
+    background: #EAF2F8;
+    border-left: 7px solid #0B3D91;
+    border-radius: 6px;
+    padding: 9px 14px !important;
+    font-weight: 750 !important;
+    margin-top: 18px !important;
+    margin-bottom: 10px !important;
+}
+
+/* 3. seviye basliklar: alt bolumler */
+h3 {
+    color: #0F5B78 !important;
+    background: #F2F8FA;
+    border-left: 5px solid #1B8AAA;
+    border-radius: 5px;
+    padding: 7px 12px !important;
+    font-weight: 700 !important;
+    margin-top: 13px !important;
+    margin-bottom: 8px !important;
+}
+
+/* 4. seviye basliklar: hesap/alt basliklar */
+h4 {
+    color: #7A4E00 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #E6C77A;
+    padding-bottom: 4px !important;
+}
+
+/* Streamlit st.header/st.subheader icin daha temiz dikey bosluk */
+div[data-testid="stHeading"] h1,
+div[data-testid="stHeading"] h2,
+div[data-testid="stHeading"] h3,
+div[data-testid="stHeading"] h4 {
+    letter-spacing: 0.1px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Türkçe ay isimleri için sözlük
 aylar = {
     1: "Ocak",
