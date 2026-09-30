@@ -5626,10 +5626,16 @@ if _rapor_olustur_sidebar:
       run_is_baslik.font.size = Pt(11)
       run_is_baslik.font.name = "Arial"
 
-      run_is = p_is.add_run(aktif_is)
+      # Proje adı Word'den kopyalanırken başına/sonuna gelen tek tırnakları
+      # raporda göstermiyoruz.
+      _aktif_is_temiz = str(aktif_is).strip().strip("'‘’").strip()
+      run_is = p_is.add_run(_aktif_is_temiz)
       run_is.font.size = Pt(16)
       run_is.font.bold = True
-      run_is.font.name = "Arial"
+      run_is.font.italic = True
+      run_is.font.name = "Times New Roman"
+      run_is._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+      run_is.font.color.rgb = RGBColor(0, 0, 0)
 
       doc.add_paragraph()
 
@@ -6848,8 +6854,12 @@ if _rapor_olustur_sidebar:
             )
             boyler_rapor_baslik_run.bold = True
             boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-            boyler_rapor_baslik_run.font.name = "Arial"
+            boyler_rapor_baslik_run.font.name = "Times New Roman"
+            boyler_rapor_baslik_run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
             boyler_rapor_baslik_run.font.size = Pt(11)
+            boyler_rapor_baslik_run.font.bold = True
+            boyler_rapor_baslik_run.font.italic = False
+            boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
 
             # Q BOYLER burada kullanıcı tarafından elle değiştirilmiş nihai tam sayıdır.
             # Rapor her zaman bu değeri kullanır; küsüratlı hesap ayrıca yukarıda gösterilir.
@@ -6988,9 +6998,11 @@ if _rapor_olustur_sidebar:
                     run_baslik = p_baslik.add_run(
                         "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ SEÇİMİ:"
                     )
-                    run_baslik.font.name = "Arial"
+                    run_baslik.font.name = "Times New Roman"
+                    run_baslik._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
                     run_baslik.font.size = Pt(12)
                     run_baslik.bold = True
+                    run_baslik.font.italic = False
                     run_baslik.font.color.rgb = RGBColor(0, 0, 0)
                     continue
 
@@ -7015,26 +7027,36 @@ if _rapor_olustur_sidebar:
                 p_etiket.paragraph_format.space_after = Pt(3)
                 p_etiket.paragraph_format.space_before = Pt(3)
                 run_etiket = p_etiket.add_run(etiket)
-                run_etiket.font.name = "Arial"
+                run_etiket.font.name = "Times New Roman"
+                run_etiket._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
                 run_etiket.font.size = Pt(10.5)
+                run_etiket.font.bold = False
+                run_etiket.font.italic = False
+                run_etiket.font.color.rgb = RGBColor(0, 0, 0)
 
                 p_iki_nokta = hucreler[1].paragraphs[0]
                 p_iki_nokta.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 p_iki_nokta.paragraph_format.space_after = Pt(3)
                 p_iki_nokta.paragraph_format.space_before = Pt(3)
                 run_iki_nokta = p_iki_nokta.add_run(":")
-                run_iki_nokta.font.name = "Arial"
+                run_iki_nokta.font.name = "Times New Roman"
+                run_iki_nokta._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
                 run_iki_nokta.font.size = Pt(10.5)
+                run_iki_nokta.font.bold = False
+                run_iki_nokta.font.italic = False
+                run_iki_nokta.font.color.rgb = RGBColor(0, 0, 0)
 
                 p_deger = hucreler[2].paragraphs[0]
                 p_deger.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 p_deger.paragraph_format.space_after = Pt(3)
                 p_deger.paragraph_format.space_before = Pt(3)
                 run_deger = p_deger.add_run(deger)
-                run_deger.font.name = "Arial"
+                run_deger.font.name = "Times New Roman"
+                run_deger._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
                 run_deger.font.size = Pt(10.5)
                 run_deger.font.color.rgb = RGBColor(0, 0, 0)
-                run_deger.bold = etiket in kalin_etiketler
+                run_deger.bold = False
+                run_deger.italic = False
 
             doc.add_paragraph("").paragraph_format.space_after = Pt(0)
 
