@@ -426,27 +426,54 @@ def _proje_otomatik_kaydet():
 
 
 def _proje_dis_dosyayi_yukle_callback():
-    for _k in list(st.session_state.keys()):
-        if _proje_widget_anahtari_mi(_k):
-            st.session_state.pop(_k, None)
+    """Bilgisayardan seçilen .proje.json dosyasını gerçekten oku ve bir sonraki
+    rerunda uygulanmak üzere beklet.
 
+    ÖNEMLİ: file_uploader'ın session-state anahtarını burada silmiyoruz.
+    Önceki sürümde bu anahtar _proje_widget_anahtari_mi() filtresine takıldığı
+    için UploadedFile nesnesi callback çalışmadan önce kayboluyor ve dosya
+    ekranda görünmesine rağmen "açılmıyor" gibi davranıyordu.
+    """
     yuklenen = st.session_state.get("proje_dis_dosya_yukle_v116")
     if yuklenen is None:
         st.session_state["proje_yukleme_bildirimi"] = "Lütfen bir .proje.json dosyası seçin."
         return
+
     try:
-        veri = json.loads(yuklenen.getvalue().decode("utf-8-sig"))
+        ham_veri = yuklenen.getvalue()
+        if not ham_veri:
+            raise ValueError("Seçilen proje dosyası boş.")
+
+        veri = json.loads(ham_veri.decode("utf-8-sig"))
+        if not isinstance(veri, dict):
+            raise ValueError("Proje dosyasının ana yapısı geçersiz.")
+
         ayarlar = veri.get("session_state", {})
         if not isinstance(ayarlar, dict):
             raise ValueError("Proje dosyasında geçerli session_state bulunamadı.")
+
+        # Eski/yeni format uyumluluğu: bazı dış proje dosyalarında bilgiler
+        # doğrudan 'genel.session_state' altında olabilir.
+        if not ayarlar and isinstance(veri.get("genel"), dict):
+            ayarlar = veri["genel"].get("session_state", {})
+            if not isinstance(ayarlar, dict):
+                ayarlar = {}
+
+        # Yüklenen dosyanın gerçek içeriğini bir sonraki reruna taşıyoruz.
         st.session_state["proje_dis_dosya_yukle_bekliyor"] = ayarlar
-        st.session_state["aktif_proje_id"] = veri.get("proje_id", "")
-        st.session_state["aktif_proje_adi"] = veri.get("proje_adi", "")
-        st.session_state["proje_adi_giris"] = veri.get("proje_adi", "")
+        st.session_state["aktif_proje_id"] = str(veri.get("proje_id", ""))
+        st.session_state["aktif_proje_adi"] = str(veri.get("proje_adi", ""))
+        st.session_state["proje_adi_giris"] = str(veri.get("proje_adi", ""))
         st.session_state["_proje_adi_manuel"] = True
         st.session_state["proje_kaynak"] = "harici"
         st.session_state["proje_son_kayit_zamani"] = ""
-        st.session_state["proje_yukleme_bildirimi"] = f"'{veri.get('proje_adi', 'Proje')}' yükleniyor..."
+        st.session_state["proje_yukleme_bildirimi"] = (
+            f"'{veri.get('proje_adi', 'Proje')}' dosyası okundu ve yükleniyor..."
+        )
+
+        # Widget callback'inden güvenli şekilde çıkıp yeni session state ile
+        # tam bir Streamlit rerun başlat.
+        st.rerun()
     except Exception as hata:
         st.session_state["proje_yukleme_bildirimi"] = f"Proje dosyası açılamadı: {hata}"
 
