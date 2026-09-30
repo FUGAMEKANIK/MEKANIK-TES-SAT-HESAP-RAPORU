@@ -816,6 +816,10 @@ def _rapor_docx_txt(docx_bytes):
             _satirlar.append(" | ".join(_cell.text for _cell in _row.cells))
     return ("\n".join(_satirlar) + "\n").encode("utf-8")
 
+# Opsiyonel pis su pompası bölümü kapalı olsa bile rapor oluşturma kontrolünde
+# bu değişkenin güvenli biçimde bulunması gerekir.
+psp_parametreleri = globals().get("psp_parametreleri", {})
+
 # ---------------------------------------------------------------------------
 # PROJE KONTROL PANELİ
 # ---------------------------------------------------------------------------
@@ -5559,8 +5563,12 @@ if _rapor_olustur_sidebar:
 
   _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
   gecersiz_var = any(
-      p["poz_durumu"] != "UYGUN" for p in psp_parametreleri.values()
-  ) or (bolum_634_aktif and _re_sirk_rapor_kontrol and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN")
+      p.get("poz_durumu") != "UYGUN" for p in (psp_parametreleri or {}).values()
+  ) or (
+      bolum_634_aktif
+      and _re_sirk_rapor_kontrol
+      and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN"
+  )
   if gecersiz_var:
     st.error(
         "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
