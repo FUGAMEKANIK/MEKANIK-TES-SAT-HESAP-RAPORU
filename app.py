@@ -543,6 +543,17 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
     )
 
+    st.markdown("---")
+    st.markdown("### 📄 RAPOR OLUŞTURMA")
+    if st.button(
+        "📄 RAPORU OLUŞTUR (.DOCX)",
+        key="sidebar_rapor_olustur_v133",
+        use_container_width=True,
+        help="Hesap raporunu oluşturur.",
+    ):
+        st.session_state["_rapor_olustur_istegi_v133"] = True
+        st.rerun()
+
     _mevcut_projeler = []
     try:
         _mevcut_projeler = sorted([
@@ -5146,7 +5157,8 @@ with _t_havalandirma:
 # Rapor Oluştur Butonu
 _proje_otomatik_kaydet()
 
-if st.button("Raporu Oluştur (.docx)"):
+_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v133", False)
+if st.button("Raporu Oluştur (.docx)") or _rapor_olustur_sidebar:
 
   _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
   gecersiz_var = any(
