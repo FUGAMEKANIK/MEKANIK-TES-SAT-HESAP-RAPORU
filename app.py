@@ -8,6 +8,7 @@ import re
 import subprocess
 import tempfile
 import shutil
+import urllib.request
 from pathlib import Path
 from copy import deepcopy
 from docx import Document
@@ -19,6 +20,83 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from proje_yonetimi import ProjeYoneticisi, guvenli_dosya_adi
+
+
+# ---------------------------------------------------------------------------
+# MGM YAĞIŞ VERİSİ
+# ---------------------------------------------------------------------------
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
+    """MGM Resmi İklim İstatistikleri sayfasından ilin günlük toplam en
+    yüksek yağış miktarını (mm) ve gerçekleşme tarihini çeker.
+
+    MGM sayfasındaki ilgili alan: "Günlük Toplam En Yüksek Yağış Miktarı".
+    Bu değer yağmur suyu hesabındaki P (mm) alanına otomatik aktarılır.
+    """
+    import re as _re
+    import unicodedata as _unicodedata
+
+    il_adi = str(il_adi or "").strip()
+    if not il_adi:
+        return None, None, None
+
+    # MGM URL'sindeki m parametresi Türkçe karakterlerden arındırılmış
+    # büyük harfli il adını kullanır (ANKARA, IZMIR, SANLIURFA vb.).
+    _il_url = "".join(
+        ch for ch in _unicodedata.normalize("NFKD", il_adi)
+        if not _unicodedata.combining(ch)
+    ).upper()
+    _il_url = _il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I").replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
+
+    _url = (
+        "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+        f"?k=undefined&m={_il_url}"
+    )
+
+    try:
+        _req = urllib.request.Request(
+            _url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            },
+        )
+        with urllib.request.urlopen(_req, timeout=12) as _response:
+            _html = _response.read().decode("utf-8", errors="ignore")
+
+        # HTML etiketlerini kaldırıp tablo metnini düz metne çevir.
+        _metin = _re.sub(r"<[^>]+>", " ", _html)
+        _metin = (
+            _metin.replace("&nbsp;", " ")
+            .replace("&uuml;", "ü").replace("&Uuml;", "Ü")
+            .replace("&ouml;", "ö").replace("&Ouml;", "Ö")
+            .replace("&ccedil;", "ç").replace("&Ccedil;", "Ç")
+            .replace("&gbreve;", "ğ").replace("&Gbreve;", "Ğ")
+            .replace("&scedil;", "ş").replace("&Scedil;", "Ş")
+            .replace("&rsquo;", "’").replace("&amp;", "&")
+        )
+        _metin = _re.sub(r"\s+", " ", _metin).strip()
+
+        _baslik = "Günlük Toplam En Yüksek Yağış Miktarı"
+        _pos = _metin.find(_baslik)
+        if _pos < 0:
+            return None, None, _url
+
+        _parca = _metin[_pos:_pos + 500]
+        # Örn.: 11.06.1997 88,9 mm
+        _eslesme = _re.search(
+            r"(\d{1,2}\.\d{1,2}\.\d{4})\s+([0-9]+(?:[.,][0-9]+)?)\s*mm",
+            _parca,
+            flags=_re.IGNORECASE,
+        )
+        if not _eslesme:
+            return None, None, _url
+
+        _tarih = _eslesme.group(1)
+        _deger = float(_eslesme.group(2).replace(",", "."))
+        return _deger, _tarih, _url
+
+    except Exception:
+        return None, None, _url
 
 
 # ---------------------------------------------------------------------------
@@ -3285,11 +3363,33 @@ with _t_sihhi:
                     step=10.0, key="yagmur_cati_alani"
                 )
             with c2:
+                # Seçilen ile göre MGM'den resmi maksimum günlük yağış verisini
+                # otomatik getir. İl değiştiğinde P değeri yeni ilin MGM değeriyle
+                # güncellenir; aynı ilde kullanıcı isterse değeri manuel değiştirebilir.
+                _mgm_yagis_mm, _mgm_yagis_tarih, _mgm_yagis_url = mgm_gunluk_en_yuksek_yagis_mm(secilen_il)
+                _onceki_mgm_il = st.session_state.get("yagmur_mgm_il", "")
+                if _onceki_mgm_il != secilen_il:
+                    if _mgm_yagis_mm is not None:
+                        st.session_state["yagmur_yagis"] = float(_mgm_yagis_mm)
+                    st.session_state["yagmur_mgm_il"] = secilen_il
+
                 yagmur_yagis = st.number_input(
                     "Tasarım yağış yüksekliği P (mm)", min_value=0.0,
-                    value=float(st.session_state.get("yagmur_yagis", 50.0)),
-                    step=1.0, key="yagmur_yagis"
+                    step=1.0, key="yagmur_yagis",
+                    help="Seçilen il için MGM Resmi İklim İstatistikleri sayfasındaki Günlük Toplam En Yüksek Yağış Miktarı otomatik alınır. İsterseniz proje tasarım kriterinize göre manuel olarak değiştirebilirsiniz."
                 )
+
+                if _mgm_yagis_mm is not None:
+                    st.caption(
+                        f"☁️ MGM verisi — {secilen_il}: **{_mgm_yagis_mm:.1f} mm** "
+                        f"({_mgm_yagis_tarih}). Değer otomatik işlendi."
+                    )
+                    st.caption(f"Kaynak: MGM Resmi İklim İstatistikleri — {_mgm_yagis_url}")
+                else:
+                    st.warning(
+                        f"MGM'den {secilen_il} için yağış verisi alınamadı. "
+                        "P değerini manuel giriniz."
+                    )
             with c3:
                 yagmur_akis_katsayisi = st.number_input(
                     "Akış katsayısı C", min_value=0.0, max_value=1.0,
@@ -3405,6 +3505,8 @@ with _t_sihhi:
             }
             yagmur_hesap = {
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
+                "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
+                "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
                 "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
                 "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
                 "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
@@ -6727,6 +6829,12 @@ if _rapor_olustur_sidebar:
               f"tasarım yağış yüksekliği: P = {_yr.get('yagis', 0):.2f} mm; "
               f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
           )
+          if _yr.get("mgm_yagis_mm") is not None:
+              doc.add_paragraph(
+                  f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
+                  f"Yağış Miktarı = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
+                  f"({_yr.get('mgm_yagis_tarih', '')})."
+              )
           doc.add_paragraph(
               f"Toplanabilir yağmur suyu: V = A × P × C / 1000 = {_yr.get('toplanabilir_m3', 0):.2f} m³"
           )
