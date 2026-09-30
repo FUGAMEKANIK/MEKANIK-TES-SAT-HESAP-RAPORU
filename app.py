@@ -220,12 +220,19 @@ def _proje_adi():
     return ad
 
 
+def _proje_kisa_dosya_adi(proje_adi):
+    """Dosya/klasör adında yalnızca proje adının ilk iki kelimesini kullanır."""
+    kelimeler = [k for k in str(proje_adi or "").strip().split() if k]
+    if not kelimeler:
+        return ""
+    return guvenli_dosya_adi(" ".join(kelimeler[:2]))
+
 def _proje_verisini_hazirla(proje_adi=None):
     proje_adi = str(proje_adi or _proje_adi()).strip()
     return {
         "proje_dosya_suru": 2,
         "proje_adi": proje_adi,
-        "proje_id": guvenli_dosya_adi(proje_adi) if proje_adi else "",
+        "proje_id": _proje_kisa_dosya_adi(proje_adi) if proje_adi else "",
         "olusturma_tarihi": datetime.now().isoformat(timespec="seconds"),
         "sirket_adi": str(st.session_state.get("sirket_adi", "")),
         "rapor_turu": str(st.session_state.get("rapor_turu", "")),
@@ -244,7 +251,7 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
         )
         return False
 
-    proje_id = guvenli_dosya_adi(proje_adi)
+    proje_id = _proje_kisa_dosya_adi(proje_adi)
     aktif = st.session_state.get("aktif_proje_id", "")
     try:
         if farkli_kaydet and _PROJE_YONETICISI.proje_var_mi(proje_id):
@@ -891,7 +898,7 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         _dis_ad_now = _proje_adi()
         _dis_veri_now = _proje_verisini_hazirla(_dis_ad_now) if _dis_ad_now else {"session_state": {}}
         _dis_json_now = json.dumps(_dis_veri_now, ensure_ascii=False, indent=2)
-        _dis_dosya_adi_now = f"{guvenli_dosya_adi(_dis_ad_now)}.proje.json" if _dis_ad_now else "Proje.proje.json"
+        _dis_dosya_adi_now = f"{_proje_kisa_dosya_adi(_dis_ad_now)}.proje.json" if _dis_ad_now else "Proje.proje.json"
         st.download_button(
             "📑 Farklı Kaydet",
             data=_dis_json_now.encode("utf-8"),
@@ -4062,6 +4069,10 @@ with _t_sihhi:
                   paragraph.paragraph_format.widow_control = True
                   if _satir_keep:
                     paragraph.paragraph_format.keep_with_next = True
+                    _pPr = paragraph._p.get_or_add_pPr()
+                    if _pPr.find(qn("w:keepNext")) is None:
+                      _pPr.append(OxmlElement("w:keepNext"))
+                  paragraph.paragraph_format.keep_together = True
 
               # Uzun tablolar bir sonraki sayfada da kolon başlıklarını
               # tekrar etsin.
@@ -4095,6 +4106,9 @@ with _t_sihhi:
               _p.paragraph_format.keep_with_next = True
               _p.paragraph_format.keep_together = True
               _p.paragraph_format.widow_control = True
+              _pPr = _p._p.get_or_add_pPr()
+              if _pPr.find(qn("w:keepNext")) is None:
+                _pPr.append(OxmlElement("w:keepNext"))
 
           try:
             settings = doc.settings.element
