@@ -1009,6 +1009,59 @@ depolama_faktoru = 0.0
 hidrofor_hesaplari = []
 
 # ---------------------------------------------------------------------------
+# ANA TESİSAT KATEGORİLERİ - GÖRSEL DÜZEN
+# ---------------------------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
+    div[data-testid="stTabs"] {
+        margin-top: 6px;
+    }
+
+    div[data-testid="stTabs"] [role="tablist"] {
+        gap: 4px !important;
+        border-bottom: 2px solid #D7DEE8 !important;
+        overflow-x: auto !important;
+        padding-bottom: 0 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 11px 16px !important;
+        min-height: 44px !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: #334155 !important;
+        background: #F3F6FA !important;
+        border: 1px solid #D7DEE8 !important;
+        border-bottom: 3px solid transparent !important;
+        white-space: nowrap !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"]:hover {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+        border-color: #B8C7D9 !important;
+        border-bottom: 4px solid #0B3D91 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
 # ANA TESİSAT KATEGORİLERİ
 # ---------------------------------------------------------------------------
 _t_genel, _t_sihhi, _t_yangin, _t_isitma, _t_sogutma, _t_havalandirma = st.tabs(
