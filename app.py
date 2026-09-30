@@ -120,6 +120,23 @@ def _proje_widget_anahtari_mi(anahtar):
     # data_editor widget anahtarları Streamlit tarafından yönetilir.
     if "editor" in anahtar.lower():
         return True
+
+    # Streamlit st.button durumları projeye ait veri değildir. Bazı butonlarda
+    # anahtar dinamik oluşturulduğu için "_btn_" filtresi tek başına yetmez.
+    _alt = anahtar.lower()
+    _button_prefixleri = (
+        "boyler_raporda_kullan_",
+        "rapor_sec_",
+        "rapor_kullan_",
+        "sistem_raporda_",
+    )
+    if _alt.startswith(_button_prefixleri):
+        return True
+
+    # İsimlendirmesi açıkça geçici seçim/aksiyon durumunu belirten anahtarlar.
+    if _alt.endswith("_sec_key") or _alt.endswith("_button_key"):
+        return True
+
     return False
 
 
@@ -364,9 +381,9 @@ def _is_adi_degisti():
 
 def _proje_ac(proje_id):
     try:
-        # Mevcut data_editor widget durumlarını temizle.
+        # Mevcut geçici widget durumlarını temizle.
         for _k in list(st.session_state.keys()):
-            if "editor" in str(_k).lower():
+            if _proje_widget_anahtari_mi(_k):
                 st.session_state.pop(_k, None)
 
         proje = _PROJE_YONETICISI.ac(proje_id)
@@ -406,7 +423,7 @@ def _proje_otomatik_kaydet():
 
 def _proje_dis_dosyayi_yukle_callback():
     for _k in list(st.session_state.keys()):
-        if "editor" in str(_k).lower():
+        if _proje_widget_anahtari_mi(_k):
             st.session_state.pop(_k, None)
 
     yuklenen = st.session_state.get("proje_dis_dosya_yukle_v116")
@@ -433,7 +450,7 @@ def _proje_dis_dosyayi_yukle_callback():
 _bekleyen_dis_proje = st.session_state.pop("proje_dis_dosya_yukle_bekliyor", None)
 if isinstance(_bekleyen_dis_proje, dict):
     for _k in list(st.session_state.keys()):
-        if "editor" in str(_k).lower():
+        if _proje_widget_anahtari_mi(_k):
             st.session_state.pop(_k, None)
     for _anahtar, _deger in _bekleyen_dis_proje.items():
         if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
