@@ -1031,6 +1031,26 @@ def add_toc(paragraph):
   fld_end = OxmlElement("w:fldChar"); fld_end.set(qn("w:fldCharType"), "end"); fld_end.set(qn("w:dirty"), "true")
   run._r.append(fld_begin); run._r.append(instr); run._r.append(fld_sep); run._r.append(txt); run._r.append(fld_end)
 
+# 6.3 alt bölümlerinin dinamik numaralandırma kaynağı.
+# Bu liste, bölüm seçimi kapatılıp açıldığında numaranın otomatik yeniden
+# sıralanmasını sağlar.
+_BOLUM_63_COCUKLARI = [
+    ("rapor_bolum_631", "Kullanma Soğuk Suyu Deposu Seçimi"),
+    ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
+    ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
+    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+]
+
+# Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
+BOLUM_SECIM_ANAHTARLARI = [
+    "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
+    "rapor_bolum_5", "rapor_bolum_51",
+    "rapor_bolum_6", "rapor_bolum_61", "rapor_bolum_611",
+    "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
+    "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_632",
+    "rapor_bolum_633", "rapor_bolum_634",
+]
+
 def _63_dinamik_no(anahtar):
     """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
     aktifler = [k for k, _ in _BOLUM_63_COCUKLARI if bool(st.session_state.get(k, False))]
