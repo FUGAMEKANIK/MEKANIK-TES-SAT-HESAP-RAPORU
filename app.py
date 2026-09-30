@@ -4,6 +4,8 @@ import io
 import json
 import math
 import os
+import subprocess
+import tempfile
 import shutil
 from pathlib import Path
 from copy import deepcopy
@@ -531,6 +533,80 @@ if st.session_state.pop("_yeni_proje_sifirlama_bekliyor", False):
         "şirket/işveren/adres bilgileri korundu."
     )
 
+
+def _rapor_docx_pdf_donustur(docx_bytes):
+    """DOCX'i mevcut sistemde LibreOffice varsa PDF'e dönüştürür."""
+    with tempfile.TemporaryDirectory() as _tmp:
+        _docx = Path(_tmp) / "rapor.docx"
+        _docx.write_bytes(docx_bytes)
+        try:
+            _sonuc = subprocess.run(
+                [
+                    "libreoffice", "--headless", "--convert-to", "pdf",
+                    "--outdir", _tmp, str(_docx)
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        except (FileNotFoundError, subprocess.SubprocessError):
+            return None
+
+        _pdf = Path(_tmp) / "rapor.pdf"
+        if _sonuc.returncode == 0 and _pdf.exists():
+            return _pdf.read_bytes()
+    return None
+
+
+def _rapor_docx_html(docx_bytes):
+    """DOCX'teki temel paragraf ve tabloları bağımsız HTML çıktısına çevirir."""
+    _doc = Document(io.BytesIO(docx_bytes))
+    _html = [
+        "<!doctype html><html><head><meta charset='utf-8'>",
+        "<title>Mekanik Uygulama Raporu</title>",
+        "<style>body{font-family:Arial,sans-serif;margin:40px;line-height:1.45}"
+        "table{border-collapse:collapse;width:100%;margin:12px 0}"
+        "td,th{border:1px solid #999;padding:6px}"
+        "h1{color:#0B3D91}h2{color:#0B3D91}h3{color:#155E75}"
+        "</style></head><body>"
+    ]
+    for _p in _doc.paragraphs:
+        _txt = _p.text.strip()
+        if not _txt:
+            continue
+        _style = (_p.style.name or "").lower()
+        if "heading 1" in _style:
+            _html.append(f"<h1>{_txt}</h1>")
+        elif "heading 2" in _style:
+            _html.append(f"<h2>{_txt}</h2>")
+        elif "heading 3" in _style:
+            _html.append(f"<h3>{_txt}</h3>")
+        else:
+            _html.append(f"<p>{_txt}</p>")
+    for _table in _doc.tables:
+        _html.append("<table>")
+        for _ri, _row in enumerate(_table.rows):
+            _html.append("<tr>")
+            for _cell in _row.cells:
+                _tag = "th" if _ri == 0 else "td"
+                _html.append(f"<{_tag}>{_cell.text}</{_tag}>")
+            _html.append("</tr>")
+        _html.append("</table>")
+    _html.append("</body></html>")
+    return "\n".join(_html).encode("utf-8")
+
+
+def _rapor_docx_txt(docx_bytes):
+    _doc = Document(io.BytesIO(docx_bytes))
+    _satirlar = []
+    for _p in _doc.paragraphs:
+        if _p.text.strip():
+            _satirlar.append(_p.text)
+    for _table in _doc.tables:
+        for _row in _table.rows:
+            _satirlar.append(" | ".join(_cell.text for _cell in _row.cells))
+    return ("\n".join(_satirlar) + "\n").encode("utf-8")
+
 # ---------------------------------------------------------------------------
 # PROJE KONTROL PANELİ
 # ---------------------------------------------------------------------------
@@ -545,14 +621,71 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
 
     st.markdown("---")
     st.markdown("### 📄 RAPOR OLUŞTURMA")
+
+    _rapor_format = st.selectbox(
+        "Çıktı formatı",
+        ["Word (.docx)", "PDF (.pdf)", "HTML (.html)", "Metin (.txt)"],
+        key="rapor_cikti_format_v134",
+    )
+
     if st.button(
-        "📄 RAPORU OLUŞTUR (.DOCX)",
-        key="sidebar_rapor_olustur_v133",
+        "📄 RAPORU OLUŞTUR",
+        key="sidebar_rapor_olustur_v134",
         use_container_width=True,
-        help="Hesap raporunu oluşturur.",
+        help="Hesap raporunu seçtiğiniz çıktı formatında hazırlar.",
     ):
-        st.session_state["_rapor_olustur_istegi_v133"] = True
+        st.session_state["_rapor_olustur_istegi_v134"] = True
         st.rerun()
+
+    if st.session_state.get("_rapor_hazir_docx_v134"):
+        _rapor_docx_veri = st.session_state["_rapor_hazir_docx_v134"]
+        _rapor_ad = st.session_state.get(
+            "_rapor_hazir_adi_v134", "Mekanik_Uygulama_Raporu"
+        )
+
+        if _rapor_format == "Word (.docx)":
+            st.download_button(
+                "📥 Word'u İndir",
+                data=_rapor_docx_veri,
+                file_name=f"{_rapor_ad}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key="rapor_word_indir_v134",
+                use_container_width=True,
+            )
+        elif _rapor_format == "PDF (.pdf)":
+            _pdf_veri = _rapor_docx_pdf_donustur(_rapor_docx_veri)
+            if _pdf_veri:
+                st.download_button(
+                    "📥 PDF'yi İndir",
+                    data=_pdf_veri,
+                    file_name=f"{_rapor_ad}.pdf",
+                    mime="application/pdf",
+                    key="rapor_pdf_indir_v134",
+                    use_container_width=True,
+                )
+            else:
+                st.warning(
+                    "PDF dönüştürme için sistemde LibreOffice bulunamadı. "
+                    "Word çıktısını indirip PDF olarak kaydedebilirsiniz."
+                )
+        elif _rapor_format == "HTML (.html)":
+            st.download_button(
+                "📥 HTML'yi İndir",
+                data=_rapor_docx_html(_rapor_docx_veri),
+                file_name=f"{_rapor_ad}.html",
+                mime="text/html",
+                key="rapor_html_indir_v134",
+                use_container_width=True,
+            )
+        else:
+            st.download_button(
+                "📥 Metin Dosyasını İndir",
+                data=_rapor_docx_txt(_rapor_docx_veri),
+                file_name=f"{_rapor_ad}.txt",
+                mime="text/plain",
+                key="rapor_txt_indir_v134",
+                use_container_width=True,
+            )
 
     _mevcut_projeler = []
     try:
@@ -5157,8 +5290,8 @@ with _t_havalandirma:
 # Rapor Oluştur Butonu
 _proje_otomatik_kaydet()
 
-_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v133", False)
-if st.button("Raporu Oluştur (.docx)") or _rapor_olustur_sidebar:
+_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", False)
+if _rapor_olustur_sidebar:
 
   _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
   gecersiz_var = any(
@@ -6815,21 +6948,14 @@ if st.button("Raporu Oluştur (.docx)") or _rapor_olustur_sidebar:
     doc.save(buffer)
     buffer.seek(0)
 
-    st.success("Hesap raporu başarıyla hazırlandı!")
-
     dosya_adi = (
-        f"{aktif_is.replace(' ', '_')}_Rapor.docx"
+        f"{aktif_is.replace(' ', '_')}_Rapor"
         if is_adi
-        else "Mekanik_Uygulama_Raporu.docx"
+        else "Mekanik_Uygulama_Raporu"
     )
 
-    st.download_button(
-        label="📥 Word Dosyasını İndir (.docx)",
-        data=buffer,
-        file_name=dosya_adi,
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        key="rapor_word_indir_v101",
-    )
+    st.session_state["_rapor_hazir_docx_v134"] = buffer.getvalue()
+    st.session_state["_rapor_hazir_adi_v134"] = dosya_adi
 
 
 # SAYFA SONU ANKORU
