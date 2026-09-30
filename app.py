@@ -5473,6 +5473,15 @@ if _rapor_olustur_sidebar:
 
     doc = Document()
 
+    def ana_baslik_ekle(metin):
+        """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
+        p = doc.add_heading(metin, level=1)
+        p.paragraph_format.page_break_before = True
+        p.paragraph_format.keep_with_next = True
+        p.paragraph_format.keep_together = True
+        p.paragraph_format.widow_control = True
+        return p
+
     cover_section = doc.sections[0]
     cover_section.top_margin = Inches(1.15)
     cover_section.bottom_margin = Inches(1.0)
@@ -5546,7 +5555,7 @@ if _rapor_olustur_sidebar:
     body_section.footer_distance = Inches(0.25)
 
     # --- 1. GENEL BİLGİLER ---
-    doc.add_heading("1. GENEL BİLGİLER", level=1)
+    ana_baslik_ekle("1. GENEL BİLGİLER")
     proje_ifade = f"'{aktif_is}'" if aktif_is else "ilgili proje"
     giris_metni = (
         f"Bu raporda {proje_ifade} için tasarlanan mekanik tesisatlar"
@@ -5562,7 +5571,7 @@ if _rapor_olustur_sidebar:
 
     if bolum_2_aktif:
             # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
-            doc.add_heading("2. UYGULANACAK STANDART VE YÖNETMELİKLER", level=1)
+            ana_baslik_ekle("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
             standart_giris = (
                 "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
                 " standartlar ile yönetmelikler esas alınmıştır:"
@@ -5675,7 +5684,7 @@ if _rapor_olustur_sidebar:
 
     if bolum_3_aktif:
             # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
-            doc.add_heading("3. MEKANİK TESİSAT PROJE KAPSAMI", level=1)
+            ana_baslik_ekle("3. MEKANİK TESİSAT PROJE KAPSAMI")
             doc.add_paragraph(
                 "Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır."
             )
@@ -5723,7 +5732,7 @@ if _rapor_olustur_sidebar:
 
     if bolum_4_aktif:
             # --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
-            doc.add_heading("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI", level=1)
+            ana_baslik_ekle("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
             doc.add_paragraph(
                 "Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık"
                 " rejimleri kullanılacaktır:"
@@ -5779,7 +5788,7 @@ if _rapor_olustur_sidebar:
 
     if bolum_5_aktif:
             # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
-            doc.add_heading("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ", level=1)
+            ana_baslik_ekle("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
             doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
             doc.add_paragraph(
                 f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
@@ -5802,7 +5811,7 @@ if _rapor_olustur_sidebar:
 
     if bolum_6_aktif:
       # --- 6. SIHHİ TESİSAT ---
-      doc.add_heading("6. SIHHİ TESİSAT", level=1)
+      ana_baslik_ekle("6. SIHHİ TESİSAT")
       if bolum_61_aktif:
         doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
 
