@@ -535,26 +535,191 @@ if st.session_state.pop("_yeni_proje_sifirlama_bekliyor", False):
 
 
 def _rapor_docx_pdf_donustur(docx_bytes):
-    """DOCX'i mevcut sistemde LibreOffice varsa PDF'e dönüştürür."""
+    """
+    DOCX raporunu doğrudan PDF'e çevirir.
+    Önce LibreOffice varsa onu kullanır; yoksa ReportLab ile DOCX içeriğini
+    (paragraflar, başlıklar, tablolar ve gömülü görseller) PDF'e aktarır.
+    """
+    # 1) Sunucuda LibreOffice/soffice varsa mevcut Word düzenini koruyarak çevir.
     with tempfile.TemporaryDirectory() as _tmp:
         _docx = Path(_tmp) / "rapor.docx"
         _docx.write_bytes(docx_bytes)
-        try:
-            _sonuc = subprocess.run(
-                [
-                    "libreoffice", "--headless", "--convert-to", "pdf",
-                    "--outdir", _tmp, str(_docx)
-                ],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-        except (FileNotFoundError, subprocess.SubprocessError):
-            return None
+        for _soffice in ("libreoffice", "soffice"):
+            try:
+                _sonuc = subprocess.run(
+                    [
+                        _soffice, "--headless", "--convert-to", "pdf",
+                        "--outdir", _tmp, str(_docx)
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                )
+                _pdf = Path(_tmp) / "rapor.pdf"
+                if _sonuc.returncode == 0 and _pdf.exists():
+                    return _pdf.read_bytes()
+            except (FileNotFoundError, subprocess.SubprocessError):
+                pass
 
-        _pdf = Path(_tmp) / "rapor.pdf"
-        if _sonuc.returncode == 0 and _pdf.exists():
-            return _pdf.read_bytes()
+    # 2) LibreOffice yoksa ReportLab ile yerel PDF üret.
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+        )
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+    except Exception:
+        return None
+
+    # Türkçe karakterler için sistem fontu bul.
+    _font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+    ]
+    _bold_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+    ]
+    _font = next((p for p in _font_paths if os.path.exists(p)), None)
+    _bold = next((p for p in _bold_paths if os.path.exists(p)), None)
+    if not _font:
+        return None
+
+    pdfmetrics.registerFont(TTFont("RaporFont", _font))
+    if _bold:
+        pdfmetrics.registerFont(TTFont("RaporFontBold", _bold))
+        _bold_name = "RaporFontBold"
+    else:
+        _bold_name = "RaporFont"
+
+    styles = getSampleStyleSheet()
+    normal = ParagraphStyle(
+        "RaporNormal", parent=styles["Normal"], fontName="RaporFont",
+        fontSize=9.5, leading=13, spaceAfter=5,
+    )
+    h1 = ParagraphStyle(
+        "RaporH1", parent=normal, fontName=_bold_name,
+        fontSize=18, leading=22, textColor=colors.HexColor("#0B3D91"),
+        spaceBefore=10, spaceAfter=8,
+    )
+    h2 = ParagraphStyle(
+        "RaporH2", parent=normal, fontName=_bold_name,
+        fontSize=13, leading=17, textColor=colors.HexColor("#0B3D91"),
+        spaceBefore=9, spaceAfter=6,
+    )
+    h3 = ParagraphStyle(
+        "RaporH3", parent=normal, fontName=_bold_name,
+        fontSize=11, leading=14, textColor=colors.HexColor("#0F5B78"),
+        spaceBefore=7, spaceAfter=5,
+    )
+    center = ParagraphStyle(
+        "RaporCenter", parent=normal, alignment=TA_CENTER,
+    )
+
+    def esc(s):
+        return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+    _tmpdir = tempfile.mkdtemp(prefix="rapor_pdf_")
+    try:
+        # DOCX ZIP içindeki görselleri çıkart.
+        with zipfile.ZipFile(io.BytesIO(docx_bytes), "r") as z:
+            _media = {}
+            for name in z.namelist():
+                if name.startswith("word/media/"):
+                    _out = Path(_tmpdir) / Path(name).name
+                    _out.write_bytes(z.read(name))
+                    _media[Path(name).name] = str(_out)
+
+        _doc = Document(io.BytesIO(docx_bytes))
+        _story = []
+
+        for _p in _doc.paragraphs:
+            _txt = _p.text.strip()
+            _style_name = (_p.style.name or "").lower()
+
+            # Paragraph içinde gömülü resim varsa önce resmi ekle.
+            _p_xml = _p._p
+            _blips = _p_xml.xpath(".//a:blip")
+            for _blip in _blips:
+                _rid = _blip.get(qn("r:embed"))
+                if not _rid:
+                    continue
+                try:
+                    _part = _doc.part.related_parts[_rid]
+                    _img_name = Path(str(_part.partname)).name
+                    _img_path = _media.get(_img_name)
+                    if _img_path:
+                        _img = Image(_img_path)
+                        _img._restrictSize(175 * mm, 105 * mm)
+                        _story.append(_img)
+                        _story.append(Spacer(1, 4))
+                except Exception:
+                    pass
+
+            if not _txt:
+                continue
+
+            _safe = esc(_txt)
+            if "heading 1" in _style_name:
+                _story.append(Paragraph(_safe, h1))
+            elif "heading 2" in _style_name:
+                _story.append(Paragraph(_safe, h2))
+            elif "heading 3" in _style_name:
+                _story.append(Paragraph(_safe, h3))
+            else:
+                # Bold runs'ı basit HTML ile koru.
+                _parts = []
+                for _run in _p.runs:
+                    _rt = esc(_run.text)
+                    if not _rt:
+                        continue
+                    _parts.append(f"<b>{_rt}</b>" if _run.bold else _rt)
+                _html = "".join(_parts) or _safe
+                _story.append(Paragraph(_html, normal))
+
+        # Tabloları PDF'e aktar.
+        for _table in _doc.tables:
+            _data = []
+            for _row in _table.rows:
+                _data.append([
+                    Paragraph(esc(_cell.text).replace("\n", "<br/>"), normal)
+                    for _cell in _row.cells
+                ])
+            if _data:
+                _tbl = Table(_data, repeatRows=1, hAlign="LEFT")
+                _tbl.setStyle(TableStyle([
+                    ("GRID", (0,0), (-1,-1), 0.35, colors.grey),
+                    ("VALIGN", (0,0), (-1,-1), "TOP"),
+                    ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EAF2F8")),
+                    ("FONTNAME", (0,0), (-1,0), _bold_name),
+                    ("LEFTPADDING", (0,0), (-1,-1), 5),
+                    ("RIGHTPADDING", (0,0), (-1,-1), 5),
+                    ("TOPPADDING", (0,0), (-1,-1), 4),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+                ]))
+                _story.append(_tbl)
+                _story.append(Spacer(1, 6))
+
+        _out_pdf = Path(_tmpdir) / "rapor.pdf"
+        _pdf_doc = SimpleDocTemplate(
+            str(_out_pdf), pagesize=A4,
+            rightMargin=15*mm, leftMargin=15*mm,
+            topMargin=15*mm, bottomMargin=15*mm,
+            title="Mekanik Uygulama Raporu",
+        )
+        _pdf_doc.build(_story)
+        if _out_pdf.exists():
+            return _out_pdf.read_bytes()
+    except Exception:
+        return None
+    finally:
+        shutil.rmtree(_tmpdir, ignore_errors=True)
+
     return None
 
 
@@ -664,9 +829,9 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
                     use_container_width=True,
                 )
             else:
-                st.warning(
-                    "PDF dönüştürme için sistemde LibreOffice bulunamadı. "
-                    "Word çıktısını indirip PDF olarak kaydedebilirsiniz."
+                st.error(
+                    "PDF oluşturulamadı. Sunucuda PDF dönüştürme bileşeni veya "
+                    "ReportLab için gerekli yazı tipi bulunamadı."
                 )
         elif _rapor_format == "HTML (.html)":
             st.download_button(
