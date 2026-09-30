@@ -131,6 +131,7 @@ def _proje_widget_anahtari_mi(anahtar):
 
     # Eski proje dosyalarında bazı butonlar "_btn_" içermeyen anahtarlarla
     # kaydedilmiş olabilir. Bunların hiçbirini projeye geri yüklemiyoruz.
+    _alt = anahtar.lower()
     _buton_anahtar_parcalari = (
         "sidebar_rapor_olustur",
         "rapor_olustur",
