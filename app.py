@@ -91,6 +91,7 @@ _PROJE_WIDGET_KAYDETME_DISI_KEYS = {
     "proje_sil_btn_v116", "proje_basliktan_al_btn_v116",
     "proje_dis_dosya_indir_v116", "proje_dis_dosya_ac_btn_v116",
     "proje_ac_sec_v116", "proje_dis_dosya_yukle_v116",
+    "proje_yeni_btn_v119", "yeni_proje_btn_v118",
     # Ana bölüm toplu seçim / rapor üretim butonları
     "rapor_tumunu_sec_v92", "rapor_tumunu_kaldir_v92",
     "rapor_word_indir_v101",
@@ -110,6 +111,11 @@ def _proje_widget_anahtari_mi(anahtar):
     if "_btn_" in anahtar or anahtar.endswith("_btn"):
         return True
     if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
+        return True
+    # _toplu_secim_butonlari() dinamik olarak oluşturduğu st.button anahtarları
+    # eski proje kayıtlarında bulunabilir. Bunlar session_state'e geri yazılırsa
+    # StreamlitValueAssignmentNotAllowedError oluşur.
+    if anahtar.startswith("alt_grup_sec_v55_") or anahtar.startswith("alt_grup_kaldir_v55_"):
         return True
     return False
 
@@ -256,14 +262,11 @@ def _proje_kaydet_callback():
 
 
 def _yeni_proje_baslat():
-    """Mevcut proje oturumunu temizleyip tamamen yeni, boş bir proje başlatır.
-
-    Bu callback Streamlit yeniden çalıştırılmadan önce çağrıldığı için proje
-    widgetlarının eski değerleri temizlenir; sonraki çalıştırmada widgetlar
-    kendi varsayılan değerleriyle yeniden oluşturulur.
-    """
+    """Aktif çalışmayı kapatır ve bir sonraki çalıştırmada tamamen boş proje başlatır."""
     try:
-        # Mevcut çalışma artık aktif proje olmaktan çıkar. Yeni proje boş başlar.
+        # Eski widget değerleri dahil tüm proje oturumunu temizle. Callback,
+        # yeni widgetlar bu çalıştırmada oluşturulmadan önce çalıştığı için
+        # sonraki rerun varsayılan değerlerle temiz bir proje oluşturur.
         st.session_state.clear()
         st.session_state["aktif_proje_id"] = ""
         st.session_state["aktif_proje_adi"] = ""
@@ -274,9 +277,7 @@ def _yeni_proje_baslat():
         )
         st.session_state["_proje_adi_manuel"] = False
     except Exception as hata:
-        st.session_state["proje_yukleme_bildirimi"] = (
-            f"Yeni proje başlatılamadı: {hata}"
-        )
+        st.session_state["proje_yukleme_bildirimi"] = f"Yeni proje başlatılamadı: {hata}"
 
 
 def _proje_sil(proje_id):
@@ -415,7 +416,7 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         "🆕 Yeni Proje",
         key="proje_yeni_btn_v119",
         use_container_width=True,
-        on_click=_proje_yeni,
+        on_click=_yeni_proje_baslat,
         help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
     )
 
@@ -428,13 +429,6 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     except Exception:
         _mevcut_projeler = []
 
-    st.button(
-        "🆕 Yeni Proje",
-        key="yeni_proje_btn_v118",
-        use_container_width=True,
-        on_click=_yeni_proje_baslat,
-        help="Mevcut çalışma oturumunu kapatır ve boş bir proje başlatır. Kaydettiğiniz projeler silinmez.",
-    )
     st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
 
     st.text_input(
