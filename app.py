@@ -536,189 +536,199 @@ if st.session_state.pop("_yeni_proje_sifirlama_bekliyor", False):
 
 def _rapor_docx_pdf_donustur(docx_bytes):
     """
-    DOCX raporunu doğrudan PDF'e çevirir.
-    Önce LibreOffice varsa onu kullanır; yoksa ReportLab ile DOCX içeriğini
-    (paragraflar, başlıklar, tablolar ve gömülü görseller) PDF'e aktarır.
+    DOCX raporunu PDF'e dönüştürür.
+    1) LibreOffice/soffice varsa orijinal Word düzenine en yakın PDF'i üretir.
+    2) LibreOffice yoksa matplotlib'in yerleşik PDF backend'i ile PDF üretir.
+       Böylece ayrıca ReportLab kurulumu zorunlu değildir.
     """
-    # 1) Sunucuda LibreOffice/soffice varsa mevcut Word düzenini koruyarak çevir.
+    _hatalar = []
+
+    # ---------------------------------------------------------------
+    # 1. Tercih: LibreOffice / soffice
+    # ---------------------------------------------------------------
     with tempfile.TemporaryDirectory() as _tmp:
         _docx = Path(_tmp) / "rapor.docx"
         _docx.write_bytes(docx_bytes)
+
         for _soffice in ("libreoffice", "soffice"):
             try:
                 _sonuc = subprocess.run(
                     [
-                        _soffice, "--headless", "--convert-to", "pdf",
-                        "--outdir", _tmp, str(_docx)
+                        _soffice,
+                        "--headless",
+                        "--convert-to", "pdf",
+                        "--outdir", _tmp,
+                        str(_docx),
                     ],
                     capture_output=True,
                     text=True,
                     timeout=90,
                 )
                 _pdf = Path(_tmp) / "rapor.pdf"
-                if _sonuc.returncode == 0 and _pdf.exists():
+                if _sonuc.returncode == 0 and _pdf.exists() and _pdf.stat().st_size > 100:
                     return _pdf.read_bytes()
-            except (FileNotFoundError, subprocess.SubprocessError):
-                pass
 
-    # 2) LibreOffice yoksa ReportLab ile yerel PDF üret.
+                _hatalar.append(
+                    f"{_soffice}: {_sonuc.stderr.strip() or _sonuc.stdout.strip()}"
+                )
+            except Exception as _e:
+                _hatalar.append(f"{_soffice}: {_e}")
+
+    # ---------------------------------------------------------------
+    # 2. Güvenli fallback: matplotlib PdfPages
+    # ---------------------------------------------------------------
     try:
-        from reportlab.lib import colors
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import mm
-        from reportlab.platypus import (
-            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-        )
-        from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.pdfbase import pdfmetrics
-    except Exception:
-        return None
-
-    # Türkçe karakterler için sistem fontu bul.
-    _font_paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-    ]
-    _bold_paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
-    ]
-    _font = next((p for p in _font_paths if os.path.exists(p)), None)
-    _bold = next((p for p in _bold_paths if os.path.exists(p)), None)
-    if not _font:
-        return None
-
-    pdfmetrics.registerFont(TTFont("RaporFont", _font))
-    if _bold:
-        pdfmetrics.registerFont(TTFont("RaporFontBold", _bold))
-        _bold_name = "RaporFontBold"
-    else:
-        _bold_name = "RaporFont"
-
-    styles = getSampleStyleSheet()
-    normal = ParagraphStyle(
-        "RaporNormal", parent=styles["Normal"], fontName="RaporFont",
-        fontSize=9.5, leading=13, spaceAfter=5,
-    )
-    h1 = ParagraphStyle(
-        "RaporH1", parent=normal, fontName=_bold_name,
-        fontSize=18, leading=22, textColor=colors.HexColor("#0B3D91"),
-        spaceBefore=10, spaceAfter=8,
-    )
-    h2 = ParagraphStyle(
-        "RaporH2", parent=normal, fontName=_bold_name,
-        fontSize=13, leading=17, textColor=colors.HexColor("#0B3D91"),
-        spaceBefore=9, spaceAfter=6,
-    )
-    h3 = ParagraphStyle(
-        "RaporH3", parent=normal, fontName=_bold_name,
-        fontSize=11, leading=14, textColor=colors.HexColor("#0F5B78"),
-        spaceBefore=7, spaceAfter=5,
-    )
-    center = ParagraphStyle(
-        "RaporCenter", parent=normal, alignment=TA_CENTER,
-    )
-
-    def esc(s):
-        return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
-
-    _tmpdir = tempfile.mkdtemp(prefix="rapor_pdf_")
-    try:
-        # DOCX ZIP içindeki görselleri çıkart.
-        with zipfile.ZipFile(io.BytesIO(docx_bytes), "r") as z:
-            _media = {}
-            for name in z.namelist():
-                if name.startswith("word/media/"):
-                    _out = Path(_tmpdir) / Path(name).name
-                    _out.write_bytes(z.read(name))
-                    _media[Path(name).name] = str(_out)
+        from matplotlib.backends.backend_pdf import PdfPages
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+        import textwrap
 
         _doc = Document(io.BytesIO(docx_bytes))
-        _story = []
 
+        # Türkçe karakterleri destekleyen font.
+        _font_name = "DejaVu Sans"
+
+        _elements = []
+
+        # Paragraflar
         for _p in _doc.paragraphs:
             _txt = _p.text.strip()
-            _style_name = (_p.style.name or "").lower()
-
-            # Paragraph içinde gömülü resim varsa önce resmi ekle.
-            _p_xml = _p._p
-            _blips = _p_xml.xpath(".//a:blip")
-            for _blip in _blips:
-                _rid = _blip.get(qn("r:embed"))
-                if not _rid:
-                    continue
-                try:
-                    _part = _doc.part.related_parts[_rid]
-                    _img_name = Path(str(_part.partname)).name
-                    _img_path = _media.get(_img_name)
-                    if _img_path:
-                        _img = Image(_img_path)
-                        _img._restrictSize(175 * mm, 105 * mm)
-                        _story.append(_img)
-                        _story.append(Spacer(1, 4))
-                except Exception:
-                    pass
-
             if not _txt:
                 continue
 
-            _safe = esc(_txt)
-            if "heading 1" in _style_name:
-                _story.append(Paragraph(_safe, h1))
-            elif "heading 2" in _style_name:
-                _story.append(Paragraph(_safe, h2))
-            elif "heading 3" in _style_name:
-                _story.append(Paragraph(_safe, h3))
+            _style = (_p.style.name or "").lower()
+            if "heading 1" in _style:
+                _kind = "h1"
+            elif "heading 2" in _style:
+                _kind = "h2"
+            elif "heading 3" in _style:
+                _kind = "h3"
             else:
-                # Bold runs'ı basit HTML ile koru.
-                _parts = []
-                for _run in _p.runs:
-                    _rt = esc(_run.text)
-                    if not _rt:
-                        continue
-                    _parts.append(f"<b>{_rt}</b>" if _run.bold else _rt)
-                _html = "".join(_parts) or _safe
-                _story.append(Paragraph(_html, normal))
+                _kind = "p"
 
-        # Tabloları PDF'e aktar.
+            _elements.append((_kind, _txt))
+
+        # Tabloları metinsel ama okunabilir biçimde ekle.
         for _table in _doc.tables:
-            _data = []
+            _elements.append(("table", ""))
             for _row in _table.rows:
-                _data.append([
-                    Paragraph(esc(_cell.text).replace("\n", "<br/>"), normal)
-                    for _cell in _row.cells
-                ])
-            if _data:
-                _tbl = Table(_data, repeatRows=1, hAlign="LEFT")
-                _tbl.setStyle(TableStyle([
-                    ("GRID", (0,0), (-1,-1), 0.35, colors.grey),
-                    ("VALIGN", (0,0), (-1,-1), "TOP"),
-                    ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EAF2F8")),
-                    ("FONTNAME", (0,0), (-1,0), _bold_name),
-                    ("LEFTPADDING", (0,0), (-1,-1), 5),
-                    ("RIGHTPADDING", (0,0), (-1,-1), 5),
-                    ("TOPPADDING", (0,0), (-1,-1), 4),
-                    ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-                ]))
-                _story.append(_tbl)
-                _story.append(Spacer(1, 6))
+                _elements.append(
+                    (
+                        "table_row",
+                        "  |  ".join(_cell.text.replace("\n", " / ") for _cell in _row.cells)
+                    )
+                )
+            _elements.append(("table_end", ""))
 
-        _out_pdf = Path(_tmpdir) / "rapor.pdf"
-        _pdf_doc = SimpleDocTemplate(
-            str(_out_pdf), pagesize=A4,
-            rightMargin=15*mm, leftMargin=15*mm,
-            topMargin=15*mm, bottomMargin=15*mm,
-            title="Mekanik Uygulama Raporu",
-        )
-        _pdf_doc.build(_story)
-        if _out_pdf.exists():
-            return _out_pdf.read_bytes()
-    except Exception:
-        return None
-    finally:
-        shutil.rmtree(_tmpdir, ignore_errors=True)
+        if not _elements:
+            return None
+
+        _tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        _tmp_pdf.close()
+        _pdf_path = Path(_tmp_pdf.name)
+
+        try:
+            with PdfPages(str(_pdf_path)) as _pdf:
+                _fig = None
+                _ax = None
+                _y = 0.96
+                _table_mode = False
+
+                def _new_page():
+                    nonlocal _fig, _ax, _y, _table_mode
+                    if _fig is not None:
+                        _pdf.savefig(_fig, bbox_inches="tight")
+                        plt.close(_fig)
+                    _fig = Figure(figsize=(8.27, 11.69))
+                    FigureCanvasAgg(_fig)
+                    _ax = _fig.add_axes([0.075, 0.055, 0.86, 0.89])
+                    _ax.axis("off")
+                    _ax.set_xlim(0, 1)
+                    _ax.set_ylim(0, 1)
+                    _y = 0.98
+                    _table_mode = False
+
+                _new_page()
+
+                for _kind, _txt in _elements:
+                    if _kind == "table":
+                        _table_mode = True
+                        _y -= 0.012
+                        continue
+
+                    if _kind == "table_end":
+                        _table_mode = False
+                        _y -= 0.012
+                        continue
+
+                    if _kind == "table_row":
+                        _lines = textwrap.wrap(
+                            _txt, width=105, replace_whitespace=False
+                        ) or [""]
+                        for _line in _lines:
+                            if _y < 0.055:
+                                _new_page()
+                            _ax.text(
+                                0.015, _y, _line,
+                                fontsize=7.2,
+                                fontname=_font_name,
+                                va="top",
+                            )
+                            _y -= 0.022
+                        continue
+
+                    if _kind == "h1":
+                        _fs, _weight, _space = 17, "bold", 0.055
+                    elif _kind == "h2":
+                        _fs, _weight, _space = 13, "bold", 0.042
+                    elif _kind == "h3":
+                        _fs, _weight, _space = 11, "bold", 0.035
+                    else:
+                        _fs, _weight, _space = 9.2, "normal", 0.025
+
+                    if _y < 0.09:
+                        _new_page()
+
+                    _lines = textwrap.wrap(
+                        _txt, width=100 if _kind == "p" else 85,
+                        replace_whitespace=False
+                    ) or [""]
+
+                    for _idx, _line in enumerate(_lines):
+                        if _y < 0.055:
+                            _new_page()
+                        _ax.text(
+                            0.0, _y, _line,
+                            fontsize=_fs,
+                            fontname=_font_name,
+                            fontweight=_weight,
+                            color=(
+                                "#0B3D91" if _kind == "h1"
+                                else "#0F5B78" if _kind == "h3"
+                                else "#111111"
+                            ),
+                            va="top",
+                        )
+                        _y -= 0.024 if _kind == "p" else 0.030
+
+                    _y -= _space
+
+                if _fig is not None:
+                    _pdf.savefig(_fig, bbox_inches="tight")
+                    plt.close(_fig)
+
+            _data = _pdf_path.read_bytes()
+            if _data and len(_data) > 100:
+                return _data
+
+        finally:
+            try:
+                _pdf_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    except Exception as _e:
+        _hatalar.append(f"matplotlib PDF: {_e}")
 
     return None
 
@@ -830,8 +840,8 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
                 )
             else:
                 st.error(
-                    "PDF oluşturulamadı. Sunucuda PDF dönüştürme bileşeni veya "
-                    "ReportLab için gerekli yazı tipi bulunamadı."
+                    "PDF oluşturulamadı. Word/HTML çıktısı kullanılabilir; "
+                    "PDF motoru bu çalışma ortamında başlatılamadı."
                 )
         elif _rapor_format == "HTML (.html)":
             st.download_button(
