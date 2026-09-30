@@ -1075,7 +1075,7 @@ def add_toc(paragraph):
 # Bu liste, bölüm seçimi kapatılıp açıldığında numaranın otomatik yeniden
 # sıralanmasını sağlar.
 _BOLUM_63_COCUKLARI = [
-    ("rapor_bolum_631", "Kullanma Soğuk Suyu Deposu Seçimi"),
+    ("rapor_bolum_631", "SU DEPOSU HESAPLAMALARI"),
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
     ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
@@ -1102,7 +1102,7 @@ def _63_dinamik_no(anahtar):
 
 def _63_dinamik_baslik(anahtar):
     ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
-    return f"6.3.{_63_dinamik_no(anahtar)} {ad}"
+    return f"6.3.{_63_dinamik_no(anahtar)} {ad.upper()}"
 
 def _tum_bolumleri_sec():
     for _anahtar in BOLUM_SECIM_ANAHTARLARI:
@@ -2862,6 +2862,7 @@ with _t_sihhi:
             st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
             st.markdown('<div id="bolum_631"></div>', unsafe_allow_html=True)
             st.subheader(_63_dinamik_baslik("rapor_bolum_631"))
+            st.markdown("#### 6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:")
 
             poz_gosterilsin_mi = st.checkbox(
                 "Poz numarasını göster",
@@ -3247,6 +3248,8 @@ with _t_sihhi:
                 "",
                 height=80,
             )
+
+        st.markdown("#### 6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:")
 
         if bolum_632_aktif:
             st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
@@ -6370,7 +6373,8 @@ if _rapor_olustur_sidebar:
         doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
         if bolum_631_aktif:
           doc.add_heading(_63_dinamik_baslik("rapor_bolum_631"), level=2)
-          doc.add_heading("Genel Bilgiler", level=3)
+          doc.add_heading("6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:", level=3)
+          doc.add_heading("Genel Bilgiler", level=4)
 
           # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
           if sih_sec_depo_tipi and sih_depo_tipleri:
@@ -6540,6 +6544,9 @@ if _rapor_olustur_sidebar:
               poz_kalin.bold = True
               for run in poz_paragrafi.runs:
                   run.font.color.rgb = RGBColor(0, 0, 0)
+
+        # 6.3.1.2 Yağmur suyu deposu seçimi
+        doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
 
         # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
         if bolum_632_aktif:
