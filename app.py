@@ -84,12 +84,34 @@ _PROJE_META_KEYS = {
     "proje_son_kayit_zamani", "proje_kaynak", "_proje_adi_manuel",
 }
 _PROJE_WIDGET_KAYDETME_DISI_KEYS = {
+    # Proje yönetimi widgetları
     "proje_kaydet_btn_v115", "proje_farkli_kaydet_btn_v115",
     "proje_ac_btn_v115", "proje_dis_dosya_ac_btn_v115",
+    "proje_kaydet_btn_v116", "proje_ac_btn_v116",
     "proje_sil_btn_v116", "proje_basliktan_al_btn_v116",
-    "proje_dis_dosya_indir_v116", "rapor_tumunu_sec_v92",
-    "rapor_tumunu_kaldir_v92", "rapor_word_indir_v101",
+    "proje_dis_dosya_indir_v116", "proje_dis_dosya_ac_btn_v116",
+    "proje_ac_sec_v116", "proje_dis_dosya_yukle_v116",
+    # Ana bölüm toplu seçim / rapor üretim butonları
+    "rapor_tumunu_sec_v92", "rapor_tumunu_kaldir_v92",
+    "rapor_word_indir_v101",
 }
+
+
+def _proje_widget_anahtari_mi(anahtar):
+    """Bir session-state anahtarının Streamlit tarafından yönetilen geçici bir
+    buton/aksiyon widget'ı olup olmadığını belirler.
+
+    Eski proje dosyalarında buton anahtarları bulunabilir. Bunları yüklemeye
+    çalışmak StreamlitValueAssignmentNotAllowedError üretir.
+    """
+    anahtar = str(anahtar)
+    if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+        return True
+    if "_btn_" in anahtar or anahtar.endswith("_btn"):
+        return True
+    if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
+        return True
+    return False
 
 
 def _proje_degerini_temizle(deger):
@@ -121,7 +143,7 @@ def _proje_ayarlarini_topla():
     for anahtar, deger in st.session_state.items():
         if (
             anahtar in _PROJE_META_KEYS
-            or anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS
+            or _proje_widget_anahtari_mi(anahtar)
             or anahtar.startswith("proje_")
         ):
             continue
@@ -233,6 +255,30 @@ def _proje_kaydet_callback():
     _proje_olustur_veya_kaydet(_proje_adi(), farkli_kaydet=False)
 
 
+def _yeni_proje_baslat():
+    """Mevcut proje oturumunu temizleyip tamamen yeni, boş bir proje başlatır.
+
+    Bu callback Streamlit yeniden çalıştırılmadan önce çağrıldığı için proje
+    widgetlarının eski değerleri temizlenir; sonraki çalıştırmada widgetlar
+    kendi varsayılan değerleriyle yeniden oluşturulur.
+    """
+    try:
+        # Mevcut çalışma artık aktif proje olmaktan çıkar. Yeni proje boş başlar.
+        st.session_state.clear()
+        st.session_state["aktif_proje_id"] = ""
+        st.session_state["aktif_proje_adi"] = ""
+        st.session_state["proje_kaynak"] = ""
+        st.session_state["proje_son_kayit_zamani"] = ""
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "🆕 Yeni proje başlatıldı. Yeni proje bilgilerini girebilirsiniz."
+        )
+        st.session_state["_proje_adi_manuel"] = False
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = (
+            f"Yeni proje başlatılamadı: {hata}"
+        )
+
+
 def _proje_sil(proje_id):
     try:
         if not proje_id:
@@ -250,6 +296,32 @@ def _proje_sil(proje_id):
         st.session_state["proje_yukleme_bildirimi"] = f"'{proje_id}' projesi silindi."
     except Exception as hata:
         st.session_state["proje_yukleme_bildirimi"] = f"Proje silinemedi: {hata}"
+
+
+def _proje_yeni():
+    """Mevcut aktif çalışmayı kapatıp temiz bir yeni proje oturumu başlatır."""
+    try:
+        # Projeye ait kaydedilebilir tüm kullanıcı verilerini temizle.
+        # Buton/aksiyon widgetları özellikle korunur; aksi halde Streamlit
+        # ValueAssignment hatası oluşabilir.
+        mevcut_ayarlar = _proje_ayarlarini_topla()
+        for anahtar in list(mevcut_ayarlar.keys()):
+            if anahtar not in _PROJE_META_KEYS and not _proje_widget_anahtari_mi(anahtar):
+                st.session_state.pop(anahtar, None)
+
+        # Proje yönetimi durumunu sıfırla.
+        for anahtar in (
+            "aktif_proje_id", "aktif_proje_adi", "proje_son_kayit_zamani",
+            "proje_kaynak", "proje_dis_dosya_hazirlandi",
+            "proje_dis_dosya_yukle_bekliyor",
+        ):
+            st.session_state.pop(anahtar, None)
+
+        st.session_state["proje_adi_giris"] = ""
+        st.session_state["_proje_adi_manuel"] = False
+        st.session_state["proje_yukleme_bildirimi"] = "Yeni proje açıldı. Yeni proje bilgilerini girebilirsiniz."
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Yeni proje açılamadı: {hata}"
 
 
 def _proje_basliktan_al():
@@ -274,7 +346,7 @@ def _proje_ac(proje_id):
         proje = _PROJE_YONETICISI.ac(proje_id)
         ayarlar = proje.genel.get("session_state", {}) if isinstance(proje.genel, dict) else {}
         for anahtar, deger in ayarlar.items():
-            if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+            if _proje_widget_anahtari_mi(anahtar) or anahtar.startswith("proje_"):
                 continue
             st.session_state[anahtar] = deger
         st.session_state["aktif_proje_id"] = proje.proje_id
@@ -331,7 +403,7 @@ def _proje_dis_dosyayi_yukle_callback():
 _bekleyen_dis_proje = st.session_state.pop("proje_dis_dosya_yukle_bekliyor", None)
 if isinstance(_bekleyen_dis_proje, dict):
     for _anahtar, _deger in _bekleyen_dis_proje.items():
-        if _anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+        if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
             continue
         st.session_state[_anahtar] = _deger
 
@@ -339,6 +411,14 @@ if isinstance(_bekleyen_dis_proje, dict):
 # PROJE KONTROL PANELİ
 # ---------------------------------------------------------------------------
 with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
+    st.button(
+        "🆕 Yeni Proje",
+        key="proje_yeni_btn_v119",
+        use_container_width=True,
+        on_click=_proje_yeni,
+        help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
+    )
+
     _mevcut_projeler = []
     try:
         _mevcut_projeler = sorted([
@@ -347,6 +427,15 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         ])
     except Exception:
         _mevcut_projeler = []
+
+    st.button(
+        "🆕 Yeni Proje",
+        key="yeni_proje_btn_v118",
+        use_container_width=True,
+        on_click=_yeni_proje_baslat,
+        help="Mevcut çalışma oturumunu kapatır ve boş bir proje başlatır. Kaydettiğiniz projeler silinmez.",
+    )
+    st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
 
     st.text_input(
         "Proje Adı",
