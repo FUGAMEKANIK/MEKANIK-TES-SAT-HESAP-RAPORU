@@ -4,6 +4,7 @@ import io
 import json
 import math
 import os
+import re
 import subprocess
 import tempfile
 import shutil
@@ -3989,7 +3990,9 @@ with _t_sihhi:
           h1.font.name = "Times New Roman"
           h1._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
           h1.font.size = Pt(14); h1.font.bold = True
-          h1.paragraph_format.page_break_before = True
+          # Ana başlıkların sayfa davranışı aşağıda başlığın numarasına göre
+          # belirlenir: 2-5 normal akışta devam eder, 6 ve sonrası yeni sayfadan başlar.
+          h1.paragraph_format.page_break_before = False
           h1.paragraph_format.keep_with_next = True
           h1.paragraph_format.keep_together = True
 
@@ -4017,16 +4020,81 @@ with _t_sihhi:
               paragraph.paragraph_format.keep_with_next = True
               paragraph.paragraph_format.keep_together = True
 
+              # YALNIZCA ANA BAŞLIKLAR:
+              # 1-5: rapor akışı kesilmez; başlık mevcut sayfada yeterli yer yoksa
+              # Word keep_with_next sayesinde başlık + ilk içerik birlikte taşınır.
+              # 6, 7, 8, 9...: her zaman yeni sayfanın başından başlar.
+              if paragraph.style.name == "Heading 1":
+                _m = re.match(r"^\s*(\d+)\.", paragraph.text or "")
+                _ana_no = int(_m.group(1)) if _m else None
+                paragraph.paragraph_format.page_break_before = (
+                    _ana_no is not None and _ana_no >= 6
+                )
+
+          # TABLO SAYFA KURALI:
+          # - Satırlar hiçbir zaman iki sayfaya bölünmez.
+          # - Tablo sayfaya sığabilecek durumdaysa tablo baştan sona aynı sayfada
+          #   tutulur; sığmıyorsa Word tabloyu sonraki sayfaya taşır.
+          # - Tablo öncesindeki açıklama ve alt başlık tablo ile birlikte taşınır.
+          # - Çok uzun tablolarda tablo sayfalar arasında devam edebilir; ancak
+          #   satır bölünmez ve ilk satır her sayfada başlık olarak tekrarlanır.
           for table in doc.tables:
+            _satir_sayisi = len(table.rows)
+
             for row_index, row in enumerate(table.rows):
               trPr = row._tr.get_or_add_trPr()
+
+              # Satırın sayfalar arasında bölünmesini kesin olarak engelle.
               if trPr.find(qn("w:cantSplit")) is None:
                 trPr.append(OxmlElement("w:cantSplit"))
+
+              # İlk satır sonraki satırla birlikte kalsın.
+              # 25 satıra kadar olan tabloların tamamını mümkün olduğunca
+              # tek sayfada tutuyoruz.
+              _satir_keep = (
+                  row_index < _satir_sayisi - 1
+                  if _satir_sayisi <= 25
+                  else row_index == 0
+              )
+
               for cell in row.cells:
                 for paragraph in cell.paragraphs:
                   paragraph.paragraph_format.widow_control = True
-                  if row_index == 0:
+                  if _satir_keep:
                     paragraph.paragraph_format.keep_with_next = True
+
+              # Uzun tablolar bir sonraki sayfada da kolon başlıklarını
+              # tekrar etsin.
+              if row_index == 0:
+                _tbl_header = trPr.find(qn("w:tblHeader"))
+                if _tbl_header is None:
+                  _tbl_header = OxmlElement("w:tblHeader")
+                  trPr.append(_tbl_header)
+
+            # Tabloya hemen önceki paragrafı bul. Bu paragraf açıklama ise
+            # tabloyla; başlık ise açıklama ve tabloyla birlikte taşınır.
+            _body = table._tbl.getparent()
+            _idx = _body.index(table._tbl)
+            _onceki_paragraflar = []
+
+            _j = _idx - 1
+            while _j >= 0 and len(_onceki_paragraflar) < 2:
+              _el = _body[_j]
+              if _el.tag == qn("w:p"):
+                for _p in doc.paragraphs:
+                  if _p._p is _el:
+                    _onceki_paragraflar.append(_p)
+                    break
+              elif _el.tag == qn("w:tbl"):
+                break
+              _j -= 1
+
+            # Tablo öncesindeki son paragraf ve onun hemen üstündeki başlık/
+            # açıklama tabloyla birlikte kalsın.
+            for _p in _onceki_paragraflar:
+              _p.paragraph_format.keep_with_next = True
+              _p.paragraph_format.keep_together = True
+              _p.paragraph_format.widow_control = True
 
           try:
             settings = doc.settings.element
