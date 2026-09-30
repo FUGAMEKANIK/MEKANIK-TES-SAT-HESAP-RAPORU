@@ -128,6 +128,32 @@ def _proje_widget_anahtari_mi(anahtar):
         return True
     if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
         return True
+
+    # Eski proje dosyalarında bazı butonlar "_btn_" içermeyen anahtarlarla
+    # kaydedilmiş olabilir. Bunların hiçbirini projeye geri yüklemiyoruz.
+    _buton_anahtar_parcalari = (
+        "sidebar_rapor_olustur",
+        "rapor_olustur",
+        "proje_yeni",
+        "proje_kaydet_btn",
+        "proje_farkli_kaydet",
+        "proje_ac_btn",
+        "proje_sil_btn",
+        "proje_dis_dosya_ac_btn",
+        "proje_dis_dosya_indir",
+        "rapor_pdf_indir",
+        "rapor_word_indir",
+        "rapor_html_indir",
+        "rapor_txt_indir",
+        "rapor_indir",
+    )
+    if any(parca in _alt for parca in _buton_anahtar_parcalari):
+        return True
+
+    # Genel güvenlik: Streamlit aksiyon widget'ı isimlerinde sık kullanılan
+    # buton/aksiyon ifadelerini proje verisi olarak geri yükleme.
+    if _alt.endswith("_button") or "_button_" in _alt:
+        return True
     # _toplu_secim_butonlari() dinamik olarak oluşturduğu st.button anahtarları
     # eski proje kayıtlarında bulunabilir. Bunlar session_state'e geri yazılırsa
     # StreamlitValueAssignmentNotAllowedError oluşur.
@@ -427,7 +453,7 @@ def _proje_otomatik_kaydet():
     ad = _proje_adi()
     if not aktif or kaynak != "yerel" or not ad:
         return
-    if aktif != guvenli_dosya_adi(ad):
+    if aktif != _proje_kisa_dosya_adi(ad):
         return
     try:
         _proje_olustur_veya_kaydet(ad, farkli_kaydet=False)
@@ -811,6 +837,7 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         key="rapor_cikti_format_v134",
     )
 
+    # Bu bir aksiyon widget'ıdır; proje JSON'una hiçbir şekilde kaydedilmez.
     if st.button(
         "📄 RAPORU OLUŞTUR",
         key="sidebar_rapor_olustur_v134",
