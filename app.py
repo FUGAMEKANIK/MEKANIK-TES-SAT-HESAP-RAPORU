@@ -74,10 +74,28 @@ div[data-testid="stHeading"] h4 {
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# PROJE YÖNETİMİ — KAYDET / FARKLI KAYDET / PROJE AÇ
+# PROJE YÖNETİMİ — KAYDET / FARKLI KAYDET / DOSYAYA AKTAR / DOSYADAN AÇ
 # ---------------------------------------------------------------------------
 _PROJE_YONETICISI = ProjeYoneticisi()
-_PROJE_META_KEYS = {"aktif_proje_id", "proje_yukleme_bildirimi"}
+_PROJE_META_KEYS = {
+    "aktif_proje_id",
+    "aktif_proje_adi",
+    "proje_yukleme_bildirimi",
+    "proje_dis_dosya_hazirlandi",
+    "proje_dis_dosya_yukle_bekliyor",
+}
+# Streamlit buton durumları session_state'e yazılamaz. Proje kaydından
+# bunları özellikle hariç tutuyoruz; aksi halde proje açılırken
+# StreamlitValueAssignmentNotAllowedError oluşabilir.
+_PROJE_WIDGET_KAYDETME_DISI_KEYS = {
+    "proje_kaydet_btn_v114",
+    "proje_farkli_kaydet_btn_v114",
+    "proje_ac_btn_v114",
+    "rapor_tumunu_sec_v92",
+    "rapor_tumunu_kaldir_v92",
+    "rapor_word_indir_v101",
+    "proje_dis_dosya_ac_btn_v115",
+}
 
 
 def _proje_degerini_temizle(deger):
@@ -98,7 +116,6 @@ def _proje_degerini_temizle(deger):
             if temiz is not _GEcersiz_PROJE:
                 sonuc[str(k)] = temiz
         return sonuc
-    # Streamlit'in yükleyici / widget nesneleri gibi JSON'a çevrilemeyen nesneleri kaydetme.
     return _GEcersiz_PROJE
 
 
@@ -108,7 +125,11 @@ _GEcersiz_PROJE = object()
 def _proje_ayarlarini_topla():
     ayarlar = {}
     for anahtar, deger in st.session_state.items():
-        if anahtar in _PROJE_META_KEYS or anahtar.startswith("proje_"):
+        if (
+            anahtar in _PROJE_META_KEYS
+            or anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS
+            or anahtar.startswith("proje_")
+        ):
             continue
         temiz = _proje_degerini_temizle(deger)
         if temiz is not _GEcersiz_PROJE:
@@ -116,16 +137,38 @@ def _proje_ayarlarini_topla():
     return ayarlar
 
 
+def _proje_verisini_hazirla(proje_adi):
+    proje_adi = str(proje_adi or "").strip()
+    return {
+        "proje_dosya_suru": 1,
+        "proje_adi": proje_adi,
+        "proje_id": guvenli_dosya_adi(proje_adi) if proje_adi else "",
+        "olusturma_tarihi": datetime.now().isoformat(timespec="seconds"),
+        "sirket_adi": str(st.session_state.get("sirket_adi", "")),
+        "rapor_turu": str(st.session_state.get("rapor_turu", "")),
+        "hazirlayan": str(st.session_state.get("hazirlayan", "")),
+        "mmo_no": str(st.session_state.get("mmo_no", "")),
+        "rapor_tarihi": str(st.session_state.get("tarih", "")),
+        "session_state": _proje_ayarlarini_topla(),
+    }
+
+
 def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
+    # Proje adı artık doğrudan 1. bölümdeki İşin Adı / Proje Başlığı alanından gelir.
     proje_adi = str(proje_adi or "").strip()
     if not proje_adi:
-        st.session_state["proje_yukleme_bildirimi"] = "Proje adı girilmelidir."
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "Önce 1. Kapak Bilgileri bölümündeki 'İşin Adı / Proje Başlığı' alanını doldurun."
+        )
         return
+
     proje_id = guvenli_dosya_adi(proje_adi)
     if farkli_kaydet and _PROJE_YONETICISI.proje_var_mi(proje_id):
-        # Aynı isimde proje varsa kullanıcıyı ezmeden uyar.
-        st.session_state["proje_yukleme_bildirimi"] = f"Bu isimde proje zaten var: {proje_adi}"
+        st.session_state["proje_yukleme_bildirimi"] = (
+            f"Bu isimde proje zaten var: {proje_adi}"
+        )
         return
+
     try:
         bilgiler = {
             "sirket_adi": str(st.session_state.get("sirket_adi", "")),
@@ -136,7 +179,9 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
             "genel": {"session_state": _proje_ayarlarini_topla()},
         }
         if farkli_kaydet or not _PROJE_YONETICISI.proje_var_mi(proje_id):
-            proje = _PROJE_YONETICISI.proje_olustur(proje_adi, proje_id=proje_id, **bilgiler)
+            proje = _PROJE_YONETICISI.proje_olustur(
+                proje_adi, proje_id=proje_id, **bilgiler
+            )
         else:
             proje = _PROJE_YONETICISI.ac(proje_id)
             proje.proje_adi = proje_adi
@@ -147,6 +192,7 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
             proje.mmo_no = bilgiler["mmo_no"]
             proje.rapor_tarihi = bilgiler["rapor_tarihi"]
             _PROJE_YONETICISI.kaydet(proje)
+
         st.session_state["aktif_proje_id"] = proje.proje_id
         st.session_state["aktif_proje_adi"] = proje.proje_adi
         st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' kaydedildi."
@@ -155,10 +201,21 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
 
 
 def _proje_ac(proje_id):
+    """Uygulama içindeki projects klasöründeki projeyi açar.
+
+    Widget anahtarları mevcut widget'larla çakışmasın diye yalnızca izin verilen
+    anahtarlar yüklenir; buton anahtarları kesinlikle yüklenmez.
+    """
     try:
         proje = _PROJE_YONETICISI.ac(proje_id)
-        ayarlar = proje.genel.get("session_state", {}) if isinstance(proje.genel, dict) else {}
+        ayarlar = (
+            proje.genel.get("session_state", {})
+            if isinstance(proje.genel, dict)
+            else {}
+        )
         for anahtar, deger in ayarlar.items():
+            if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+                continue
             st.session_state[anahtar] = deger
         st.session_state["aktif_proje_id"] = proje.proje_id
         st.session_state["aktif_proje_adi"] = proje.proje_adi
@@ -168,49 +225,153 @@ def _proje_ac(proje_id):
 
 
 def _proje_kaydet_callback():
+    # Proje adı doğrudan kapaktaki İşin Adı / Proje Başlığı widget'ından gelir.
+    ad = str(st.session_state.get("is_adi", "")).strip()
     aktif = st.session_state.get("aktif_proje_id", "")
-    ad = st.session_state.get("aktif_proje_adi", "") or st.session_state.get("is_adi", "")
-    if aktif:
+    if not ad:
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "Önce 1. Kapak Bilgileri bölümündeki 'İşin Adı / Proje Başlığı' alanını doldurun."
+        )
+        return
+    # Aktif proje varsa mevcut proje kimliği üzerinden güncelle; proje başlığı
+    # değişmişse yeni başlık adıyla ayrı kayıt oluşturmak için Farklı Kaydet kullanılır.
+    if aktif and aktif == guvenli_dosya_adi(ad):
+        _proje_olustur_veya_kaydet(ad, farkli_kaydet=False)
+    elif not aktif:
         _proje_olustur_veya_kaydet(ad, farkli_kaydet=False)
     else:
-        st.session_state["proje_yukleme_bildirimi"] = "Önce 'Proje Adı' girerek Farklı Kaydet yapın."
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "Proje başlığı değiştirildi. Yeni isimle kayıt için 'Farklı Kaydet' kullanın."
+        )
 
 
-# Yüklemeden önce proje kontrol panelini göster. Widget'lar daha sonra aynı
-# session_state anahtarlarını kullanacağı için kayıtlı değerler korunur.
+def _proje_farkli_kaydet_dosyasi():
+    ad = str(st.session_state.get("is_adi", "")).strip()
+    if not ad:
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "Önce 1. Kapak Bilgileri bölümündeki 'İşin Adı / Proje Başlığı' alanını doldurun."
+        )
+        return
+    st.session_state["proje_dis_dosya_hazirlandi"] = True
+
+
+def _proje_dis_dosyayi_yukle_callback():
+    yuklenen = st.session_state.get("proje_dis_dosya_yukle_v115")
+    if yuklenen is None:
+        st.session_state["proje_yukleme_bildirimi"] = "Lütfen bir .proje.json dosyası seçin."
+        return
+    try:
+        veri = json.loads(yuklenen.getvalue().decode("utf-8-sig"))
+        ayarlar = veri.get("session_state", {})
+        if not isinstance(ayarlar, dict):
+            raise ValueError("Proje dosyasında geçerli session_state bulunamadı.")
+
+        # Callback sırasında buton state'lerine dokunmuyoruz. Yükleme bir sonraki
+        # rerun'un başında uygulanmak üzere geçici alana bırakılır.
+        st.session_state["proje_dis_dosya_yukle_bekliyor"] = ayarlar
+        st.session_state["aktif_proje_id"] = veri.get("proje_id", "")
+        st.session_state["aktif_proje_adi"] = veri.get("proje_adi", "")
+        st.session_state["proje_yukleme_bildirimi"] = (
+            f"'{veri.get('proje_adi', 'Proje')}' yükleniyor..."
+        )
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Proje dosyası açılamadı: {hata}"
+
+
+# Önceki callback'ten gelen dış proje verisini, bu çalıştırmada widget'lar
+# oluşturulmadan önce session_state'e uygula.
+_bekleyen_dis_proje = st.session_state.pop("proje_dis_dosya_yukle_bekliyor", None)
+if isinstance(_bekleyen_dis_proje, dict):
+    for _anahtar, _deger in _bekleyen_dis_proje.items():
+        if _anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+            continue
+        st.session_state[_anahtar] = _deger
+
+
+# Yüklemeden önce proje kontrol panelini göster.
 with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     _mevcut_projeler = []
     try:
         _mevcut_projeler = sorted(
-            [p.name for p in Path(_PROJE_YONETICISI.ana_dizin).iterdir() if p.is_dir() and (p / "proje.json").exists()]
+            [
+                p.name
+                for p in Path(_PROJE_YONETICISI.ana_dizin).iterdir()
+                if p.is_dir() and (p / "proje.json").exists()
+            ]
         )
     except Exception:
         _mevcut_projeler = []
 
-    st.text_input(
-        "Proje Adı",
-        value=st.session_state.get("aktif_proje_adi", ""),
-        key="proje_adi_giris",
-        placeholder="Örn.: Ankara Ofis Projesi",
+    st.caption(
+        "Proje adı otomatik olarak 1. Kapak Bilgileri → İşin Adı / Proje Başlığı alanından alınır."
     )
+
     _pc1, _pc2 = st.columns(2)
     with _pc1:
-        st.button("💾 Kaydet", key="proje_kaydet_btn_v114", use_container_width=True, on_click=_proje_kaydet_callback)
+        st.button(
+            "💾 Kaydet",
+            key="proje_kaydet_btn_v115",
+            use_container_width=True,
+            on_click=_proje_kaydet_callback,
+        )
     with _pc2:
-        st.button("📑 Farklı Kaydet", key="proje_farkli_kaydet_btn_v114", use_container_width=True,
-                   on_click=lambda: _proje_olustur_veya_kaydet(st.session_state.get("proje_adi_giris", ""), True))
+        st.button(
+            "📑 Farklı Kaydet",
+            key="proje_farkli_kaydet_btn_v115",
+            use_container_width=True,
+            on_click=_proje_farkli_kaydet_dosyasi,
+        )
+
+    # Bilgisayara/masaüstüne kaydetmek için tarayıcının indirme mekanizması kullanılır.
+    _dis_proje_hazir = bool(st.session_state.get("proje_dis_dosya_hazirlandi", False))
+    if _dis_proje_hazir:
+        _dis_ad = str(st.session_state.get("is_adi", "")).strip()
+        if _dis_ad:
+            _dis_veri = _proje_verisini_hazirla(_dis_ad)
+            _dis_json = json.dumps(_dis_veri, ensure_ascii=False, indent=2)
+            _dis_dosya_adi = f"{guvenli_dosya_adi(_dis_ad)}.proje.json"
+            st.download_button(
+                "⬇️ Proje Dosyasını Bilgisayara Kaydet",
+                data=_dis_json.encode("utf-8"),
+                file_name=_dis_dosya_adi,
+                mime="application/json",
+                key="proje_dis_dosya_indir_v115",
+                use_container_width=True,
+            )
+            st.caption("Tarayıcı indirme konumundan Masaüstü'nü seçebilirsiniz.")
+
+    st.file_uploader(
+        "📂 Bilgisayardan / Masaüstünden Proje Aç",
+        type=["json"],
+        key="proje_dis_dosya_yukle_v115",
+        help="Daha önce kaydettiğiniz .proje.json dosyasını seçin.",
+    )
+    st.button(
+        "📂 Seçilen Projeyi Yükle",
+        key="proje_dis_dosya_ac_btn_v115",
+        use_container_width=True,
+        on_click=_proje_dis_dosyayi_yukle_callback,
+    )
 
     if _mevcut_projeler:
         _secili_proje = st.selectbox(
-            "Kayıtlı Proje",
+            "Uygulama İçindeki Kayıtlı Proje",
             _mevcut_projeler,
-            index=_mevcut_projeler.index(st.session_state.get("aktif_proje_id")) if st.session_state.get("aktif_proje_id") in _mevcut_projeler else 0,
-            key="proje_ac_sec_v114",
+            index=(
+                _mevcut_projeler.index(st.session_state.get("aktif_proje_id"))
+                if st.session_state.get("aktif_proje_id") in _mevcut_projeler
+                else 0
+            ),
+            key="proje_ac_sec_v115",
         )
-        st.button("📂 Projeyi Aç", key="proje_ac_btn_v114", use_container_width=True,
-                  on_click=lambda: _proje_ac(st.session_state.get("proje_ac_sec_v114", "")))
+        st.button(
+            "📂 Uygulama İçindeki Projeyi Aç",
+            key="proje_ac_btn_v115",
+            use_container_width=True,
+            on_click=lambda: _proje_ac(st.session_state.get("proje_ac_sec_v115", "")),
+        )
     else:
-        st.caption("Henüz kayıtlı proje yok.")
+        st.caption("Henüz uygulama içinde kayıtlı proje yok.")
 
     if st.session_state.get("aktif_proje_adi"):
         st.success(f"Aktif proje: **{st.session_state['aktif_proje_adi']}**")
@@ -602,7 +763,7 @@ sirket_adi = st.text_input(
     "Şirket / Kuruluş İsmi",
     "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ",
 )
-is_adi = st.text_input("İşin Adı / Proje Başlığı", "")
+is_adi = st.text_input("İşin Adı / Proje Başlığı", "", key="is_adi")
 rapor_turu = st.text_input(
     "Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU"
 )
