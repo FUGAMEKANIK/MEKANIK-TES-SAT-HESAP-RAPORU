@@ -99,6 +99,68 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
         return None, None, _url
 
 
+# MGM'nin il seçimindeki resmi 81 il listesi.
+# Rapor tablosu yalnızca Word raporu oluşturulurken kullanılır; arayüzde gösterilmez.
+MGM_81_IL = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
+    "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
+    "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
+    "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
+    "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
+    "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+    "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
+    "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
+    "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli",
+    "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin",
+    "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize",
+    "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa",
+    "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van",
+    "Yalova", "Yozgat", "Zonguldak",
+]
+
+# MGM URL parametresinde kullanılan ve il adından farklı olan özel kodlar.
+MGM_IL_URL_KODU = {"Mersin": "ICEL"}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_81_il_yagis_tablosu():
+    """81 ilin MGM günlük maksimum yağış verisini rapor için toplar.
+
+    Sonuç Word raporunda tablo olarak kullanılır; Streamlit arayüzüne
+    herhangi bir tablo basılmaz. Paralel istekler rapor oluşturma süresini
+    kısaltır.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _tek_il(il):
+        _kod = MGM_IL_URL_KODU.get(il, il)
+        deger, tarih, url = mgm_gunluk_en_yuksek_yagis_mm(_kod)
+        # Yardımcı fonksiyon özel kodla çağrıldığında mgm_il alanının
+        # raporda gerçek il adı olarak görünmesi için gerçek URL'yi üret.
+        if _kod != il:
+            url = (
+                "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+                f"?k=undefined&m={_kod}"
+            )
+        return il, deger, tarih, url
+
+    sonuc = []
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        gelecekler = {executor.submit(_tek_il, il): il for il in MGM_81_IL}
+        for gelecek in as_completed(gelecekler):
+            il = gelecekler[gelecek]
+            try:
+                sonuc.append(gelecek.result())
+            except Exception:
+                sonuc.append((il, None, None, None))
+
+    sirali = {il: (deger, tarih, url) for il, deger, tarih, url in sonuc}
+    return [
+        (il, *sirali.get(il, (None, None, None)))
+        for il in MGM_81_IL
+    ]
+
+
 # ---------------------------------------------------------------------------
 # PROGRAM BASLIKLARI - RENKLI VE DUZENLI GORUNUM
 # ---------------------------------------------------------------------------
@@ -6835,6 +6897,69 @@ if _rapor_olustur_sidebar:
                   f"Yağış Miktarı = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
                   f"({_yr.get('mgm_yagis_tarih', '')})."
               )
+
+          # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
+          # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
+          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
+          doc.add_paragraph(
+              "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
+              "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
+              "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
+              "satırda gösterilmektedir."
+          )
+          try:
+              _mgm_81 = mgm_81_il_yagis_tablosu()
+          except Exception:
+              _mgm_81 = [(il, None, None, None) for il in MGM_81_IL]
+
+          _mgm_tbl = doc.add_table(rows=1, cols=3)
+          _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+          _mgm_tbl.autofit = True
+          _hdr = _mgm_tbl.rows[0].cells
+          _hdr[0].text = "İL"
+          _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
+          _hdr[2].text = "TARİH"
+
+          # Başlık satırı biçimi.
+          for _cell in _hdr:
+              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+              _tcPr = _cell._tc.get_or_add_tcPr()
+              _shd = OxmlElement("w:shd")
+              _shd.set(qn("w:fill"), "D9E2F3")
+              _tcPr.append(_shd)
+              for _p in _cell.paragraphs:
+                  _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  for _r in _p.runs:
+                      _r.bold = True
+                      _r.font.size = Pt(8.5)
+
+          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+          for _il, _deger, _tarih, _url in _mgm_81:
+              _cells = _mgm_tbl.add_row().cells
+              _cells[0].text = _il
+              _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
+              _cells[2].text = _tarih or "-"
+              for _cell in _cells:
+                  _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                  for _p in _cell.paragraphs:
+                      _p.alignment = WD_ALIGN_PARAGRAPH.CENTER if _cell is not _cells[0] else WD_ALIGN_PARAGRAPH.LEFT
+                      for _r in _p.runs:
+                          _r.font.size = Pt(8.5)
+              if _il == _secili_mgm_il:
+                  for _cell in _cells:
+                      _tcPr = _cell._tc.get_or_add_tcPr()
+                      _shd = OxmlElement("w:shd")
+                      _shd.set(qn("w:fill"), "FFF2CC")
+                      _tcPr.append(_shd)
+                      for _p in _cell.paragraphs:
+                          for _r in _p.runs:
+                              _r.bold = True
+
+          doc.add_paragraph(
+              "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
+              "İllerimize Ait Genel İstatistiki Veriler. "
+              "MGM verilerinin ölçüm periyotları illere göre farklılık gösterebilir."
+          )
           doc.add_paragraph(
               f"Toplanabilir yağmur suyu: V = A × P × C / 1000 = {_yr.get('toplanabilir_m3', 0):.2f} m³"
           )
