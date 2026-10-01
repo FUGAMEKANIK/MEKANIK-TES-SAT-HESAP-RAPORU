@@ -3267,28 +3267,22 @@ with _t_sihhi:
             _toplu_secim_butonlari(yag_ayirici_keys, grup_adi="yag_ayirici_623")
 
             yag_ayirici_secimler = []
-            yag_ayirici_tab1, yag_ayirici_tab2 = st.tabs([
-                "🧈 YAĞ AYIRICI GENEL ESASLARI",
-                "📝 İLAVE YAĞ AYIRICI MADDELERİ",
-            ])
-
-            with yag_ayirici_tab1:
-                st.markdown("#### Seçilecek maddeler")
-                for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
-                    secili = st.checkbox(
-                        madde,
-                        key=f"yag_ayirici_sec_{i}",
-                        value=True,
-                    )
-                    yag_ayirici_secimler.append(secili)
-
-            with yag_ayirici_tab2:
-                ek_yag_ayirici_notu = st.text_area(
-                    "İlave Yağ Ayırıcı Seçim Maddesi (Her satıra bir tane)",
-                    "",
-                    height=120,
-                    key="ek_yag_ayirici_notu",
+            st.markdown("#### YAĞ AYIRICI SEÇİM MADDELERİ")
+            for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
+                secili = st.checkbox(
+                    madde,
+                    key=f"yag_ayirici_sec_{i}",
+                    value=True,
                 )
+                yag_ayirici_secimler.append(secili)
+
+            st.markdown("#### İLAVE YAĞ AYIRICI SEÇİM MADDELERİ")
+            ek_yag_ayirici_notu = st.text_area(
+                "İlave Yağ Ayırıcı Seçim Maddesi (Her satıra bir tane)",
+                "",
+                height=120,
+                key="ek_yag_ayirici_notu",
+            )
 
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
