@@ -3761,29 +3761,75 @@ with _t_sihhi:
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
             st.markdown("##### • YAĞMUR SUYU FİLTRESİ SEÇİMİ")
+
+            # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı mekanik tesisat
+            # birim fiyat tariflerindeki Vortex filtre pozları. Filtre seçimi
+            # yağış süresinden veya m³/h hesabından değil, doğrudan yağmur suyu
+            # toplama alanından (m²) yapılır.
+            YAGMUR_VORTEX_FILTRE_POZLARI = {
+                "Yerüstü Vortex Filtre": [
+                    {"poz": "25.181.5101", "kapasite_m2": 200,  "debi_ls": 4},
+                    {"poz": "25.181.5102", "kapasite_m2": 500,  "debi_ls": 12},
+                    {"poz": "25.181.5103", "kapasite_m2": 1000, "debi_ls": 25},
+                    {"poz": "25.181.5104", "kapasite_m2": 3000, "debi_ls": 80},
+                ],
+                "Yeraltı Vortex Filtre": [
+                    {"poz": "25.181.5201", "kapasite_m2": 200,  "debi_ls": 4},
+                    {"poz": "25.181.5202", "kapasite_m2": 500,  "debi_ls": 12},
+                    {"poz": "25.181.5203", "kapasite_m2": 1000, "debi_ls": 25},
+                    {"poz": "25.181.5204", "kapasite_m2": 3000, "debi_ls": 80},
+                ],
+            }
+
             f1, f2 = st.columns(2)
             with f1:
-                yagmur_filtre_emniyet = st.number_input(
-                    "Filtre emniyet katsayısı (%)", min_value=0.0,
-                    value=float(st.session_state.get("yagmur_filtre_emniyet", 15.0)),
-                    step=1.0, key="yagmur_filtre_emniyet"
-                )
-            with f2:
                 yagmur_filtre_tipi = st.selectbox(
-                    "Filtre tipi",
-                    ["Kendinden temizlemeli yağmur suyu filtresi", "Sepet filtre", "Vorteks filtre", "Kullanıcı tanımlı filtre"],
+                    "Vortex filtre tipi",
+                    list(YAGMUR_VORTEX_FILTRE_POZLARI.keys()),
                     index=0, key="yagmur_filtre_tipi"
                 )
-            # Debi hesabı için yağış süresi kullanıcı tarafından belirlenir.
+
+            yagmur_filtre_pozlari = YAGMUR_VORTEX_FILTRE_POZLARI[yagmur_filtre_tipi]
+            yagmur_filtre_secimi = next(
+                (x for x in yagmur_filtre_pozlari
+                 if yagmur_cati_alani <= float(x["kapasite_m2"])),
+                yagmur_filtre_pozlari[-1]
+            )
+            yagmur_filtre_kapasite_m2 = float(yagmur_filtre_secimi["kapasite_m2"])
+            yagmur_filtre_debisi_ls = float(yagmur_filtre_secimi["debi_ls"])
+            yagmur_filtre_poz = yagmur_filtre_secimi["poz"]
+            yagmur_filtre_kapasite_yetersiz = yagmur_cati_alani > yagmur_filtre_kapasite_m2
+
+            with f2:
+                st.metric(
+                    "Seçilen filtre kapasitesi",
+                    f"{yagmur_filtre_kapasite_m2:,.0f} m²"
+                )
+
+            st.write(
+                f"Toplama alanı: **{yagmur_cati_alani:,.2f} m²** → "
+                f"Filtre kapasitesi: **{yagmur_filtre_kapasite_m2:,.0f} m²**"
+            )
+            st.write(
+                f"Maksimum debi: **{yagmur_filtre_debisi_ls:.0f} L/s** | "
+                f"Cihaz Poz No: **{yagmur_filtre_poz}**"
+            )
+            if yagmur_filtre_kapasite_yetersiz:
+                st.warning(
+                    f"Toplama alanı {yagmur_cati_alani:,.2f} m² olduğundan mevcut "
+                    f"{yagmur_filtre_tipi.lower()} pozlarının en büyüğü olan "
+                    f"{yagmur_filtre_kapasite_m2:,.0f} m² kapasite yetersizdir. "
+                    "Bir üst/uygun filtre kapasitesi ayrıca değerlendirilmelidir."
+                )
+
+            # Taşma hattı hesabında kullanılmak üzere mevcut yağış debisi hesabı
+            # korunur; bu değer artık filtre seçiminde kullanılmaz.
             yagmur_sure_dk = st.number_input(
                 "Tasarım yağış süresi (dk)", min_value=1.0,
                 value=float(st.session_state.get("yagmur_sure_dk", 15.0)),
                 step=1.0, key="yagmur_sure_dk"
             )
             yagmur_debi_m3h = yagmur_ham_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
-            yagmur_filtre_debisi = yagmur_debi_m3h * (1.0 + yagmur_filtre_emniyet / 100.0)
-            st.write(f"Hesaplanan yağış debisi: **{yagmur_debi_m3h:.2f} m³/h**")
-            st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
 
             st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
             st.markdown("##### • YAĞMUR SUYU DEPOSU HACİM HESABI")
@@ -3867,8 +3913,12 @@ with _t_sihhi:
                 "sarnic_orani": yagmur_sarnic_orani,
                 "filtre_etkinlik": yagmur_filtre_etkinlik,
                 "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
-                "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
-                "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
+                "debi_m3h": yagmur_debi_m3h,
+                "filtre_tipi": yagmur_filtre_tipi,
+                "filtre_poz": yagmur_filtre_poz,
+                "filtre_kapasite_m2": yagmur_filtre_kapasite_m2,
+                "filtre_debisi_ls": yagmur_filtre_debisi_ls,
+                "filtre_kapasite_yetersiz": yagmur_filtre_kapasite_yetersiz,
                 "kullanim_gunluk": yagmur_kullanim_gunluk, "depolama_gun": yagmur_depolama_gun,
                 "gerekli_depo": yagmur_gerekli_depo, "secilen_depo": yagmur_secilen_depo,
                 "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
@@ -7392,11 +7442,23 @@ if _rapor_olustur_sidebar:
 
           doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
-          doc.add_paragraph(f"Hesaplanan yağış debisi: {_yr.get('debi_m3h', 0):.2f} m³/h")
           doc.add_paragraph(
-              f"Filtre seçim debisi: {_yr.get('filtre_debisi', 0):.2f} m³/h "
-              f"(emniyet: %{_yr.get('filtre_emniyet', 0):.0f})"
+              f"Yağmur suyu toplama alanı: {_yr.get('cati_alani', 0):.2f} m²"
           )
+          doc.add_paragraph(
+              f"Seçilen filtre kapasitesi: {_yr.get('filtre_kapasite_m2', 0):.0f} m²"
+          )
+          doc.add_paragraph(
+              f"Maksimum filtre debisi: {_yr.get('filtre_debisi_ls', 0):.0f} L/s"
+          )
+          doc.add_paragraph(
+              f"Cihaz Poz No: {_yr.get('filtre_poz', '')}"
+          )
+          if _yr.get('filtre_kapasite_yetersiz', False):
+              doc.add_paragraph(
+                  "UYARI: Seçilen filtre tipi için mevcut en büyük poz kapasitesi, "
+                  "toplama alanını karşılamamaktadır."
+              )
 
           doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
           doc.add_paragraph(
