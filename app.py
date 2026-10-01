@@ -3585,7 +3585,7 @@ with _t_sihhi:
             )
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ")
+            st.markdown("##### • YAĞMUR SUYU FİLTRESİ SEÇİMİ")
             f1, f2 = st.columns(2)
             with f1:
                 yagmur_filtre_emniyet = st.number_input(
@@ -3611,7 +3611,7 @@ with _t_sihhi:
             st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
 
             st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.3 YAĞMUR SUYU DEPOSU HACİM HESABI")
+            st.markdown("##### • YAĞMUR SUYU DEPOSU HACİM HESABI")
             d1, d2 = st.columns(2)
             with d1:
                 yagmur_kullanim_gunluk = st.number_input(
@@ -3634,7 +3634,7 @@ with _t_sihhi:
             st.write(f"Gerekli depo hacmi: **{yagmur_gerekli_depo:.2f} m³**")
 
             st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.4 TAŞMA HATTI HESABI")
+            st.markdown("##### • TAŞMA HATTI HESABI")
             t1, t2 = st.columns(2)
             with t1:
                 tasma_emniyet = st.number_input(
@@ -7128,6 +7128,11 @@ if _rapor_olustur_sidebar:
               f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
           )
 
+          doc.add_paragraph(
+              f"Sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
+              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
+          )
+
           # Ham yağış hacmi ve iki yüzde parametresi uygulanarak sarnıca alınacak hacim.
           _yr_A = float(_yr.get('cati_alani', 0) or 0)
           _yr_P = float(_yr.get('yagis', 0) or 0)
@@ -7147,12 +7152,8 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(
               f"V_sarnıç = {_yr_ham_V:.2f} × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f} = {_yr_V:.2f} m³"
           )
-          doc.add_paragraph(
-              f"Sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
-              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
-          )
 
-          doc.add_heading("6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
+          doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
           doc.add_paragraph(f"Hesaplanan yağış debisi: {_yr.get('debi_m3h', 0):.2f} m³/h")
           doc.add_paragraph(
@@ -7160,7 +7161,7 @@ if _rapor_olustur_sidebar:
               f"(emniyet: %{_yr.get('filtre_emniyet', 0):.0f})"
           )
 
-          doc.add_heading("6.3.1.2.3 YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
+          doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
           doc.add_paragraph(
               f"Günlük kullanım ihtiyacı: {_yr.get('kullanim_gunluk', 0):.2f} m³/gün; "
               f"depolama süresi: {_yr.get('depolama_gun', 0):.0f} gün"
@@ -7168,14 +7169,14 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(f"Gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
           doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi: {_yr.get('secilen_depo', 0):.2f} m³")
 
-          doc.add_heading("6.3.1.2.4 TAŞMA HATTI HESABI", level=4)
+          doc.add_heading("• TAŞMA HATTI HESABI", level=4)
           doc.add_paragraph(
               f"Taşma tasarım debisi: {_yr.get('tasma_debisi', 0):.2f} m³/h "
               f"(emniyet: %{_yr.get('tasma_emniyet', 0):.0f}); "
               f"seçilen taşma hattı: DN {_yr.get('tasma_cap', 0)}"
           )
 
-          doc.add_heading("6.3.1.2.5 TAŞMA SİFONU / KOKU KAPANI", level=4)
+          doc.add_heading("• TAŞMA SİFONU / KOKU KAPANI", level=4)
           doc.add_paragraph(
               "Taşma hattında sifon/koku kapanı kullanılacaktır." if _yr.get("sifon") else
               "Taşma hattında sifon/koku kapanı öngörülmemiştir."
@@ -7187,14 +7188,14 @@ if _rapor_olustur_sidebar:
           if _yr.get("geri_tepme"):
               doc.add_paragraph("Geri tepme önleyici düzenek öngörülmüştür.")
 
-          doc.add_heading("6.3.1.2.6 DEPO GİRİŞİ / SAKİN GİRİŞ", level=4)
+          doc.add_heading("• DEPO GİRİŞİ / SAKİN GİRİŞ", level=4)
           doc.add_paragraph(
               "Depo girişinde sakin giriş düzeni kullanılacaktır."
               if _yr.get("sakin_giris") else
               "Depo girişinde ayrıca sakin giriş düzeni öngörülmemiştir."
           )
 
-          doc.add_heading("6.3.1.2.7 HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
+          doc.add_heading("• HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
           doc.add_paragraph(
               "Depo havalandırması yapılacaktır." if _yr.get("havalandirma") else
               "Depo havalandırması ayrıca belirtilmemiştir."
