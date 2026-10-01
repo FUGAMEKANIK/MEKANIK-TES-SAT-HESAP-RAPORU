@@ -4124,8 +4124,9 @@ with _t_sihhi:
                     step=0.1, format="%.2f", key="tasma_egim_yuzde"
                 )
             with h4:
+                # Taşma hattı için proje tasarım kriteri: maksimum akış hızı 3,00 m/s.
                 tasma_max_hiz = st.number_input(
-                    "İzin verilen maksimum hız (m/s)", min_value=0.10, max_value=20.0,
+                    "Kabul edilen maksimum hız (m/s)", min_value=0.10, max_value=20.0,
                     value=float(st.session_state.get("tasma_max_hiz", 3.0)),
                     step=0.1, format="%.1f", key="tasma_max_hiz"
                 )
