@@ -1555,6 +1555,19 @@ st.markdown(
         padding-bottom: 0 !important;
     }
 
+    /* Ana tesisat sekmelerini sayfa kaydırılırken üstte sabitle.
+       :has(div[data-testid="stTabs"]) ile iç içe sekmeleri değil,
+       içinde alt sekmeler bulunan ana sekme grubunu hedefliyoruz. */
+    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:first-child [role="tablist"] {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 9999 !important;
+        background: #FFFFFF !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+    }
+
     div[data-testid="stTabs"] button[role="tab"] {
         font-size: 16px !important;
         font-weight: 700 !important;
