@@ -3843,6 +3843,58 @@ with _t_sihhi:
                 help="Program hesaplanan hacmi 5 m³'ün bir üst katına otomatik yuvarlar ve bu değeri başlangıç olarak buraya aktarır. İsterseniz elle değiştirebilirsiniz."
             )
 
+            # Yağmur suyu deposu poz bağlantısı, Genel Bilgiler / kullanma suyu
+            # deposu seçiminde kullanılan aynı 25.150.xx poz-kapasite tablosuna
+            # bağlanır. Betonarme depolar için bu tabloda poz bulunmadığından
+            # Cihaz Poz No üretilmez.
+            _yagmur_depo_poz_kapasiteleri = {
+                "Paslanmaz Modüler Çelik Su Deposu": [
+                    (1.25, "25.150.1201"), (2.50, "25.150.1202"), (3.75, "25.150.1203"),
+                    (5.00, "25.150.1204"), (6.25, "25.150.1205"), (7.50, "25.150.1206"),
+                    (10.0, "25.150.1207"), (12.5, "25.150.1208"), (15.0, "25.150.1209"),
+                    (20.0, "25.150.1210"), (22.5, "25.150.1211"), (25.0, "25.150.1212"),
+                    (30.0, "25.150.1213"), (37.5, "25.150.1214"), (40.0, "25.150.1215"),
+                    (45.0, "25.150.1216"), (50.0, "25.150.1217"), (56.0, "25.150.1218"),
+                    (59.6, "25.150.1219"), (62.0, "25.150.1220"), (75.0, "25.150.1221"),
+                    (90.0, "25.150.1222"), (93.2, "25.150.1223"), (104.2, "25.150.1224"),
+                    (112.0, "25.150.1225"), (121.5, "25.150.1226"),
+                ],
+                "Galvaniz Modüler Çelik Su Deposu": [
+                    (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
+                    (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
+                    (10.0, "25.150.1307"), (12.5, "25.150.1308"), (15.0, "25.150.1309"),
+                    (20.0, "25.150.1310"), (22.5, "25.150.1311"), (25.0, "25.150.1312"),
+                    (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
+                    (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
+                    (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
+                ],
+            }
+
+            _yagmur_depo_poz_kayitlari = _yagmur_depo_poz_kapasiteleri.get(
+                str(sih_yagmur_depo_tipi or "").strip(), []
+            )
+
+            def _yagmur_depo_en_yakin_poz(hedef_m3):
+                if not _yagmur_depo_poz_kayitlari or hedef_m3 <= 0:
+                    return None
+                return min(
+                    _yagmur_depo_poz_kayitlari,
+                    key=lambda kayit: abs(float(kayit[0]) - float(hedef_m3)),
+                )
+
+            # Manuel nihai hacme göre Cihaz Poz No otomatik belirlenir.
+            # Betonarme depoda poz listesi olmadığı için poz boş bırakılır.
+            yagmur_depo_poz_kaydi = _yagmur_depo_en_yakin_poz(yagmur_secilen_depo)
+            yagmur_depo_poz_kapasitesi = (
+                float(yagmur_depo_poz_kaydi[0]) if yagmur_depo_poz_kaydi else None
+            )
+            yagmur_depo_poz = yagmur_depo_poz_kaydi[1] if yagmur_depo_poz_kaydi else ""
+
+            if yagmur_depo_poz:
+                st.write(f"Cihaz Poz No: **{yagmur_depo_poz}**")
+            elif str(sih_yagmur_depo_tipi or "").strip() == "Betonarme Su Deposu":
+                st.caption("Betonarme su deposu için tanımlı 25.150.xx Cihaz Poz No bulunmadığından poz numarası gösterilmez.")
+
             st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
             st.markdown("##### • YAĞMUR SUYU FİLTRESİ SEÇİMİ")
 
@@ -4056,6 +4108,8 @@ with _t_sihhi:
                 "yillik_toplam_hacim_m3": yagmur_yillik_toplam_hacim_m3,
                 "depolama_orani": yagmur_depolama_orani,
                 "yagmur_depo_tipi": sih_yagmur_depo_tipi,
+                "yagmur_depo_poz": yagmur_depo_poz,
+                "yagmur_depo_poz_kapasitesi": yagmur_depo_poz_kapasitesi,
                 "gerekli_depo": yagmur_gerekli_depo,
                 "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
                 "secilen_depo": yagmur_secilen_depo,
@@ -7618,6 +7672,9 @@ if _rapor_olustur_sidebar:
               doc.add_paragraph(
                   f"Seçilen depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³"
               )
+          _rapor_yagmur_depo_poz = str(_yr.get("yagmur_depo_poz", "") or "").strip()
+          if _rapor_yagmur_depo_poz:
+              doc.add_paragraph(f"Cihaz Poz No: {_rapor_yagmur_depo_poz}")
 
           doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
