@@ -3811,9 +3811,35 @@ with _t_sihhi:
                 f"Filtre kapasitesi: **{yagmur_filtre_kapasite_m2:,.0f} m²**"
             )
             st.write(
-                f"Maksimum debi: **{yagmur_filtre_debisi_ls:.0f} L/s** | "
-                f"Cihaz Poz No: **{yagmur_filtre_poz}**"
+                f"Maksimum debi: **{yagmur_filtre_debisi_ls:.0f} L/s**"
             )
+            st.write(f"Cihaz Poz No: **{yagmur_filtre_poz}**")
+
+            # Poz numarasının rapora aktarılıp aktarılmayacağı kullanıcı tarafından
+            # seçilebilir. Varsayılan olarak rapora dahil edilir.
+            yagmur_filtre_poz_rapora_eklensin = st.checkbox(
+                "Filtre Cihaz Poz No rapora eklensin",
+                value=bool(st.session_state.get("yagmur_filtre_poz_rapora_eklensin", True)),
+                key="yagmur_filtre_poz_rapora_eklensin"
+            )
+
+            # Bakanlık pozlarındaki tüm filtre kapasitelerini kullanıcıya göster.
+            st.markdown("**Vortex filtre poz ve kapasite tablosu:**")
+            _filtre_tablo_satirlari = []
+            for _tip_adi, _poz_listesi in YAGMUR_VORTEX_FILTRE_POZLARI.items():
+                for _poz_kaydi in _poz_listesi:
+                    _filtre_tablo_satirlari.append({
+                        "Filtre Tipi": _tip_adi,
+                        "Cihaz Poz No": _poz_kaydi["poz"],
+                        "Toplama Alanı Kapasitesi (m²)": _poz_kaydi["kapasite_m2"],
+                        "Maksimum Debi (L/s)": _poz_kaydi["debi_ls"],
+                    })
+            st.dataframe(
+                _filtre_tablo_satirlari,
+                use_container_width=True,
+                hide_index=True
+            )
+
             if yagmur_filtre_kapasite_yetersiz:
                 st.warning(
                     f"Toplama alanı {yagmur_cati_alani:,.2f} m² olduğundan mevcut "
@@ -3919,6 +3945,7 @@ with _t_sihhi:
                 "filtre_kapasite_m2": yagmur_filtre_kapasite_m2,
                 "filtre_debisi_ls": yagmur_filtre_debisi_ls,
                 "filtre_kapasite_yetersiz": yagmur_filtre_kapasite_yetersiz,
+                "filtre_poz_rapora_eklensin": yagmur_filtre_poz_rapora_eklensin,
                 "kullanim_gunluk": yagmur_kullanim_gunluk, "depolama_gun": yagmur_depolama_gun,
                 "gerekli_depo": yagmur_gerekli_depo, "secilen_depo": yagmur_secilen_depo,
                 "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
@@ -7451,9 +7478,10 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(
               f"Maksimum filtre debisi: {_yr.get('filtre_debisi_ls', 0):.0f} L/s"
           )
-          doc.add_paragraph(
-              f"Cihaz Poz No: {_yr.get('filtre_poz', '')}"
-          )
+          if _yr.get('filtre_poz_rapora_eklensin', True):
+              doc.add_paragraph(
+                  f"Cihaz Poz No: {_yr.get('filtre_poz', '')}"
+              )
           if _yr.get('filtre_kapasite_yetersiz', False):
               doc.add_paragraph(
                   "UYARI: Seçilen filtre tipi için mevcut en büyük poz kapasitesi, "
