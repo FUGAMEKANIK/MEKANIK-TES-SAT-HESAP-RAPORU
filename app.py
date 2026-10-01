@@ -4227,11 +4227,32 @@ with _t_sihhi:
                     f"Önerilen minimum düzen: {tasma_onerilen_hat_adedi} hat × DN {tasma_oneri_cap}. "
                     f"Kullanıcı seçimi: {tasma_hat_adedi} hat."
                 )
-            st.markdown(
-                f"**Manning:** Q = (1/n) × A × R^(2/3) × S^(1/2)  "
-                f"→ n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
-                f"her hat için Q gerekli = {tasma_hat_Q_lps:.2f} L/s"
-            )
+            st.markdown("**Manning formülünün sayısal uygulanması**")
+            st.latex(r"Q = \frac{1}{n} \times A \times R^{2/3} \times S^{1/2}")
+            if tasma_hidrolik_secilen:
+                _secili_A = float(tasma_hidrolik_secilen.get("alan_m2", 0.0))
+                _secili_D = float(tasma_hidrolik_secilen.get("dn", 0)) / 1000.0
+                _secili_R = _secili_D / 4.0
+                _secili_Qm3s = float(tasma_hidrolik_secilen.get("q_manning_lps", 0.0)) / 1000.0
+                _secili_V = float(tasma_hidrolik_secilen.get("hiz_ms", 0.0))
+                st.markdown(
+                    f"**A = π × D² / 4 = π × {_secili_D:.3f}² / 4 = {_secili_A:.5f} m²**  "
+                    f"  \n**R = D / 4 = {_secili_D:.3f} / 4 = {_secili_R:.5f} m**"
+                )
+                st.markdown(
+                    f"**Q = (1 / {tasma_manning_n:.3f}) × {_secili_A:.5f} × "
+                    f"({_secili_R:.5f})^(2/3) × ({tasma_S:.4f})^(1/2) "
+                    f"= {_secili_Qm3s:.5f} m³/s = {(_secili_Qm3s*1000):.2f} L/s**"
+                )
+                st.markdown(
+                    f"**V = Q / A = {_secili_Qm3s:.5f} / {_secili_A:.5f} = {_secili_V:.2f} m/s**"
+                )
+            else:
+                st.markdown(
+                    f"Manning: Q = (1/n) × A × R^(2/3) × S^(1/2) → "
+                    f"n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
+                    f"her hat için Q gerekli = {tasma_hat_Q_lps:.2f} L/s"
+                )
             st.markdown(
                 f"**Her hat için seçilen minimum taşma hattı: DN {tasma_cap}**  "
                 f"→ tek hat tasarım kapasitesi = {tasma_capasite_lps:.2f} L/s, "
@@ -8143,7 +8164,27 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(
               f"Q gerekli = {_tasma_tasarim_debisi_m3h:,.2f} m³/h / 3,6 = {_tasma_hat_Q_lps:,.2f} L/s/hat = {_tasma_hat_Q_lps/1000.0:,.4f} m³/s/hat"
           )
-          doc.add_paragraph("Manning: Q = (1/n) × A × R^(2/3) × S^(1/2)")
+          doc.add_paragraph("Manning formülü:")
+          doc.add_paragraph("Q = (1/n) × A × R^(2/3) × S^(1/2)")
+          _rep_secili_manning = next((x for x in _yr.get('tasma_hidrolik_tablo', []) if int(x.get('dn', 0)) == int(_tasma_DN)), None)
+          if _rep_secili_manning:
+              _rep_D = float(_rep_secili_manning.get('dn', 0)) / 1000.0
+              _rep_A = float(_rep_secili_manning.get('alan_m2', 0.0))
+              _rep_R = _rep_D / 4.0
+              _rep_Qm3s = float(_rep_secili_manning.get('q_manning_lps', 0.0)) / 1000.0
+              _rep_V = float(_rep_secili_manning.get('hiz_ms', 0.0))
+              doc.add_paragraph(
+                  f"D = {_rep_D:.3f} m; A = π × D² / 4 = π × {_rep_D:.3f}² / 4 = {_rep_A:.5f} m²; "
+                  f"R = D / 4 = {_rep_D:.3f} / 4 = {_rep_R:.5f} m; S = {_tasma_egim/100:.4f}."
+              )
+              doc.add_paragraph(
+                  f"Q = (1 / {_tasma_n:.3f}) × {_rep_A:.5f} × ({_rep_R:.5f})^(2/3) × "
+                  f"({_tasma_egim/100:.4f})^(1/2) = {_rep_Qm3s:.5f} m³/s = {_rep_Qm3s*1000:.2f} L/s."
+              )
+              doc.add_paragraph(
+                  f"V = Q / A = {_rep_Qm3s:.5f} / {_rep_A:.5f} = {_rep_V:.2f} m/s; "
+                  f"kabul edilen maksimum hız = {_tasma_max_hiz:.2f} m/s."
+              )
           doc.add_paragraph(
               f"Seçilen minimum taşma hattı: {_tasma_hat_adedi} hat × DN {_tasma_DN}; "
               f"tek hat tasarım kapasitesi = {_tasma_kapasite:,.2f} L/s; "
