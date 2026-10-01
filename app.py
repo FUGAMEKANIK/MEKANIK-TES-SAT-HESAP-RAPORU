@@ -4506,6 +4506,9 @@ with _t_sihhi:
         else:
             st.info("Yağmur suyu hesabı pasif. Bölüm rapora dahil edilmez.")
 
+        # SAYFA ORTA ANKORU: sağdaki "Ortaya Git" butonu buraya gelir.
+        st.markdown('<div id="sayfa_orta"></div>', unsafe_allow_html=True)
+
         if bolum_632_aktif:
             st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
             st.subheader(_63_dinamik_baslik("rapor_bolum_632"))
@@ -9013,5 +9016,4 @@ if _rapor_olustur_sidebar:
 
 
 # SAYFA SONU ANKORU
-st.markdown('''<div id="sayfa_orta"></div>
-    <div id="sayfa_sonu"></div>''', unsafe_allow_html=True)
+st.markdown('<div id="sayfa_sonu"></div>', unsafe_allow_html=True)
