@@ -1540,86 +1540,97 @@ hidrofor_hesaplari = []
 # ---------------------------------------------------------------------------
 # ANA TESİSAT KATEGORİLERİ - GÖRSEL DÜZEN
 # ---------------------------------------------------------------------------
+# NOT: Önceki sürümlerde yalnızca role="tablist" seçicisi hedefleniyordu.
+# Streamlit/BaseWeb sürümlerine göre sekme çubuğunda data-baseweb="tab-list"
+# kullanılabildiği için iki yapıyı da kapsıyoruz. Ana sekme grubu ilk st.tabs()
+# grubudur. Hedef doğrudan tab-list elementidir; böylece kullanıcı sayfayı
+# aşağı/yukarı kaydırsa bile ana sekmeler viewport'un üstünde kalır.
 st.markdown(
     """
     <style>
     /* ================================================================
-       ANA TESİSAT SEKME ÇUBUĞU - V161
-       Kullanıcının gösterdiği 1-5 / 6 / 7 / 8 / 9 / 10 sekmeleri
-       GERÇEK Streamlit tab-list elementidir.
+       ANA TESİSAT SEKME ÇUBUĞU - GERÇEK SABİT NAVİGASYON
+       ================================================================ */
 
-       Önceki sürümlerde role="tablist" doğrudan hedeflenmişti;
-       Streamlit'in güncel DOM'unda gerçek element data-baseweb="tab-list"
-       olarak geliyor. Ayrıca :first-of-type güvenilir değildi.
-
-       Ana sekme grubunu 6 adet ana sekme içermesi üzerinden seçiyoruz.
-       Böylece aşağıdaki hidrofor/diğer alt st.tabs() grupları etkilenmez.
-    ================================================================ */
-
-    /* ANA SEKME LİSTESİ: 6 ana sekmesi olan gerçek tab-list */
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"],
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"][role="tablist"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"][role="tablist"] {
+    /* Streamlit'in ana stTabs tab-list'i: BaseWeb ve role varyantları */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"],
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
+        width: 100% !important;
+        max-width: none !important;
         box-sizing: border-box !important;
-        z-index: 2147483647 !important;
-
-        display: flex !important;
-        align-items: flex-end !important;
+        z-index: 999999 !important;
+        background: #FFFFFF !important;
+        padding: 6px 28px 0 28px !important;
+        margin: 0 !important;
+        min-height: 44px !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
-
-        padding: 8px 28px 0 28px !important;
-        margin: 0 !important;
-        min-height: 46px !important;
-        background: #FFFFFF !important;
-        border-bottom: 2px solid #D7DEE8 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+        box-shadow: 0 2px 7px rgba(0,0,0,.12) !important;
+        border-bottom: 1px solid #D7DEE8 !important;
     }
 
-    /* Sabit çubuğun arkasına içerik kaçmasın. */
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6)) {
-        padding-top: 54px !important;
-    }
-
-    /* Ana sekme butonları: mevcut görünümü koru. */
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"] > button[role="tab"] {
+    /* Tab butonları sabit çubuk içinde tıklanabilir kalır */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"] button[role="tab"],
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"] {
+        position: relative !important;
+        z-index: 1000000 !important;
         flex: 0 0 auto !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
+        pointer-events: auto !important;
+        font-size: 14px !important;
         padding: 9px 10px !important;
-        min-height: 34px !important;
-        white-space: nowrap !important;
-        color: #334155 !important;
+        min-height: 36px !important;
         background: #FFFFFF !important;
     }
 
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"] > button[role="tab"] p {
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        margin: 0 !important;
-        white-space: nowrap !important;
+    /* Ana tab grubunun kendisi normal akışta kalsın; yalnız tab-list sabit */
+    div[data-testid="stTabs"]:first-of-type {
+        position: relative !important;
+        margin-top: 0 !important;
     }
 
-    /* Aktif sekmenin Streamlit kırmızı göstergesini koru. */
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"] > div[role="presentation"] {
-        z-index: 2 !important;
+    /* Sabit çubuğun kapladığı alan kadar üst boşluk */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-panel"],
+    div[data-testid="stTabs"]:first-of-type > div[role="tabpanel"] {
+        padding-top: 52px !important;
     }
 
-    /* Yatay kaydırma çubuğunu gizle; sekmeler tıklanabilir kalır. */
-    div[data-testid="stTabs"]:has(> div[data-baseweb="tab-list"] > button:nth-child(6))
-    > div[data-baseweb="tab-list"]::-webkit-scrollbar {
-        height: 0 !important;
+    /* Tab grubunun içerik paneli bazı sürümlerde farklı sibling olarak gelir. */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"] + div,
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] + div {
+        margin-top: 0 !important;
+    }
+
+    /* Aktif sekmenin kırmızı alt çizgisini koru */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"] button[role="tab"][aria-selected="true"]::after,
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"][aria-selected="true"]::after {
+        content: "" !important;
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: -1px !important;
+        height: 2px !important;
+        background: #FF4B4B !important;
+    }
+
+    /* Streamlit'in kendi tab-list padding/overflow değerlerini etkisizleştir */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"] > div,
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] > div {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+    }
+
+    /* Küçük ekranlarda da yatay kaydırılabilir */
+    @media (max-width: 900px) {
+        div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-list"],
+        div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+        }
     }
     </style>
     """,
