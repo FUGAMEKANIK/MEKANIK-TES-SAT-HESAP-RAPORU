@@ -1781,15 +1781,18 @@ def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasi
         zi = _yag_ayirici_zi(n, tip)
         pis_su_debisi = n_x_qi * zi
         qs += pis_su_debisi
-        satirlar.append({
-            "sira": i,
-            "ekipman": ekipman,
-            "adet": n,
-            "qi": float(qi),
-            "n_x_qi": n_x_qi,
-            "zi": zi,
-            "pis_su_debisi": pis_su_debisi,
-        })
+        # Adedi 0 olan ekipmanlar hesap sonucuna ve rapora dahil edilmez.
+        # Böylece kullanılmayan ekipmanlar raporda gereksiz yer kaplamaz.
+        if n > 0:
+            satirlar.append({
+                "sira": i,
+                "ekipman": ekipman,
+                "adet": n,
+                "qi": float(qi),
+                "n_x_qi": n_x_qi,
+                "zi": zi,
+                "pis_su_debisi": pis_su_debisi,
+            })
     ns = qs * float(fd) * float(ft) * float(fr)
     return {
         "ya_adi": ya_adi,
