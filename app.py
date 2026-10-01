@@ -4366,8 +4366,34 @@ with _t_sihhi:
                     )
 
             st.markdown('<div id="bolum_631_2_6"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.6 DEPO GİRİŞİ / SAKİN GİRİŞ")
-            yagmur_sakin_giris = st.checkbox("Depo girişinde sakin giriş düzeni kullanılacaktır", value=True, key="yagmur_sakin_giris")
+            st.markdown("##### AKIŞ DÜZENLEYİCİ (CAZİBE YAVAŞLATICI / SAKİNLEŞTİRİCİ GİRİŞ) SEÇİMİ")
+            yagmur_sakin_giris = st.checkbox(
+                "Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) kullanılacaktır",
+                value=True,
+                key="yagmur_sakin_giris",
+            )
+            yagmur_sakin_giris_poz_rapora_eklensin = st.checkbox(
+                "Cihaz Poz No rapora eklensin",
+                value=True,
+                key="yagmur_sakin_giris_poz_rapora_eklensin",
+            )
+            # 25.181.5300 pozunun Bakanlık yapım şartındaki tanım.
+            yagmur_sakin_giris_poz = "25.181.5300"
+            yagmur_sakin_giris_malzeme_ozellik = (
+                "Yağmur suyu deposu girişinde suyun hızını keserek dip tortusunun havalanmasını "
+                "engelleyen, suyun oksijenlenmesini destekleyen, korozyona dayanıklı Polietilen (HDPE) "
+                "veya Paslanmaz Çelik malzemeden mamul akış düzenleyicinin iş yerinde temini ve yerine "
+                "montajı. (Yükseltici Parça ve Kapak Fiyata Dahildir.)"
+            )
+            yagmur_sakin_giris_fonksiyonu = (
+                "Yağmur suyu indirme borularından gelen suyun depoya hızlı bir şekilde dökülmesini "
+                "engeller. Depo tabanındaki tortuların yeniden karışıp suyu bulandırmasının önüne geçer "
+                "ve suyun oksijenlenmesini destekler."
+            )
+            if yagmur_sakin_giris:
+                st.markdown(f"**Cihaz Poz No:** {yagmur_sakin_giris_poz}")
+                st.markdown(f"**Malzeme / Özellik:** {yagmur_sakin_giris_malzeme_ozellik}")
+                st.markdown(f"**Fonksiyonu:** {yagmur_sakin_giris_fonksiyonu}")
 
             st.markdown('<div id="bolum_631_2_7"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.7 HAVALANDIRMA VE HAŞERE KORUMASI")
@@ -4446,7 +4472,12 @@ with _t_sihhi:
                 "tasma_sifonu_ozellik": tasma_sifonu_secim["ozellik"] if tasma_sifonu_secim else "",
                 "tasma_sifonu_poz_rapora_eklensin": yagmur_tasma_sifonu_poz_rapora_eklensin,
                 "geri_tepme": yagmur_geri_tepme,
-                "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
+                "kanal_baglanti": yagmur_kanal_baglanti,
+                "sakin_giris": yagmur_sakin_giris,
+                "sakin_giris_poz": yagmur_sakin_giris_poz,
+                "sakin_giris_poz_rapora_eklensin": yagmur_sakin_giris_poz_rapora_eklensin,
+                "sakin_giris_malzeme_ozellik": yagmur_sakin_giris_malzeme_ozellik,
+                "sakin_giris_fonksiyonu": yagmur_sakin_giris_fonksiyonu,
                 "havalandirma": yagmur_havalandirma, "hasere": yagmur_hasere,
             }
             st.session_state["yagmur_hesap"] = yagmur_hesap
@@ -8185,12 +8216,15 @@ if _rapor_olustur_sidebar:
           if _yr.get("geri_tepme"):
               doc.add_paragraph("Geri tepme önleyici düzenek öngörülmüştür.")
 
-          doc.add_heading("• DEPO GİRİŞİ / SAKİN GİRİŞ", level=4)
-          doc.add_paragraph(
-              "Depo girişinde sakin giriş düzeni kullanılacaktır."
-              if _yr.get("sakin_giris") else
-              "Depo girişinde ayrıca sakin giriş düzeni öngörülmemiştir."
-          )
+          doc.add_heading("• AKIŞ DÜZENLEYİCİ (CAZİBE YAVAŞLATICI / SAKİNLEŞTİRİCİ GİRİŞ) SEÇİMİ", level=4)
+          if _yr.get("sakin_giris"):
+              doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) kullanılacaktır.")
+              doc.add_paragraph(f"Malzeme / Özellik: {_yr.get('sakin_giris_malzeme_ozellik', '')}")
+              doc.add_paragraph(f"Fonksiyonu: {_yr.get('sakin_giris_fonksiyonu', '')}")
+              if _yr.get("sakin_giris_poz_rapora_eklensin"):
+                  doc.add_paragraph(f"Cihaz Poz No: {_yr.get('sakin_giris_poz', '25.181.5300')}")
+          else:
+              doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) öngörülmemiştir.")
 
           doc.add_heading("• HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
           doc.add_paragraph(
