@@ -399,6 +399,7 @@ st.markdown(
     <div id="sayfa_basi"></div>
     <div class="hizli-navigasyon">
         <a href="#sayfa_basi">⬆ Başa Git</a>
+        <a href="#sayfa_orta">↕ Ortaya Git</a>
         <a href="#sayfa_sonu">⬇ Sona Git</a>
     </div>
     """,
@@ -8496,4 +8497,5 @@ if _rapor_olustur_sidebar:
 
 
 # SAYFA SONU ANKORU
-st.markdown('<div id="sayfa_sonu"></div>', unsafe_allow_html=True)
+st.markdown('''<div id="sayfa_orta"></div>
+    <div id="sayfa_sonu"></div>''', unsafe_allow_html=True)
