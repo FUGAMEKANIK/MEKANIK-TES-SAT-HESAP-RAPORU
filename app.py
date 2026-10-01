@@ -3790,6 +3790,9 @@ with _t_sihhi:
                 )
 
             yagmur_filtre_pozlari = YAGMUR_VORTEX_FILTRE_POZLARI[yagmur_filtre_tipi]
+            # Tek filtrenin kapasitesini, toplam toplama alanını karşılayan en küçük
+            # Bakanlık pozundan seçiyoruz. 3000 m² üzerindeki alanlarda, poz
+            # kapasitesi yetmediği için aynı tipten birden fazla filtre kullanılır.
             yagmur_filtre_secimi = next(
                 (x for x in yagmur_filtre_pozlari
                  if yagmur_cati_alani <= float(x["kapasite_m2"])),
@@ -3798,20 +3801,41 @@ with _t_sihhi:
             yagmur_filtre_kapasite_m2 = float(yagmur_filtre_secimi["kapasite_m2"])
             yagmur_filtre_debisi_ls = float(yagmur_filtre_secimi["debi_ls"])
             yagmur_filtre_poz = yagmur_filtre_secimi["poz"]
-            yagmur_filtre_kapasite_yetersiz = yagmur_cati_alani > yagmur_filtre_kapasite_m2
+
+            # Kullanıcı tarafından değiştirilebilir filtre adedi. Varsayılan adet,
+            # seçilen tek filtre kapasitesine göre gerekli minimum adettir.
+            yagmur_filtre_gerekli_adet = max(
+                1, int(math.ceil(yagmur_cati_alani / yagmur_filtre_kapasite_m2))
+            )
+            yagmur_filtre_adet = st.number_input(
+                "Filtre adedi",
+                min_value=1,
+                step=1,
+                value=int(st.session_state.get(
+                    "yagmur_filtre_adet", yagmur_filtre_gerekli_adet
+                )),
+                key="yagmur_filtre_adet",
+                help="Toplama alanını karşılamak için gerekli minimum adet otomatik hesaplanır. İhtiyaca göre adet artırılabilir."
+            )
+            yagmur_filtre_adet = int(yagmur_filtre_adet)
+            yagmur_filtre_toplam_kapasite_m2 = yagmur_filtre_kapasite_m2 * yagmur_filtre_adet
+            yagmur_filtre_toplam_debisi_ls = yagmur_filtre_debisi_ls * yagmur_filtre_adet
+            yagmur_filtre_kapasite_yetersiz = yagmur_cati_alani > yagmur_filtre_toplam_kapasite_m2
 
             with f2:
                 st.metric(
-                    "Seçilen filtre kapasitesi",
+                    "Tek filtre kapasitesi",
                     f"{yagmur_filtre_kapasite_m2:,.0f} m²"
                 )
 
             st.write(
                 f"Toplama alanı: **{yagmur_cati_alani:,.2f} m²** → "
-                f"Filtre kapasitesi: **{yagmur_filtre_kapasite_m2:,.0f} m²**"
+                f"Filtre adedi: **{yagmur_filtre_adet} adet** → "
+                f"Toplam kapasite: **{yagmur_filtre_toplam_kapasite_m2:,.0f} m²**"
             )
             st.write(
-                f"Maksimum debi: **{yagmur_filtre_debisi_ls:.0f} L/s**"
+                f"Tek filtre maksimum debisi: **{yagmur_filtre_debisi_ls:.0f} L/s** → "
+                f"Toplam maksimum debi: **{yagmur_filtre_toplam_debisi_ls:.0f} L/s**"
             )
             st.write(f"Cihaz Poz No: **{yagmur_filtre_poz}**")
 
@@ -3842,10 +3866,10 @@ with _t_sihhi:
 
             if yagmur_filtre_kapasite_yetersiz:
                 st.warning(
-                    f"Toplama alanı {yagmur_cati_alani:,.2f} m² olduğundan mevcut "
-                    f"{yagmur_filtre_tipi.lower()} pozlarının en büyüğü olan "
-                    f"{yagmur_filtre_kapasite_m2:,.0f} m² kapasite yetersizdir. "
-                    "Bir üst/uygun filtre kapasitesi ayrıca değerlendirilmelidir."
+                    f"Girilen {yagmur_filtre_adet} adet filtre ile toplam kapasite "
+                    f"{yagmur_filtre_toplam_kapasite_m2:,.0f} m² olup, "
+                    f"{yagmur_cati_alani:,.2f} m² toplama alanını karşılamıyor. "
+                    f"Minimum gerekli adet: {yagmur_filtre_gerekli_adet}."
                 )
 
             # Taşma hattı hesabında kullanılmak üzere mevcut yağış debisi hesabı
@@ -3943,7 +3967,11 @@ with _t_sihhi:
                 "filtre_tipi": yagmur_filtre_tipi,
                 "filtre_poz": yagmur_filtre_poz,
                 "filtre_kapasite_m2": yagmur_filtre_kapasite_m2,
+                "filtre_adet": yagmur_filtre_adet,
+                "filtre_gerekli_adet": yagmur_filtre_gerekli_adet,
+                "filtre_toplam_kapasite_m2": yagmur_filtre_toplam_kapasite_m2,
                 "filtre_debisi_ls": yagmur_filtre_debisi_ls,
+                "filtre_toplam_debisi_ls": yagmur_filtre_toplam_debisi_ls,
                 "filtre_kapasite_yetersiz": yagmur_filtre_kapasite_yetersiz,
                 "filtre_poz_rapora_eklensin": yagmur_filtre_poz_rapora_eklensin,
                 "kullanim_gunluk": yagmur_kullanim_gunluk, "depolama_gun": yagmur_depolama_gun,
@@ -7473,10 +7501,17 @@ if _rapor_olustur_sidebar:
               f"Yağmur suyu toplama alanı: {_yr.get('cati_alani', 0):.2f} m²"
           )
           doc.add_paragraph(
-              f"Seçilen filtre kapasitesi: {_yr.get('filtre_kapasite_m2', 0):.0f} m²"
+              f"Tek filtre kapasitesi: {_yr.get('filtre_kapasite_m2', 0):.0f} m²"
           )
           doc.add_paragraph(
-              f"Maksimum filtre debisi: {_yr.get('filtre_debisi_ls', 0):.0f} L/s"
+              f"Filtre adedi: {_yr.get('filtre_adet', 1):.0f} adet"
+          )
+          doc.add_paragraph(
+              f"Toplam filtre kapasitesi: {_yr.get('filtre_toplam_kapasite_m2', _yr.get('filtre_kapasite_m2', 0)):,.0f} m²"
+          )
+          doc.add_paragraph(
+              f"Tek filtre maksimum debisi: {_yr.get('filtre_debisi_ls', 0):.0f} L/s; "
+              f"toplam maksimum debi: {_yr.get('filtre_toplam_debisi_ls', _yr.get('filtre_debisi_ls', 0)):,.0f} L/s"
           )
           if _yr.get('filtre_poz_rapora_eklensin', True):
               doc.add_paragraph(
