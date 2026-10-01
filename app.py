@@ -4130,8 +4130,16 @@ with _t_sihhi:
                     step=0.1, format="%.1f", key="tasma_max_hiz"
                 )
 
-            tasma_Q_lps = tasma_debisi / 3.6
-            tasma_Q_m3s = tasma_debisi / 3600.0
+            # Proje tasarım kriteri: taşma hattı tasarım debisi en fazla 200 L/s kabul edilir.
+            # Hesaplanan gerçek değer ayrıca gösterilir; hidrolik ön boyutlandırmada
+            # kullanılan tasarım debisi 200 L/s ile sınırlandırılır.
+            TASMA_MAKS_TASARIM_DEBISI_LPS = 200.0
+            tasma_hesaplanan_Q_lps = tasma_debisi / 3.6
+            tasma_tasarim_Q_lps = min(tasma_hesaplanan_Q_lps, TASMA_MAKS_TASARIM_DEBISI_LPS)
+            tasma_tasarim_debisi_m3h = tasma_tasarim_Q_lps * 3.6
+            tasma_debi_sinirlandi = tasma_hesaplanan_Q_lps > TASMA_MAKS_TASARIM_DEBISI_LPS
+            tasma_Q_lps = tasma_tasarim_Q_lps
+            tasma_Q_m3s = tasma_Q_lps / 1000.0
             tasma_S = tasma_egim_yuzde / 100.0
             tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
             tasma_hidrolik_tablo = []
@@ -4154,6 +4162,19 @@ with _t_sihhi:
             tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
 
+            st.markdown(
+                f"**Hesaplanan taşma debisi:** {tasma_hesaplanan_Q_lps:.2f} L/s = {tasma_debisi:.2f} m³/h"
+            )
+            if tasma_debi_sinirlandi:
+                st.warning(
+                    f"Proje tasarım kriteri gereği hidrolik kontrolde taşma debisi "
+                    f"maksimum {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s ile sınırlandırılmıştır. "
+                    f"Hesaplanan değer {tasma_hesaplanan_Q_lps:.2f} L/s'tir."
+                )
+            st.markdown(
+                f"**Tasarım taşma debisi:** **{tasma_tasarim_Q_lps:.2f} L/s** "
+                f"= **{tasma_tasarim_debisi_m3h:.2f} m³/h** (üst sınır: {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
+            )
             st.markdown(
                 f"**Manning:** Q = (1/n) × A × R^(2/3) × S^(1/2)  "
                 f"→ n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
@@ -4219,10 +4240,19 @@ with _t_sihhi:
                 },
             ]
 
+            # Taşkan sifonu seçimi, 200 L/s'lik proje tasarım üst sınırı ile
+            # hidrolik olarak belirlenen minimum taşma hattı çapı birlikte dikkate
+            # alınarak yapılır. 25.181.5400 grubunda mevcut en büyük çap Ø200'dür.
             tasma_sifonu_secim = next(
                 (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
                 None,
             )
+            if tasma_sifonu_secim is None and tasma_tasarim_Q_lps <= TASMA_MAKS_TASARIM_DEBISI_LPS:
+                # Poz grubunun üst sınırı Ø200'dür. Hidrolik hattın DN'si daha büyük
+                # çıksa bile poz seçimi, proje tasarım üst sınırı için mevcut en büyük
+                # Taşkan Sifonu pozundan yapılır; ana taşma borusu hidrolik çapından
+                # ayrı olarak raporlanır.
+                tasma_sifonu_secim = TASKAN_SIFONU_POZLARI[-1]
 
             sifon1, sifon2 = st.columns(2)
             with sifon1:
@@ -4251,7 +4281,8 @@ with _t_sihhi:
                 if tasma_sifonu_secim:
                     st.success(
                         f"Otomatik Taşkan Sifonu seçimi: {tasma_sifonu_secim['poz']} — "
-                        f"{tasma_sifonu_secim['tanim']} (Hidrolik minimum DN {tasma_cap})"
+                        f"{tasma_sifonu_secim['tanim']} "
+                        f"(tasarım taşma debisi üst sınırı {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
                     )
                     st.markdown(
                         f"**Pozdan alınan özellik:** {tasma_sifonu_secim['ozellik']}"
@@ -4317,7 +4348,13 @@ with _t_sihhi:
                 "gerekli_depo": yagmur_gerekli_depo,
                 "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
                 "secilen_depo": yagmur_secilen_depo,
-                "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
+                "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi,
+                "tasma_hesaplanan_Q_lps": tasma_hesaplanan_Q_lps,
+                "tasma_tasarim_Q_lps": tasma_tasarim_Q_lps,
+                "tasma_tasarim_debisi_m3h": tasma_tasarim_debisi_m3h,
+                "tasma_debi_sinirlandi": tasma_debi_sinirlandi,
+                "tasma_maks_tasarim_Q_lps": TASMA_MAKS_TASARIM_DEBISI_LPS,
+                "tasma_cap": tasma_cap,
                 "tasma_Q_lps": tasma_Q_lps, "tasma_Q_m3s": tasma_Q_m3s,
                 "tasma_malzeme": tasma_malzeme, "tasma_manning_n": tasma_manning_n,
                 "tasma_egim_yuzde": tasma_egim_yuzde, "tasma_max_hiz": tasma_max_hiz,
@@ -7933,6 +7970,11 @@ if _rapor_olustur_sidebar:
           _tasma_Qson = _yr.get('tasma_debisi', 0)
           _tasma_DN = _yr.get('tasma_cap', 0)
           _tasma_Q_lps = _yr.get('tasma_Q_lps', _tasma_Qson / 3.6)
+          _tasma_hesaplanan_Q_lps = _yr.get('tasma_hesaplanan_Q_lps', _tasma_Qson / 3.6)
+          _tasma_tasarim_Q_lps = _yr.get('tasma_tasarim_Q_lps', _tasma_Q_lps)
+          _tasma_tasarim_debisi_m3h = _yr.get('tasma_tasarim_debisi_m3h', _tasma_tasarim_Q_lps * 3.6)
+          _tasma_debi_sinirlandi = _yr.get('tasma_debi_sinirlandi', False)
+          _tasma_maks_tasarim_Q_lps = _yr.get('tasma_maks_tasarim_Q_lps', 200.0)
           _tasma_n = _yr.get('tasma_manning_n', 0.011)
           _tasma_malzeme = _yr.get('tasma_malzeme', 'PVC')
           _tasma_egim = _yr.get('tasma_egim_yuzde', 1.0)
@@ -7955,8 +7997,19 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph("3. Emniyet katsayısı uygulanmış taşma debisi:")
           doc.add_paragraph("Qtaşma = Qyağış × (1 + E / 100)")
           doc.add_paragraph(
-              f"Qtaşma = {_tasma_Q:,.2f} × (1 + {_tasma_E:.2f} / 100) = {_tasma_Qson:,.2f} m³/h"
+              f"Qtaşma = {_tasma_Q:,.2f} × (1 + {_tasma_E:.2f} / 100) = {_tasma_Qson:,.2f} m³/h = {_tasma_hesaplanan_Q_lps:,.2f} L/s"
           )
+          doc.add_paragraph(
+              f"Proje tasarım kriteri: taşma hattı tasarım debisi maksimum {_tasma_maks_tasarim_Q_lps:,.0f} L/s olarak sınırlandırılmıştır."
+          )
+          doc.add_paragraph(
+              f"Tasarım taşma debisi = min({_tasma_hesaplanan_Q_lps:,.2f}, {_tasma_maks_tasarim_Q_lps:,.0f}) = {_tasma_tasarim_Q_lps:,.2f} L/s = {_tasma_tasarim_debisi_m3h:,.2f} m³/h"
+          )
+          if _tasma_debi_sinirlandi:
+              doc.add_paragraph(
+                  "Not: Hesaplanan taşma debisi 200 L/s üst sınırını aştığı için hidrolik ön boyutlandırmada "
+                  "tasarım debisi 200 L/s alınmıştır. Hesaplanan gerçek debi ayrıca yukarıda gösterilmiştir."
+              )
           doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
           doc.add_paragraph(
               f"Boru malzemesi: {_tasma_malzeme}; Manning katsayısı n = {_tasma_n:.3f}; boru eğimi = %{_tasma_egim:.2f}; "
@@ -7997,6 +8050,9 @@ if _rapor_olustur_sidebar:
               _sifon_dn = int(_yr.get("tasma_sifonu_dn", 0) or 0)
               _sifon_tanim = str(_yr.get("tasma_sifonu_tanim", "") or "").strip()
               _sifon_ozellik = str(_yr.get("tasma_sifonu_ozellik", "") or "").strip()
+              doc.add_paragraph(
+                  f"Hidrolik hesapta kullanılan tasarım taşma debisi: {_tasma_tasarim_Q_lps:,.2f} L/s (üst sınır {_tasma_maks_tasarim_Q_lps:,.0f} L/s)."
+              )
               doc.add_paragraph(
                   f"Hidrolik hesap sonucu gerekli minimum taşma hattı: DN {_tasma_DN}."
               )
