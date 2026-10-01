@@ -3890,6 +3890,22 @@ with _t_sihhi:
             )
             yagmur_depo_poz = yagmur_depo_poz_kaydi[1] if yagmur_depo_poz_kaydi else ""
 
+            # Daha önceki depo/hidrofor modüllerindeki aynı rapora aktar / kaldır
+            # mantığı burada da kullanılır. Poz programda görünmeye devam eder;
+            # yalnızca rapora aktarılıp aktarılmayacağı kullanıcı tarafından seçilir.
+            yagmur_depo_poz_rapora_eklensin_key = "yagmur_depo_poz_rapora_eklensin_v1"
+            yagmur_depo_poz_rapora_eklensin = st.checkbox(
+                "Cihaz Poz Numarasını Hesap Raporuna Aktar",
+                value=bool(st.session_state.get(yagmur_depo_poz_rapora_eklensin_key, True)),
+                key=yagmur_depo_poz_rapora_eklensin_key,
+                help=(
+                    "İşaretli ise modüler paslanmaz veya modüler galvaniz su deposunun "
+                    "seçilen Cihaz Poz No bilgisi hesap raporuna eklenir. "
+                    "İşaret kaldırılırsa poz programda görünür ancak rapora aktarılmaz. "
+                    "Betonarme su deposunda Cihaz Poz No gösterilmez."
+                ),
+            )
+
             if yagmur_depo_poz:
                 st.write(f"Cihaz Poz No: **{yagmur_depo_poz}**")
             elif str(sih_yagmur_depo_tipi or "").strip() == "Betonarme Su Deposu":
@@ -4110,6 +4126,7 @@ with _t_sihhi:
                 "yagmur_depo_tipi": sih_yagmur_depo_tipi,
                 "yagmur_depo_poz": yagmur_depo_poz,
                 "yagmur_depo_poz_kapasitesi": yagmur_depo_poz_kapasitesi,
+                "yagmur_depo_poz_rapora_eklensin": yagmur_depo_poz_rapora_eklensin,
                 "gerekli_depo": yagmur_gerekli_depo,
                 "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
                 "secilen_depo": yagmur_secilen_depo,
@@ -7673,7 +7690,7 @@ if _rapor_olustur_sidebar:
                   f"Seçilen depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³"
               )
           _rapor_yagmur_depo_poz = str(_yr.get("yagmur_depo_poz", "") or "").strip()
-          if _rapor_yagmur_depo_poz:
+          if _yr.get("yagmur_depo_poz_rapora_eklensin", True) and _rapor_yagmur_depo_poz:
               doc.add_paragraph(f"Cihaz Poz No: {_rapor_yagmur_depo_poz}")
 
           doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
