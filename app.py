@@ -127,6 +127,65 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
     return None, None, _son_url
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_aylik_ortalama_yagis_mm(il_adi):
+    """MGM sayfasındaki 12 aylık 'Aylık Toplam Yağış Miktarı Ortalaması (mm)'
+    değerlerini döndürür. Sonuç: (aylik_dict, yillik_olcum_periyodu, url).
+    """
+    import re as _re
+    import unicodedata as _unicodedata
+    import html as _html_lib
+
+    il_adi = str(il_adi or "").strip()
+    if not il_adi:
+        return {}, "", None
+    _il_url = "".join(ch for ch in _unicodedata.normalize("NFKD", il_adi)
+                       if not _unicodedata.combining(ch)).upper()
+    _il_url = (_il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
+               .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U"))
+    _il_url = MGM_IL_URL_KODU.get(il_adi, _il_url)
+    _base = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+    _urls = [f"{_base}?k=undefined&m={_il_url}", f"{_base}?m={_il_url}"]
+    _headers = {"User-Agent": "Mozilla/5.0", "Accept-Language": "tr-TR,tr;q=0.9"}
+    _aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+              "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+
+    for _url in _urls:
+        try:
+            _req = urllib.request.Request(_url, headers=_headers)
+            with urllib.request.urlopen(_req, timeout=20) as _response:
+                _html = _response.read().decode("utf-8", errors="ignore")
+            _metin = _html_lib.unescape(_html or "")
+            _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _metin, flags=_re.I|_re.S)
+            _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I|_re.S)
+            _metin = _re.sub(r"<[^>]+>", " | ", _metin)
+            _metin = _re.sub(r"\s+", " ", _metin).strip()
+            _baslik = "Aylık Toplam Yağış Miktarı Ortalaması (mm)"
+            _pos = _metin.lower().find(_baslik.lower())
+            if _pos < 0:
+                continue
+            _parca = _metin[_pos:_pos+1600]
+            # Başlıktan sonraki ilk 12 ondalık/tamsayı değer MGM'nin Ocak-Aralık verileridir.
+            _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?(?=\s*(?:\||$))", _parca)
+            if len(_vals) < 12:
+                # HTML temizliğindeki varyasyonlar için daha geniş desen.
+                _vals = _re.findall(r"\d+(?:[.,]\d+)?", _parca)
+            _nums=[]
+            for _v in _vals:
+                try: _nums.append(float(_v.replace(',', '.')))
+                except ValueError: pass
+            if len(_nums) >= 12:
+                _nums = _nums[:12]
+                _aylik = dict(zip(_aylar, _nums))
+                _period = ""
+                _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)\)", _parca, flags=_re.I)
+                if _m: _period = _m.group(1).strip()
+                return _aylik, _period, _url
+        except Exception:
+            continue
+    return {}, "", _urls[-1]
+
+
 # MGM'nin il seçimindeki resmi 81 il listesi.
 # Rapor tablosu yalnızca Word raporu oluşturulurken kullanılır; arayüzde gösterilmez.
 MGM_81_IL = [
@@ -3510,33 +3569,66 @@ with _t_sihhi:
                     step=10.0, key="yagmur_cati_alani"
                 )
             with c2:
-                # Seçilen ile göre MGM'den resmi maksimum günlük yağış verisini
-                # otomatik getir. İl değiştiğinde P değeri yeni ilin MGM değeriyle
-                # güncellenir; aynı ilde kullanıcı isterse değeri manuel değiştirebilir.
+                # Seçilen il için MGM'den üç alternatif yağış verisi alınır.
                 _mgm_yagis_mm, _mgm_yagis_tarih, _mgm_yagis_url = mgm_gunluk_en_yuksek_yagis_mm(secilen_il)
+                _mgm_aylik, _mgm_aylik_periyot, _mgm_aylik_url = mgm_aylik_ortalama_yagis_mm(secilen_il)
+                _aylik_degerler = list(_mgm_aylik.values())
+                _ortalama_aylik_yagis = (sum(_aylik_degerler) / 12.0) if len(_aylik_degerler) == 12 else None
+                _en_yuksek_ay = max(_mgm_aylik, key=_mgm_aylik.get) if _mgm_aylik else None
+                _en_yuksek_ay_yagis = _mgm_aylik.get(_en_yuksek_ay) if _en_yuksek_ay else None
+
+                _yagis_yontemleri = [
+                    "Günlük Toplam En Yüksek Yağış Miktarı",
+                    "Ortalama Aylık Yağış Miktarı",
+                    "En Yüksek Aylık Ortalama Yağış Miktarı",
+                ]
+                _yagis_yontemi = st.radio(
+                    "Tasarım yağış verisi seçimi",
+                    _yagis_yontemleri,
+                    index=_yagis_yontemleri.index(st.session_state.get("yagmur_yagis_yontemi", _yagis_yontemleri[0]))
+                    if st.session_state.get("yagmur_yagis_yontemi", _yagis_yontemleri[0]) in _yagis_yontemleri else 0,
+                    key="yagmur_yagis_yontemi",
+                )
+
+                if _yagis_yontemi == _yagis_yontemleri[0]:
+                    _otomatik_p = _mgm_yagis_mm
+                    _yagis_aciklama = (
+                        f"MGM günlük toplam en yüksek yağış: **{_mgm_yagis_mm:.1f} mm** "
+                        f"({_mgm_yagis_tarih})" if _mgm_yagis_mm is not None else "MGM verisi alınamadı."
+                    )
+                elif _yagis_yontemi == _yagis_yontemleri[1]:
+                    _otomatik_p = _ortalama_aylik_yagis
+                    _yagis_aciklama = (
+                        f"12 aylık ortalama yağışların aritmetik ortalaması: **{_ortalama_aylik_yagis:.1f} mm**"
+                        if _ortalama_aylik_yagis is not None else "MGM aylık ortalama yağış verisi alınamadı."
+                    )
+                else:
+                    _otomatik_p = _en_yuksek_ay_yagis
+                    _yagis_aciklama = (
+                        f"En yüksek aylık ortalama yağış: **{_en_yuksek_ay} – {_en_yuksek_ay_yagis:.1f} mm**"
+                        if _en_yuksek_ay_yagis is not None else "MGM aylık ortalama yağış verisi alınamadı."
+                    )
+
+                _onceki_yagis_yontemi = st.session_state.get("yagmur_yagis_yontemi_onceki", "")
                 _onceki_mgm_il = st.session_state.get("yagmur_mgm_il", "")
-                if _onceki_mgm_il != secilen_il:
-                    if _mgm_yagis_mm is not None:
-                        st.session_state["yagmur_yagis"] = float(_mgm_yagis_mm)
-                    st.session_state["yagmur_mgm_il"] = secilen_il
+                if (_onceki_mgm_il != secilen_il or _onceki_yagis_yontemi != _yagis_yontemi) and _otomatik_p is not None:
+                    st.session_state["yagmur_yagis"] = float(_otomatik_p)
+                st.session_state["yagmur_mgm_il"] = secilen_il
+                st.session_state["yagmur_yagis_yontemi_onceki"] = _yagis_yontemi
 
                 yagmur_yagis = st.number_input(
                     "Tasarım yağış yüksekliği P (mm)", min_value=0.0,
                     step=1.0, key="yagmur_yagis",
-                    help="Seçilen il için MGM Resmi İklim İstatistikleri sayfasındaki Günlük Toplam En Yüksek Yağış Miktarı otomatik alınır. İsterseniz proje tasarım kriterinize göre manuel olarak değiştirebilirsiniz."
+                    help="Seçilen yönteme göre MGM verisinden otomatik gelir; istenirse proje tasarım kriterine göre manuel değiştirilebilir."
                 )
-
-                if _mgm_yagis_mm is not None:
+                st.caption(_yagis_aciklama)
+                if _yagis_yontemi != _yagis_yontemleri[0] and _mgm_aylik:
                     st.caption(
-                        f"☁️ MGM verisi — {secilen_il}: **{_mgm_yagis_mm:.1f} mm** "
-                        f"({_mgm_yagis_tarih}). Değer otomatik işlendi."
+                        "MGM aylık ortalama yağışları: " +
+                        " | ".join(f"{_ay}: {_deger:.1f} mm" for _ay, _deger in _mgm_aylik.items())
                     )
+                if _mgm_yagis_mm is not None:
                     st.caption(f"Kaynak: MGM Resmi İklim İstatistikleri — {_mgm_yagis_url}")
-                else:
-                    st.warning(
-                        f"MGM'den {secilen_il} için yağış verisi alınamadı. "
-                        "P değerini manuel giriniz."
-                    )
             with c3:
                 yagmur_akis_katsayisi = st.number_input(
                     "Akış katsayısı C", min_value=0.0, max_value=1.0,
@@ -3682,6 +3774,12 @@ with _t_sihhi:
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
+                "yagis_yontemi": _yagis_yontemi,
+                "mgm_aylik_yagis": _mgm_aylik,
+                "mgm_aylik_periyot": _mgm_aylik_periyot,
+                "mgm_ortalama_aylik_yagis": _ortalama_aylik_yagis,
+                "mgm_en_yuksek_ay": _en_yuksek_ay,
+                "mgm_en_yuksek_ay_yagis": _en_yuksek_ay_yagis,
                 "ham_toplanabilir_m3": yagmur_ham_toplanabilir_m3,
                 "sarnic_orani": yagmur_sarnic_orani,
                 "filtre_etkinlik": yagmur_filtre_etkinlik,
@@ -7019,11 +7117,60 @@ if _rapor_olustur_sidebar:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
           doc.add_heading("• YAĞMUR SUYU TOPLAMA HESABI", level=4)
-          if _yr.get("mgm_yagis_mm") is not None:
+          _yr_yontem = _yr.get("yagis_yontemi", "Günlük Toplam En Yüksek Yağış Miktarı")
+          if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
+              if _yr.get("mgm_yagis_mm") is not None:
+                  doc.add_paragraph(
+                      f"Tasarım yağış verisi: {_yr_yontem}. "
+                      f"{_yr.get('mgm_il', '')} ili için P = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
+                      f"({_yr.get('mgm_yagis_tarih', '')})."
+                  )
+          elif _yr_yontem == "Ortalama Aylık Yağış Miktarı":
               doc.add_paragraph(
-                  f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
-                  f"Yağış Miktarı = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
-                  f"({_yr.get('mgm_yagis_tarih', '')})."
+                  f"Tasarım yağış verisi: {_yr_yontem}. "
+                  f"12 aylık ortalama yağış değerlerinin aritmetik ortalaması ile P = "
+                  f"{_yr.get('mgm_ortalama_aylik_yagis', 0):.1f} mm alınmıştır."
+              )
+          else:
+              doc.add_paragraph(
+                  f"Tasarım yağış verisi: {_yr_yontem}. "
+                  f"{_yr.get('mgm_en_yuksek_ay', '')} ayındaki en yüksek aylık ortalama yağış değeri "
+                  f"P = {_yr.get('mgm_en_yuksek_ay_yagis', 0):.1f} mm alınmıştır."
+              )
+
+          # Seçilen ilin 12 aylık ortalama yağış tablosu rapora eklenir.
+          _aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
+          if _aylik_rapor:
+              doc.add_heading("SEÇİLEN İLİN AYLIK ORTALAMA YAĞIŞ DEĞERLERİ", level=5)
+              _ay_tbl = doc.add_table(rows=1, cols=3)
+              _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+              _ay_tbl.autofit = True
+              _ay_hdr = _ay_tbl.rows[0].cells
+              _ay_hdr[0].text = "AY"
+              _ay_hdr[1].text = "ORTALAMA YAĞIŞ (mm)"
+              _ay_hdr[2].text = "DURUM"
+              _en_ay = _yr.get("mgm_en_yuksek_ay", "")
+              for _ay in ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]:
+                  if _ay not in _aylik_rapor: continue
+                  _c = _ay_tbl.add_row().cells
+                  _c[0].text = _ay
+                  _c[1].text = f"{_aylik_rapor[_ay]:.1f}"
+                  _c[2].text = "EN YÜKSEK AY" if _ay == _en_ay else ""
+                  for _cell in _c:
+                      _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                      for _p in _cell.paragraphs:
+                          _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                          for _r in _p.runs: _r.font.size = Pt(8.5)
+                  if _ay == _en_ay:
+                      for _cell in _c:
+                          _tcPr = _cell._tc.get_or_add_tcPr()
+                          _shd = OxmlElement("w:shd"); _shd.set(qn("w:fill"), "FFF2CC"); _tcPr.append(_shd)
+                          for _p in _cell.paragraphs:
+                              for _r in _p.runs: _r.bold = True
+              doc.add_paragraph(
+                  f"12 aylık ortalama değerlerin aritmetik ortalaması: "
+                  f"{_yr.get('mgm_ortalama_aylik_yagis', 0):.1f} mm; "
+                  f"en yüksek aylık ortalama: {_en_ay} = {_yr.get('mgm_en_yuksek_ay_yagis', 0):.1f} mm."
               )
 
           # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
