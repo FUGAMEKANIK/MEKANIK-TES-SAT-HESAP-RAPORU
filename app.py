@@ -4138,10 +4138,24 @@ with _t_sihhi:
             tasma_tasarim_Q_lps = min(tasma_hesaplanan_Q_lps, TASMA_MAKS_TASARIM_DEBISI_LPS)
             tasma_tasarim_debisi_m3h = tasma_tasarim_Q_lps * 3.6
             tasma_debi_sinirlandi = tasma_hesaplanan_Q_lps > TASMA_MAKS_TASARIM_DEBISI_LPS
+            # Taşma hattı adedi: tek hat yeterli değilse aynı DN sınıfında paralel
+            # iki veya üç hat seçilebilir. Her hatta düşen debi ayrı ayrı kontrol edilir.
+            tasma_hat_adedi = st.selectbox(
+                "Taşma hattı adedi",
+                [1, 2, 3],
+                index=max(0, min(2, int(st.session_state.get("tasma_hat_adedi", 1)) - 1)),
+                format_func=lambda x: f"{x} hat",
+                key="tasma_hat_adedi",
+            )
+
             tasma_Q_lps = tasma_tasarim_Q_lps
             tasma_Q_m3s = tasma_Q_lps / 1000.0
+            tasma_hat_Q_lps = tasma_Q_lps / max(1, int(tasma_hat_adedi))
+            tasma_hat_Q_m3s = tasma_hat_Q_lps / 1000.0
             tasma_S = tasma_egim_yuzde / 100.0
             tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200]
+
+            # Her hat için gerekli DN, hat adedine bölünmüş debiye göre belirlenir.
             tasma_hidrolik_tablo = []
             for _dn in tasma_dn_listesi:
                 _D = _dn / 1000.0
@@ -4150,19 +4164,37 @@ with _t_sihhi:
                 _Qkap = (1.0 / tasma_manning_n) * _A * (_R ** (2.0 / 3.0)) * math.sqrt(tasma_S) if tasma_S > 0 and tasma_manning_n > 0 else 0.0
                 _Qkap_lps = _Qkap * 1000.0
                 _V = _Qkap / _A if _A > 0 else 0.0
-                _uygun = (_Qkap >= tasma_Q_m3s) and (_V <= tasma_max_hiz)
+                _uygun = (_Qkap >= tasma_hat_Q_m3s) and (_V <= tasma_max_hiz)
                 tasma_hidrolik_tablo.append({
                     "dn": _dn, "alan_m2": _A, "q_kapasite_lps": _Qkap_lps,
-                    "hiz_ms": _V, "uygun": _uygun
+                    "hiz_ms": _V, "uygun": _uygun,
+                    "hat_gerekli_lps": tasma_hat_Q_lps,
+                    "toplam_kapasite_lps": _Qkap_lps * int(tasma_hat_adedi),
                 })
 
             tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
-            # Proje tasarım kriteri: taşma hattı nominal çapı DN200 ile sınırlandırılmıştır.
-            # DN200 dâhil kontrol edilir; daha büyük çaplar otomatik seçilmez.
+            # Proje tasarım kriteri: her bir paralel taşma hattı DN200 ile sınırlıdır.
+            # Tek hat DN200'ü kurtarmıyorsa 2 veya 3 paralel hat ile debi bölünür.
             tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else 200
             tasma_capasite_lps = next((x["q_kapasite_lps"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
+            tasma_toplam_kapasite_lps = tasma_capasite_lps * int(tasma_hat_adedi)
+
+            # 1/2/3 hat seçenekleri içinde DN200 veya daha küçük çapla
+            # tasarım debisini karşılayan ilk seçenek kullanıcıya önerilir.
+            tasma_onerilen_hat_adedi = None
+            tasma_oneri_cap = None
+            for _adet in (1, 2, 3):
+                _q_hat = tasma_Q_lps / _adet
+                _uygun = next(
+                    (x for x in tasma_hidrolik_tablo if x["q_kapasite_lps"] >= _q_hat and x["hiz_ms"] <= tasma_max_hiz),
+                    None,
+                )
+                if _uygun is not None:
+                    tasma_onerilen_hat_adedi = _adet
+                    tasma_oneri_cap = _uygun["dn"]
+                    break
 
             st.markdown(
                 f"**Hesaplanan taşma debisi:** {tasma_hesaplanan_Q_lps:.2f} L/s = {tasma_debisi:.2f} m³/h"
@@ -4178,13 +4210,24 @@ with _t_sihhi:
                 f"= **{tasma_tasarim_debisi_m3h:.2f} m³/h** (üst sınır: {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
             )
             st.markdown(
+                f"**Taşma hattı adedi:** {tasma_hat_adedi} hat → her hatta düşen tasarım debisi = "
+                f"{tasma_hat_Q_lps:.2f} L/s"
+            )
+            if tasma_onerilen_hat_adedi is not None:
+                st.info(
+                    f"Önerilen minimum düzen: {tasma_onerilen_hat_adedi} hat × DN {tasma_oneri_cap}. "
+                    f"Kullanıcı seçimi: {tasma_hat_adedi} hat."
+                )
+            st.markdown(
                 f"**Manning:** Q = (1/n) × A × R^(2/3) × S^(1/2)  "
                 f"→ n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
-                f"Q gerekli = {tasma_Q_lps:.2f} L/s"
+                f"her hat için Q gerekli = {tasma_hat_Q_lps:.2f} L/s"
             )
             st.markdown(
-                f"**Seçilen minimum taşma hattı: DN {tasma_cap}**  "
-                f"→ kapasite = {tasma_capasite_lps:.2f} L/s, hız = {tasma_hiz_ms:.2f} m/s"
+                f"**Her hat için seçilen minimum taşma hattı: DN {tasma_cap}**  "
+                f"→ tek hat kapasitesi = {tasma_capasite_lps:.2f} L/s, "
+                f"toplam kapasite = {tasma_toplam_kapasite_lps:.2f} L/s, "
+                f"hız = {tasma_hiz_ms:.2f} m/s"
             )
 
             _tablo_satirlari = []
@@ -4197,9 +4240,16 @@ with _t_sihhi:
                 })
             st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
             if tasma_hidrolik_uygun:
-                st.success(f"Hidrolik kontrol: DN {tasma_cap}, {tasma_Q_lps:.2f} L/s taşma debisini karşılıyor ve hız {tasma_hiz_ms:.2f} m/s ile sınır içinde.")
+                st.success(
+                    f"Hidrolik kontrol: {tasma_hat_adedi} hat × DN {tasma_cap}; "
+                    f"her hat {tasma_hat_Q_lps:.2f} L/s, toplam kapasite {tasma_toplam_kapasite_lps:.2f} L/s. "
+                    f"Hız {tasma_hiz_ms:.2f} m/s ile sınır içinde."
+                )
             else:
-                st.warning("DN200, proje tasarımında izin verilen maksimum taşma hattı çapıdır. DN200 kapasitesi tasarım debisini karşılamıyorsa eğim, malzeme ve çıkış koşulları yeniden değerlendirilmelidir; DN200 üzeri çap otomatik seçilmez.")
+                st.warning(
+                    f"{tasma_hat_adedi} hat × DN200, hat başına {tasma_hat_Q_lps:.2f} L/s tasarım debisini karşılamıyor. "
+                    "Hat adedini artırın (2 veya 3 hat) veya eğim/malzeme/çıkış koşullarını yeniden değerlendirin."
+                )
 
             st.caption("Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır.")
 
@@ -4242,19 +4292,13 @@ with _t_sihhi:
                 },
             ]
 
-            # Taşkan sifonu seçimi, 200 L/s'lik proje tasarım üst sınırı ile
-            # hidrolik olarak belirlenen minimum taşma hattı çapı birlikte dikkate
-            # alınarak yapılır. 25.181.5400 grubunda mevcut en büyük çap Ø200'dür.
+            # Her paralel taşma hattı için bir adet Taşkan Sifonu seçilir.
+            # Sifon çapı, o hatta düşen debiye göre seçilen taşma hattı DN'sini karşılar.
             tasma_sifonu_secim = next(
                 (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
                 None,
             )
-            if tasma_sifonu_secim is None and tasma_tasarim_Q_lps <= TASMA_MAKS_TASARIM_DEBISI_LPS:
-                # Poz grubunun üst sınırı Ø200'dür. Hidrolik hattın DN'si daha büyük
-                # çıksa bile poz seçimi, proje tasarım üst sınırı için mevcut en büyük
-                # Taşkan Sifonu pozundan yapılır; ana taşma borusu hidrolik çapından
-                # ayrı olarak raporlanır.
-                tasma_sifonu_secim = TASKAN_SIFONU_POZLARI[-1]
+            tasma_sifonu_adedi = int(tasma_hat_adedi)
 
             sifon1, sifon2 = st.columns(2)
             with sifon1:
@@ -4282,9 +4326,9 @@ with _t_sihhi:
             if yagmur_tasma_sifonu:
                 if tasma_sifonu_secim:
                     st.success(
-                        f"Otomatik Taşkan Sifonu seçimi: {tasma_sifonu_secim['poz']} — "
-                        f"{tasma_sifonu_secim['tanim']} "
-                        f"(tasarım taşma debisi üst sınırı {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
+                        f"Otomatik Taşkan Sifonu seçimi: {tasma_sifonu_adedi} adet × "
+                        f"{tasma_sifonu_secim['poz']} — {tasma_sifonu_secim['tanim']} "
+                        f"(her hatta {tasma_hat_Q_lps:.2f} L/s)"
                     )
                     st.markdown(
                         f"**Taşkan Sifonu Özelliği:** {tasma_sifonu_secim['ozellik']}"
@@ -4357,6 +4401,12 @@ with _t_sihhi:
                 "tasma_debi_sinirlandi": tasma_debi_sinirlandi,
                 "tasma_maks_tasarim_Q_lps": TASMA_MAKS_TASARIM_DEBISI_LPS,
                 "tasma_cap": tasma_cap,
+                "tasma_hat_adedi": tasma_hat_adedi,
+                "tasma_hat_Q_lps": tasma_hat_Q_lps,
+                "tasma_hat_Q_m3s": tasma_hat_Q_m3s,
+                "tasma_toplam_kapasite_lps": tasma_toplam_kapasite_lps,
+                "tasma_onerilen_hat_adedi": tasma_onerilen_hat_adedi,
+                "tasma_oneri_cap": tasma_oneri_cap,
                 "tasma_Q_lps": tasma_Q_lps, "tasma_Q_m3s": tasma_Q_m3s,
                 "tasma_malzeme": tasma_malzeme, "tasma_manning_n": tasma_manning_n,
                 "tasma_egim_yuzde": tasma_egim_yuzde, "tasma_max_hiz": tasma_max_hiz,
@@ -4365,6 +4415,7 @@ with _t_sihhi:
                 "sifon": yagmur_tasma_sifonu,
                 "tasma_sifonu_poz": tasma_sifonu_secim["poz"] if tasma_sifonu_secim else "",
                 "tasma_sifonu_dn": tasma_sifonu_secim["dn"] if tasma_sifonu_secim else 0,
+                "tasma_sifonu_adedi": tasma_sifonu_adedi,
                 "tasma_sifonu_tanim": tasma_sifonu_secim["tanim"] if tasma_sifonu_secim else "",
                 "tasma_sifonu_ozellik": tasma_sifonu_secim["ozellik"] if tasma_sifonu_secim else "",
                 "tasma_sifonu_poz_rapora_eklensin": yagmur_tasma_sifonu_poz_rapora_eklensin,
@@ -7984,6 +8035,11 @@ if _rapor_olustur_sidebar:
           _tasma_kapasite = _yr.get('tasma_hidrolik_kapasite_lps', 0.0)
           _tasma_hiz = _yr.get('tasma_hidrolik_hiz_ms', 0.0)
           _tasma_uygun = _yr.get('tasma_hidrolik_uygun', False)
+          _tasma_hat_adedi = int(_yr.get('tasma_hat_adedi', 1) or 1)
+          _tasma_hat_Q_lps = float(_yr.get('tasma_hat_Q_lps', _tasma_tasarim_Q_lps / _tasma_hat_adedi) or 0)
+          _tasma_toplam_kapasite_lps = float(_yr.get('tasma_toplam_kapasite_lps', _tasma_kapasite * _tasma_hat_adedi) or 0)
+          _tasma_onerilen_hat_adedi = _yr.get('tasma_onerilen_hat_adedi')
+          _tasma_oneri_cap = _yr.get('tasma_oneri_cap')
 
           doc.add_paragraph("Taşma hattı hesabında çatıdan oluşan ham yağmur suyu hacmi, tasarım yağış süresine dağıtılmış ve ardından emniyet katsayısı uygulanmıştır.")
           doc.add_paragraph("1. Ham yağmur suyu hacmi:")
@@ -8012,6 +8068,15 @@ if _rapor_olustur_sidebar:
                   "Not: Hesaplanan taşma debisi 200 L/s üst sınırını aştığı için hidrolik ön boyutlandırmada "
                   "tasarım debisi 200 L/s alınmıştır. Hesaplanan gerçek debi ayrıca yukarıda gösterilmiştir."
               )
+          doc.add_paragraph(
+              f"Taşma hattı adedi: {_tasma_hat_adedi} adet; her hatta düşen tasarım debisi = "
+              f"{_tasma_tasarim_Q_lps:,.2f} / {_tasma_hat_adedi} = {_tasma_hat_Q_lps:,.2f} L/s"
+          )
+          if _tasma_onerilen_hat_adedi is not None:
+              doc.add_paragraph(
+                  f"DN200 sınırı altında tasarım debisini karşılayan önerilen minimum düzen: "
+                  f"{int(_tasma_onerilen_hat_adedi)} hat × DN {int(_tasma_oneri_cap)}."
+              )
           doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
           doc.add_paragraph(
               f"Boru malzemesi: {_tasma_malzeme}; Manning katsayısı n = {_tasma_n:.3f}; boru eğimi = %{_tasma_egim:.2f}; "
@@ -8019,11 +8084,13 @@ if _rapor_olustur_sidebar:
           )
           doc.add_paragraph("Q gerekli = Qtaşma / 3,6")
           doc.add_paragraph(
-              f"Q gerekli = {_tasma_Qson:,.2f} m³/h / 3,6 = {_tasma_Q_lps:,.2f} L/s = {_tasma_Qson/3600.0:,.4f} m³/s"
+              f"Q gerekli = {_tasma_tasarim_debisi_m3h:,.2f} m³/h / 3,6 = {_tasma_hat_Q_lps:,.2f} L/s/hat = {_tasma_hat_Q_lps/1000.0:,.4f} m³/s/hat"
           )
           doc.add_paragraph("Manning: Q = (1/n) × A × R^(2/3) × S^(1/2)")
           doc.add_paragraph(
-              f"Seçilen minimum taşma hattı: DN {_tasma_DN}; hidrolik kapasite = {_tasma_kapasite:,.2f} L/s; "
+              f"Seçilen minimum taşma hattı: {_tasma_hat_adedi} hat × DN {_tasma_DN}; "
+              f"tek hat hidrolik kapasitesi = {_tasma_kapasite:,.2f} L/s; "
+              f"toplam hidrolik kapasite = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
               f"boru içi hesaplanan hız = {_tasma_hiz:.2f} m/s"
           )
           doc.add_paragraph(
@@ -8052,14 +8119,20 @@ if _rapor_olustur_sidebar:
               _sifon_dn = int(_yr.get("tasma_sifonu_dn", 0) or 0)
               _sifon_tanim = str(_yr.get("tasma_sifonu_tanim", "") or "").strip()
               _sifon_ozellik = str(_yr.get("tasma_sifonu_ozellik", "") or "").strip()
+              _sifon_adedi = int(_yr.get("tasma_sifonu_adedi", _tasma_hat_adedi) or _tasma_hat_adedi)
               doc.add_paragraph(
-                  f"Hidrolik hesapta kullanılan tasarım taşma debisi: {_tasma_tasarim_Q_lps:,.2f} L/s (üst sınır {_tasma_maks_tasarim_Q_lps:,.0f} L/s)."
+                  f"Hidrolik hesapta kullanılan toplam tasarım taşma debisi: {_tasma_tasarim_Q_lps:,.2f} L/s "
+                  f"(üst sınır {_tasma_maks_tasarim_Q_lps:,.0f} L/s)."
               )
               doc.add_paragraph(
-                  f"Hidrolik hesap sonucu gerekli minimum taşma hattı: DN {_tasma_DN}."
+                  f"Taşma hattı düzeni: {_tasma_hat_adedi} paralel hat; her hat için tasarım debisi = "
+                  f"{_tasma_hat_Q_lps:,.2f} L/s."
+              )
+              doc.add_paragraph(
+                  f"Hidrolik hesap sonucu her hat için gerekli minimum taşma hattı: DN {_tasma_DN}."
               )
               if _sifon_tanim:
-                  doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_tanim}")
+                  doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_adedi} adet × {_sifon_tanim}")
               if _sifon_ozellik:
                   doc.add_paragraph(f"Taşkan Sifonu Özelliği: {_sifon_ozellik}")
               if _yr.get("tasma_sifonu_poz_rapora_eklensin") and _sifon_poz:
