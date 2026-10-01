@@ -4154,7 +4154,7 @@ with _t_sihhi:
             tasma_hat_Q_lps = tasma_Q_lps / max(1, int(tasma_hat_adedi))
             tasma_hat_Q_m3s = tasma_hat_Q_lps / 1000.0
             tasma_S = tasma_egim_yuzde / 100.0
-            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200]
+            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200, 250]
 
             # Her hat için gerekli DN, hat adedine bölünmüş debiye göre belirlenir.
             tasma_hidrolik_tablo = []
@@ -4174,15 +4174,15 @@ with _t_sihhi:
                 })
 
             tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
-            # Proje tasarım kriteri: her bir paralel taşma hattı DN200 ile sınırlıdır.
-            # Tek hat DN200'ü kurtarmıyorsa 2 veya 3 paralel hat ile debi bölünür.
+            # Proje tasarım kriteri: her bir paralel taşma hattı maksimum DN250 ile sınırlıdır.
+            # Tek hat DN250'yi kurtarmıyorsa 2 veya 3 paralel hat ile debi bölünür.
             tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else 200
             tasma_capasite_lps = next((x["q_kapasite_lps"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
             tasma_toplam_kapasite_lps = tasma_capasite_lps * int(tasma_hat_adedi)
 
-            # 1/2/3 hat seçenekleri içinde DN200 veya daha küçük çapla
+            # 1/2/3 hat seçenekleri içinde DN250 veya daha küçük çapla
             # tasarım debisini karşılayan ilk seçenek kullanıcıya önerilir.
             tasma_onerilen_hat_adedi = None
             tasma_oneri_cap = None
@@ -4248,7 +4248,7 @@ with _t_sihhi:
                 )
             else:
                 st.warning(
-                    f"{tasma_hat_adedi} hat × DN200, hat başına {tasma_hat_Q_lps:.2f} L/s tasarım debisini karşılamıyor. "
+                    f"{tasma_hat_adedi} hat × DN250, hat başına {tasma_hat_Q_lps:.2f} L/s tasarım debisini karşılamıyor. "
                     "Hat adedini artırın (2 veya 3 hat) veya eğim/malzeme/çıkış koşullarını yeniden değerlendirin."
                 )
 
@@ -4294,11 +4294,18 @@ with _t_sihhi:
             ]
 
             # Her paralel taşma hattı için bir adet Taşkan Sifonu seçilir.
-            # Sifon çapı, o hatta düşen debiye göre seçilen taşma hattı DN'sini karşılar.
-            tasma_sifonu_secim = next(
-                (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
-                None,
-            )
+            # Taşma hattı DN250 olsa dahi mevcut 25.181.5400 poz grubundaki
+            # en büyük sifon Ø200 olduğundan DN250 -> Ø200 sifon olarak seçilir.
+            if int(tasma_cap) >= 200:
+                tasma_sifonu_secim = next(
+                    (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) == 200),
+                    None,
+                )
+            else:
+                tasma_sifonu_secim = next(
+                    (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
+                    None,
+                )
             tasma_sifonu_adedi = int(tasma_hat_adedi)
 
             sifon1, sifon2 = st.columns(2)
@@ -8075,7 +8082,7 @@ if _rapor_olustur_sidebar:
           )
           if _tasma_onerilen_hat_adedi is not None:
               doc.add_paragraph(
-                  f"DN200 sınırı altında tasarım debisini karşılayan önerilen minimum düzen: "
+                  f"DN250 sınırı altında tasarım debisini karşılayan önerilen minimum düzen: "
                   f"{int(_tasma_onerilen_hat_adedi)} hat × DN {int(_tasma_oneri_cap)}."
               )
           doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
