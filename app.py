@@ -3824,24 +3824,23 @@ with _t_sihhi:
             # burada otomatik olarak gösterilir; burada ikinci bir tip seçimi yoktur.
             st.write(f"Yağmur suyu deposu tipi: **{sih_yagmur_depo_tipi}**")
 
+            # Otomatik 5 m³ katı doğrudan kullanıcı müdahale alanına başlangıç
+            # değeri olarak aktarılır. Kullanıcı daha önce elle değiştirmişse
+            # kendi değeri korunur; yeniden hesaplanan otomatik değer zorla
+            # üzerine yazılmaz.
             _yagmur_mevcut_depo = st.session_state.get("yagmur_secilen_depo", None)
             if _yagmur_mevcut_depo is None:
-                _yagmur_depo_baslangic = yagmur_otomatik_depo_hacmi
+                _yagmur_depo_baslangic = float(yagmur_otomatik_depo_hacmi)
+                st.session_state["yagmur_secilen_depo"] = _yagmur_depo_baslangic
             else:
-                # Daha önce kullanıcı tarafından elle girilmiş değer korunur;
-                # yeni hesaplanan otomatik değer daha büyükse altına düşmesine izin verilmez.
-                _yagmur_depo_baslangic = max(
-                    float(_yagmur_mevcut_depo),
-                    float(yagmur_otomatik_depo_hacmi),
-                )
+                _yagmur_depo_baslangic = float(_yagmur_mevcut_depo)
 
             yagmur_secilen_depo = st.number_input(
-                "Seçilen yağmur suyu deposu hacmi (m³) — elle müdahale edilebilir",
+                "Yağmur suyu deposu hacmi (m³) — elle müdahale edilebilir",
                 min_value=0.0,
-                value=float(_yagmur_depo_baslangic),
                 step=0.5,
                 key="yagmur_secilen_depo",
-                help="Program hesaplanan hacmi önce 5 m³'ün bir üst katına yuvarlar. İsterseniz bu değeri elle değiştirebilirsiniz."
+                help="Program hesaplanan hacmi 5 m³'ün bir üst katına otomatik yuvarlar ve bu değeri başlangıç olarak buraya aktarır. İsterseniz elle değiştirebilirsiniz."
             )
 
             st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
@@ -7609,9 +7608,16 @@ if _rapor_olustur_sidebar:
               f"{_yr.get('gerekli_depo', 0):.2f} m³"
           )
           doc.add_paragraph(f"Hesaplanan gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
-          _rapor_otomatik_depo = (math.ceil(float(_yr.get('gerekli_depo', 0) or 0) / 5.0) * 5.0) if float(_yr.get('gerekli_depo', 0) or 0) > 0 else 0.0
-          doc.add_paragraph(f"Otomatik seçilen depo hacmi (5 m³ katına yukarı yuvarlanmış): {_rapor_otomatik_depo:.2f} m³")
-          doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi (kullanıcı nihai değeri): {_yr.get('secilen_depo', 0):.2f} m³")
+          _rapor_secilen_depo = float(_yr.get('secilen_depo', 0) or 0)
+          _rapor_depo_tipi = str(_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi) or '').strip()
+          if _rapor_depo_tipi:
+              doc.add_paragraph(
+                  f'Seçilen "{_rapor_depo_tipi}" depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³'
+              )
+          else:
+              doc.add_paragraph(
+                  f"Seçilen depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³"
+              )
 
           doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
