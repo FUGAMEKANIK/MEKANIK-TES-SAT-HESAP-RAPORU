@@ -3501,7 +3501,7 @@ with _t_sihhi:
 
         if yagmur_aktif:
             st.markdown('<div id="bolum_631_2_1"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI")
+            st.markdown("##### • YAĞMUR SUYU TOPLAMA HESABI")
             c1, c2, c3 = st.columns(3)
             with c1:
                 yagmur_cati_alani = st.number_input(
@@ -7018,7 +7018,7 @@ if _rapor_olustur_sidebar:
         if _yagmur_aktif_rapor:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
-          doc.add_heading("6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI", level=4)
+          doc.add_heading("• YAĞMUR SUYU TOPLAMA HESABI", level=4)
           if _yr.get("mgm_yagis_mm") is not None:
               doc.add_paragraph(
                   f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
@@ -7121,11 +7121,18 @@ if _rapor_olustur_sidebar:
               "MGM verilerinin ölçüm periyotları illere göre farklılık gösterebilir."
           )
 
+          # Hesap girdileri ve yüzde parametreleri.
+          _yr_A = float(_yr.get('cati_alani', 0) or 0)
+          _yr_P = float(_yr.get('yagis', 0) or 0)
+          _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
+          _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
+          _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
+
           # Hesap girdileri, MGM kaynak bilgisinin hemen altında gösterilir.
           doc.add_paragraph(
-              f"Toplama alanı: A = {_yr.get('cati_alani', 0):.2f} m²; "
-              f"tasarım yağış yüksekliği: P = {_yr.get('yagis', 0):.2f} mm; "
-              f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
+              f"Toplama alanı: A = {_yr_A:.2f} m²; "
+              f"tasarım yağış yüksekliği: P = {_yr_P:.2f} mm; "
+              f"akış katsayısı: C = {_yr_C:.2f}"
           )
 
           doc.add_paragraph(
@@ -7134,11 +7141,6 @@ if _rapor_olustur_sidebar:
           )
 
           # Ham yağış hacmi ve iki yüzde parametresi uygulanarak sarnıca alınacak hacim.
-          _yr_A = float(_yr.get('cati_alani', 0) or 0)
-          _yr_P = float(_yr.get('yagis', 0) or 0)
-          _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
-          _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
-          _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
           _yr_ham_V = float(_yr.get('ham_toplanabilir_m3', _yr_A * _yr_P * _yr_C / 1000.0) or 0)
           _yr_V = float(_yr.get('toplanabilir_m3', _yr_ham_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
           doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak su hesabı:")
@@ -7933,6 +7935,11 @@ if _rapor_olustur_sidebar:
 
     st.session_state["_rapor_hazir_docx_v134"] = buffer.getvalue()
     st.session_state["_rapor_hazir_adi_v134"] = dosya_adi
+
+    # Rapor oluşturma bloğu sayfanın sonunda çalıştığı için, üstteki indirme
+    # düğmesinin yeni oluşturulan dosyayı gösterebilmesi amacıyla bir kez
+    # yeniden çalıştırılır. İstek zaten pop edildiğinden döngü oluşmaz.
+    st.rerun()
 
 
 # SAYFA SONU ANKORU
