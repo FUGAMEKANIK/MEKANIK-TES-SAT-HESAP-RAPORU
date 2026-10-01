@@ -1540,93 +1540,50 @@ hidrofor_hesaplari = []
 # ---------------------------------------------------------------------------
 # ANA TESİSAT KATEGORİLERİ - GÖRSEL DÜZEN
 # ---------------------------------------------------------------------------
-# NOT: Önceki sürümlerde yalnızca role="tablist" seçicisi hedefleniyordu.
-# Streamlit/BaseWeb sürümlerine göre sekme çubuğunda data-baseweb="tab-list"
-# kullanılabildiği için iki yapıyı da kapsıyoruz. Ana sekme grubu ilk st.tabs()
-# grubudur. Hedef doğrudan tab-list elementidir; böylece kullanıcı sayfayı
-# aşağı/yukarı kaydırsa bile ana sekmeler viewport'un üstünde kalır.
 st.markdown(
     """
     <style>
-    /* ================================================================
-       ANA TESİSAT SEKME ÇUBUĞU - SOLDAKİ BEYAZ ALANDA SABİT
-       ================================================================ */
+    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
+    div[data-testid="stTabs"] {
+        margin-top: 6px;
+    }
 
-    /*
-       Ana 6 sekmeyi ekranın solundaki boş beyaz alana taşıyoruz.
-       Sekme panelinin kendisi normal akışta kalır; yalnızca tab-list sabittir.
-    */
-    div[data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-testid="stTabs"] [role="tablist"] {
-        position: fixed !important;
-        top: 12px !important;
-        left: 88px !important;
-        width: 500px !important;
-        max-width: 500px !important;
-        min-height: 42px !important;
-        box-sizing: border-box !important;
-        z-index: 9999999 !important;
-        display: flex !important;
-        align-items: flex-end !important;
+        gap: 4px !important;
+        border-bottom: 2px solid #D7DEE8 !important;
         overflow-x: auto !important;
-        overflow-y: hidden !important;
+        padding-bottom: 0 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 11px 16px !important;
+        min-height: 44px !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: #334155 !important;
+        background: #F3F6FA !important;
+        border: 1px solid #D7DEE8 !important;
+        border-bottom: 3px solid transparent !important;
         white-space: nowrap !important;
-        background: #FFFFFF !important;
-        padding: 0 6px !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"]:hover {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+        border-color: #B8C7D9 !important;
+        border-bottom: 4px solid #0B3D91 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
         margin: 0 !important;
-        border-bottom: 1px solid #D7DEE8 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
-        border-radius: 0 0 4px 4px !important;
-    }
-
-    /* Ana sekmelerin kendileri */
-    div[data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"],
-    div[data-testid="stTabs"] [role="tablist"] button[role="tab"] {
-        position: relative !important;
-        z-index: 10000000 !important;
-        flex: 0 0 auto !important;
-        pointer-events: auto !important;
-        font-size: 12px !important;
-        padding: 9px 9px 8px 9px !important;
-        min-height: 34px !important;
-        background: #FFFFFF !important;
-        white-space: nowrap !important;
-        cursor: pointer !important;
-    }
-
-    /* Aktif sekmenin mevcut kırmızı alt çizgisi */
-    div[data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"][aria-selected="true"]::after,
-    div[data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"]::after {
-        content: "" !important;
-        position: absolute !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: -1px !important;
-        height: 2px !important;
-        background: #FF4B4B !important;
-    }
-
-    /* Tab paneli normal sayfa akışında kalsın */
-    div[data-testid="stTabs"] [role="tabpanel"],
-    div[data-testid="stTabs"] [data-baseweb="tab-panel"] {
-        position: static !important;
-    }
-
-    /* Streamlit'in iç wrapper'ının taşmasını engelleme */
-    div[data-testid="stTabs"] [data-baseweb="tab-list"] > div,
-    div[data-testid="stTabs"] [role="tablist"] > div {
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-    }
-
-    /* Sol boş alan daralırsa sekmeler yatay kaydırılabilir */
-    @media (max-width: 900px) {
-        div[data-testid="stTabs"] [data-baseweb="tab-list"],
-        div[data-testid="stTabs"] [role="tablist"] {
-            left: 84px !important;
-            width: calc(100vw - 96px) !important;
-            max-width: calc(100vw - 96px) !important;
-        }
     }
     </style>
     """,
