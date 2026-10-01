@@ -30,73 +30,101 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
     """MGM Resmi İklim İstatistikleri sayfasından ilin günlük toplam en
     yüksek yağış miktarını (mm) ve gerçekleşme tarihini çeker.
 
-    MGM sayfasındaki ilgili alan: "Günlük Toplam En Yüksek Yağış Miktarı".
-    Bu değer yağmur suyu hesabındaki P (mm) alanına otomatik aktarılır.
+    MGM'nin bazı il sayfalarında bağlantı/HTML yapısı zaman zaman farklı
+    dönebildiği için birden fazla URL biçimi, yeniden deneme ve iki farklı
+    metin deseni kullanılır. Böylece rapordaki "Veri alınamadı" sayısı
+    mümkün olduğunca azaltılır.
     """
     import re as _re
     import unicodedata as _unicodedata
+    import html as _html_lib
+    import time as _time
 
     il_adi = str(il_adi or "").strip()
     if not il_adi:
         return None, None, None
 
-    # MGM URL'sindeki m parametresi Türkçe karakterlerden arındırılmış
-    # büyük harfli il adını kullanır (ANKARA, IZMIR, SANLIURFA vb.).
     _il_url = "".join(
         ch for ch in _unicodedata.normalize("NFKD", il_adi)
         if not _unicodedata.combining(ch)
     ).upper()
-    _il_url = _il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I").replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
-
-    _url = (
-        "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
-        f"?k=undefined&m={_il_url}"
+    _il_url = (
+        _il_url.replace("Ç", "C").replace("Ğ", "G")
+        .replace("İ", "I").replace("Ö", "O")
+        .replace("Ş", "S").replace("Ü", "U")
     )
 
-    try:
-        _req = urllib.request.Request(
-            _url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            },
-        )
-        with urllib.request.urlopen(_req, timeout=12) as _response:
-            _html = _response.read().decode("utf-8", errors="ignore")
+    # MGM'de aynı il istatistiğine ulaşabilen alternatif URL biçimleri.
+    _base1 = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+    _base2 = "https://www.mgm.gov.tr/Veridegerlendirme/Il-Ve-Ilceler-Istatistik.Aspx"
+    _urls = [
+        f"{_base1}?k=undefined&m={_il_url}",
+        f"{_base1}?m={_il_url}",
+        f"{_base2}?m={_il_url}",
+    ]
 
-        # HTML etiketlerini kaldırıp tablo metnini düz metne çevir.
-        _metin = _re.sub(r"<[^>]+>", " ", _html)
-        _metin = (
-            _metin.replace("&nbsp;", " ")
-            .replace("&uuml;", "ü").replace("&Uuml;", "Ü")
-            .replace("&ouml;", "ö").replace("&Ouml;", "Ö")
-            .replace("&ccedil;", "ç").replace("&Ccedil;", "Ç")
-            .replace("&gbreve;", "ğ").replace("&Gbreve;", "Ğ")
-            .replace("&scedil;", "ş").replace("&Scedil;", "Ş")
-            .replace("&rsquo;", "’").replace("&amp;", "&")
-        )
+    _baslik = "Günlük Toplam En Yüksek Yağış Miktarı"
+    _headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/140.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.7",
+        "Connection": "close",
+    }
+
+    def _parse_html(_html, _url):
+        # HTML entity'lerini gerçek karakterlere çevir; bazı MGM sayfalarında
+        # başlık/değerler entity olarak gelebiliyor.
+        _metin = _html_lib.unescape(_html or "")
+        _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _metin, flags=_re.I | _re.S)
+        _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I | _re.S)
+        _metin = _re.sub(r"<[^>]+>", " ", _metin)
         _metin = _re.sub(r"\s+", " ", _metin).strip()
 
-        _baslik = "Günlük Toplam En Yüksek Yağış Miktarı"
-        _pos = _metin.find(_baslik)
+        _pos = _metin.lower().find(_baslik.lower())
         if _pos < 0:
             return None, None, _url
 
-        _parca = _metin[_pos:_pos + 500]
-        # Örn.: 11.06.1997 88,9 mm
-        _eslesme = _re.search(
-            r"(\d{1,2}\.\d{1,2}\.\d{4})\s+([0-9]+(?:[.,][0-9]+)?)\s*mm",
-            _parca,
-            flags=_re.IGNORECASE,
-        )
-        if not _eslesme:
-            return None, None, _url
-
-        _tarih = _eslesme.group(1)
-        _deger = float(_eslesme.group(2).replace(",", "."))
-        return _deger, _tarih, _url
-
-    except Exception:
+        _parca = _metin[_pos:_pos + 1200]
+        _desenler = [
+            # Standart MGM görünümü: 11.06.1997 88,9 mm
+            r"(\d{1,2}\.\d{1,2}\.\d{4})\s*[:|]?\s*([0-9]+(?:[.,][0-9]+)?)\s*mm\b",
+            # Bazı HTML varyasyonlarında değer önce gelebilir.
+            r"([0-9]+(?:[.,][0-9]+)?)\s*mm\b\s*[:|]?\s*(\d{1,2}\.\d{1,2}\.\d{4})",
+        ]
+        for _i, _desen in enumerate(_desenler):
+            _eslesme = _re.search(_desen, _parca, flags=_re.I)
+            if not _eslesme:
+                continue
+            if _i == 0:
+                _tarih = _eslesme.group(1)
+                _deger = float(_eslesme.group(2).replace(",", "."))
+            else:
+                _deger = float(_eslesme.group(1).replace(",", "."))
+                _tarih = _eslesme.group(2)
+            return _deger, _tarih, _url
         return None, None, _url
+
+    _son_url = _urls[0]
+    for _url in _urls:
+        _son_url = _url
+        for _deneme in range(3):
+            try:
+                _req = urllib.request.Request(_url, headers=_headers)
+                with urllib.request.urlopen(_req, timeout=20) as _response:
+                    _html = _response.read().decode("utf-8", errors="ignore")
+                _deger, _tarih, _parsed_url = _parse_html(_html, _url)
+                if _deger is not None:
+                    return _deger, _tarih, _parsed_url
+            except Exception:
+                pass
+            if _deneme < 2:
+                _time.sleep(0.7 * (_deneme + 1))
+
+    return None, None, _son_url
 
 
 # MGM'nin il seçimindeki resmi 81 il listesi.
@@ -145,14 +173,19 @@ def mgm_81_il_yagis_tablosu():
         return il, deger, tarih, url
 
     sonuc = []
-    with ThreadPoolExecutor(max_workers=12) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         gelecekler = {executor.submit(_tek_il, il): il for il in MGM_81_IL}
         for gelecek in as_completed(gelecekler):
             il = gelecekler[gelecek]
             try:
                 sonuc.append(gelecek.result())
             except Exception:
-                sonuc.append((il, None, None, None))
+                try:
+                    _kod = MGM_IL_URL_KODU.get(il, il)
+                    _d, _t, _u = mgm_gunluk_en_yuksek_yagis_mm(_kod)
+                    sonuc.append((il, _d, _t, _u))
+                except Exception:
+                    sonuc.append((il, None, None, None))
 
     sirali = {il: (deger, tarih, url) for il, deger, tarih, url in sonuc}
     return [
@@ -6968,26 +7001,58 @@ if _rapor_olustur_sidebar:
                       _r.font.size = Pt(8.5)
 
           _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+
+          # Seçilen ili güvenilir biçimde eşleştir:
+          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
+          def _il_karsilastirma_adi(_metin):
+              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
+              return _x.casefold()
+
+          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
+
           for _il, _deger, _tarih, _url in _mgm_81:
               _cells = _mgm_tbl.add_row().cells
+              _is_secili_il = (
+                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
+                  and bool(_secili_mgm_il_karsilastirma)
+              )
+
               _cells[0].text = _il
               _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
               _cells[2].text = _tarih or "-"
+
               for _cell in _cells:
                   _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                   for _p in _cell.paragraphs:
-                      _p.alignment = WD_ALIGN_PARAGRAPH.CENTER if _cell is not _cells[0] else WD_ALIGN_PARAGRAPH.LEFT
+                      _p.alignment = (
+                          WD_ALIGN_PARAGRAPH.CENTER
+                          if _cell is not _cells[0]
+                          else WD_ALIGN_PARAGRAPH.LEFT
+                      )
                       for _r in _p.runs:
                           _r.font.size = Pt(8.5)
-              if _il == _secili_mgm_il:
-                  for _cell in _cells:
+
+                  # Projede seçilen il satırı sarı renkle vurgulanır.
+                  if _is_secili_il:
                       _tcPr = _cell._tc.get_or_add_tcPr()
-                      _shd = OxmlElement("w:shd")
+                      _shd = _tcPr.find(qn("w:shd"))
+                      if _shd is None:
+                          _shd = OxmlElement("w:shd")
+                          _tcPr.append(_shd)
                       _shd.set(qn("w:fill"), "FFF2CC")
-                      _tcPr.append(_shd)
+
+                      # Seçilen ilin okunabilirliği için satır yazıları kalın.
                       for _p in _cell.paragraphs:
                           for _r in _p.runs:
                               _r.bold = True
+
+              # Seçilen ilin yanına raporda açık bir işaret de koy.
+              if _is_secili_il:
+                  _cells[0].text = f"{_il}  ← SEÇİLEN İL"
+                  for _p in _cells[0].paragraphs:
+                      _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                      for _r in _p.runs:
+                          _r.bold = True
 
           doc.add_paragraph(
               "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
