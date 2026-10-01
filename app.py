@@ -3760,6 +3760,91 @@ with _t_sihhi:
             )
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
+            st.markdown("##### • YAĞMUR SUYU DEPOSU HACİM HESABI")
+
+            # Depo hacmi, seçilen ilin MGM aylık ortalama yağışlarının yıllık
+            # toplamı esas alınarak hesaplanır. Tasarım kriteri: yıllık toplam
+            # yağış hacminin %6'sı depolanacaktır.
+            _mgm_yillik_yagis_mm = (
+                sum(float(v) for v in (_mgm_aylik or {}).values())
+                if isinstance(_mgm_aylik, dict) and len(_mgm_aylik) == 12
+                else None
+            )
+            if _mgm_yillik_yagis_mm is not None:
+                yagmur_yillik_toplam_hacim_m3 = (
+                    yagmur_cati_alani * _mgm_yillik_yagis_mm * yagmur_akis_katsayisi / 1000.0
+                )
+                yagmur_depolama_orani = 6.0
+                yagmur_gerekli_depo = yagmur_yillik_toplam_hacim_m3 * yagmur_depolama_orani / 100.0
+                # Nihai depo hacmi otomatik olarak 5 m³'ün katına yukarı yuvarlanır.
+                # Kullanıcı, aşağıdaki sayı alanından bu değere manuel müdahale edebilir.
+                yagmur_otomatik_depo_hacmi = (
+                    math.ceil(yagmur_gerekli_depo / 5.0) * 5.0
+                    if yagmur_gerekli_depo > 0 else 0.0
+                )
+
+                st.write(
+                    f"Yıllık toplam yağış: **{_mgm_yillik_yagis_mm:.2f} mm** "
+                    f"(MGM aylık ortalamalarının toplamı)"
+                )
+                st.write(
+                    f"Yıllık toplanabilir yağış hacmi: **{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl**"
+                )
+                st.write(
+                    f"Depolanacak oran: **%{yagmur_depolama_orani:.0f}**"
+                )
+                st.write(
+                    f"Hesaplanan gerekli depo hacmi: **{yagmur_gerekli_depo:.2f} m³**"
+                )
+                st.write(
+                    f"Otomatik seçilen depo hacmi (5 m³ katına yukarı yuvarlanmış): **{yagmur_otomatik_depo_hacmi:.2f} m³**"
+                )
+                st.caption(
+                    f"V_yıllık = A × P_yıllık × C / 1000 = "
+                    f"{yagmur_cati_alani:.2f} × {_mgm_yillik_yagis_mm:.2f} × "
+                    f"{yagmur_akis_katsayisi:.2f} / 1000 = "
+                    f"{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl"
+                )
+                st.caption(
+                    f"V_depo = V_yıllık × %{yagmur_depolama_orani:.0f} = "
+                    f"{yagmur_yillik_toplam_hacim_m3:.2f} × %{yagmur_depolama_orani:.0f} = "
+                    f"{yagmur_gerekli_depo:.2f} m³"
+                )
+            else:
+                yagmur_yillik_toplam_hacim_m3 = 0.0
+                yagmur_depolama_orani = 6.0
+                yagmur_gerekli_depo = 0.0
+                yagmur_otomatik_depo_hacmi = 0.0
+                st.warning(
+                    f"{secilen_il} için MGM'nin 12 aylık yağış verisi alınamadı. "
+                    "Yıllık toplam yağışa bağlı depo hacmi hesaplanamadı."
+                )
+
+            # Üstteki Genel Bilgiler bölümünde seçilen yağmur suyu depo tipi
+            # burada otomatik olarak gösterilir; burada ikinci bir tip seçimi yoktur.
+            st.write(f"Yağmur suyu deposu tipi: **{sih_yagmur_depo_tipi}**")
+
+            _yagmur_mevcut_depo = st.session_state.get("yagmur_secilen_depo", None)
+            if _yagmur_mevcut_depo is None:
+                _yagmur_depo_baslangic = yagmur_otomatik_depo_hacmi
+            else:
+                # Daha önce kullanıcı tarafından elle girilmiş değer korunur;
+                # yeni hesaplanan otomatik değer daha büyükse altına düşmesine izin verilmez.
+                _yagmur_depo_baslangic = max(
+                    float(_yagmur_mevcut_depo),
+                    float(yagmur_otomatik_depo_hacmi),
+                )
+
+            yagmur_secilen_depo = st.number_input(
+                "Seçilen yağmur suyu deposu hacmi (m³) — elle müdahale edilebilir",
+                min_value=0.0,
+                value=float(_yagmur_depo_baslangic),
+                step=0.5,
+                key="yagmur_secilen_depo",
+                help="Program hesaplanan hacmi önce 5 m³'ün bir üst katına yuvarlar. İsterseniz bu değeri elle değiştirebilirsiniz."
+            )
+
+            st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
             st.markdown("##### • YAĞMUR SUYU FİLTRESİ SEÇİMİ")
 
             # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı mekanik tesisat
@@ -3897,67 +3982,6 @@ with _t_sihhi:
             )
             yagmur_debi_m3h = yagmur_ham_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
 
-            st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
-            st.markdown("##### • YAĞMUR SUYU DEPOSU HACİM HESABI")
-
-            # Depo hacmi, seçilen ilin MGM aylık ortalama yağışlarının yıllık
-            # toplamı esas alınarak hesaplanır. Tasarım kriteri: yıllık toplam
-            # yağış hacminin %6'sı depolanacaktır.
-            _mgm_yillik_yagis_mm = (
-                sum(float(v) for v in (_mgm_aylik or {}).values())
-                if isinstance(_mgm_aylik, dict) and len(_mgm_aylik) == 12
-                else None
-            )
-            if _mgm_yillik_yagis_mm is not None:
-                yagmur_yillik_toplam_hacim_m3 = (
-                    yagmur_cati_alani * _mgm_yillik_yagis_mm * yagmur_akis_katsayisi / 1000.0
-                )
-                yagmur_depolama_orani = 6.0
-                yagmur_gerekli_depo = yagmur_yillik_toplam_hacim_m3 * yagmur_depolama_orani / 100.0
-
-                st.write(
-                    f"Yıllık toplam yağış: **{_mgm_yillik_yagis_mm:.2f} mm** "
-                    f"(MGM aylık ortalamalarının toplamı)"
-                )
-                st.write(
-                    f"Yıllık toplanabilir yağış hacmi: **{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl**"
-                )
-                st.write(
-                    f"Depolanacak oran: **%{yagmur_depolama_orani:.0f}**"
-                )
-                st.write(
-                    f"Gerekli yağmur suyu depo hacmi: **{yagmur_gerekli_depo:.2f} m³**"
-                )
-                st.caption(
-                    f"V_yıllık = A × P_yıllık × C / 1000 = "
-                    f"{yagmur_cati_alani:.2f} × {_mgm_yillik_yagis_mm:.2f} × "
-                    f"{yagmur_akis_katsayisi:.2f} / 1000 = "
-                    f"{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl"
-                )
-                st.caption(
-                    f"V_depo = V_yıllık × %{yagmur_depolama_orani:.0f} = "
-                    f"{yagmur_yillik_toplam_hacim_m3:.2f} × %{yagmur_depolama_orani:.0f} = "
-                    f"{yagmur_gerekli_depo:.2f} m³"
-                )
-            else:
-                yagmur_yillik_toplam_hacim_m3 = 0.0
-                yagmur_depolama_orani = 6.0
-                yagmur_gerekli_depo = 0.0
-                st.warning(
-                    f"{secilen_il} için MGM'nin 12 aylık yağış verisi alınamadı. "
-                    "Yıllık toplam yağışa bağlı depo hacmi hesaplanamadı."
-                )
-
-            # Üstteki Genel Bilgiler bölümünde seçilen yağmur suyu depo tipi
-            # burada otomatik olarak gösterilir; burada ikinci bir tip seçimi yoktur.
-            st.write(f"Yağmur suyu deposu tipi: **{sih_yagmur_depo_tipi}**")
-
-            yagmur_secilen_depo = st.number_input(
-                "Seçilen yağmur suyu deposu hacmi (m³)", min_value=0.0,
-                value=float(max(yagmur_gerekli_depo, st.session_state.get("yagmur_secilen_depo", yagmur_gerekli_depo))),
-                step=0.5, key="yagmur_secilen_depo"
-            )
-
             st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
             st.markdown("##### • TAŞMA HATTI HESABI")
             t1, t2 = st.columns(2)
@@ -4033,7 +4057,9 @@ with _t_sihhi:
                 "yillik_toplam_hacim_m3": yagmur_yillik_toplam_hacim_m3,
                 "depolama_orani": yagmur_depolama_orani,
                 "yagmur_depo_tipi": sih_yagmur_depo_tipi,
-                "gerekli_depo": yagmur_gerekli_depo, "secilen_depo": yagmur_secilen_depo,
+                "gerekli_depo": yagmur_gerekli_depo,
+                "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
+                "secilen_depo": yagmur_secilen_depo,
                 "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
                 "sifon": yagmur_tasma_sifonu, "geri_tepme": yagmur_geri_tepme,
                 "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
@@ -7553,6 +7579,40 @@ if _rapor_olustur_sidebar:
               f"V_sarnıç = {_yr_ham_V:.2f} × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f} = {_yr_V:.2f} m³"
           )
 
+          doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
+          doc.add_paragraph(
+              f"Yağmur suyu deposu tipi: {_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi)}"
+          )
+          doc.add_paragraph(
+              f"Yıllık toplam yağış: {_yr.get('mgm_yillik_yagis_mm', 0):.2f} mm "
+              "(MGM aylık ortalama yağışlarının toplamı)"
+          )
+          doc.add_paragraph(
+              f"Yıllık toplanabilir yağış hacmi: {_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
+          )
+          doc.add_paragraph(
+              f"Depolanacak oran: %{_yr.get('depolama_orani', 6):.0f}"
+          )
+          doc.add_paragraph(
+              "V_yıllık = A × P_yıllık × C / 1000"
+          )
+          doc.add_paragraph(
+              f"V_yıllık = {_yr.get('cati_alani', 0):.2f} × "
+              f"{_yr.get('mgm_yillik_yagis_mm', 0):.2f} × "
+              f"{_yr.get('akis_katsayisi', 0):.2f} / 1000 = "
+              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
+          )
+          doc.add_paragraph(
+              f"V_depo = V_yıllık × %{_yr.get('depolama_orani', 6):.0f} = "
+              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} × "
+              f"%{_yr.get('depolama_orani', 6):.0f} = "
+              f"{_yr.get('gerekli_depo', 0):.2f} m³"
+          )
+          doc.add_paragraph(f"Hesaplanan gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
+          _rapor_otomatik_depo = (math.ceil(float(_yr.get('gerekli_depo', 0) or 0) / 5.0) * 5.0) if float(_yr.get('gerekli_depo', 0) or 0) > 0 else 0.0
+          doc.add_paragraph(f"Otomatik seçilen depo hacmi (5 m³ katına yukarı yuvarlanmış): {_rapor_otomatik_depo:.2f} m³")
+          doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi (kullanıcı nihai değeri): {_yr.get('secilen_depo', 0):.2f} m³")
+
           doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
           doc.add_paragraph(
@@ -7583,38 +7643,6 @@ if _rapor_olustur_sidebar:
                   "UYARI: Seçilen filtre tipi için mevcut en büyük poz kapasitesi, "
                   "toplama alanını karşılamamaktadır."
               )
-
-          doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
-          doc.add_paragraph(
-              f"Yağmur suyu deposu tipi: {_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi)}"
-          )
-          doc.add_paragraph(
-              f"Yıllık toplam yağış: {_yr.get('mgm_yillik_yagis_mm', 0):.2f} mm "
-              "(MGM aylık ortalama yağışlarının toplamı)"
-          )
-          doc.add_paragraph(
-              f"Yıllık toplanabilir yağış hacmi: {_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
-          )
-          doc.add_paragraph(
-              f"Depolanacak oran: %{_yr.get('depolama_orani', 6):.0f}"
-          )
-          doc.add_paragraph(
-              "V_yıllık = A × P_yıllık × C / 1000"
-          )
-          doc.add_paragraph(
-              f"V_yıllık = {_yr.get('cati_alani', 0):.2f} × "
-              f"{_yr.get('mgm_yillik_yagis_mm', 0):.2f} × "
-              f"{_yr.get('akis_katsayisi', 0):.2f} / 1000 = "
-              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
-          )
-          doc.add_paragraph(
-              f"V_depo = V_yıllık × %{_yr.get('depolama_orani', 6):.0f} = "
-              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} × "
-              f"%{_yr.get('depolama_orani', 6):.0f} = "
-              f"{_yr.get('gerekli_depo', 0):.2f} m³"
-          )
-          doc.add_paragraph(f"Gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
-          doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi: {_yr.get('secilen_depo', 0):.2f} m³")
 
           doc.add_heading("• TAŞMA HATTI HESABI", level=4)
           doc.add_paragraph(
