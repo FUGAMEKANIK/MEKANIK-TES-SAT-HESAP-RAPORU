@@ -1245,6 +1245,13 @@ def _63_dinamik_baslik(anahtar):
     ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
     return f"6.3.{_63_dinamik_no(anahtar)} {ad.upper()}"
 
+def _63_sidebar_baslik(anahtar, varsayilan_baslik):
+    """Sol menüde 6.3 alt bölüm numarasını aktif seçimlere göre dinamik gösterir."""
+    if anahtar in dict(_BOLUM_63_COCUKLARI):
+        ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
+        return f"6.3.{_63_dinamik_no(anahtar)} {ad.upper()}"
+    return varsayilan_baslik
+
 def _tum_bolumleri_sec():
     for _anahtar in BOLUM_SECIM_ANAHTARLARI:
         st.session_state[_anahtar] = True
@@ -1315,9 +1322,10 @@ with st.sidebar:
             st.session_state[_key] = True
 
         if _anchor.startswith("bolum_63"):
-            # 6.3 alt başlıklarında dinamik başlık metnini koru.
-            if _anchor == "bolum_631":
-                _baslik = "6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI"
+            # 6.3 alt başlıklarında numara, seçili kardeş bölümlere göre anlık değişir.
+            # Böylece örneğin 6.3.1 kapatılırsa 6.3.2 -> 6.3.1,
+            # 6.3.3 -> 6.3.2 ve 6.3.4 -> 6.3.3 olur.
+            _baslik = _63_sidebar_baslik(_key, _baslik)
 
         _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
         with _c_nav:
@@ -1442,17 +1450,19 @@ bolum_62_aktif = (
     or bolum_622_aktif
 )
 
-bolum_631_1_aktif = bool(st.session_state.get("rapor_bolum_631_1", False))
+# 6.3.1 ana checkbox'ı bu grubun ana aç/kapat kontrolüdür.
+# Alt checkbox'lar kendi alt başlıklarını kontrol eder; ana bölüm kapatıldığında
+# alt seçimler açık kalsa bile 6.3.1 rapora dahil edilmez ve numaralandırmada
+# kardeş bölüm olarak sayılmaz.
+bolum_631_aktif = bool(st.session_state.get("rapor_bolum_631", False))
+bolum_631_1_aktif = bolum_631_aktif and bool(st.session_state.get("rapor_bolum_631_1", False))
 bolum_631_2_alt_anahtarlar = [
     "rapor_bolum_631_2", "rapor_bolum_631_2_1", "rapor_bolum_631_2_2",
     "rapor_bolum_631_2_3", "rapor_bolum_631_2_4", "rapor_bolum_631_2_5",
     "rapor_bolum_631_2_6", "rapor_bolum_631_2_7", "rapor_bolum_631_2_8",
 ]
-bolum_631_2_aktif = any(bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar)
-bolum_631_aktif = (
-    bool(st.session_state.get("rapor_bolum_631", False))
-    or bolum_631_1_aktif
-    or bolum_631_2_aktif
+bolum_631_2_aktif = bolum_631_aktif and any(
+    bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar
 )
 bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
 bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
