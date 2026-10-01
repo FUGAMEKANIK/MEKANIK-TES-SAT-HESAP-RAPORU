@@ -129,71 +129,144 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def mgm_aylik_ortalama_yagis_mm(il_adi):
-    """MGM sayfasındaki 12 aylık 'Aylık Toplam Yağış Miktarı Ortalaması (mm)'
-    değerlerini döndürür. Sonuç: (aylik_dict, yillik_olcum_periyodu, url).
+    """MGM resmi iklim istatistiklerinden 12 aylık ortalama yağışları
+    doğrudan HTML tablo satırından okur.
+
+    Dönen değer: (aylik_dict, olcum_periyodu, url).
     """
     import re as _re
     import unicodedata as _unicodedata
-    import html as _html_lib
+    from html.parser import HTMLParser
 
     il_adi = str(il_adi or "").strip()
     if not il_adi:
         return {}, "", None
-    _il_url = "".join(ch for ch in _unicodedata.normalize("NFKD", il_adi)
-                       if not _unicodedata.combining(ch)).upper()
-    _il_url = (_il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
-               .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U"))
+
+    _il_url = "".join(
+        ch for ch in _unicodedata.normalize("NFKD", il_adi)
+        if not _unicodedata.combining(ch)
+    ).upper()
+    _il_url = (
+        _il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
+        .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
+    )
     _il_url = MGM_IL_URL_KODU.get(il_adi, _il_url)
+
     _base = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
-    _urls = [f"{_base}?k=undefined&m={_il_url}", f"{_base}?m={_il_url}"]
-    _headers = {"User-Agent": "Mozilla/5.0", "Accept-Language": "tr-TR,tr;q=0.9"}
-    _aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-              "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+    # MGM'de kullanılan farklı çalışan URL biçimleri. k=H özellikle
+    # Resmi İklim İstatistikleri tablosunu doğrudan döndürmektedir.
+    _urls = [
+        f"{_base}?k=H&m={_il_url}",
+        f"{_base}?k=undefined&m={_il_url}",
+        f"{_base}?m={_il_url}",
+    ]
+    _headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/140.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.7",
+        "Connection": "close",
+    }
+    _aylar = [
+        "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ]
+    _baslik = "Aylık Toplam Yağış Miktarı Ortalaması (mm)"
+
+    class _MGMTableParser(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.rows = []
+            self._row = None
+            self._cell = None
+            self._buf = []
+
+        def handle_starttag(self, tag, attrs):
+            tag = tag.lower()
+            if tag == "tr":
+                self._row = []
+            elif tag in ("td", "th") and self._row is not None:
+                self._cell = tag
+                self._buf = []
+
+        def handle_data(self, data):
+            if self._cell is not None:
+                self._buf.append(data)
+
+        def handle_endtag(self, tag):
+            tag = tag.lower()
+            if tag in ("td", "th") and self._cell is not None:
+                self._row.append(" ".join("".join(self._buf).split()))
+                self._cell = None
+                self._buf = []
+            elif tag == "tr" and self._row is not None:
+                if self._row:
+                    self.rows.append(self._row)
+                self._row = None
+
+    def _sayiya_cevir(_text):
+        _t = str(_text or "").strip().replace(" ", "")
+        # MGM Türkçe ondalık gösterimini destekle.
+        _t = _t.replace("mm", "").strip()
+        if not _re.fullmatch(r"[-+]?\d+(?:[.,]\d+)?", _t):
+            return None
+        try:
+            return float(_t.replace(",", "."))
+        except ValueError:
+            return None
 
     for _url in _urls:
         try:
             _req = urllib.request.Request(_url, headers=_headers)
             with urllib.request.urlopen(_req, timeout=20) as _response:
                 _html = _response.read().decode("utf-8", errors="ignore")
-            _metin = _html_lib.unescape(_html or "")
-            _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _metin, flags=_re.I|_re.S)
-            _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I|_re.S)
+
+            # 1) Önce gerçek HTML tablosunu parse et.
+            _parser = _MGMTableParser()
+            _parser.feed(_html)
+            for _row in _parser.rows:
+                _etiket = " ".join(str(_x) for _x in _row[:2])
+                if _baslik.lower() in _etiket.lower():
+                    _sayilar = []
+                    for _hucre in _row[1:]:
+                        _n = _sayiya_cevir(_hucre)
+                        if _n is not None:
+                            _sayilar.append(_n)
+                    if len(_sayilar) >= 12:
+                        _aylik = dict(zip(_aylar, _sayilar[:12]))
+                        _metin = " ".join(_row)
+                        _donem = ""
+                        _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _metin, flags=_re.I)
+                        if _m:
+                            _donem = _m.group(1).strip()
+                        # Dönem çoğunlukla ayrı bir satırda olduğundan HTML
+                        # genelinde de ara.
+                        if not _donem:
+                            _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _html, flags=_re.I)
+                            if _m:
+                                _donem = _m.group(1).strip()
+                        return _aylik, _donem, _url
+
+            # 2) HTML yapısı değişirse, yalnızca ilgili satırı düz metinden
+            # yakalayan güvenli bir geri dönüş yöntemi kullan.
+            _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _html, flags=_re.I | _re.S)
+            _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I | _re.S)
             _metin = _re.sub(r"<[^>]+>", " | ", _metin)
             _metin = _re.sub(r"\s+", " ", _metin).strip()
-            _baslik = "Aylık Toplam Yağış Miktarı Ortalaması (mm)"
             _pos = _metin.lower().find(_baslik.lower())
-            if _pos < 0:
-                continue
-            _parca = _metin[_pos:_pos+1800]
-            # MGM'nin tablo satırında başlıktan hemen sonra Ocak-Aralık için
-            # 12 adet yağış değeri gelir. HTML ayraçları sayfaya göre
-            # değişebildiğinden, başlıktan sonraki ilk 12 sayıyı esas alıyoruz.
-            _vals = _re.findall(r"\d+(?:[.,]\d+)?", _parca)
-            _nums = []
-            for _v in _vals:
-                try:
-                    _nums.append(float(_v.replace(',', '.')))
-                except (TypeError, ValueError):
-                    pass
-            if len(_nums) >= 12:
-                _nums = _nums[:12]
-                _aylik = dict(zip(_aylar, _nums))
-                _period = ""
-                _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)\)", _parca, flags=_re.I)
-                if _m:
-                    _period = _m.group(1).strip()
-                else:
-                    _m = _re.search(
-                        r"Ölçüm Periyodu\s*\(\s*([^\)]+)\)",
-                        _metin[_pos:_pos+5000],
-                        flags=_re.I,
-                    )
-                    if _m:
-                        _period = _m.group(1).strip()
-                return _aylik, _period, _url
+            if _pos >= 0:
+                _parca = _metin[_pos:_pos + 1200]
+                _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?", _parca)
+                _nums = [float(v.replace(",", ".")) for v in _vals]
+                if len(_nums) >= 12:
+                    return dict(zip(_aylar, _nums[:12])), "", _url
         except Exception:
             continue
-    return {}, "", _urls[-1]
+
+    return {}, "", _urls[0]
 
 
 # MGM'nin il seçimindeki resmi 81 il listesi.
