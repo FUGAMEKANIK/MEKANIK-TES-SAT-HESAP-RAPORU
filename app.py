@@ -1401,7 +1401,7 @@ _BOLUM_63_COCUKLARI = [
 BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_1", "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
     "rapor_bolum_5", "rapor_bolum_51", "rapor_bolum_6", "rapor_bolum_61",
-    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
+    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622", "rapor_bolum_623",
     "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_631_1", "rapor_bolum_631_2",
     "rapor_bolum_631_2_1", "rapor_bolum_631_2_2", "rapor_bolum_631_2_3",
     "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
@@ -1455,6 +1455,7 @@ _BOLUM_NAV = [
     ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
     ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
     ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
+    ("6.2.3 YAĞ AYIRICI SEÇİMLERİ", "bolum_623", "rapor_bolum_623"),
     ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
     ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
     ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
@@ -1559,6 +1560,7 @@ bolum_611_aktif_ui = st.session_state.get("rapor_bolum_611", False)
 bolum_62_aktif_ui = st.session_state.get("rapor_bolum_62", False)
 bolum_621_aktif_ui = st.session_state.get("rapor_bolum_621", False)
 bolum_622_aktif_ui = st.session_state.get("rapor_bolum_622", False)
+bolum_623_aktif_ui = st.session_state.get("rapor_bolum_623", False)
 bolum_63_aktif_ui = st.session_state.get("rapor_bolum_63", False)
 bolum_631_aktif_ui = st.session_state.get("rapor_bolum_631", False)
 bolum_632_aktif_ui = st.session_state.get("rapor_bolum_632", False)
@@ -1619,10 +1621,12 @@ bolum_61_aktif = bool(st.session_state.get("rapor_bolum_61", False)) or bolum_61
 
 bolum_621_aktif = bool(st.session_state.get("rapor_bolum_621", False))
 bolum_622_aktif = bool(st.session_state.get("rapor_bolum_622", False))
+bolum_623_aktif = bool(st.session_state.get("rapor_bolum_623", False))
 bolum_62_aktif = (
     bool(st.session_state.get("rapor_bolum_62", False))
     or bolum_621_aktif
     or bolum_622_aktif
+    or bolum_623_aktif
 )
 
 # 6.3.1 ana checkbox'ı bu grubun ana aç/kapat kontrolüdür.
@@ -1653,7 +1657,7 @@ bolum_63_aktif = (
 bolum_6_aktif = (
     bool(st.session_state.get("rapor_bolum_6", False))
     or bolum_61_aktif or bolum_611_aktif
-    or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif
+    or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif or bolum_623_aktif
     or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif
 )
 
@@ -1666,6 +1670,21 @@ bolum_4_aktif = bool(st.session_state.get("rapor_bolum_4", False))
 # aşağıda üzerine yazılır.
 secilen_depo_tipi_metni = ""
 sih_depo_tipleri = []
+# 6.2.3 Yağ Ayırıcı seçimleri için güvenli başlangıç değerleri.
+yag_ayirici_maddeleri = [
+    "Mutfak/yemekhane atık suyu yağ ayırıcıdan geçirilecektir.",
+    "Yağ ayırıcı kapasitesi, sisteme gelen atık su debisine göre belirlenecektir.",
+    "Yağ ayırıcı hesabında mutfak ekipmanlarının eş zamanlı kullanım durumu dikkate alınacaktır.",
+    "Yağ ayırıcı, kolay temizlenebilir ve bakım yapılabilir özellikte olacaktır.",
+    "Yağ ayırıcı üzerinde yeterli büyüklükte bakım ve temizleme kapağı bulunacaktır.",
+    "Yağ ayırıcı, yağ ve katı maddelerin kanalizasyon sistemine taşınmasını önleyecek şekilde seçilecektir.",
+    "Yağ ayırıcı çıkışında gerekli koku kontrolü ve havalandırma düzeni sağlanacaktır.",
+    "Yağ ayırıcının montajı, bakım ve temizlik sırasında kolay erişilebilecek şekilde yapılacaktır.",
+    "Yağ ayırıcının giriş ve çıkış bağlantı çapları tesisat boru çaplarına uygun olacaktır.",
+    "Yağ ayırıcı kapasitesi ve bağlantı çapı raporda gösterilecektir.",
+]
+yag_ayirici_secimler = [bool(st.session_state.get(f"yag_ayirici_sec_{i}", True)) for i in range(1, 11)]
+ek_yag_ayirici_notu = str(st.session_state.get("ek_yag_ayirici_notu", ""))
 sih_sec_depo_tipi = []
 depo_gerekli_hacim_m3 = 0.0
 depo_gerekli_hacim_litre = 0.0
@@ -3220,6 +3239,56 @@ with _t_sihhi:
             height=80,
         )
 
+        # ---------------------------------------------------------------------------
+        # 6.2.3 YAĞ AYIRICI SEÇİMLERİ
+        # ---------------------------------------------------------------------------
+        if bolum_623_aktif:
+            st.markdown('<div id="bolum_623"></div>', unsafe_allow_html=True)
+            st.subheader("6.2.3 YAĞ AYIRICI SEÇİMLERİ")
+            st.caption(
+                "Bu bölüm şimdilik yalnızca mutfak / yemekhane kaynaklı yağ ayırıcıları kapsamaktadır. "
+                "Petrol / hidrokarbon ayırıcıları ileride ayrı bir başlık altında kurgulanacaktır."
+            )
+
+            yag_ayirici_maddeleri = [
+                "Mutfak/yemekhane atık suyu yağ ayırıcıdan geçirilecektir.",
+                "Yağ ayırıcı kapasitesi, sisteme gelen atık su debisine göre belirlenecektir.",
+                "Yağ ayırıcı hesabında mutfak ekipmanlarının eş zamanlı kullanım durumu dikkate alınacaktır.",
+                "Yağ ayırıcı, kolay temizlenebilir ve bakım yapılabilir özellikte olacaktır.",
+                "Yağ ayırıcı üzerinde yeterli büyüklükte bakım ve temizleme kapağı bulunacaktır.",
+                "Yağ ayırıcı, yağ ve katı maddelerin kanalizasyon sistemine taşınmasını önleyecek şekilde seçilecektir.",
+                "Yağ ayırıcı çıkışında gerekli koku kontrolü ve havalandırma düzeni sağlanacaktır.",
+                "Yağ ayırıcının montajı, bakım ve temizlik sırasında kolay erişilebilecek şekilde yapılacaktır.",
+                "Yağ ayırıcının giriş ve çıkış bağlantı çapları tesisat boru çaplarına uygun olacaktır.",
+                "Yağ ayırıcı kapasitesi ve bağlantı çapı raporda gösterilecektir.",
+            ]
+
+            yag_ayirici_keys = [f"yag_ayirici_sec_{i}" for i in range(1, len(yag_ayirici_maddeleri) + 1)]
+            _toplu_secim_butonlari(yag_ayirici_keys, grup_adi="yag_ayirici_623")
+
+            yag_ayirici_secimler = []
+            yag_ayirici_tab1, yag_ayirici_tab2 = st.tabs([
+                "🧈 YAĞ AYIRICI GENEL ESASLARI",
+                "📝 İLAVE YAĞ AYIRICI MADDELERİ",
+            ])
+
+            with yag_ayirici_tab1:
+                st.markdown("#### Seçilecek maddeler")
+                for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
+                    secili = st.checkbox(
+                        madde,
+                        key=f"yag_ayirici_sec_{i}",
+                        value=True,
+                    )
+                    yag_ayirici_secimler.append(secili)
+
+            with yag_ayirici_tab2:
+                ek_yag_ayirici_notu = st.text_area(
+                    "İlave Yağ Ayırıcı Seçim Maddesi (Her satıra bir tane)",
+                    "",
+                    height=120,
+                    key="ek_yag_ayirici_notu",
+                )
 
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
@@ -7643,6 +7712,35 @@ if _rapor_olustur_sidebar:
                 "sağlanacaktır. Pompaların elektrik panosu bu işlevleri "
                 "sağlayacak şekilde imal ve monte edilecektir."
             )
+
+        # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
+        if bolum_623_aktif:
+          doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
+          doc.add_paragraph(
+              "Bu bölüm mutfak / yemekhane kaynaklı atık sularda kullanılacak yağ ayırıcıya ilişkin "
+              "genel seçim ve uygulama esaslarını kapsamaktadır."
+          )
+
+          yag_rapor_maddeleri = []
+          for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
+            if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
+              yag_rapor_maddeleri.append(madde)
+
+          if ek_yag_ayirici_notu.strip():
+            for _not in ek_yag_ayirici_notu.split("\n"):
+              if _not.strip():
+                yag_rapor_maddeleri.append(_not.strip())
+
+          if yag_rapor_maddeleri:
+            doc.add_heading("6.2.3.1 YAĞ AYIRICI GENEL ESASLARI", level=3)
+            for yam in yag_rapor_maddeleri:
+              doc.add_paragraph(yam, style="List Bullet")
+
+          doc.add_heading("6.2.3.2 YAĞ AYIRICI SEÇİMİ", level=3)
+          doc.add_paragraph(
+              "Yağ ayırıcı kapasitesi ve bağlantı çapı, proje kapsamında yapılacak debi ve ekipman "
+              "bilgileri kesinleştirildiğinde ayrıca hesaplanarak seçilecektir."
+          )
 
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
