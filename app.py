@@ -4181,13 +4181,86 @@ with _t_sihhi:
             st.caption("Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır.")
 
             st.markdown('<div id="bolum_631_2_5"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.5 TAŞMA SİFONU / KOKU KAPANI")
+            st.markdown("##### 6.3.1.2.5 TAŞKAN SİFONU / KOKU KAPANI SEÇİMİ")
+
+            # 25.181.5400 grubu: ÇŞİDB mekanik tesisat pozları.
+            # Seçim, yukarıdaki Manning hidrolik hesabından çıkan minimum DN
+            # değerini karşılayan en küçük Taşkan Sifonu pozuna otomatik bağlanır.
+            TASKAN_SIFONU_POZLARI = [
+                {
+                    "poz": "25.181.5401",
+                    "dn": 110,
+                    "tanim": "Ø 110 mm Taşkan Sifonu",
+                    "ozellik": (
+                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
+                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
+                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
+                    ),
+                },
+                {
+                    "poz": "25.181.5402",
+                    "dn": 160,
+                    "tanim": "Ø 160 mm Taşkan Sifonu",
+                    "ozellik": (
+                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
+                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
+                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
+                    ),
+                },
+                {
+                    "poz": "25.181.5403",
+                    "dn": 200,
+                    "tanim": "Ø 200 mm Taşkan Sifonu",
+                    "ozellik": (
+                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
+                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
+                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
+                    ),
+                },
+            ]
+
+            tasma_sifonu_secim = next(
+                (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
+                None,
+            )
+
             sifon1, sifon2 = st.columns(2)
             with sifon1:
-                yagmur_tasma_sifonu = st.checkbox("Taşma hattında sifon / koku kapanı", value=True, key="yagmur_tasma_sifonu")
+                yagmur_tasma_sifonu = st.checkbox(
+                    "Taşkan sifonu / koku kapanı kullanılacaktır",
+                    value=True,
+                    key="yagmur_tasma_sifonu",
+                )
             with sifon2:
-                yagmur_geri_tepme = st.checkbox("Geri tepme önleyici düzenek", value=True, key="yagmur_geri_tepme")
-            yagmur_kanal_baglanti = st.checkbox("Taşma hattı kanalizasyona bağlanacak", value=False, key="yagmur_kanal_baglanti")
+                yagmur_tasma_sifonu_poz_rapora_eklensin = st.checkbox(
+                    "Taşkan Sifonu Poz No rapora eklensin",
+                    value=True,
+                    key="yagmur_tasma_sifonu_poz_rapora_eklensin",
+                )
+
+            yagmur_geri_tepme = st.checkbox(
+                "Geri tepme önleyici düzenek", value=True, key="yagmur_geri_tepme"
+            )
+            yagmur_kanal_baglanti = st.checkbox(
+                "Taşma hattı kanalizasyona bağlanacak",
+                value=False,
+                key="yagmur_kanal_baglanti",
+            )
+
+            if yagmur_tasma_sifonu:
+                if tasma_sifonu_secim:
+                    st.success(
+                        f"Otomatik Taşkan Sifonu seçimi: {tasma_sifonu_secim['poz']} — "
+                        f"{tasma_sifonu_secim['tanim']} (Hidrolik minimum DN {tasma_cap})"
+                    )
+                    st.markdown(
+                        f"**Pozdan alınan özellik:** {tasma_sifonu_secim['ozellik']}"
+                    )
+                else:
+                    st.error(
+                        f"Hidrolik hesap sonucu DN {tasma_cap} gerekiyor. "
+                        "25.181.5400 Taşkan Sifonu grubunda en büyük mevcut poz Ø200 mm olduğundan uygun poz bulunamadı."
+                    )
 
             st.markdown('<div id="bolum_631_2_6"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.6 DEPO GİRİŞİ / SAKİN GİRİŞ")
@@ -4250,7 +4323,13 @@ with _t_sihhi:
                 "tasma_egim_yuzde": tasma_egim_yuzde, "tasma_max_hiz": tasma_max_hiz,
                 "tasma_hidrolik_kapasite_lps": tasma_capasite_lps, "tasma_hidrolik_hiz_ms": tasma_hiz_ms,
                 "tasma_hidrolik_uygun": tasma_hidrolik_uygun, "tasma_hidrolik_tablo": tasma_hidrolik_tablo,
-                "sifon": yagmur_tasma_sifonu, "geri_tepme": yagmur_geri_tepme,
+                "sifon": yagmur_tasma_sifonu,
+                "tasma_sifonu_poz": tasma_sifonu_secim["poz"] if tasma_sifonu_secim else "",
+                "tasma_sifonu_dn": tasma_sifonu_secim["dn"] if tasma_sifonu_secim else 0,
+                "tasma_sifonu_tanim": tasma_sifonu_secim["tanim"] if tasma_sifonu_secim else "",
+                "tasma_sifonu_ozellik": tasma_sifonu_secim["ozellik"] if tasma_sifonu_secim else "",
+                "tasma_sifonu_poz_rapora_eklensin": yagmur_tasma_sifonu_poz_rapora_eklensin,
+                "geri_tepme": yagmur_geri_tepme,
                 "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
                 "havalandirma": yagmur_havalandirma, "hasere": yagmur_hasere,
             }
@@ -7908,11 +7987,27 @@ if _rapor_olustur_sidebar:
               "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
           )
 
-          doc.add_heading("• TAŞMA SİFONU / KOKU KAPANI", level=4)
+          doc.add_heading("• TAŞKAN SİFONU / KOKU KAPANI SEÇİMİ", level=4)
           doc.add_paragraph(
-              "Taşma hattında sifon/koku kapanı kullanılacaktır." if _yr.get("sifon") else
-              "Taşma hattında sifon/koku kapanı öngörülmemiştir."
+              "Taşkan sifonu / koku kapanı kullanılacaktır." if _yr.get("sifon") else
+              "Taşkan sifonu / koku kapanı öngörülmemiştir."
           )
+          if _yr.get("sifon"):
+              _sifon_poz = str(_yr.get("tasma_sifonu_poz", "") or "").strip()
+              _sifon_dn = int(_yr.get("tasma_sifonu_dn", 0) or 0)
+              _sifon_tanim = str(_yr.get("tasma_sifonu_tanim", "") or "").strip()
+              _sifon_ozellik = str(_yr.get("tasma_sifonu_ozellik", "") or "").strip()
+              doc.add_paragraph(
+                  f"Hidrolik hesap sonucu gerekli minimum taşma hattı: DN {_tasma_DN}."
+              )
+              if _sifon_tanim:
+                  doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_tanim}")
+              if _sifon_ozellik:
+                  doc.add_paragraph(f"Poz tanımından alınan özellik: {_sifon_ozellik}")
+              if _yr.get("tasma_sifonu_poz_rapora_eklensin") and _sifon_poz:
+                  doc.add_paragraph(f"Taşkan Sifonu Cihaz Poz No: {_sifon_poz}")
+              elif _sifon_poz:
+                  doc.add_paragraph("Taşkan Sifonu Cihaz Poz No rapora eklenmemiştir.")
           if _yr.get("kanal_baglanti"):
               doc.add_paragraph("Taşma hattı kanalizasyona bağlanacaktır; geri tepme koruması sağlanacaktır.")
           else:
