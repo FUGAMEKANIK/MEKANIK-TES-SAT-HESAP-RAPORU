@@ -4052,6 +4052,15 @@ with _t_sihhi:
 
             st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
             st.markdown("##### • TAŞMA HATTI HESABI")
+            st.caption("Taşma hattı hesabı, çatıdan oluşan ham yağmur suyu hacminin seçilen tasarım süresine dağıtılması ve ardından emniyet katsayısı uygulanmasıyla yapılır.")
+
+            # Hesap adımları program ekranında açıkça gösterilir.
+            st.markdown("**1. Ham yağmur suyu hacmi**")
+            st.latex(r"V_{ham} = A \times P \times C / 1000")
+            st.markdown(
+                f"**Vₕₐₘ = {yagmur_cati_alani:,.2f} m² × {yagmur_yagis:,.2f} mm × {yagmur_akis_katsayisi:.2f} / 1000 = {yagmur_ham_toplanabilir_m3:,.2f} m³**"
+            )
+
             t1, t2 = st.columns(2)
             with t1:
                 tasma_emniyet = st.number_input(
@@ -4062,10 +4071,114 @@ with _t_sihhi:
             with t2:
                 tasma_debisi = yagmur_debi_m3h * (1.0 + tasma_emniyet / 100.0)
                 st.metric("Hesaplanan taşma debisi", f"{tasma_debisi:.2f} m³/h")
-            tasma_cap = st.number_input(
-                "Seçilen taşma hattı çapı DN", min_value=0, value=int(st.session_state.get("tasma_cap", 100)),
-                step=10, key="tasma_cap"
+
+            st.markdown("**2. Tasarım yağış debisi**")
+            st.latex(r"Q_{yağış} = V_{ham} / (t / 60)")
+            st.markdown(
+                f"**Qᵧₐğış = {yagmur_ham_toplanabilir_m3:,.2f} m³ / ({yagmur_sure_dk:,.2f} / 60) = {yagmur_debi_m3h:,.2f} m³/h**"
             )
+
+            st.markdown("**3. Emniyet katsayısı uygulanmış taşma debisi**")
+            st.latex(r"Q_{taşma} = Q_{yağış} \times (1 + E/100)")
+            st.markdown(
+                f"**Qₜₐşₘₐ = {yagmur_debi_m3h:,.2f} × (1 + {tasma_emniyet:.2f}/100) = {tasma_debisi:,.2f} m³/h**"
+            )
+
+            # ------------------------------------------------------------------
+            # TAŞMA HATTI HİDROLİK KONTROLÜ - MANNING
+            # Cazibeli taşma hattı için tam dolu boru hidrolik kapasitesi
+            # taranır ve hesaplanan taşma debisini karşılayan en küçük DN seçilir.
+            # Manning katsayısı ve eğim kullanıcı tarafından değiştirilebilir.
+            # ------------------------------------------------------------------
+            st.markdown("**4. Taşma hattı hidrolik kontrolü (Manning yöntemi)**")
+            h1, h2 = st.columns(2)
+            with h1:
+                tasma_malzeme = st.selectbox(
+                    "Taşma hattı boru malzemesi",
+                    ["PVC", "PE", "Çelik", "Beton", "Diğer"],
+                    index=["PVC", "PE", "Çelik", "Beton", "Diğer"].index(
+                        st.session_state.get("tasma_malzeme", "PVC")
+                    ),
+                    key="tasma_malzeme",
+                )
+            _manning_n_varsayilan = {
+                "PVC": 0.011,
+                "PE": 0.011,
+                "Çelik": 0.012,
+                "Beton": 0.015,
+                "Diğer": 0.013,
+            }
+            with h2:
+                tasma_manning_n = st.number_input(
+                    "Manning pürüzlülük katsayısı (n)",
+                    min_value=0.001, max_value=0.100,
+                    value=float(st.session_state.get("tasma_manning_n", _manning_n_varsayilan.get(tasma_malzeme, 0.013))),
+                    step=0.001, format="%.3f", key="tasma_manning_n"
+                )
+
+            h3, h4 = st.columns(2)
+            with h3:
+                tasma_egim_yuzde = st.number_input(
+                    "Taşma hattı eğimi (%)", min_value=0.01, max_value=20.0,
+                    value=float(st.session_state.get("tasma_egim_yuzde", 1.0)),
+                    step=0.1, format="%.2f", key="tasma_egim_yuzde"
+                )
+            with h4:
+                tasma_max_hiz = st.number_input(
+                    "İzin verilen maksimum hız (m/s)", min_value=0.10, max_value=20.0,
+                    value=float(st.session_state.get("tasma_max_hiz", 3.0)),
+                    step=0.1, format="%.1f", key="tasma_max_hiz"
+                )
+
+            tasma_Q_lps = tasma_debisi / 3.6
+            tasma_Q_m3s = tasma_debisi / 3600.0
+            tasma_S = tasma_egim_yuzde / 100.0
+            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
+            tasma_hidrolik_tablo = []
+            for _dn in tasma_dn_listesi:
+                _D = _dn / 1000.0
+                _A = math.pi * _D**2 / 4.0
+                _R = _D / 4.0
+                _Qkap = (1.0 / tasma_manning_n) * _A * (_R ** (2.0 / 3.0)) * math.sqrt(tasma_S) if tasma_S > 0 and tasma_manning_n > 0 else 0.0
+                _Qkap_lps = _Qkap * 1000.0
+                _V = _Qkap / _A if _A > 0 else 0.0
+                _uygun = (_Qkap >= tasma_Q_m3s) and (_V <= tasma_max_hiz)
+                tasma_hidrolik_tablo.append({
+                    "dn": _dn, "alan_m2": _A, "q_kapasite_lps": _Qkap_lps,
+                    "hiz_ms": _V, "uygun": _uygun
+                })
+
+            tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
+            tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else tasma_dn_listesi[-1]
+            tasma_capasite_lps = next((x["q_kapasite_lps"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
+            tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
+            tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
+
+            st.markdown(
+                f"**Manning:** Q = (1/n) × A × R^(2/3) × S^(1/2)  "
+                f"→ n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
+                f"Q gerekli = {tasma_Q_lps:.2f} L/s"
+            )
+            st.markdown(
+                f"**Seçilen minimum taşma hattı: DN {tasma_cap}**  "
+                f"→ kapasite = {tasma_capasite_lps:.2f} L/s, hız = {tasma_hiz_ms:.2f} m/s"
+            )
+
+            _tablo_satirlari = []
+            for _x in tasma_hidrolik_tablo:
+                _tablo_satirlari.append({
+                    "DN": f"DN {_x['dn']}",
+                    "Kapasite (L/s)": f"{_x['q_kapasite_lps']:.2f}",
+                    "Hız (m/s)": f"{_x['hiz_ms']:.2f}",
+                    "Durum": "UYGUN" if _x["uygun"] else "YETERSİZ"
+                })
+            st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
+            if tasma_hidrolik_uygun:
+                st.success(f"Hidrolik kontrol: DN {tasma_cap}, {tasma_Q_lps:.2f} L/s taşma debisini karşılıyor ve hız {tasma_hiz_ms:.2f} m/s ile sınır içinde.")
+            else:
+                st.error(f"DN {tasma_dn_listesi[-1]} dahil kontrol edilen çaplar yeterli değil. Eğim, malzeme veya daha büyük çap yeniden değerlendirilmelidir.")
+
+            st.caption("Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır.")
 
             st.markdown('<div id="bolum_631_2_5"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.5 TAŞMA SİFONU / KOKU KAPANI")
@@ -4132,6 +4245,11 @@ with _t_sihhi:
                 "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
                 "secilen_depo": yagmur_secilen_depo,
                 "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
+                "tasma_Q_lps": tasma_Q_lps, "tasma_Q_m3s": tasma_Q_m3s,
+                "tasma_malzeme": tasma_malzeme, "tasma_manning_n": tasma_manning_n,
+                "tasma_egim_yuzde": tasma_egim_yuzde, "tasma_max_hiz": tasma_max_hiz,
+                "tasma_hidrolik_kapasite_lps": tasma_capasite_lps, "tasma_hidrolik_hiz_ms": tasma_hiz_ms,
+                "tasma_hidrolik_uygun": tasma_hidrolik_uygun, "tasma_hidrolik_tablo": tasma_hidrolik_tablo,
                 "sifon": yagmur_tasma_sifonu, "geri_tepme": yagmur_geri_tepme,
                 "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
                 "havalandirma": yagmur_havalandirma, "hasere": yagmur_hasere,
@@ -7726,10 +7844,68 @@ if _rapor_olustur_sidebar:
               )
 
           doc.add_heading("• TAŞMA HATTI HESABI", level=4)
+          _tasma_A = _yr.get('cati_alani', 0)
+          _tasma_P = _yr.get('yagis', 0)
+          _tasma_C = _yr.get('akis_katsayisi', 0)
+          _tasma_Vham = _yr.get('ham_toplanabilir_m3', 0)
+          _tasma_t = _yr.get('sure_dk', 0)
+          _tasma_Q = _yr.get('debi_m3h', 0)
+          _tasma_E = _yr.get('tasma_emniyet', 0)
+          _tasma_Qson = _yr.get('tasma_debisi', 0)
+          _tasma_DN = _yr.get('tasma_cap', 0)
+          _tasma_Q_lps = _yr.get('tasma_Q_lps', _tasma_Qson / 3.6)
+          _tasma_n = _yr.get('tasma_manning_n', 0.011)
+          _tasma_malzeme = _yr.get('tasma_malzeme', 'PVC')
+          _tasma_egim = _yr.get('tasma_egim_yuzde', 1.0)
+          _tasma_max_hiz = _yr.get('tasma_max_hiz', 3.0)
+          _tasma_kapasite = _yr.get('tasma_hidrolik_kapasite_lps', 0.0)
+          _tasma_hiz = _yr.get('tasma_hidrolik_hiz_ms', 0.0)
+          _tasma_uygun = _yr.get('tasma_hidrolik_uygun', False)
+
+          doc.add_paragraph("Taşma hattı hesabında çatıdan oluşan ham yağmur suyu hacmi, tasarım yağış süresine dağıtılmış ve ardından emniyet katsayısı uygulanmıştır.")
+          doc.add_paragraph("1. Ham yağmur suyu hacmi:")
+          doc.add_paragraph("Vham = A × P × C / 1000")
           doc.add_paragraph(
-              f"Taşma tasarım debisi: {_yr.get('tasma_debisi', 0):.2f} m³/h "
-              f"(emniyet: %{_yr.get('tasma_emniyet', 0):.0f}); "
-              f"seçilen taşma hattı: DN {_yr.get('tasma_cap', 0)}"
+              f"Vham = {_tasma_A:,.2f} m² × {_tasma_P:,.2f} mm × {_tasma_C:.2f} / 1000 = {_tasma_Vham:,.2f} m³"
+          )
+          doc.add_paragraph("2. Tasarım yağış debisi:")
+          doc.add_paragraph("Qyağış = Vham / (t / 60)")
+          doc.add_paragraph(
+              f"Qyağış = {_tasma_Vham:,.2f} m³ / ({_tasma_t:,.2f} / 60) = {_tasma_Q:,.2f} m³/h"
+          )
+          doc.add_paragraph("3. Emniyet katsayısı uygulanmış taşma debisi:")
+          doc.add_paragraph("Qtaşma = Qyağış × (1 + E / 100)")
+          doc.add_paragraph(
+              f"Qtaşma = {_tasma_Q:,.2f} × (1 + {_tasma_E:.2f} / 100) = {_tasma_Qson:,.2f} m³/h"
+          )
+          doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
+          doc.add_paragraph(
+              f"Boru malzemesi: {_tasma_malzeme}; Manning katsayısı n = {_tasma_n:.3f}; boru eğimi = %{_tasma_egim:.2f}; "
+              f"izin verilen maksimum hız = {_tasma_max_hiz:.2f} m/s"
+          )
+          doc.add_paragraph("Q gerekli = Qtaşma / 3,6")
+          doc.add_paragraph(
+              f"Q gerekli = {_tasma_Qson:,.2f} m³/h / 3,6 = {_tasma_Q_lps:,.2f} L/s = {_tasma_Qson/3600.0:,.4f} m³/s"
+          )
+          doc.add_paragraph("Manning: Q = (1/n) × A × R^(2/3) × S^(1/2)")
+          doc.add_paragraph(
+              f"Seçilen minimum taşma hattı: DN {_tasma_DN}; hidrolik kapasite = {_tasma_kapasite:,.2f} L/s; "
+              f"boru içi hesaplanan hız = {_tasma_hiz:.2f} m/s"
+          )
+          doc.add_paragraph(
+              f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
+          )
+          _hidrolik_tablo = _yr.get('tasma_hidrolik_tablo', [])
+          if _hidrolik_tablo:
+              doc.add_paragraph("Kontrol edilen çaplar:")
+              for _x in _hidrolik_tablo:
+                  doc.add_paragraph(
+                      f"DN {_x.get('dn', 0)} → kapasite {_x.get('q_kapasite_lps', 0):.2f} L/s; "
+                      f"hız {_x.get('hiz_ms', 0):.2f} m/s; {'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
+                  )
+          doc.add_paragraph(
+              "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
+              "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
           )
 
           doc.add_heading("• TAŞMA SİFONU / KOKU KAPANI", level=4)
