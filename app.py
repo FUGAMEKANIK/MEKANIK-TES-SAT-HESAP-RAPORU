@@ -1273,6 +1273,16 @@ _BOLUM_NAV = [
     ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
     ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
     ("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", "bolum_631", "rapor_bolum_631"),
+    ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", None),
+    ("6.3.1.2 Yağmur Suyu Deposu Seçimi", "bolum_631_2", None),
+    ("6.3.1.2.1 Yağmur Suyu Toplama Hesabı", "bolum_631_2_1", None),
+    ("6.3.1.2.2 Yağmur Suyu Filtresi Seçimi", "bolum_631_2_2", None),
+    ("6.3.1.2.3 İlk Yağış Ayırıcı Seçimi", "bolum_631_2_3", None),
+    ("6.3.1.2.4 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_4", None),
+    ("6.3.1.2.5 Taşma Hattı Hesabı", "bolum_631_2_5", None),
+    ("6.3.1.2.6 Taşma Sifonu / Koku Kapanı", "bolum_631_2_6", None),
+    ("6.3.1.2.7 Depo Girişi / Sakin Giriş", "bolum_631_2_7", None),
+    ("6.3.1.2.8 Havalandırma ve Haşere Koruması", "bolum_631_2_8", None),
     ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
     ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
@@ -3002,6 +3012,7 @@ with _t_sihhi:
             st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
             st.markdown('<div id="bolum_631"></div>', unsafe_allow_html=True)
             st.subheader(_63_dinamik_baslik("rapor_bolum_631"))
+            st.markdown('<div id="bolum_631_1"></div>', unsafe_allow_html=True)
             st.markdown("#### 6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:")
 
             poz_gosterilsin_mi = st.checkbox(
@@ -3389,6 +3400,7 @@ with _t_sihhi:
                 height=80,
             )
 
+        st.markdown('<div id="bolum_631_2"></div>', unsafe_allow_html=True)
         st.markdown("#### 6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:")
 
         # ------------------------------------------------------------------
@@ -3416,6 +3428,7 @@ with _t_sihhi:
         ]
 
         if yagmur_aktif:
+            st.markdown('<div id="bolum_631_2_1"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI")
             c1, c2, c3 = st.columns(3)
             with c1:
@@ -3465,6 +3478,7 @@ with _t_sihhi:
                 .replace(",", "X").replace(".", ",").replace("X", ".")
             )
 
+            st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ")
             f1, f2 = st.columns(2)
             with f1:
@@ -3490,6 +3504,7 @@ with _t_sihhi:
             st.write(f"Hesaplanan yağış debisi: **{yagmur_debi_m3h:.2f} m³/h**")
             st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
 
+            st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.3 İLK YAĞIŞ AYIRICI SEÇİMİ")
             ilk1, ilk2 = st.columns(2)
             with ilk1:
@@ -3502,6 +3517,7 @@ with _t_sihhi:
                 ilk_yagis_hacmi = yagmur_cati_alani * ilk_yagis_l_m2 / 1000.0
                 st.metric("İlk yağış ayırıcı hacmi", f"{ilk_yagis_hacmi:.2f} m³")
 
+            st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.4 YAĞMUR SUYU DEPOSU HACİM HESABI")
             d1, d2 = st.columns(2)
             with d1:
@@ -3524,6 +3540,7 @@ with _t_sihhi:
             )
             st.write(f"Gerekli depo hacmi: **{yagmur_gerekli_depo:.2f} m³**")
 
+            st.markdown('<div id="bolum_631_2_5"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.5 TAŞMA HATTI HESABI")
             t1, t2 = st.columns(2)
             with t1:
@@ -3540,6 +3557,7 @@ with _t_sihhi:
                 step=10, key="tasma_cap"
             )
 
+            st.markdown('<div id="bolum_631_2_6"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.6 TAŞMA SİFONU / KOKU KAPANI")
             sifon1, sifon2 = st.columns(2)
             with sifon1:
@@ -3548,9 +3566,11 @@ with _t_sihhi:
                 yagmur_geri_tepme = st.checkbox("Geri tepme önleyici düzenek", value=True, key="yagmur_geri_tepme")
             yagmur_kanal_baglanti = st.checkbox("Taşma hattı kanalizasyona bağlanacak", value=False, key="yagmur_kanal_baglanti")
 
+            st.markdown('<div id="bolum_631_2_7"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.7 DEPO GİRİŞİ / SAKİN GİRİŞ")
             yagmur_sakin_giris = st.checkbox("Depo girişinde sakin giriş düzeni kullanılacaktır", value=True, key="yagmur_sakin_giris")
 
+            st.markdown('<div id="bolum_631_2_8"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.8 HAVALANDIRMA VE HAŞERE KORUMASI")
             h1, h2 = st.columns(2)
             with h1:
