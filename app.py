@@ -4141,7 +4141,7 @@ with _t_sihhi:
             tasma_Q_lps = tasma_tasarim_Q_lps
             tasma_Q_m3s = tasma_Q_lps / 1000.0
             tasma_S = tasma_egim_yuzde / 100.0
-            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
+            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200]
             tasma_hidrolik_tablo = []
             for _dn in tasma_dn_listesi:
                 _D = _dn / 1000.0
@@ -4157,7 +4157,9 @@ with _t_sihhi:
                 })
 
             tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
-            tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else tasma_dn_listesi[-1]
+            # Proje tasarım kriteri: taşma hattı nominal çapı DN200 ile sınırlandırılmıştır.
+            # DN200 dâhil kontrol edilir; daha büyük çaplar otomatik seçilmez.
+            tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else 200
             tasma_capasite_lps = next((x["q_kapasite_lps"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
             tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
@@ -4197,7 +4199,7 @@ with _t_sihhi:
             if tasma_hidrolik_uygun:
                 st.success(f"Hidrolik kontrol: DN {tasma_cap}, {tasma_Q_lps:.2f} L/s taşma debisini karşılıyor ve hız {tasma_hiz_ms:.2f} m/s ile sınır içinde.")
             else:
-                st.error(f"DN {tasma_dn_listesi[-1]} dahil kontrol edilen çaplar yeterli değil. Eğim, malzeme veya daha büyük çap yeniden değerlendirilmelidir.")
+                st.warning("DN200, proje tasarımında izin verilen maksimum taşma hattı çapıdır. DN200 kapasitesi tasarım debisini karşılamıyorsa eğim, malzeme ve çıkış koşulları yeniden değerlendirilmelidir; DN200 üzeri çap otomatik seçilmez.")
 
             st.caption("Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır.")
 
@@ -4285,7 +4287,7 @@ with _t_sihhi:
                         f"(tasarım taşma debisi üst sınırı {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
                     )
                     st.markdown(
-                        f"**Pozdan alınan özellik:** {tasma_sifonu_secim['ozellik']}"
+                        f"**Taşkan Sifonu Özelliği:** {tasma_sifonu_secim['ozellik']}"
                     )
                 else:
                     st.error(
@@ -8059,7 +8061,7 @@ if _rapor_olustur_sidebar:
               if _sifon_tanim:
                   doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_tanim}")
               if _sifon_ozellik:
-                  doc.add_paragraph(f"Poz tanımından alınan özellik: {_sifon_ozellik}")
+                  doc.add_paragraph(f"Taşkan Sifonu Özelliği: {_sifon_ozellik}")
               if _yr.get("tasma_sifonu_poz_rapora_eklensin") and _sifon_poz:
                   doc.add_paragraph(f"Taşkan Sifonu Cihaz Poz No: {_sifon_poz}")
               elif _sifon_poz:
