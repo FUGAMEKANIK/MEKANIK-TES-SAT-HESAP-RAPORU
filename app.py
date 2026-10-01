@@ -1543,76 +1543,73 @@ hidrofor_hesaplari = []
 st.markdown(
     """
     <style>
-    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
-    div[data-testid="stTabs"] {
-        margin-top: 6px;
-    }
+    /* ================================================================
+       ANA TESİSAT SEKME ÇUBUĞU
+       Streamlit st.tabs() içindeki GERÇEK tablist elementi sabitlenir.
+       ================================================================ */
 
-    div[data-testid="stTabs"] [role="tablist"] {
-        gap: 4px !important;
-        border-bottom: 2px solid #D7DEE8 !important;
-        overflow-x: auto !important;
-        padding-bottom: 0 !important;
-    }
-
-    /* ANA SEKME ÇUBUĞU - GERÇEKTEN SABİT
-       Streamlit'in st.tabs() yapısında sticky doğrudan tablist'e verildiğinde
-       bazı sürümlerde çalışmayabiliyor. Bu nedenle ilk/ana sekme grubunun
-       başlığını fixed yapıyoruz. */
-    div[data-testid="stTabs"] > div:first-child [role="tablist"] {
-        background: #FFFFFF !important;
-        padding: 4px 0 !important;
-        z-index: 99999 !important;
-    }
-
-    /* Ana sekme grubunu, içinde başka stTabs bulunan grup olarak hedefle. */
-    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:first-child {
+    /* Yalnızca ilk (ana) st.tabs grubunun tablist'i */
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        width: 100% !important;
-        z-index: 99999 !important;
+        width: 100vw !important;
+        box-sizing: border-box !important;
+        z-index: 2147483647 !important;
+
+        display: flex !important;
+        align-items: flex-end !important;
+        gap: 4px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+
+        padding: 8px 4vw 0 4vw !important;
+        margin: 0 !important;
+        min-height: 48px !important;
         background: #FFFFFF !important;
+        border-bottom: 2px solid #D7DEE8 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
-        padding: 4px 4vw 0 4vw !important;
     }
 
-    /* Fixed çubuk içerikle çakışmasın diye ana sekme grubunun içerik kısmına
-       üst boşluk bırak. */
-    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:nth-child(2) {
+    /* Sabit çubuk içerikle üst üste gelmesin.
+       Ana stTabs'ın panel alanını aşağı iter. */
+    div[data-testid="stTabs"]:first-of-type > div[role="tabpanel"] {
         padding-top: 58px !important;
     }
 
-    div[data-testid="stTabs"] button[role="tab"] {
+    /* Bazı Streamlit sürümlerinde panel data-baseweb ile gelir. */
+    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-panel"] {
+        padding-top: 58px !important;
+    }
+
+    /* Ana sekme butonlarının mevcut görünümünü koru */
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"] {
+        flex: 0 0 auto !important;
         font-size: 16px !important;
         font-weight: 700 !important;
         padding: 11px 16px !important;
-        min-height: 44px !important;
+        min-height: 40px !important;
         border-radius: 8px 8px 0 0 !important;
         color: #334155 !important;
         background: #F3F6FA !important;
         border: 1px solid #D7DEE8 !important;
-        border-bottom: 3px solid transparent !important;
-        white-space: nowrap !important;
     }
 
-    div[data-testid="stTabs"] button[role="tab"]:hover {
-        color: #0B3D91 !important;
-        background: #EAF2F8 !important;
-    }
-
-    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        color: #0B3D91 !important;
-        background: #EAF2F8 !important;
-        border-color: #B8C7D9 !important;
-        border-bottom: 4px solid #0B3D91 !important;
-    }
-
-    div[data-testid="stTabs"] button[role="tab"] p {
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"] p {
         font-size: 16px !important;
         font-weight: 700 !important;
         margin: 0 !important;
+    }
+
+    /* Streamlit'in tab grubuna verdiği varsayılan üst boşlukları nötrleştir. */
+    div[data-testid="stTabs"]:first-of-type {
+        margin-top: 0 !important;
+    }
+
+    /* Sayfa içeriği sabit başlığın altından başlasın. */
+    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] + div {
+        margin-top: 0 !important;
     }
     </style>
     """,
