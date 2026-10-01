@@ -1715,15 +1715,34 @@ YAG_AYIRICI_EKIPMANLARI = [
     ("DN 25 (R 1\")", 1.7, "normal"),
 ]
 
-# Excel YA-01 ... YA-04 sayfalarındaki adet örnekleri.
-YAG_AYIRICI_EXCEL_ADETLERI = {
-    "YA-01": [0, 8, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0],
-    "YA-02": [0, 6, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 2, 1, 4, 12, 0, 0, 0],
-    "YA-03": [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-    "YA-04": [0, 0, 0, 0, 0, 7, 0, 0, 2, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0],
-}
-YAG_AYIRICI_EXCEL_KAPASITELERI = {"YA-01": 7.0, "YA-02": 7.0, "YA-03": 2.0, "YA-04": 7.0}
+# Program başlangıcında bütün yağ ayırıcı ekipman adetleri 0'dır.
+# Excel'deki YA-01 ... YA-04 örnek adetleri referans alınmış olsa da kullanıcıya
+# başlangıç değeri olarak aktarılmaz.
+YAG_AYIRICI_VARSAYILAN_ADETLERI = [0] * len(YAG_AYIRICI_EKIPMANLARI)
 
+# 2026 mekanik tesisat poz listesine göre standart yağ ayırıcılar.
+# Kapasiteler: 1, 2, 3, 4, 7 ve 10 L/s.
+YAG_AYIRICI_POZLARI = [
+    {"poz": "25.620.1201", "kapasite": 1.0, "tanim": "Kapasite: 1 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 47 litre, 880x510x490 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1202", "kapasite": 2.0, "tanim": "Kapasite: 2 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 80 litre, 1190x660x710 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1203", "kapasite": 3.0, "tanim": "Kapasite: 3 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 135 litre, 1250x850x970 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1204", "kapasite": 4.0, "tanim": "Kapasite: 4 lt/sn, et kalınlığı: min.2 mm, yağ hacmi: 160 litre, 1580x910x1030 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1205", "kapasite": 7.0, "tanim": "Kapasite: 7 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 350 litre, 2000x1000x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1206", "kapasite": 10.0, "tanim": "Kapasite: 10 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 500 litre, 2500x1430x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+]
+
+def _yag_ayirici_poz_otomatik_sec(ns):
+    """NS değerini karşılayan en küçük standart yağ ayırıcı pozunu seçer."""
+    try:
+        gerekli = float(ns)
+    except Exception:
+        gerekli = 0.0
+    if gerekli <= 0:
+        return None
+    for _poz in YAG_AYIRICI_POZLARI:
+        if _poz["kapasite"] >= gerekli:
+            return dict(_poz)
+    return None
 
 def _yag_ayirici_zi(adet, ekipman_tipi="normal"):
     """Excel'deki Zi(n) kademelerini aynen uygular."""
@@ -1753,7 +1772,7 @@ def _yag_ayirici_zi(adet, ekipman_tipi="normal"):
     return 0.20
 
 
-def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasite=0.0):
+def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasite=0.0, secilen_poz=None, poz_rapora_aktar=False, poz_secim_modu="Otomatik"):
     satirlar = []
     qs = 0.0
     for i, ((ekipman, qi, tip), adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, adetler), start=1):
@@ -1781,6 +1800,9 @@ def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasi
         "fr": float(fr),
         "ns": ns,
         "secilen_kapasite": float(secilen_kapasite),
+        "secilen_poz": dict(secilen_poz) if isinstance(secilen_poz, dict) else None,
+        "poz_rapora_aktar": bool(poz_rapora_aktar),
+        "poz_secim_modu": str(poz_secim_modu),
     }
 
 # 6.2.3 hesap sonuçları rapor üretiminden önce güvenli biçimde hazır tutulur.
@@ -3393,7 +3415,7 @@ with _t_sihhi:
             yag_ayirici_hesaplari = {}
             for _ya in yag_ayirici_secilenler:
                 st.markdown(f"### {_ya} ÖZEL DEBİ VE KAPASİTE HESAP MODÜLÜ")
-                _default_adetler = YAG_AYIRICI_EXCEL_ADETLERI.get(_ya, [0] * len(YAG_AYIRICI_EKIPMANLARI))
+                _default_adetler = YAG_AYIRICI_VARSAYILAN_ADETLERI
                 _adetler = []
 
                 st.markdown("**Ekipmanlar ve Adet Bilgileri**")
@@ -3450,16 +3472,53 @@ with _t_sihhi:
                 _ft = 1.3 if "> 60" in _ft_sec else 1.0
                 _fr = 1.5 if "Hastaneler" in _fr_sec else (1.3 if "kullanılıyor" in _fr_sec else 1.0)
 
-                _cap_default = YAG_AYIRICI_EXCEL_KAPASITELERI.get(_ya, 7.0)
-                _secilen_kapasite = st.number_input(
-                    "Seçilen yağ ayırıcı kapasitesi [L/s]",
-                    min_value=0.1,
-                    value=float(st.session_state.get(f"yag_{_ya}_kapasite", _cap_default)),
-                    step=0.5,
-                    key=f"yag_{_ya}_kapasite",
+                # Excel ile birebir NS hesabı tamamlandıktan sonra NS'yi karşılayan
+                # en küçük standart poz otomatik seçilir. Kullanıcı isterse manuel
+                # poz seçimine geçebilir.
+                _on_hesap = _yag_ayirici_hesapla(_ya, _adetler, _fd, _ft, _fr, 0.0)
+                _otomatik_poz = _yag_ayirici_poz_otomatik_sec(_on_hesap["ns"])
+
+                _poz_modu = st.selectbox(
+                    "Yağ Ayırıcı Poz Seçim Modu",
+                    ["Otomatik (NS kapasitesine göre)", "Manuel Seçim"],
+                    index=0,
+                    key=f"yag_{_ya}_poz_modu",
                 )
 
-                _hesap = _yag_ayirici_hesapla(_ya, _adetler, _fd, _ft, _fr, _secilen_kapasite)
+                if _poz_modu.startswith("Otomatik"):
+                    _secilen_poz = _otomatik_poz
+                    if _secilen_poz:
+                        st.success(
+                            f"Otomatik seçilen poz: **{_secilen_poz['poz']}** | "
+                            f"Kapasite: **{_secilen_poz['kapasite']:.0f} L/s** | "
+                            f"Hesaplanan NS: **{_on_hesap['ns']:.2f} L/s**"
+                        )
+                    elif _on_hesap["ns"] > 0:
+                        st.warning(
+                            f"Hesaplanan NS = {_on_hesap['ns']:.2f} L/s. "
+                            "Mevcut 25.620.1201–25.620.1206 poz grubunda bunu karşılayan kapasite bulunamadı."
+                        )
+                else:
+                    _poz_secenekleri = [f"{p['poz']} — {p['kapasite']:.0f} L/s" for p in YAG_AYIRICI_POZLARI]
+                    _manuel_poz_no = st.selectbox(
+                        "Manuel Cihaz Poz No",
+                        [p["poz"] for p in YAG_AYIRICI_POZLARI],
+                        index=0,
+                        key=f"yag_{_ya}_manuel_poz",
+                    )
+                    _secilen_poz = next((dict(p) for p in YAG_AYIRICI_POZLARI if p["poz"] == _manuel_poz_no), None)
+
+                _poz_rapora_aktar = st.checkbox(
+                    "Cihaz Poz No rapora aktarılsın",
+                    value=bool(st.session_state.get(f"yag_{_ya}_poz_rapora_aktar", False)),
+                    key=f"yag_{_ya}_poz_rapora_aktar",
+                )
+
+                _secilen_kapasite = float(_secilen_poz["kapasite"]) if _secilen_poz else 0.0
+                _hesap = _yag_ayirici_hesapla(
+                    _ya, _adetler, _fd, _ft, _fr, _secilen_kapasite,
+                    _secilen_poz, _poz_rapora_aktar, _poz_modu
+                )
                 yag_ayirici_hesaplari[_ya] = _hesap
 
                 st.info(
@@ -3468,7 +3527,8 @@ with _t_sihhi:
                 )
                 st.caption(
                     f"fd = {_hesap['fd']:.2f} | ft = {_hesap['ft']:.2f} | fr = {_hesap['fr']:.2f} | "
-                    f"Seçilen kapasite = {_hesap['secilen_kapasite']:.2f} L/s"
+                    f"Seçilen kapasite = {_hesap['secilen_kapasite']:.2f} L/s | "
+                    f"Cihaz Poz No = {(_hesap['secilen_poz']['poz'] if _hesap['secilen_poz'] else 'Seçilmedi')}"
                 )
 
       if bolum_63_aktif:
@@ -7970,6 +8030,12 @@ if _rapor_olustur_sidebar:
                 f"Seçilen yağ ayırıcı kapasitesi: {_hesap['secilen_kapasite']:.2f} L/s"
             )
             _r.bold = True
+
+            if _hesap.get("poz_rapora_aktar") and _hesap.get("secilen_poz"):
+              _p = doc.add_paragraph()
+              _r = _p.add_run(f"Cihaz Poz No: {_hesap['secilen_poz']['poz']}")
+              _r.bold = True
+              doc.add_paragraph(f"Yağ Ayırıcı Özelliği: {_hesap['secilen_poz']['tanim']}")
 
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
