@@ -6925,11 +6925,6 @@ if _rapor_olustur_sidebar:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
           doc.add_heading("6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI", level=4)
-          doc.add_paragraph(
-              f"Toplama alanı: A = {_yr.get('cati_alani', 0):.2f} m²; "
-              f"tasarım yağış yüksekliği: P = {_yr.get('yagis', 0):.2f} mm; "
-              f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
-          )
           if _yr.get("mgm_yagis_mm") is not None:
               doc.add_paragraph(
                   f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
@@ -6999,8 +6994,23 @@ if _rapor_olustur_sidebar:
               "İllerimize Ait Genel İstatistiki Veriler. "
               "MGM verilerinin ölçüm periyotları illere göre farklılık gösterebilir."
           )
+
+          # Hesap girdileri, MGM kaynak bilgisinin hemen altında gösterilir.
           doc.add_paragraph(
-              f"Toplanabilir yağmur suyu: V = A × P × C / 1000 = {_yr.get('toplanabilir_m3', 0):.2f} m³"
+              f"Toplama alanı: A = {_yr.get('cati_alani', 0):.2f} m²; "
+              f"tasarım yağış yüksekliği: P = {_yr.get('yagis', 0):.2f} mm; "
+              f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
+          )
+
+          # Önce formül, ardından gerçek proje değerlerinin yerine konduğu işlem gösterilir.
+          _yr_A = float(_yr.get('cati_alani', 0) or 0)
+          _yr_P = float(_yr.get('yagis', 0) or 0)
+          _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
+          _yr_V = _yr_A * _yr_P * _yr_C / 1000.0
+          doc.add_paragraph("Toplanabilir yağmur suyu hesabı:")
+          doc.add_paragraph("V = A × P × C / 1000")
+          doc.add_paragraph(
+              f"V = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_V:.2f} m³"
           )
 
           doc.add_heading("6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
