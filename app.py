@@ -164,22 +164,32 @@ def mgm_aylik_ortalama_yagis_mm(il_adi):
             _pos = _metin.lower().find(_baslik.lower())
             if _pos < 0:
                 continue
-            _parca = _metin[_pos:_pos+1600]
-            # Başlıktan sonraki ilk 12 ondalık/tamsayı değer MGM'nin Ocak-Aralık verileridir.
-            _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?(?=\s*(?:\||$))", _parca)
-            if len(_vals) < 12:
-                # HTML temizliğindeki varyasyonlar için daha geniş desen.
-                _vals = _re.findall(r"\d+(?:[.,]\d+)?", _parca)
-            _nums=[]
+            _parca = _metin[_pos:_pos+1800]
+            # MGM'nin tablo satırında başlıktan hemen sonra Ocak-Aralık için
+            # 12 adet yağış değeri gelir. HTML ayraçları sayfaya göre
+            # değişebildiğinden, başlıktan sonraki ilk 12 sayıyı esas alıyoruz.
+            _vals = _re.findall(r"\d+(?:[.,]\d+)?", _parca)
+            _nums = []
             for _v in _vals:
-                try: _nums.append(float(_v.replace(',', '.')))
-                except ValueError: pass
+                try:
+                    _nums.append(float(_v.replace(',', '.')))
+                except (TypeError, ValueError):
+                    pass
             if len(_nums) >= 12:
                 _nums = _nums[:12]
                 _aylik = dict(zip(_aylar, _nums))
                 _period = ""
                 _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)\)", _parca, flags=_re.I)
-                if _m: _period = _m.group(1).strip()
+                if _m:
+                    _period = _m.group(1).strip()
+                else:
+                    _m = _re.search(
+                        r"Ölçüm Periyodu\s*\(\s*([^\)]+)\)",
+                        _metin[_pos:_pos+5000],
+                        flags=_re.I,
+                    )
+                    if _m:
+                        _period = _m.group(1).strip()
                 return _aylik, _period, _url
         except Exception:
             continue
