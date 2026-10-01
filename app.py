@@ -8119,6 +8119,10 @@ if _rapor_olustur_sidebar:
               f"toplam tasarım kapasitesi = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
               f"Manning hızı = {_tasma_hiz:.2f} m/s"
           )
+          # Hidrolik kontrol tablosu rapor bölümünde kullanılmadan önce alınmalıdır.
+          # Aksi halde DN200/DN250 kapasite satırında değişken tanımsız kalır ve
+          # rapor oluşturma işlemi NameError ile durur.
+          _hidrolik_tablo = _yr.get('tasma_hidrolik_tablo', [])
           if _tasma_DN in (200, 250):
               _rep_secili = next((x for x in _hidrolik_tablo if int(x.get('dn', 0)) == int(_tasma_DN)), None)
               if _rep_secili and _rep_secili.get('q_hiz_lps') is not None:
@@ -8130,7 +8134,6 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(
               f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
           )
-          _hidrolik_tablo = _yr.get('tasma_hidrolik_tablo', [])
           if _hidrolik_tablo:
               doc.add_paragraph("Kontrol edilen çaplar:")
               for _x in _hidrolik_tablo:
