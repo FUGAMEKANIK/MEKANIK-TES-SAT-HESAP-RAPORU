@@ -1543,73 +1543,47 @@ hidrofor_hesaplari = []
 st.markdown(
     """
     <style>
-    /* ================================================================
-       ANA TESİSAT SEKME ÇUBUĞU
-       Streamlit st.tabs() içindeki GERÇEK tablist elementi sabitlenir.
-       ================================================================ */
+    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
+    div[data-testid="stTabs"] {
+        margin-top: 6px;
+    }
 
-    /* Yalnızca ilk (ana) st.tabs grubunun tablist'i */
-    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
-        box-sizing: border-box !important;
-        z-index: 2147483647 !important;
-
-        display: flex !important;
-        align-items: flex-end !important;
+    div[data-testid="stTabs"] [role="tablist"] {
         gap: 4px !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-
-        padding: 8px 4vw 0 4vw !important;
-        margin: 0 !important;
-        min-height: 48px !important;
-        background: #FFFFFF !important;
         border-bottom: 2px solid #D7DEE8 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+        overflow-x: auto !important;
+        padding-bottom: 0 !important;
     }
 
-    /* Sabit çubuk içerikle üst üste gelmesin.
-       Ana stTabs'ın panel alanını aşağı iter. */
-    div[data-testid="stTabs"]:first-of-type > div[role="tabpanel"] {
-        padding-top: 58px !important;
-    }
-
-    /* Bazı Streamlit sürümlerinde panel data-baseweb ile gelir. */
-    div[data-testid="stTabs"]:first-of-type > div[data-baseweb="tab-panel"] {
-        padding-top: 58px !important;
-    }
-
-    /* Ana sekme butonlarının mevcut görünümünü koru */
-    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"] {
-        flex: 0 0 auto !important;
+    div[data-testid="stTabs"] button[role="tab"] {
         font-size: 16px !important;
         font-weight: 700 !important;
         padding: 11px 16px !important;
-        min-height: 40px !important;
+        min-height: 44px !important;
         border-radius: 8px 8px 0 0 !important;
         color: #334155 !important;
         background: #F3F6FA !important;
         border: 1px solid #D7DEE8 !important;
+        border-bottom: 3px solid transparent !important;
+        white-space: nowrap !important;
     }
 
-    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] button[role="tab"] p {
+    div[data-testid="stTabs"] button[role="tab"]:hover {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+        border-color: #B8C7D9 !important;
+        border-bottom: 4px solid #0B3D91 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p {
         font-size: 16px !important;
         font-weight: 700 !important;
         margin: 0 !important;
-    }
-
-    /* Streamlit'in tab grubuna verdiği varsayılan üst boşlukları nötrleştir. */
-    div[data-testid="stTabs"]:first-of-type {
-        margin-top: 0 !important;
-    }
-
-    /* Sayfa içeriği sabit başlığın altından başlasın. */
-    div[data-testid="stTabs"]:first-of-type > div[role="tablist"] + div {
-        margin-top: 0 !important;
     }
     </style>
     """,
@@ -2076,6 +2050,8 @@ with _t_sihhi:
       sih_sec_depo_tipi = True
       sih_depo_tipleri = ["Paslanmaz Çelik Modüler su deposu"]
       sih_depo_konumlari = ["Bodrum kat"]
+      sih_sec_yagmur_depo_tipi = True
+      sih_yagmur_depo_tipleri = ["Betonarme Su Deposu"]
 
       # --- 6. BÖLÜM: SIHHİ TESİSAT ---
       st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
@@ -2095,6 +2071,7 @@ with _t_sihhi:
             "sih_sec_3",
             "sih_sec_4",
             "sih_sec_depo_tipi",
+            "sih_sec_yagmur_depo_tipi",
             "sih_sec_5",
             "sih_sec_6",
             "sih_sec_7",
@@ -2153,6 +2130,25 @@ with _t_sihhi:
             ],
             default=["Paslanmaz Çelik Modüler su deposu"],
         )
+
+        sih_sec_yagmur_depo_tipi = st.checkbox(
+            "Binada yağmur suyu depolaması için belirtilen tipte su deposu kullanılmıştır.",
+            key="sih_sec_yagmur_depo_tipi",
+            value=True,
+        )
+        _yagmur_depo_tipleri_61 = [
+            "Paslanmaz Modüler Çelik Su Deposu",
+            "Galvaniz Modüler Çelik Su Deposu",
+            "Betonarme Su Deposu",
+        ]
+        sih_yagmur_depo_tipi = st.selectbox(
+            "Yağmur Suyu Deposu Tipi:",
+            _yagmur_depo_tipleri_61,
+            index=2,
+            key="sih_yagmur_depo_tipi",
+        )
+        # Rapor tarafında mevcut yapı korunur; seçim tek bir depo tipidir.
+        sih_yagmur_depo_tipleri = [sih_yagmur_depo_tipi]
 
         sih_sec_5 = st.checkbox(
             "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz vitrifiye"
@@ -3550,17 +3546,18 @@ with _t_sihhi:
                     step=0.05, format="%.2f", key="yagmur_akis_katsayisi"
                 )
 
-            # İlk yağış ayrıldıktan sonra sarnıca alınacak yağmur suyu oranı
-            # ve filtre etkinlik katsayısı net hacim hesabında kullanılır.
-            k1, k2 = st.columns(2)
-            with k1:
+            # Yağmur suyunun sarnıca alınan net miktarı için iki yeni tasarım katsayısı.
+            # İlk yağış ayırma hacmi aşağıda hesaplandığından, nihai sarnıç hacmi
+            # ilk yağış hacmi çıkarıldıktan sonra bu oranlarla düzeltilir.
+            r1, r2 = st.columns(2)
+            with r1:
                 yagmur_sarnic_orani = st.number_input(
                     "İlk yağış hariç sarnıca alınacak yağmur suyu oranı (%)",
                     min_value=0.0, max_value=100.0,
                     value=float(st.session_state.get("yagmur_sarnic_orani", 80.0)),
                     step=1.0, format="%.0f", key="yagmur_sarnic_orani"
                 )
-            with k2:
+            with r2:
                 yagmur_filtre_etkinlik = st.number_input(
                     "Filtre etkinlik katsayısı (%)",
                     min_value=0.0, max_value=100.0,
@@ -3568,10 +3565,33 @@ with _t_sihhi:
                     step=1.0, format="%.0f", key="yagmur_filtre_etkinlik"
                 )
 
-            yagmur_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
+            # Ham yağış hacmi: çatı alanı, tasarım yağışı ve akış katsayısından.
+            yagmur_ham_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
+
+            # İlk yağış hacmi burada ayrıca hesaplanır; aşağıdaki ilk yağış ayırıcı
+            # bölümünde aynı değer tekrar kullanılmaktadır.
+            _ilk_yagis_l_m2_on_hesap = float(st.session_state.get("ilk_yagis_l_m2", 1.0))
+            yagmur_ilk_yagis_hacmi_on_hesap = yagmur_cati_alani * _ilk_yagis_l_m2_on_hesap / 1000.0
+            yagmur_ilk_yagis_haric_m3 = max(0.0, yagmur_ham_toplanabilir_m3 - yagmur_ilk_yagis_hacmi_on_hesap)
+
+            # Sarnıca fiilen alınacak net yağmur suyu: ilk yağış hariç hacim ×
+            # sarnıç alma oranı × filtre etkinlik katsayısı.
+            yagmur_toplanabilir_m3 = (
+                yagmur_ilk_yagis_haric_m3
+                * yagmur_sarnic_orani / 100.0
+                * yagmur_filtre_etkinlik / 100.0
+            )
+
             st.info(
-                f"Toplanabilir yağmur suyu: **V = A × P × C / 1000 = {yagmur_toplanabilir_m3:,.2f} m³**"
+                f"Sarnıca alınacak net yağmur suyu: **V = (A × P × C / 1000 − V_ilk yağış) × "
+                f"{yagmur_sarnic_orani:.0f}/100 × {yagmur_filtre_etkinlik:.0f}/100 = "
+                f"{yagmur_toplanabilir_m3:,.2f} m³**"
                 .replace(",", "X").replace(".", ",").replace("X", ".")
+            )
+            st.caption(
+                f"Ham yağış hacmi: {yagmur_ham_toplanabilir_m3:.2f} m³ | "
+                f"İlk yağış hacmi: {yagmur_ilk_yagis_hacmi_on_hesap:.2f} m³ | "
+                f"İlk yağış sonrası: {yagmur_ilk_yagis_haric_m3:.2f} m³"
             )
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
@@ -3595,7 +3615,7 @@ with _t_sihhi:
                 value=float(st.session_state.get("yagmur_sure_dk", 15.0)),
                 step=1.0, key="yagmur_sure_dk"
             )
-            yagmur_debi_m3h = yagmur_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
+            yagmur_debi_m3h = yagmur_ham_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
             yagmur_filtre_debisi = yagmur_debi_m3h * (1.0 + yagmur_filtre_emniyet / 100.0)
             st.write(f"Hesaplanan yağış debisi: **{yagmur_debi_m3h:.2f} m³/h**")
             st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
@@ -3628,19 +3648,6 @@ with _t_sihhi:
                     value=float(st.session_state.get("yagmur_depolama_gun", 3.0)),
                     step=1.0, key="yagmur_depolama_gun"
                 )
-            yagmur_net_sarnic_m3 = max(
-                0.0,
-                (yagmur_toplanabilir_m3 - ilk_yagis_hacmi)
-                * yagmur_sarnic_orani / 100.0
-                * yagmur_filtre_etkinlik / 100.0
-            )
-            st.info(
-                f"Sarnıca alınacak net yağmur suyu: **Vₛ = "
-                f"({yagmur_toplanabilir_m3:.2f} - {ilk_yagis_hacmi:.2f}) × "
-                f"{yagmur_sarnic_orani:.0f}/100 × {yagmur_filtre_etkinlik:.0f}/100 "
-                f"= {yagmur_net_sarnic_m3:.2f} m³**"
-            )
-
             yagmur_gerekli_depo = yagmur_kullanim_gunluk * yagmur_depolama_gun
             yagmur_secilen_depo = st.number_input(
                 "Seçilen yağmur suyu deposu hacmi (m³)", min_value=0.0,
@@ -3698,11 +3705,11 @@ with _t_sihhi:
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
-                "toplanabilir_m3": yagmur_toplanabilir_m3,
+                "ham_toplanabilir_m3": yagmur_ham_toplanabilir_m3,
+                "ilk_yagis_haric_m3": yagmur_ilk_yagis_haric_m3,
                 "sarnic_orani": yagmur_sarnic_orani,
                 "filtre_etkinlik": yagmur_filtre_etkinlik,
-                "net_sarnic_m3": yagmur_net_sarnic_m3,
-                "sure_dk": yagmur_sure_dk,
+                "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
                 "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
                 "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
                 "ilk_yagis_l_m2": ilk_yagis_l_m2, "ilk_yagis_hacmi": ilk_yagis_hacmi,
@@ -6470,6 +6477,24 @@ if _rapor_olustur_sidebar:
               f"{tip_str} tipinde su deposu kullanılmıştır."
           )
 
+        if sih_sec_yagmur_depo_tipi and sih_yagmur_depo_tipleri:
+          if len(sih_yagmur_depo_tipleri) == 1:
+            yagmur_tip_str = sih_yagmur_depo_tipleri[0].lower()
+          elif len(sih_yagmur_depo_tipleri) == 2:
+            yagmur_tip_str = (
+                f"{sih_yagmur_depo_tipleri[0].lower()} ve "
+                f"{sih_yagmur_depo_tipleri[1].lower()}"
+            )
+          else:
+            ilkler = ", ".join([t.lower() for t in sih_yagmur_depo_tipleri[:-1]])
+            son = sih_yagmur_depo_tipleri[-1].lower()
+            yagmur_tip_str = f"{ilkler} ve {son}"
+
+          sihhi_maddeler.append(
+              "Binada yağmur suyu depolaması için "
+              f"{yagmur_tip_str} tipinde su deposu kullanılmıştır."
+          )
+
         if sih_sec_5:
           sihhi_maddeler.append(
               "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
@@ -7128,33 +7153,33 @@ if _rapor_olustur_sidebar:
               f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
           )
 
-          # Önce formül, ardından gerçek proje değerlerinin yerine konduğu işlem gösterilir.
+          # Önce ham yağış hacmi, ardından ilk yağış ayırma ve iki yeni katsayı
+          # uygulanarak sarnıca alınacak net hacim gösterilir.
           _yr_A = float(_yr.get('cati_alani', 0) or 0)
           _yr_P = float(_yr.get('yagis', 0) or 0)
           _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
-          _yr_V = _yr_A * _yr_P * _yr_C / 1000.0
-          doc.add_paragraph("Toplanabilir yağmur suyu hesabı:")
-          doc.add_paragraph("V = A × P × C / 1000")
+          _yr_ilk = float(_yr.get('ilk_yagis_hacmi', 0) or 0)
+          _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
+          _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
+          _yr_ham_V = float(_yr.get('ham_toplanabilir_m3', _yr_A * _yr_P * _yr_C / 1000.0) or 0)
+          _yr_ilk_haric_V = max(0.0, _yr_ham_V - _yr_ilk)
+          _yr_V = float(_yr.get('toplanabilir_m3', _yr_ilk_haric_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
+          doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak net su hesabı:")
+          doc.add_paragraph("V_ham = A × P × C / 1000")
           doc.add_paragraph(
-              f"V = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_V:.2f} m³"
-          )
-
-          _yr_ilk_yagis = float(_yr.get("ilk_yagis_hacmi", 0) or 0)
-          _yr_sarnic_orani = float(_yr.get("sarnic_orani", 80) or 0)
-          _yr_filtre_etkinlik = float(_yr.get("filtre_etkinlik", 90) or 0)
-          _yr_net_sarnic = float(_yr.get("net_sarnic_m3", max(0.0, (_yr_V - _yr_ilk_yagis) * _yr_sarnic_orani / 100 * _yr_filtre_etkinlik / 100)) or 0)
-          doc.add_paragraph(
-              f"İlk yağış hacmi = A × (İlk yağış ayırma miktarı) / 1000 = {_yr_ilk_yagis:.2f} m³"
+              f"V_ham = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_ham_V:.2f} m³"
           )
           doc.add_paragraph(
-              "Sarnıca alınacak net yağmur suyu = (V - İlk Yağış Hacmi) × Sarnıç Oranı × Filtre Etkinlik Katsayısı"
+              f"V_sarnıç = (V_ham − V_ilk yağış) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100"
           )
           doc.add_paragraph(
-              f"Vₛ = ({_yr_V:.2f} - {_yr_ilk_yagis:.2f}) × {_yr_sarnic_orani:.0f}/100 × {_yr_filtre_etkinlik:.0f}/100 = {_yr_net_sarnic:.2f} m³"
+              f"V_sarnıç = ({_yr_ham_V:.2f} − {_yr_ilk:.2f}) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100 = {_yr_V:.2f} m³"
           )
           doc.add_paragraph(
               f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
-              f"Filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}"
+              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
           )
 
           doc.add_heading("6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
