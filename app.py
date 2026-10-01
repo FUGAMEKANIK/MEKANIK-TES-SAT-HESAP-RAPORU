@@ -1525,8 +1525,6 @@ bolum_4_aktif = bool(st.session_state.get("rapor_bolum_4", False))
 secilen_depo_tipi_metni = ""
 sih_depo_tipleri = []
 sih_sec_depo_tipi = []
-sih_sec_yagmur_depo_tipi = True
-sih_yagmur_depo_tipi = "Betonarme Su deposu"
 depo_gerekli_hacim_m3 = 0.0
 depo_gerekli_hacim_litre = 0.0
 otomatik_poz_kayitlari = []
@@ -1538,6 +1536,59 @@ sicak_su_yapi_tipi = ""
 kullanma_es_faktoru = 0.0
 depolama_faktoru = 0.0
 hidrofor_hesaplari = []
+
+# ---------------------------------------------------------------------------
+# ANA TESİSAT KATEGORİLERİ - GÖRSEL DÜZEN
+# ---------------------------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
+    div[data-testid="stTabs"] {
+        margin-top: 6px;
+    }
+
+    div[data-testid="stTabs"] [role="tablist"] {
+        gap: 4px !important;
+        border-bottom: 2px solid #D7DEE8 !important;
+        overflow-x: auto !important;
+        padding-bottom: 0 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 11px 16px !important;
+        min-height: 44px !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: #334155 !important;
+        background: #F3F6FA !important;
+        border: 1px solid #D7DEE8 !important;
+        border-bottom: 3px solid transparent !important;
+        white-space: nowrap !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"]:hover {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+        border-color: #B8C7D9 !important;
+        border-bottom: 4px solid #0B3D91 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------------------------
 # ANA TESİSAT KATEGORİLERİ
@@ -1998,8 +2049,9 @@ with _t_sihhi:
       # 6.1 açıksa aşağıdaki değerler gerçek kullanıcı seçimleriyle değiştirilir.
       sih_sec_depo_tipi = True
       sih_depo_tipleri = ["Paslanmaz Çelik Modüler su deposu"]
-      sih_yagmur_depo_tipi = st.session_state.get("sih_yagmur_depo_tipi", "Betonarme Su deposu")
       sih_depo_konumlari = ["Bodrum kat"]
+      yagmur_sec_depo_tipi = True
+      yagmur_depo_tipi_61 = "Betonarme"
 
       # --- 6. BÖLÜM: SIHHİ TESİSAT ---
       st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
@@ -2078,29 +2130,25 @@ with _t_sihhi:
             default=["Paslanmaz Çelik Modüler su deposu"],
         )
 
-        sih_sec_yagmur_depo_tipi = st.checkbox(
+        # Yağmur suyu deposu tipi: 6.1'de seçilir ve 6.3.1.2'ye otomatik aktarılır.
+        yagmur_sec_depo_tipi = st.checkbox(
             "Binada yağmur suyu depolaması için belirtilen tipte su deposu kullanılmıştır.",
-            key="sih_sec_yagmur_depo_tipi",
+            key="yagmur_sec_depo_tipi",
             value=True,
         )
-        sih_yagmur_depo_tipi = st.selectbox(
+        _yagmur_depo_tipleri_61 = [
+            "Paslanmaz Modüler Çelik",
+            "Galvaniz Modüler Çelik",
+            "Betonarme",
+        ]
+        _yagmur_depo_default_index = _yagmur_depo_tipleri_61.index(
+            st.session_state.get("yagmur_depo_tipi_61", "Betonarme")
+        ) if st.session_state.get("yagmur_depo_tipi_61", "Betonarme") in _yagmur_depo_tipleri_61 else 2
+        yagmur_depo_tipi_61 = st.selectbox(
             "Yağmur Suyu Deposu Tipi:",
-            [
-                "Paslanmaz Çelik Modüler su deposu",
-                "Galvaniz Çelik Modüler su deposu",
-                "Betonarme Su deposu",
-            ],
-            index=[
-                "Paslanmaz Çelik Modüler su deposu",
-                "Galvaniz Çelik Modüler su deposu",
-                "Betonarme Su deposu",
-            ].index(st.session_state.get("sih_yagmur_depo_tipi", "Betonarme Su deposu"))
-            if st.session_state.get("sih_yagmur_depo_tipi", "Betonarme Su deposu") in [
-                "Paslanmaz Çelik Modüler su deposu",
-                "Galvaniz Çelik Modüler su deposu",
-                "Betonarme Su deposu",
-            ] else 2,
-            key="sih_yagmur_depo_tipi",
+            _yagmur_depo_tipleri_61,
+            index=_yagmur_depo_default_index,
+            key="yagmur_depo_tipi_61",
         )
 
         sih_sec_5 = st.checkbox(
@@ -3443,6 +3491,8 @@ with _t_sihhi:
 
         yagmur_hesap = {}
         yagmur_secimler = {}
+        # 6.1'de seçilen yağmur suyu deposu tipi aşağıdaki hesaba otomatik aktarılır.
+        yagmur_depo_tipi_61 = st.session_state.get("yagmur_depo_tipi_61", "Betonarme")
         yagmur_maddeleri = [
             "Yağmur suyu toplama hesabı yapılacaktır.",
             "Yağmur suyu filtresi, hesaplanan yağış debisine uygun kapasitede seçilecektir.",
@@ -3500,35 +3550,8 @@ with _t_sihhi:
                 )
 
             yagmur_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
-
-            k1, k2 = st.columns(2)
-            with k1:
-                yagmur_sarnic_orani = st.number_input(
-                    "İlk yağış hariç sarnıca alınacak yağmur suyu oranı (%)",
-                    min_value=0.0, max_value=100.0,
-                    value=float(st.session_state.get("yagmur_sarnic_orani", 80.0)),
-                    step=1.0, key="yagmur_sarnic_orani"
-                )
-            with k2:
-                yagmur_filtre_etkinlik = st.number_input(
-                    "Filtre etkinlik katsayısı (%)",
-                    min_value=0.0, max_value=100.0,
-                    value=float(st.session_state.get("yagmur_filtre_etkinlik", 90.0)),
-                    step=1.0, key="yagmur_filtre_etkinlik"
-                )
-
-            # İlk yağış ayrıldıktan sonra kalan yağmur suyunun belirlenen oranı
-            # sarnıca alınır ve filtre etkinlik katsayısı ile düzeltilir.
-            # Negatif değer oluşmaması için maksimum 0 alınır.
-            ilk_yagis_hacmi_on_hesap = yagmur_cati_alani * float(st.session_state.get("ilk_yagis_l_m2", 1.0)) / 1000.0
-            yagmur_ilk_yagis_haric_m3 = max(0.0, yagmur_toplanabilir_m3 - ilk_yagis_hacmi_on_hesap)
-            yagmur_sarnica_alinan_m3 = (
-                yagmur_ilk_yagis_haric_m3
-                * yagmur_sarnic_orani / 100.0
-                * yagmur_filtre_etkinlik / 100.0
-            )
             st.info(
-                f"İlk yağış hariç sarnıca alınacak yağmur suyu: **{yagmur_sarnica_alinan_m3:,.2f} m³**"
+                f"Toplanabilir yağmur suyu: **V = A × P × C / 1000 = {yagmur_toplanabilir_m3:,.2f} m³**"
                 .replace(",", "X").replace(".", ",").replace("X", ".")
             )
 
@@ -3571,26 +3594,34 @@ with _t_sihhi:
                 ilk_yagis_hacmi = yagmur_cati_alani * ilk_yagis_l_m2 / 1000.0
                 st.metric("İlk yağış ayırıcı hacmi", f"{ilk_yagis_hacmi:.2f} m³")
 
-            # İlk yağış hacmi yukarıdaki toplam sarnıç hesabında da kullanılır.
-            yagmur_ilk_yagis_haric_m3 = max(0.0, yagmur_toplanabilir_m3 - ilk_yagis_hacmi)
-            yagmur_sarnica_alinan_m3 = (
-                yagmur_ilk_yagis_haric_m3
-                * yagmur_sarnic_orani / 100.0
-                * yagmur_filtre_etkinlik / 100.0
-            )
-            st.success(
-                f"Sarnıca alınacak net yağmur suyu: **{yagmur_sarnica_alinan_m3:.2f} m³** "
-                f"(ilk yağış sonrası × %{yagmur_sarnic_orani:.0f} × filtre %{yagmur_filtre_etkinlik:.0f})"
-            )
-
+            # İlk yağış hacmi düşüldükten sonra sarnıca alınacak net yağmur suyu
+            # miktarı, kullanıcı tanımlı sarnıç oranı ve filtre etkinlik katsayısı ile hesaplanır.
             st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
             st.markdown("##### 6.3.1.2.4 YAĞMUR SUYU DEPOSU HACİM HESABI")
-            st.text_input(
-                "Su deposu tipi (6.1'den otomatik):",
-                value=sih_yagmur_depo_tipi,
-                disabled=True,
-                key="yagmur_depo_tipi_otomatik_gosterim",
+            k1, k2 = st.columns(2)
+            with k1:
+                yagmur_sarnic_orani = st.number_input(
+                    "İlk yağış hariç sarnıca alınacak yağmur suyu oranı (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(st.session_state.get("yagmur_sarnic_orani", 80.0)),
+                    step=1.0, format="%.0f", key="yagmur_sarnic_orani"
+                )
+            with k2:
+                yagmur_filtre_etkinlik = st.number_input(
+                    "Filtre etkinlik katsayısı (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(st.session_state.get("yagmur_filtre_etkinlik", 90.0)),
+                    step=1.0, format="%.0f", key="yagmur_filtre_etkinlik"
+                )
+            yagmur_net_sarnic = max(0.0, (yagmur_toplanabilir_m3 - ilk_yagis_hacmi)) * (yagmur_sarnic_orani / 100.0) * (yagmur_filtre_etkinlik / 100.0)
+            st.write(
+                f"Sarnıca alınacak net yağmur suyu: **Vₛ = ({yagmur_toplanabilir_m3:.2f} - {ilk_yagis_hacmi:.2f}) × {yagmur_sarnic_orani:.0f}/100 × {yagmur_filtre_etkinlik:.0f}/100 = {yagmur_net_sarnic:.2f} m³**"
             )
+            st.caption(
+                f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{yagmur_sarnic_orani:.0f}; "
+                f"Filtre etkinlik katsayısı: %{yagmur_filtre_etkinlik:.0f}"
+            )
+            st.info(f"Yağmur suyu deposu tipi (6.1'den otomatik): **{yagmur_depo_tipi_61}**")
             d1, d2 = st.columns(2)
             with d1:
                 yagmur_kullanim_gunluk = st.number_input(
@@ -3662,16 +3693,13 @@ with _t_sihhi:
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
                 "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
-                "ilk_yagis_haric_m3": yagmur_ilk_yagis_haric_m3,
-                "sarnic_orani": yagmur_sarnic_orani,
-                "filtre_etkinlik": yagmur_filtre_etkinlik,
-                "sarnica_alinan_m3": yagmur_sarnica_alinan_m3,
                 "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
                 "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
                 "ilk_yagis_l_m2": ilk_yagis_l_m2, "ilk_yagis_hacmi": ilk_yagis_hacmi,
+                "sarnic_orani": yagmur_sarnic_orani, "filtre_etkinlik": yagmur_filtre_etkinlik,
+                "net_sarnic_m3": yagmur_net_sarnic, "depo_tipi": yagmur_depo_tipi_61,
                 "kullanim_gunluk": yagmur_kullanim_gunluk, "depolama_gun": yagmur_depolama_gun,
                 "gerekli_depo": yagmur_gerekli_depo, "secilen_depo": yagmur_secilen_depo,
-                "depo_tipi": sih_yagmur_depo_tipi,
                 "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
                 "sifon": yagmur_tasma_sifonu, "geri_tepme": yagmur_geri_tepme,
                 "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
@@ -4439,8 +4467,9 @@ with _t_sihhi:
           p = doc.add_paragraph()
           p.paragraph_format.space_before = Pt(4)
           p.paragraph_format.space_after = Pt(4)
+          p.alignment = WD_ALIGN_PARAGRAPH.LEFT
           run = p.add_run(f"• {metin}")
-          run.bold = False
+          run.bold = True
           run.italic = True
           run.font.name = "Arial"
           run.font.size = Pt(12)
@@ -6034,22 +6063,6 @@ if _rapor_olustur_sidebar:
         p.paragraph_format.widow_control = True
         return p
 
-    def yagmur_bullet_baslik(metin):
-        """Yağmur suyu alt başlıklarını numarasız, ortalı bullet + kalın/italik renkli gösterir."""
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p.paragraph_format.keep_with_next = True
-        p.paragraph_format.keep_together = True
-        p.paragraph_format.space_before = Pt(6)
-        p.paragraph_format.space_after = Pt(3)
-        r = p.add_run("• " + metin)
-        r.bold = True
-        r.italic = True
-        r.font.color.rgb = RGBColor(31, 78, 121)
-        r.font.name = "Times New Roman"
-        r.font.size = Pt(11)
-        return p
-
     cover_section = doc.sections[0]
     cover_section.top_margin = Inches(1.15)
     cover_section.bottom_margin = Inches(1.0)
@@ -6450,10 +6463,11 @@ if _rapor_olustur_sidebar:
               f"{tip_str} tipinde su deposu kullanılmıştır."
           )
 
-        if sih_sec_yagmur_depo_tipi:
+        if st.session_state.get("yagmur_sec_depo_tipi", True):
+          _yagmur_tip_rapor = st.session_state.get("yagmur_depo_tipi_61", "Betonarme")
           sihhi_maddeler.append(
               "Binada yağmur suyu depolaması için "
-              f"{sih_yagmur_depo_tipi.lower()} tipinde su deposu kullanılmıştır."
+              f'"{_yagmur_tip_rapor}" tipinde su deposu kullanılmıştır.'
           )
 
         if sih_sec_5:
@@ -7004,7 +7018,7 @@ if _rapor_olustur_sidebar:
         if _yagmur_aktif_rapor:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
-          yagmur_bullet_baslik("YAĞMUR SUYU TOPLAMA HESABI")
+          rapor_hidrofor_alt_basligi_ekle(doc, "YAĞMUR SUYU TOPLAMA HESABI")
           if _yr.get("mgm_yagis_mm") is not None:
               doc.add_paragraph(
                   f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
@@ -7119,32 +7133,31 @@ if _rapor_olustur_sidebar:
           _yr_P = float(_yr.get('yagis', 0) or 0)
           _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
           _yr_V = _yr_A * _yr_P * _yr_C / 1000.0
-          _yr_ilk = float(_yr.get('ilk_yagis_hacmi', 0) or 0)
-          _yr_oran = float(_yr.get('sarnic_orani', 80) or 80)
-          _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 90)
-          _yr_sarnic = float(_yr.get('sarnica_alinan_m3', 0) or 0)
-          doc.add_paragraph("Toplam yağmur suyu hesabı:")
+          doc.add_paragraph("Toplanabilir yağmur suyu hesabı:")
           doc.add_paragraph("V = A × P × C / 1000")
           doc.add_paragraph(
               f"V = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_V:.2f} m³"
           )
+          _yr_ilk = float(_yr.get("ilk_yagis_hacmi", 0) or 0)
+          _yr_so = float(_yr.get("sarnic_orani", 80) or 0)
+          _yr_fe = float(_yr.get("filtre_etkinlik", 90) or 0)
+          _yr_vs = max(0.0, _yr_V - _yr_ilk) * (_yr_so / 100.0) * (_yr_fe / 100.0)
           doc.add_paragraph(
               f"İlk yağış hacmi = A × (İlk yağış ayırma miktarı) / 1000 = {_yr_ilk:.2f} m³"
           )
           doc.add_paragraph(
-              "Sarnıca alınacak net yağmur suyu = "
-              "(V - İlk Yağış Hacmi) × Sarnıç Oranı × Filtre Etkinlik Katsayısı"
+              "Sarnıca alınacak net yağmur suyu = (V - İlk Yağış Hacmi) × Sarnıç Oranı × Filtre Etkinlik Katsayısı"
           )
           doc.add_paragraph(
-              f"Vₛ = ({_yr_V:.2f} - {_yr_ilk:.2f}) × {_yr_oran:.0f}/100 × "
-              f"{_yr_filtre_etkinlik:.0f}/100 = {_yr_sarnic:.2f} m³"
+              f"Vₛ = ({_yr_V:.2f} - {_yr_ilk:.2f}) × {_yr_so:.0f}/100 × {_yr_fe:.0f}/100 = {_yr_vs:.2f} m³"
           )
           doc.add_paragraph(
-              f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{_yr_oran:.0f}; "
-              f"Filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}"
+              f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{_yr_so:.0f}; Filtre etkinlik katsayısı: %{_yr_fe:.0f}"
           )
+          if _yr.get("depo_tipi"):
+              doc.add_paragraph(f"Yağmur suyu deposu tipi: {_yr.get('depo_tipi')}")
 
-          yagmur_bullet_baslik("YAĞMUR SUYU FİLTRESİ SEÇİMİ")
+          rapor_hidrofor_alt_basligi_ekle(doc, "YAĞMUR SUYU FİLTRESİ SEÇİMİ")
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
           doc.add_paragraph(f"Hesaplanan yağış debisi: {_yr.get('debi_m3h', 0):.2f} m³/h")
           doc.add_paragraph(
@@ -7152,14 +7165,13 @@ if _rapor_olustur_sidebar:
               f"(emniyet: %{_yr.get('filtre_emniyet', 0):.0f})"
           )
 
-          yagmur_bullet_baslik("İLK YAĞIŞ AYIRICI SEÇİMİ")
+          rapor_hidrofor_alt_basligi_ekle(doc, "İLK YAĞIŞ AYIRICI SEÇİMİ")
           doc.add_paragraph(
               f"İlk yağış ayırma miktarı: {_yr.get('ilk_yagis_l_m2', 0):.2f} L/m²; "
               f"hesaplanan ayırıcı hacmi: {_yr.get('ilk_yagis_hacmi', 0):.2f} m³"
           )
 
-          yagmur_bullet_baslik("YAĞMUR SUYU DEPOSU HACİM HESABI")
-          doc.add_paragraph(f"Yağmur suyu deposu tipi: {_yr.get('depo_tipi', sih_yagmur_depo_tipi)}")
+          rapor_hidrofor_alt_basligi_ekle(doc, "YAĞMUR SUYU DEPOSU HACİM HESABI")
           doc.add_paragraph(
               f"Günlük kullanım ihtiyacı: {_yr.get('kullanim_gunluk', 0):.2f} m³/gün; "
               f"depolama süresi: {_yr.get('depolama_gun', 0):.0f} gün"
@@ -7167,14 +7179,14 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph(f"Gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
           doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi: {_yr.get('secilen_depo', 0):.2f} m³")
 
-          yagmur_bullet_baslik("TAŞMA HATTI HESABI")
+          rapor_hidrofor_alt_basligi_ekle(doc, "TAŞMA HATTI HESABI")
           doc.add_paragraph(
               f"Taşma tasarım debisi: {_yr.get('tasma_debisi', 0):.2f} m³/h "
               f"(emniyet: %{_yr.get('tasma_emniyet', 0):.0f}); "
               f"seçilen taşma hattı: DN {_yr.get('tasma_cap', 0)}"
           )
 
-          yagmur_bullet_baslik("TAŞMA SİFONU / KOKU KAPANI")
+          rapor_hidrofor_alt_basligi_ekle(doc, "TAŞMA SİFONU / KOKU KAPANI")
           doc.add_paragraph(
               "Taşma hattında sifon/koku kapanı kullanılacaktır." if _yr.get("sifon") else
               "Taşma hattında sifon/koku kapanı öngörülmemiştir."
@@ -7186,14 +7198,14 @@ if _rapor_olustur_sidebar:
           if _yr.get("geri_tepme"):
               doc.add_paragraph("Geri tepme önleyici düzenek öngörülmüştür.")
 
-          yagmur_bullet_baslik("DEPO GİRİŞİ / SAKİN GİRİŞ")
+          rapor_hidrofor_alt_basligi_ekle(doc, "DEPO GİRİŞİ / SAKİN GİRİŞ")
           doc.add_paragraph(
               "Depo girişinde sakin giriş düzeni kullanılacaktır."
               if _yr.get("sakin_giris") else
               "Depo girişinde ayrıca sakin giriş düzeni öngörülmemiştir."
           )
 
-          yagmur_bullet_baslik("HAVALANDIRMA VE HAŞERE KORUMASI")
+          rapor_hidrofor_alt_basligi_ekle(doc, "HAVALANDIRMA VE HAŞERE KORUMASI")
           doc.add_paragraph(
               "Depo havalandırması yapılacaktır." if _yr.get("havalandirma") else
               "Depo havalandırması ayrıca belirtilmemiştir."
