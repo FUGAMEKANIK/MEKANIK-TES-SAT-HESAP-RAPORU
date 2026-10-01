@@ -4163,14 +4163,22 @@ with _t_sihhi:
                 _A = math.pi * _D**2 / 4.0
                 _R = _D / 4.0
                 _Qkap = (1.0 / tasma_manning_n) * _A * (_R ** (2.0 / 3.0)) * math.sqrt(tasma_S) if tasma_S > 0 and tasma_manning_n > 0 else 0.0
-                _Qkap_lps = _Qkap * 1000.0
-                _V = _Qkap / _A if _A > 0 else 0.0
-                _uygun = (_Qkap >= tasma_hat_Q_m3s) and (_V <= tasma_max_hiz)
+                _Qkap_manning_lps = _Qkap * 1000.0
+                _V_manning = _Qkap / _A if _A > 0 else 0.0
+                # DN200 ve DN250 için 3,00 m/s tasarım hızına göre ayrıca kesit kapasitesi hesaplanır.
+                # Manning kapasitesi ve gerçek Manning hızı ayrı olarak korunur.
+                _Qkap_hiz_lps = _A * tasma_max_hiz * 1000.0 if _dn in (200, 250) else _Qkap_manning_lps
+                _Qkap_kontrol_lps = max(_Qkap_manning_lps, _Qkap_hiz_lps) if _dn in (200, 250) else _Qkap_manning_lps
+                _uygun = (_Qkap_kontrol_lps / 1000.0 >= tasma_hat_Q_m3s)
                 tasma_hidrolik_tablo.append({
-                    "dn": _dn, "alan_m2": _A, "q_kapasite_lps": _Qkap_lps,
-                    "hiz_ms": _V, "uygun": _uygun,
+                    "dn": _dn, "alan_m2": _A,
+                    "q_kapasite_lps": _Qkap_kontrol_lps,
+                    "q_manning_lps": _Qkap_manning_lps,
+                    "q_hiz_lps": _Qkap_hiz_lps if _dn in (200, 250) else None,
+                    "hiz_ms": _V_manning, "tasarim_hiz_ms": tasma_max_hiz if _dn in (200, 250) else _V_manning,
+                    "uygun": _uygun,
                     "hat_gerekli_lps": tasma_hat_Q_lps,
-                    "toplam_kapasite_lps": _Qkap_lps * int(tasma_hat_adedi),
+                    "toplam_kapasite_lps": _Qkap_kontrol_lps * int(tasma_hat_adedi),
                 })
 
             tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
@@ -4226,17 +4234,27 @@ with _t_sihhi:
             )
             st.markdown(
                 f"**Her hat için seçilen minimum taşma hattı: DN {tasma_cap}**  "
-                f"→ tek hat kapasitesi = {tasma_capasite_lps:.2f} L/s, "
-                f"toplam kapasite = {tasma_toplam_kapasite_lps:.2f} L/s, "
-                f"hız = {tasma_hiz_ms:.2f} m/s"
+                f"→ tek hat tasarım kapasitesi = {tasma_capasite_lps:.2f} L/s, "
+                f"toplam tasarım kapasitesi = {tasma_toplam_kapasite_lps:.2f} L/s, "
+                f"Manning hızı = {tasma_hiz_ms:.2f} m/s"
             )
+            if tasma_cap in (200, 250):
+                _secili_kayit = next((x for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), None)
+                if _secili_kayit and _secili_kayit.get("q_hiz_lps") is not None:
+                    st.markdown(
+                        f"**DN {tasma_cap} için {tasma_max_hiz:.2f} m/s tasarım hızına göre kapasite:** "
+                        f"Q = A × V = {_secili_kayit['alan_m2']:.5f} × {tasma_max_hiz:.2f} "
+                        f"= **{_secili_kayit['q_hiz_lps']:.2f} L/s**"
+                    )
 
             _tablo_satirlari = []
             for _x in tasma_hidrolik_tablo:
                 _tablo_satirlari.append({
                     "DN": f"DN {_x['dn']}",
-                    "Kapasite (L/s)": f"{_x['q_kapasite_lps']:.2f}",
-                    "Hız (m/s)": f"{_x['hiz_ms']:.2f}",
+                    "Tasarım Kapasitesi (L/s)": f"{_x['q_kapasite_lps']:.2f}",
+                    "Manning Kapasitesi (L/s)": f"{_x.get('q_manning_lps', _x['q_kapasite_lps']):.2f}",
+                    "Manning Hızı (m/s)": f"{_x['hiz_ms']:.2f}",
+                    "3 m/s Kapasitesi (L/s)": (f"{_x['q_hiz_lps']:.2f}" if _x.get('q_hiz_lps') is not None else "-"),
                     "Durum": "UYGUN" if _x["uygun"] else "YETERSİZ"
                 })
             st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
@@ -8097,10 +8115,18 @@ if _rapor_olustur_sidebar:
           doc.add_paragraph("Manning: Q = (1/n) × A × R^(2/3) × S^(1/2)")
           doc.add_paragraph(
               f"Seçilen minimum taşma hattı: {_tasma_hat_adedi} hat × DN {_tasma_DN}; "
-              f"tek hat hidrolik kapasitesi = {_tasma_kapasite:,.2f} L/s; "
-              f"toplam hidrolik kapasite = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
-              f"boru içi hesaplanan hız = {_tasma_hiz:.2f} m/s"
+              f"tek hat tasarım kapasitesi = {_tasma_kapasite:,.2f} L/s; "
+              f"toplam tasarım kapasitesi = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
+              f"Manning hızı = {_tasma_hiz:.2f} m/s"
           )
+          if _tasma_DN in (200, 250):
+              _rep_secili = next((x for x in _hidrolik_tablo if int(x.get('dn', 0)) == int(_tasma_DN)), None)
+              if _rep_secili and _rep_secili.get('q_hiz_lps') is not None:
+                  doc.add_paragraph(
+                      f"DN {_tasma_DN} için {_tasma_max_hiz:.2f} m/s tasarım hızına göre kapasite: "
+                      f"Q = A × V = {_rep_secili.get('alan_m2', 0):.5f} × {_tasma_max_hiz:.2f} "
+                      f"= {_rep_secili.get('q_hiz_lps', 0):.2f} L/s."
+                  )
           doc.add_paragraph(
               f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
           )
@@ -8109,8 +8135,10 @@ if _rapor_olustur_sidebar:
               doc.add_paragraph("Kontrol edilen çaplar:")
               for _x in _hidrolik_tablo:
                   doc.add_paragraph(
-                      f"DN {_x.get('dn', 0)} → kapasite {_x.get('q_kapasite_lps', 0):.2f} L/s; "
-                      f"hız {_x.get('hiz_ms', 0):.2f} m/s; {'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
+                      f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
+                      f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
+                      f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
+                      f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
                   )
           doc.add_paragraph(
               "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
