@@ -2050,6 +2050,8 @@ with _t_sihhi:
       sih_sec_depo_tipi = True
       sih_depo_tipleri = ["Paslanmaz Çelik Modüler su deposu"]
       sih_depo_konumlari = ["Bodrum kat"]
+      sih_sec_yagmur_depo_tipi = True
+      sih_yagmur_depo_tipleri = ["Paslanmaz Modüler Çelik Su Deposu"]
 
       # --- 6. BÖLÜM: SIHHİ TESİSAT ---
       st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
@@ -2069,6 +2071,7 @@ with _t_sihhi:
             "sih_sec_3",
             "sih_sec_4",
             "sih_sec_depo_tipi",
+            "sih_sec_yagmur_depo_tipi",
             "sih_sec_5",
             "sih_sec_6",
             "sih_sec_7",
@@ -2126,6 +2129,22 @@ with _t_sihhi:
                 "Silindirik Plastik Su deposu",
             ],
             default=["Paslanmaz Çelik Modüler su deposu"],
+        )
+
+        sih_sec_yagmur_depo_tipi = st.checkbox(
+            "Binada yağmur suyu depolaması için belirtilen tipte su deposu kullanılmıştır.",
+            key="sih_sec_yagmur_depo_tipi",
+            value=True,
+        )
+        sih_yagmur_depo_tipleri = st.multiselect(
+            "Yağmur Suyu Deposu Tipi (Birden fazla seçebilirsiniz):",
+            [
+                "Paslanmaz Modüler Çelik Su Deposu",
+                "Galvaniz Modüler Çelik Su Deposu",
+                "Betonarme Su Deposu",
+            ],
+            default=["Paslanmaz Modüler Çelik Su Deposu"],
+            key="sih_yagmur_depo_tipleri",
         )
 
         sih_sec_5 = st.checkbox(
@@ -6453,6 +6472,24 @@ if _rapor_olustur_sidebar:
           sihhi_maddeler.append(
               "Binada kullanım soğuk su depolaması için "
               f"{tip_str} tipinde su deposu kullanılmıştır."
+          )
+
+        if sih_sec_yagmur_depo_tipi and sih_yagmur_depo_tipleri:
+          if len(sih_yagmur_depo_tipleri) == 1:
+            yagmur_tip_str = sih_yagmur_depo_tipleri[0].lower()
+          elif len(sih_yagmur_depo_tipleri) == 2:
+            yagmur_tip_str = (
+                f"{sih_yagmur_depo_tipleri[0].lower()} ve "
+                f"{sih_yagmur_depo_tipleri[1].lower()}"
+            )
+          else:
+            ilkler = ", ".join([t.lower() for t in sih_yagmur_depo_tipleri[:-1]])
+            son = sih_yagmur_depo_tipleri[-1].lower()
+            yagmur_tip_str = f"{ilkler} ve {son}"
+
+          sihhi_maddeler.append(
+              "Binada yağmur suyu depolaması için "
+              f"{yagmur_tip_str} tipinde su deposu kullanılmıştır."
           )
 
         if sih_sec_5:
