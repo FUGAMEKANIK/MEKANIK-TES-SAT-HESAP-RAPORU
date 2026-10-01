@@ -1685,6 +1685,107 @@ yag_ayirici_maddeleri = [
 ]
 yag_ayirici_secimler = [bool(st.session_state.get(f"yag_ayirici_sec_{i}", True)) for i in range(1, 11)]
 ek_yag_ayirici_notu = str(st.session_state.get("ek_yag_ayirici_notu", ""))
+
+
+# ---------------------------------------------------------------------------
+# 6.2.3 YAĞ AYIRICI HESAP MOTORU — YAĞ AYIRICI HESABI.xlsx ile birebir
+# ---------------------------------------------------------------------------
+# Excel'deki 4 sayfa YA-01 ... YA-04 aynı hesap şablonunu kullanır.
+# Programda ekipman adetleri kullanıcı tarafından değiştirilebilir; aşağıdaki
+# varsayılan adetler Excel dosyasındaki ilgili sayfalardaki örnek değerlerdir.
+YAG_AYIRICI_EKIPMANLARI = [
+    ("Pişirme Kazan Çıkışı Ø 25 mm", 1.0, "normal"),
+    ("Pişirme Kazan Çıkışı Ø 50 mm", 2.0, "normal"),
+    ("Devirme Tipi Kazan Çıkışı Ø 70 mm", 1.0, "normal"),
+    ("Devirme Tipi Kazan Çıkışı Ø 100 mm", 3.0, "normal"),
+    ("Sifonlu Evye Çıkışı Ø 40", 0.8, "normal"),
+    ("Sifonlu Evye Çıkışı Ø 50", 1.5, "normal"),
+    ("Sifonsuz Evye Çıkışı Ø 40", 2.5, "normal"),
+    ("Sifonsuz Evye Çıkışı Ø 50", 4.0, "normal"),
+    ("Bulaşık Makinası", 2.0, "bulasik"),
+    ("Devirme Tipi Kızartma Tavası", 1.0, "normal"),
+    ("Normal Kızartma Tavası", 0.1, "normal"),
+    ("Yüksek Basınçlı/Buharlı Temizleme Makinası", 2.0, "normal"),
+    ("Kabuk Soyma Makinası", 1.5, "normal"),
+    ("Sebze Yıkama Makinası", 2.0, "normal"),
+    ("Pişirme Fırını", 0.5, "normal"),
+    ("Yer süzgeci", 0.5, "normal"),
+    ("Musluk DN 15 (R 1/2\")", 0.5, "normal"),
+    ("DN 20 (R 3/4\")", 1.0, "normal"),
+    ("DN 25 (R 1\")", 1.7, "normal"),
+]
+
+# Excel YA-01 ... YA-04 sayfalarındaki adet örnekleri.
+YAG_AYIRICI_EXCEL_ADETLERI = {
+    "YA-01": [0, 8, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0],
+    "YA-02": [0, 6, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 2, 1, 4, 12, 0, 0, 0],
+    "YA-03": [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+    "YA-04": [0, 0, 0, 0, 0, 7, 0, 0, 2, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0],
+}
+YAG_AYIRICI_EXCEL_KAPASITELERI = {"YA-01": 7.0, "YA-02": 7.0, "YA-03": 2.0, "YA-04": 7.0}
+
+
+def _yag_ayirici_zi(adet, ekipman_tipi="normal"):
+    """Excel'deki Zi(n) kademelerini aynen uygular."""
+    n = int(adet)
+    if ekipman_tipi == "bulasik":
+        # Excel Bulaşık Makinası satırı: 0/1=0.60, 2=0.50, 3=0.40,
+        # 4=0.34, 5 ve üzeri=0.30.
+        if n <= 1:
+            return 0.60
+        if n == 2:
+            return 0.50
+        if n == 3:
+            return 0.40
+        if n == 4:
+            return 0.34
+        return 0.30
+    # Diğer bütün Excel satırları: 0/1=0.45, 2=0.31, 3=0.25,
+    # 4=0.21, 5 ve üzeri=0.20.
+    if n <= 1:
+        return 0.45
+    if n == 2:
+        return 0.31
+    if n == 3:
+        return 0.25
+    if n == 4:
+        return 0.21
+    return 0.20
+
+
+def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasite=0.0):
+    satirlar = []
+    qs = 0.0
+    for i, ((ekipman, qi, tip), adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, adetler), start=1):
+        n = int(adet)
+        n_x_qi = n * float(qi)
+        zi = _yag_ayirici_zi(n, tip)
+        pis_su_debisi = n_x_qi * zi
+        qs += pis_su_debisi
+        satirlar.append({
+            "sira": i,
+            "ekipman": ekipman,
+            "adet": n,
+            "qi": float(qi),
+            "n_x_qi": n_x_qi,
+            "zi": zi,
+            "pis_su_debisi": pis_su_debisi,
+        })
+    ns = qs * float(fd) * float(ft) * float(fr)
+    return {
+        "ya_adi": ya_adi,
+        "satirlar": satirlar,
+        "qs": qs,
+        "fd": float(fd),
+        "ft": float(ft),
+        "fr": float(fr),
+        "ns": ns,
+        "secilen_kapasite": float(secilen_kapasite),
+    }
+
+# 6.2.3 hesap sonuçları rapor üretiminden önce güvenli biçimde hazır tutulur.
+yag_ayirici_hesaplari = {}
+yag_ayirici_secilenler = list(st.session_state.get("yag_ayirici_secilenler", ["YA-01"]))
 sih_sec_depo_tipi = []
 depo_gerekli_hacim_m3 = 0.0
 depo_gerekli_hacim_litre = 0.0
@@ -3240,14 +3341,15 @@ with _t_sihhi:
         )
 
         # ---------------------------------------------------------------------------
-        # 6.2.3 YAĞ AYIRICI SEÇİMLERİ
+        # 6.2.3 YAĞ AYIRICI SEÇİMLERİ — EXCEL HESAP MODELİ
         # ---------------------------------------------------------------------------
         if bolum_623_aktif:
             st.markdown('<div id="bolum_623"></div>', unsafe_allow_html=True)
             st.subheader("6.2.3 YAĞ AYIRICI SEÇİMLERİ")
             st.caption(
-                "Bu bölüm şimdilik yalnızca mutfak / yemekhane kaynaklı yağ ayırıcıları kapsamaktadır. "
-                "Petrol / hidrokarbon ayırıcıları ileride ayrı bir başlık altında kurgulanacaktır."
+                "Hesap modülü, yüklenen YAĞ AYIRICI HESABI.xlsx dosyasındaki YA-01 ... YA-04 "
+                "sayfalarının ekipman, qi, eşzamanlılık ve faktör mantığını aynen kullanır. "
+                "Petrol / hidrokarbon ayırıcıları bu bölümün kapsamı dışındadır."
             )
 
             yag_ayirici_maddeleri = [
@@ -3269,20 +3371,105 @@ with _t_sihhi:
             yag_ayirici_secimler = []
             st.markdown("#### YAĞ AYIRICI SEÇİM MADDELERİ")
             for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
-                secili = st.checkbox(
-                    madde,
-                    key=f"yag_ayirici_sec_{i}",
-                    value=True,
-                )
+                secili = st.checkbox(madde, key=f"yag_ayirici_sec_{i}", value=True)
                 yag_ayirici_secimler.append(secili)
 
             st.markdown("#### İLAVE YAĞ AYIRICI SEÇİM MADDELERİ")
             ek_yag_ayirici_notu = st.text_area(
                 "İlave Yağ Ayırıcı Seçim Maddesi (Her satıra bir tane)",
                 "",
-                height=120,
+                height=100,
                 key="ek_yag_ayirici_notu",
             )
+
+            st.markdown("#### PROJEDE YER ALACAK YAĞ AYIRICILARI")
+            yag_ayirici_secilenler = st.multiselect(
+                "Projede yer alacak Yağ Ayırıcıları seçin:",
+                ["YA-01", "YA-02", "YA-03", "YA-04"],
+                default=st.session_state.get("yag_ayirici_secilenler", ["YA-01"]),
+                key="yag_ayirici_secilenler",
+            )
+
+            yag_ayirici_hesaplari = {}
+            for _ya in yag_ayirici_secilenler:
+                st.markdown(f"### {_ya} ÖZEL DEBİ VE KAPASİTE HESAP MODÜLÜ")
+                _default_adetler = YAG_AYIRICI_EXCEL_ADETLERI.get(_ya, [0] * len(YAG_AYIRICI_EKIPMANLARI))
+                _adetler = []
+
+                st.markdown("**Ekipmanlar ve Adet Bilgileri**")
+                _h1, _h2, _h3, _h4, _h5 = st.columns([4.2, 1.0, 1.0, 1.2, 1.2])
+                _h1.markdown("**Ekipman**")
+                _h2.markdown("**Adet n**")
+                _h3.markdown("**qi [L/s]**")
+                _h4.markdown("**n × qi**")
+                _h5.markdown("**Zi(n)**")
+                for _i, ((_ekipman, _qi, _tip), _def_adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, _default_adetler), start=1):
+                    _c1, _c2, _c3, _c4, _c5 = st.columns([4.2, 1.0, 1.0, 1.2, 1.2])
+                    _c1.write(_ekipman)
+                    _adet_key = f"yag_{_ya}_adet_{_i}"
+                    _adet = int(_c2.number_input(
+                        f"Adet {_i}", min_value=0, step=1,
+                        value=int(st.session_state.get(_adet_key, _def_adet)),
+                        key=_adet_key, label_visibility="collapsed",
+                    ))
+                    _c3.write(f"{_qi:.2f}")
+                    _nqi = _adet * _qi
+                    _zi = _yag_ayirici_zi(_adet, _tip)
+                    _c4.write(f"{_nqi:.2f}")
+                    _c5.write(f"{_zi:.2f}")
+                    _adetler.append(_adet)
+
+                _f1, _f2, _f3 = st.columns(3)
+                with _f1:
+                    _fd_sec = st.selectbox(
+                        "Yoğunluk Faktörü (fd)",
+                        ["Yağ Yoğunluğu ≤ 0.94 g/cm³ → fd = 1", "Yağ Yoğunluğu > 0.94 g/cm³ → fd = 1.3"],
+                        index=0,
+                        key=f"yag_{_ya}_fd_sec",
+                    )
+                with _f2:
+                    _ft_sec = st.selectbox(
+                        "Sıcaklık Faktörü (ft)",
+                        ["Su Sıcaklığı ≤ 60 °C → ft = 1", "Su Sıcaklığı > 60 °C → ft = 1.3"],
+                        index=0,
+                        key=f"yag_{_ya}_ft_sec",
+                    )
+                with _f3:
+                    _fr_sec = st.selectbox(
+                        "Deterjan Faktörü (fr)",
+                        [
+                            "Tem. Malz. kullanılmıyor ise → fr = 1",
+                            "Tem. Malz. kullanılıyor ise → fr = 1.3",
+                            "Hastaneler için → fr = 1.5",
+                        ],
+                        index=0,
+                        key=f"yag_{_ya}_fr_sec",
+                    )
+
+                _fd = 1.3 if "> 0.94" in _fd_sec else 1.0
+                _ft = 1.3 if "> 60" in _ft_sec else 1.0
+                _fr = 1.5 if "Hastaneler" in _fr_sec else (1.3 if "kullanılıyor" in _fr_sec else 1.0)
+
+                _cap_default = YAG_AYIRICI_EXCEL_KAPASITELERI.get(_ya, 7.0)
+                _secilen_kapasite = st.number_input(
+                    "Seçilen yağ ayırıcı kapasitesi [L/s]",
+                    min_value=0.1,
+                    value=float(st.session_state.get(f"yag_{_ya}_kapasite", _cap_default)),
+                    step=0.5,
+                    key=f"yag_{_ya}_kapasite",
+                )
+
+                _hesap = _yag_ayirici_hesapla(_ya, _adetler, _fd, _ft, _fr, _secilen_kapasite)
+                yag_ayirici_hesaplari[_ya] = _hesap
+
+                st.info(
+                    f"TOPLAM Qs = **{_hesap['qs']:.2f} L/s**  |  "
+                    f"NS = Qs × fd × ft × fr = **{_hesap['ns']:.2f} L/s**"
+                )
+                st.caption(
+                    f"fd = {_hesap['fd']:.2f} | ft = {_hesap['ft']:.2f} | fr = {_hesap['fr']:.2f} | "
+                    f"Seçilen kapasite = {_hesap['secilen_kapasite']:.2f} L/s"
+                )
 
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
@@ -7711,8 +7898,9 @@ if _rapor_olustur_sidebar:
         if bolum_623_aktif:
           doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
           doc.add_paragraph(
-              "Bu bölüm mutfak / yemekhane kaynaklı atık sularda kullanılacak yağ ayırıcıya ilişkin "
-              "genel seçim ve uygulama esaslarını kapsamaktadır."
+              "Yağ ayırıcı hesapları, kullanıcı tarafından yüklenen YAĞ AYIRICI HESABI.xlsx "
+              "dosyasındaki YA-01 ... YA-04 hesap şablonunda yer alan ekipman, qi, eşzamanlılık "
+              "ve faktör mantığı esas alınarak hazırlanmıştır."
           )
 
           yag_rapor_maddeleri = []
@@ -7730,11 +7918,58 @@ if _rapor_olustur_sidebar:
             for yam in yag_rapor_maddeleri:
               doc.add_paragraph(yam, style="List Bullet")
 
-          doc.add_heading("6.2.3.2 YAĞ AYIRICI SEÇİMİ", level=3)
-          doc.add_paragraph(
-              "Yağ ayırıcı kapasitesi ve bağlantı çapı, proje kapsamında yapılacak debi ve ekipman "
-              "bilgileri kesinleştirildiğinde ayrıca hesaplanarak seçilecektir."
-          )
+          # Excel'deki her YA sayfası için bağımsız hesap raporu.
+          for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=2):
+            doc.add_heading(f"6.2.3.{_ya_index} {_ya} ÖZEL DEBİ VE KAPASİTE HESAP MODÜLÜ", level=3)
+            doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
+
+            _tab = doc.add_table(rows=1, cols=6)
+            _tab.style = "Table Grid"
+            _hdr = _tab.rows[0].cells
+            for _cell, _baslik in zip(_hdr, ["Ekipman", "Adet n", "qi [L/s]", "n × qi", "Zi(n)", "Pis su debisi [L/s]"]):
+              _cell.text = _baslik
+            for _satir in _hesap["satirlar"]:
+              _cells = _tab.add_row().cells
+              _cells[0].text = _satir["ekipman"]
+              _cells[1].text = str(_satir["adet"])
+              _cells[2].text = f"{_satir['qi']:.2f}"
+              _cells[3].text = f"{_satir['n_x_qi']:.2f}"
+              _cells[4].text = f"{_satir['zi']:.2f}"
+              _cells[5].text = f"{_satir['pis_su_debisi']:.2f}"
+
+            _p = doc.add_paragraph()
+            _r = _p.add_run(f"TOPLAM Qs = { _hesap['qs']:.2f} L/s")
+            _r.bold = True
+
+            _p = doc.add_paragraph()
+            _p.add_run(
+                "Yoğunluk Faktörü (fd): "
+                f"{_hesap['fd']:.2f}"
+            )
+            _p = doc.add_paragraph()
+            _p.add_run(
+                "Sıcaklık Faktörü (ft): "
+                f"{_hesap['ft']:.2f}"
+            )
+            _p = doc.add_paragraph()
+            _p.add_run(
+                "Deterjan Faktörü (fr): "
+                f"{_hesap['fr']:.2f}"
+            )
+
+            _p = doc.add_paragraph()
+            _r = _p.add_run(
+                "NS (Nominal Kapasite) = Qs × fd × ft × fr = "
+                f"{_hesap['qs']:.2f} × { _hesap['fd']:.2f} × { _hesap['ft']:.2f} × { _hesap['fr']:.2f} "
+                f"= { _hesap['ns']:.2f} L/s"
+            )
+            _r.bold = True
+
+            _p = doc.add_paragraph()
+            _r = _p.add_run(
+                f"Seçilen yağ ayırıcı kapasitesi: {_hesap['secilen_kapasite']:.2f} L/s"
+            )
+            _r.bold = True
 
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
