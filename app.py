@@ -3524,10 +3524,52 @@ with _t_sihhi:
                     step=0.05, format="%.2f", key="yagmur_akis_katsayisi"
                 )
 
-            yagmur_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
+            # Yağmur suyunun sarnıca alınan net miktarı için iki yeni tasarım katsayısı.
+            # İlk yağış ayırma hacmi aşağıda hesaplandığından, nihai sarnıç hacmi
+            # ilk yağış hacmi çıkarıldıktan sonra bu oranlarla düzeltilir.
+            r1, r2 = st.columns(2)
+            with r1:
+                yagmur_sarnic_orani = st.number_input(
+                    "İlk yağış hariç sarnıca alınacak yağmur suyu oranı (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(st.session_state.get("yagmur_sarnic_orani", 80.0)),
+                    step=1.0, format="%.0f", key="yagmur_sarnic_orani"
+                )
+            with r2:
+                yagmur_filtre_etkinlik = st.number_input(
+                    "Filtre etkinlik katsayısı (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(st.session_state.get("yagmur_filtre_etkinlik", 90.0)),
+                    step=1.0, format="%.0f", key="yagmur_filtre_etkinlik"
+                )
+
+            # Ham yağış hacmi: çatı alanı, tasarım yağışı ve akış katsayısından.
+            yagmur_ham_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
+
+            # İlk yağış hacmi burada ayrıca hesaplanır; aşağıdaki ilk yağış ayırıcı
+            # bölümünde aynı değer tekrar kullanılmaktadır.
+            _ilk_yagis_l_m2_on_hesap = float(st.session_state.get("ilk_yagis_l_m2", 1.0))
+            yagmur_ilk_yagis_hacmi_on_hesap = yagmur_cati_alani * _ilk_yagis_l_m2_on_hesap / 1000.0
+            yagmur_ilk_yagis_haric_m3 = max(0.0, yagmur_ham_toplanabilir_m3 - yagmur_ilk_yagis_hacmi_on_hesap)
+
+            # Sarnıca fiilen alınacak net yağmur suyu: ilk yağış hariç hacim ×
+            # sarnıç alma oranı × filtre etkinlik katsayısı.
+            yagmur_toplanabilir_m3 = (
+                yagmur_ilk_yagis_haric_m3
+                * yagmur_sarnic_orani / 100.0
+                * yagmur_filtre_etkinlik / 100.0
+            )
+
             st.info(
-                f"Toplanabilir yağmur suyu: **V = A × P × C / 1000 = {yagmur_toplanabilir_m3:,.2f} m³**"
+                f"Sarnıca alınacak net yağmur suyu: **V = (A × P × C / 1000 − V_ilk yağış) × "
+                f"{yagmur_sarnic_orani:.0f}/100 × {yagmur_filtre_etkinlik:.0f}/100 = "
+                f"{yagmur_toplanabilir_m3:,.2f} m³**"
                 .replace(",", "X").replace(".", ",").replace("X", ".")
+            )
+            st.caption(
+                f"Ham yağış hacmi: {yagmur_ham_toplanabilir_m3:.2f} m³ | "
+                f"İlk yağış hacmi: {yagmur_ilk_yagis_hacmi_on_hesap:.2f} m³ | "
+                f"İlk yağış sonrası: {yagmur_ilk_yagis_haric_m3:.2f} m³"
             )
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
@@ -3551,7 +3593,7 @@ with _t_sihhi:
                 value=float(st.session_state.get("yagmur_sure_dk", 15.0)),
                 step=1.0, key="yagmur_sure_dk"
             )
-            yagmur_debi_m3h = yagmur_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
+            yagmur_debi_m3h = yagmur_ham_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
             yagmur_filtre_debisi = yagmur_debi_m3h * (1.0 + yagmur_filtre_emniyet / 100.0)
             st.write(f"Hesaplanan yağış debisi: **{yagmur_debi_m3h:.2f} m³/h**")
             st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
@@ -3641,6 +3683,10 @@ with _t_sihhi:
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
+                "ham_toplanabilir_m3": yagmur_ham_toplanabilir_m3,
+                "ilk_yagis_haric_m3": yagmur_ilk_yagis_haric_m3,
+                "sarnic_orani": yagmur_sarnic_orani,
+                "filtre_etkinlik": yagmur_filtre_etkinlik,
                 "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
                 "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
                 "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
@@ -7067,15 +7113,33 @@ if _rapor_olustur_sidebar:
               f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
           )
 
-          # Önce formül, ardından gerçek proje değerlerinin yerine konduğu işlem gösterilir.
+          # Önce ham yağış hacmi, ardından ilk yağış ayırma ve iki yeni katsayı
+          # uygulanarak sarnıca alınacak net hacim gösterilir.
           _yr_A = float(_yr.get('cati_alani', 0) or 0)
           _yr_P = float(_yr.get('yagis', 0) or 0)
           _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
-          _yr_V = _yr_A * _yr_P * _yr_C / 1000.0
-          doc.add_paragraph("Toplanabilir yağmur suyu hesabı:")
-          doc.add_paragraph("V = A × P × C / 1000")
+          _yr_ilk = float(_yr.get('ilk_yagis_hacmi', 0) or 0)
+          _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
+          _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
+          _yr_ham_V = float(_yr.get('ham_toplanabilir_m3', _yr_A * _yr_P * _yr_C / 1000.0) or 0)
+          _yr_ilk_haric_V = max(0.0, _yr_ham_V - _yr_ilk)
+          _yr_V = float(_yr.get('toplanabilir_m3', _yr_ilk_haric_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
+          doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak net su hesabı:")
+          doc.add_paragraph("V_ham = A × P × C / 1000")
           doc.add_paragraph(
-              f"V = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_V:.2f} m³"
+              f"V_ham = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_ham_V:.2f} m³"
+          )
+          doc.add_paragraph(
+              f"V_sarnıç = (V_ham − V_ilk yağış) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100"
+          )
+          doc.add_paragraph(
+              f"V_sarnıç = ({_yr_ham_V:.2f} − {_yr_ilk:.2f}) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100 = {_yr_V:.2f} m³"
+          )
+          doc.add_paragraph(
+              f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
+              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
           )
 
           doc.add_heading("6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
