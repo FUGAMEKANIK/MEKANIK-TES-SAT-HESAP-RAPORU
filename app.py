@@ -1223,14 +1223,15 @@ _BOLUM_63_COCUKLARI = [
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
 BOLUM_SECIM_ANAHTARLARI = [
-    "bolum_1", "bolum_2", "bolum_3", "bolum_4", "bolum_5", "bolum_51",
-    "bolum_6", "bolum_61", "bolum_611", "bolum_62", "bolum_621", "bolum_622",
-    "bolum_63", "bolum_631", "bolum_631_1", "bolum_631_2",
-    "bolum_631_2_1", "bolum_631_2_2", "bolum_631_2_3", "bolum_631_2_4",
-    "bolum_631_2_5", "bolum_631_2_6", "bolum_631_2_7", "bolum_631_2_8",
-    "bolum_632", "bolum_633", "bolum_634",
+    "rapor_bolum_1", "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
+    "rapor_bolum_5", "rapor_bolum_51", "rapor_bolum_6", "rapor_bolum_61",
+    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
+    "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_631_1", "rapor_bolum_631_2",
+    "rapor_bolum_631_2_1", "rapor_bolum_631_2_2", "rapor_bolum_631_2_3",
+    "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
+    "rapor_bolum_631_2_7", "rapor_bolum_631_2_8", "rapor_bolum_632",
+    "rapor_bolum_633", "rapor_bolum_634",
 ]
-
 def _63_dinamik_no(anahtar):
     """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
     aktifler = [k for k, _ in _BOLUM_63_COCUKLARI if bool(st.session_state.get(k, False))]
@@ -1259,35 +1260,34 @@ def _tum_bolumleri_kaldir():
 # sayfadaki ilgili başlığa bağlantıdır; böylece tıklandığında doğrudan
 # seçilen bölüme gidilir. Checkbox'lar rapora dahil/hariç mantığını korur.
 _BOLUM_NAV = [
-    ("1. Kapak Bilgileri", "bolum_1", "bolum_1"),
-    ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "bolum_2"),
-    ("3. Mekanik Tesisat Proje Kapsamı", "bolum_3", "bolum_3"),
-    ("4. Tesiste Kullanılacak Isı İletim Akışkanları", "bolum_4", "bolum_4"),
-    ("5. İklim, Konfor Şartları ve Tasarım Kriterleri", "bolum_5", "bolum_5"),
-    ("5.1 Dış Hava Tasarım Kriterleri", "bolum_51", "bolum_51"),
-    ("6. Sıhhi Tesisat", "bolum_6", "bolum_6"),
-    ("6.1 Sıhhi Tesisat Ön Bilgiler", "bolum_61", "bolum_61"),
-    ("6.1.1 Temiz Su Hesabı", "bolum_611", "bolum_611"),
-    ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "bolum_62"),
-    ("6.2.1 Pis Su Hesabı", "bolum_621", "bolum_621"),
-    ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "bolum_622"),
-    ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "bolum_63"),
-    ("6.3.1 Kullanma Soğuk Suyu Deposu Seçimi", "bolum_631", "bolum_631"),
-    ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "bolum_631_1"),
-    ("6.3.1.2 Yağmur Suyu Deposu Seçimi", "bolum_631_2", "bolum_631_2"),
-    ("6.3.1.2.1 Yağmur Suyu Toplama Hesabı", "bolum_631_2_1", "bolum_631_2_1"),
-    ("6.3.1.2.2 Yağmur Suyu Filtresi Seçimi", "bolum_631_2_2", "bolum_631_2_2"),
-    ("6.3.1.2.3 İlk Yağış Ayırıcı Seçimi", "bolum_631_2_3", "bolum_631_2_3"),
-    ("6.3.1.2.4 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_4", "bolum_631_2_4"),
-    ("6.3.1.2.5 Taşma Hattı Hesabı", "bolum_631_2_5", "bolum_631_2_5"),
-    ("6.3.1.2.6 Taşma Sifonu / Koku Kapanı", "bolum_631_2_6", "bolum_631_2_6"),
-    ("6.3.1.2.7 Depo Girişi / Sakin Giriş", "bolum_631_2_7", "bolum_631_2_7"),
-    ("6.3.1.2.8 Havalandırma ve Haşere Koruması", "bolum_631_2_8", "bolum_631_2_8"),
-    ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "bolum_632"),
-    ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "bolum_633"),
-    ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "bolum_634"),
+    ("1. Kapak Bilgileri", "bolum_1", "rapor_bolum_1"),
+    ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
+    ("3. Mekanik Tesisat Proje Kapsamı", "bolum_3", "rapor_bolum_3"),
+    ("4. Tesiste Kullanılacak Isı İletim Akışkanları", "bolum_4", "rapor_bolum_4"),
+    ("5. İklim, Konfor Şartları ve Tasarım Kriterleri", "bolum_5", "rapor_bolum_5"),
+    ("5.1 Dış Hava Tasarım Kriterleri", "bolum_51", "rapor_bolum_51"),
+    ("6. Sıhhi Tesisat", "bolum_6", "rapor_bolum_6"),
+    ("6.1 Sıhhi Tesisat Ön Bilgiler", "bolum_61", "rapor_bolum_61"),
+    ("6.1.1 Temiz Su Hesabı", "bolum_611", "rapor_bolum_611"),
+    ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
+    ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
+    ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
+    ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
+    ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
+    ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
+    ("6.3.1.2 Yağmur Suyu Deposu Seçimi", "bolum_631_2", "rapor_bolum_631_2"),
+    ("6.3.1.2.1 Yağmur Suyu Toplama Hesabı", "bolum_631_2_1", "rapor_bolum_631_2_1"),
+    ("6.3.1.2.2 Yağmur Suyu Filtresi Seçimi", "bolum_631_2_2", "rapor_bolum_631_2_2"),
+    ("6.3.1.2.3 İlk Yağış Ayırıcı Seçimi", "bolum_631_2_3", "rapor_bolum_631_2_3"),
+    ("6.3.1.2.4 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_4", "rapor_bolum_631_2_4"),
+    ("6.3.1.2.5 Taşma Hattı Hesabı", "bolum_631_2_5", "rapor_bolum_631_2_5"),
+    ("6.3.1.2.6 Taşma Sifonu / Koku Kapanı", "bolum_631_2_6", "rapor_bolum_631_2_6"),
+    ("6.3.1.2.7 Depo Girişi / Sakin Giriş", "bolum_631_2_7", "rapor_bolum_631_2_7"),
+    ("6.3.1.2.8 Havalandırma ve Haşere Koruması", "bolum_631_2_8", "rapor_bolum_631_2_8"),
+    ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
+    ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
+    ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
 ]
-
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
     st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
@@ -1442,7 +1442,18 @@ bolum_62_aktif = (
     or bolum_622_aktif
 )
 
-bolum_631_aktif = bool(st.session_state.get("rapor_bolum_631", False))
+bolum_631_1_aktif = bool(st.session_state.get("rapor_bolum_631_1", False))
+bolum_631_2_alt_anahtarlar = [
+    "rapor_bolum_631_2", "rapor_bolum_631_2_1", "rapor_bolum_631_2_2",
+    "rapor_bolum_631_2_3", "rapor_bolum_631_2_4", "rapor_bolum_631_2_5",
+    "rapor_bolum_631_2_6", "rapor_bolum_631_2_7", "rapor_bolum_631_2_8",
+]
+bolum_631_2_aktif = any(bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar)
+bolum_631_aktif = (
+    bool(st.session_state.get("rapor_bolum_631", False))
+    or bolum_631_1_aktif
+    or bolum_631_2_aktif
+)
 bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
 bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
 bolum_634_aktif = bool(st.session_state.get("rapor_bolum_634", False))
