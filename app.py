@@ -1555,17 +1555,33 @@ st.markdown(
         padding-bottom: 0 !important;
     }
 
-    /* Ana tesisat sekmelerini sayfa kaydırılırken üstte sabitle.
-       :has(div[data-testid="stTabs"]) ile iç içe sekmeleri değil,
-       içinde alt sekmeler bulunan ana sekme grubunu hedefliyoruz. */
-    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:first-child [role="tablist"] {
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 9999 !important;
+    /* ANA SEKME ÇUBUĞU - GERÇEKTEN SABİT
+       Streamlit'in st.tabs() yapısında sticky doğrudan tablist'e verildiğinde
+       bazı sürümlerde çalışmayabiliyor. Bu nedenle ilk/ana sekme grubunun
+       başlığını fixed yapıyoruz. */
+    div[data-testid="stTabs"] > div:first-child [role="tablist"] {
         background: #FFFFFF !important;
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+        padding: 4px 0 !important;
+        z-index: 99999 !important;
+    }
+
+    /* Ana sekme grubunu, içinde başka stTabs bulunan grup olarak hedefle. */
+    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:first-child {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 99999 !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+        padding: 4px 4vw 0 4vw !important;
+    }
+
+    /* Fixed çubuk içerikle çakışmasın diye ana sekme grubunun içerik kısmına
+       üst boşluk bırak. */
+    div[data-testid="stTabs"]:has(div[data-testid="stTabs"]) > div:nth-child(2) {
+        padding-top: 58px !important;
     }
 
     div[data-testid="stTabs"] button[role="tab"] {
