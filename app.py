@@ -7200,6 +7200,7 @@ if _rapor_olustur_sidebar:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
           doc.add_heading("• YAĞMUR SUYU TOPLAMA HESABI", level=4)
+          doc.add_paragraph(f"Seçilen İl: {_yr.get('mgm_il', '')}")
           _yr_yontem = _yr.get("yagis_yontemi", "Günlük Toplam En Yüksek Yağış Miktarı")
           if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
               if _yr.get("mgm_yagis_mm") is not None:
