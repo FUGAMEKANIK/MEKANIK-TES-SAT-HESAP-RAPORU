@@ -1395,6 +1395,7 @@ _BOLUM_63_COCUKLARI = [
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
     ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
 ]
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
@@ -1406,7 +1407,7 @@ BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_631_2_1", "rapor_bolum_631_2_2", "rapor_bolum_631_2_3",
     "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
     "rapor_bolum_631_2_7", "rapor_bolum_632",
-    "rapor_bolum_633", "rapor_bolum_634",
+    "rapor_bolum_633", "rapor_bolum_634", "rapor_bolum_635",
 ]
 def _63_dinamik_no(anahtar):
     """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
@@ -1470,6 +1471,7 @@ _BOLUM_NAV = [
     ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
     ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
+    ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
 ]
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
@@ -1565,6 +1567,8 @@ bolum_63_aktif_ui = st.session_state.get("rapor_bolum_63", False)
 bolum_631_aktif_ui = st.session_state.get("rapor_bolum_631", False)
 bolum_632_aktif_ui = st.session_state.get("rapor_bolum_632", False)
 bolum_633_aktif_ui = st.session_state.get("rapor_bolum_633", False)
+bolum_634_aktif_ui = st.session_state.get("rapor_bolum_634", False)
+bolum_635_aktif_ui = st.session_state.get("rapor_bolum_635", False)
 
 # ---------------------------------------------------------------------------
 # ALT GRUPLAR İÇİN TOPLU SEÇİM BUTONLARI
@@ -1646,19 +1650,21 @@ bolum_631_2_aktif = bolum_631_aktif and any(
 bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
 bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
 bolum_634_aktif = bool(st.session_state.get("rapor_bolum_634", False))
+bolum_635_aktif = bool(st.session_state.get("rapor_bolum_635", False))
 bolum_63_aktif = (
     bool(st.session_state.get("rapor_bolum_63", False))
     or bolum_631_aktif
     or bolum_632_aktif
     or bolum_633_aktif
     or bolum_634_aktif
+    or bolum_635_aktif
 )
 
 bolum_6_aktif = (
     bool(st.session_state.get("rapor_bolum_6", False))
     or bolum_61_aktif or bolum_611_aktif
     or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif or bolum_623_aktif
-    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif
+    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif or bolum_635_aktif
 )
 
 bolum_2_aktif = bool(st.session_state.get("rapor_bolum_2", False))
@@ -6944,6 +6950,80 @@ with _t_sihhi:
         st.metric("Günlük toplam kullanma sıcak suyu ihtiyacı", f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", "."))
 
     # ---------------------------------------------------------------------------
+    # 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ
+    # ---------------------------------------------------------------------------
+    yumusatma_secimler = []
+    yumusatma_maddeleri = [
+        "Su yumuşatma cihazı, tesisatta kireç ve sertlik oluşumunu azaltmak amacıyla kullanılacaktır.",
+        "Su yumuşatma cihazı kapasitesi, tesisin hesaplanan su tüketimi ve gerekli debi dikkate alınarak belirlenecektir.",
+        "Cihaz seçiminde tesisata giren ham suyun sertlik değeri dikkate alınacaktır.",
+        "Ham su sertliği, mümkün olması halinde su analiz raporundan alınacak; analiz bulunmaması halinde proje kabulleri esas alınacaktır.",
+        "Su yumuşatma cihazı, tesisin gerekli debisini karşılayacak kapasitede seçilecektir.",
+        "Cihaz seçiminde reçine kapasitesi, ham su sertliği ve günlük su tüketimi birlikte değerlendirilecektir.",
+        "Su yumuşatma cihazı, gerekli rejenerasyon işlemini otomatik olarak gerçekleştirecek şekilde seçilecektir.",
+        "Rejenerasyon için gerekli tuz tankı ve tuz kapasitesi, seçilen cihazın çalışma şartlarına uygun olacaktır.",
+        "Rejenerasyon sırasında oluşacak atık suyun tesisat drenaj sistemine uygun şekilde bağlanması sağlanacaktır.",
+        "Cihaz üzerinde bakım ve servis işlemlerinin yapılabilmesi için gerekli erişim mesafeleri bırakılacaktır.",
+        "Su yumuşatma cihazı öncesinde ve sonrasında gerekli vana, by-pass ve bağlantı elemanları tesisat şartlarına uygun olarak düzenlenecektir.",
+        "Kesintisiz yumuşak su ihtiyacı bulunan tesislerde, cihazın çalışma ve rejenerasyon süreleri dikkate alınarak alternatifli/tandem sistem değerlendirilecektir.",
+        "Su yumuşatma cihazının çalışma basıncı, tesisatın mevcut ve hesaplanan basınç şartlarını karşılayacaktır.",
+        "Cihaz seçiminde üretici tarafından belirtilen minimum ve maksimum debi değerleri dikkate alınacaktır.",
+        "Seçilen su yumuşatma cihazı, tesisin kullanım amacına ve su kalitesi ihtiyacına uygun olacaktır.",
+        "Cihazın otomatik kontrol sistemi, rejenerasyon işlemini su tüketimi veya zaman esasına göre gerçekleştirebilecek özellikte olacaktır.",
+        "Su yumuşatma cihazının giriş ve çıkış bağlantıları, tesisat boru çapları ve gerekli debiye uygun olarak seçilecektir.",
+        "Seçilen cihazın teknik özellikleri, reçine miktarı, kapasitesi, bağlantı çapı ve çalışma basıncı proje raporunda belirtilecektir.",
+        "Gerekli görülmesi halinde yumuşatma cihazı çıkışında su sertliğinin kontrol edilebilmesi için numune alma noktası düzenlenecektir.",
+        "Su yumuşatma cihazı, üretici montaj ve işletme şartlarına uygun olarak monte ve işletmeye alınacaktır.",
+    ]
+    if bolum_635_aktif:
+        st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
+        st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
+        st.markdown("### **_Yumuşatma Cihazı Seçimi Genel Esasları_**")
+        yumusatma_keys = [f"yumusatma_sec_{i}" for i in range(1, len(yumusatma_maddeleri) + 1)]
+        _toplu_secim_butonlari(yumusatma_keys, grup_adi="yumusatma_635")
+        for i, madde in enumerate(yumusatma_maddeleri, start=1):
+            yumusatma_secimler.append(st.checkbox(madde, key=f"yumusatma_sec_{i}", value=True))
+
+        st.markdown("#### İLAVE SU YUMUŞATMA CİHAZI SEÇİM MADDELERİ")
+        ek_yumusatma_notu = st.text_area(
+            "İlave Su Yumuşatma Cihazı Seçim Maddesi (Her satıra bir tane)",
+            "", height=80, key="ek_yumusatma_notu"
+        )
+
+        st.markdown("### SU YUMUŞATMA CİHAZI KAPASİTE VE CİHAZ SEÇİMİ")
+        y1, y2, y3 = st.columns(3)
+        with y1:
+            yumusatma_sistem_tipi = st.selectbox(
+                "Sistem Tipi", ["Tekli", "İkili - Tandem"], key="yumusatma_sistem_tipi"
+            )
+        with y2:
+            yumusatma_adet = int(st.number_input(
+                "Cihaz Adedi", min_value=1, max_value=10, value=1, step=1, key="yumusatma_adet"
+            ))
+        with y3:
+            yumusatma_kapasite = float(st.number_input(
+                "Seçilen Cihaz Kapasitesi", min_value=0.0, step=0.1, value=0.0, key="yumusatma_kapasite"
+            ))
+
+        yumusatma_poz_modu = st.selectbox(
+            "Cihaz Poz No Seçim Modu", ["Otomatik", "Manuel Seçim"], key="yumusatma_poz_modu"
+        )
+        yumusatma_poz_no = st.text_input(
+            "Cihaz Poz No", "", key="yumusatma_poz_no",
+            help="Poz tablosu tanımlandığında kapasiteye göre otomatik seçilecektir; manuel seçim de desteklenecektir."
+        )
+        yumusatma_poz_rapora = st.checkbox(
+            "Cihaz Poz No rapora aktarılsın", value=False, key="yumusatma_poz_rapora"
+        )
+        st.info("Su yumuşatma cihazı kapasite ve poz otomatik seçim tablosu, kullanılacak cihaz/poz listesi tanımlandığında hesap motoruna bağlanacaktır.")
+        st.session_state["yumusatma_sonucu"] = {
+            "sistem_tipi": yumusatma_sistem_tipi, "adet": yumusatma_adet,
+            "kapasite": yumusatma_kapasite, "poz_no": yumusatma_poz_no,
+            "poz_rapora": yumusatma_poz_rapora, "secimler": yumusatma_secimler,
+            "ek_not": ek_yumusatma_notu,
+        }
+
+    # ---------------------------------------------------------------------------
     # 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
     # ---------------------------------------------------------------------------
     re_sirkulasyon_pompa_sonucu = {}
@@ -9259,6 +9339,38 @@ if _rapor_olustur_sidebar:
 
         else:
             doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
+
+    # --- 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ ---
+    if bolum_635_aktif:
+        doc.add_heading(_63_dinamik_baslik("rapor_bolum_635"), level=2)
+        _yum_rapor_maddeleri = [m for i, m in enumerate(yumusatma_maddeleri) if i < len(yumusatma_secimler) and yumusatma_secimler[i]]
+        if ek_yumusatma_notu.strip():
+            _yum_rapor_maddeleri.extend(x.strip() for x in ek_yumusatma_notu.split("\n") if x.strip())
+        if _yum_rapor_maddeleri:
+            _p_yum = doc.add_paragraph()
+            _r_yum = _p_yum.add_run("Yumuşatma Cihazı Seçimi Genel Esasları")
+            _r_yum.bold = True
+            _r_yum.italic = True
+            _r_yum.font.size = Pt(12)
+            _r_yum.font.color.rgb = RGBColor(68, 114, 196)
+            for _m in _yum_rapor_maddeleri:
+                doc.add_paragraph(_m, style="List Bullet")
+
+        _yum_sonuc = st.session_state.get("yumusatma_sonucu", {})
+        _yum_tbl = doc.add_table(rows=0, cols=2)
+        _yum_tbl.style = "Table Grid"
+        for _etiket, _deger in [
+            ("Sistem Tipi", _yum_sonuc.get("sistem_tipi", "")),
+            ("Cihaz Adedi", str(_yum_sonuc.get("adet", ""))),
+            ("Cihaz Kapasitesi", f"{float(_yum_sonuc.get('kapasite', 0.0)):.2f}"),
+        ]:
+            _cells = _yum_tbl.add_row().cells
+            _cells[0].text = _etiket
+            _cells[1].text = _deger
+        if _yum_sonuc.get("poz_rapora") and _yum_sonuc.get("poz_no"):
+            _cells = _yum_tbl.add_row().cells
+            _cells[0].text = "Cihaz Poz No"
+            _cells[1].text = str(_yum_sonuc.get("poz_no"))
 
     # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
     if bolum_634_aktif:
