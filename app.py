@@ -7120,8 +7120,15 @@ with _t_sihhi:
             unsafe_allow_html=True
         )
         st.write(
-            f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
-            f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
+            f"Sistemdeki su hacmi: V = **{yumusatma_sistem_hacmi_m3 * 1000:.0f} lt - "
+            f"{yumusatma_sistem_hacmi_m3:.2f} m³**"
+            + (
+                f" (Kapalı genleşme deposu hesabından alınan değer: "
+                f"{_genlesme_hacmi_l:.0f} lt - {_genlesme_hacmi_m3:.2f} m³)"
+                if _genlesme_hacmi_l > 0
+                else " (kullanıcı tarafından girilen değer)"
+            )
+            + f" | Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
         )
         st.write(
             f"Gerekli yumuşatma debisi = {yumusatma_sistem_hacmi_m3:.2f} / "
