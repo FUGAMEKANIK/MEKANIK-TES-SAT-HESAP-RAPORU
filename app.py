@@ -7211,20 +7211,6 @@ with _t_sihhi:
         st.session_state["re_sirkulasyon_pompa_sonucu_v99"] = re_sirkulasyon_pompa_sonucu
 
 
-with _t_yangin:
-    st.header("7. YANGIN TESİSATI")
-    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
-
-with _t_isitma:
-    st.header("8. ISITMA TESİSATI")
-    st.info("Isıtma tesisatı modülü bu sekme altında yer alacaktır.")
-
-with _t_sogutma:
-    st.header("9. SOĞUTMA TESİSATI")
-    st.info("Soğutma tesisatı modülü bu sekme altında yer alacaktır.")
-
-with _t_havalandirma:
-    st.header("10. HAVALANDIRMA TESİSATI")
 
     if bolum_635_aktif:
         st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
@@ -7378,6 +7364,21 @@ with _t_havalandirma:
         }
 
         # ---------------------------------------------------------------------------
+with _t_yangin:
+    st.header("7. YANGIN TESİSATI")
+    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
+
+with _t_isitma:
+    st.header("8. ISITMA TESİSATI")
+    st.info("Isıtma tesisatı modülü bu sekme altında yer alacaktır.")
+
+with _t_sogutma:
+    st.header("9. SOĞUTMA TESİSATI")
+    st.info("Soğutma tesisatı modülü bu sekme altında yer alacaktır.")
+
+with _t_havalandirma:
+    st.header("10. HAVALANDIRMA TESİSATI")
+
     st.info("Havalandırma tesisatı modülü bu sekme altında yer alacaktır.")
 
 # Rapor Oluştur Butonu
