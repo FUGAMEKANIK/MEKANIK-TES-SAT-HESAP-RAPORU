@@ -1841,24 +1841,47 @@ st.markdown(
         margin-top: 6px;
     }
 
+    /* Ana sekmeleri sayfa boyunca sabit, sağ orta konumda tut.
+       Böylece sayfanın başında, ortasında veya sonunda olunsa da
+       aynı sekmeler her zaman görünür ve gerçek Streamlit sekmeleri
+       oldukları için tıklanarak çalışmaya devam eder. */
     div[data-testid="stTabs"] [role="tablist"] {
-        gap: 4px !important;
-        border-bottom: 2px solid #D7DEE8 !important;
-        overflow-x: auto !important;
-        padding-bottom: 0 !important;
+        position: fixed !important;
+        right: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 999998 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 5px !important;
+        width: 205px !important;
+        max-width: 205px !important;
+        padding: 7px !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        border: 1px solid #D7DEE8 !important;
+        border-radius: 10px !important;
+        background: rgba(255,255,255,0.96) !important;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.12) !important;
     }
 
     div[data-testid="stTabs"] button[role="tab"] {
-        font-size: 16px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 40px !important;
+        box-sizing: border-box !important;
+        font-size: 13px !important;
         font-weight: 700 !important;
-        padding: 11px 16px !important;
-        min-height: 44px !important;
-        border-radius: 8px 8px 0 0 !important;
+        line-height: 1.25 !important;
+        text-align: left !important;
+        padding: 9px 10px !important;
+        border-radius: 7px !important;
         color: #334155 !important;
         background: #F3F6FA !important;
         border: 1px solid #D7DEE8 !important;
-        border-bottom: 3px solid transparent !important;
-        white-space: nowrap !important;
+        border-bottom: 2px solid transparent !important;
+        white-space: normal !important;
     }
 
     div[data-testid="stTabs"] button[role="tab"]:hover {
@@ -1870,13 +1893,35 @@ st.markdown(
         color: #0B3D91 !important;
         background: #EAF2F8 !important;
         border-color: #B8C7D9 !important;
-        border-bottom: 4px solid #0B3D91 !important;
+        border-left: 4px solid #0B3D91 !important;
+        border-bottom: 2px solid #B8C7D9 !important;
     }
 
     div[data-testid="stTabs"] button[role="tab"] p {
-        font-size: 16px !important;
+        font-size: 13px !important;
         font-weight: 700 !important;
+        line-height: 1.25 !important;
         margin: 0 !important;
+    }
+
+    /* Sabit sekmeler içerik alanının üzerine binmesin. */
+    div[data-testid="stTabs"] [role="tabpanel"] {
+        padding-right: 225px !important;
+    }
+
+    @media (max-width: 900px) {
+        div[data-testid="stTabs"] [role="tablist"] {
+            right: 6px !important;
+            width: 165px !important;
+            max-width: 165px !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"] {
+            font-size: 11px !important;
+            padding: 7px 8px !important;
+        }
+        div[data-testid="stTabs"] [role="tabpanel"] {
+            padding-right: 180px !important;
+        }
     }
     </style>
     """,
