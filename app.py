@@ -6952,6 +6952,178 @@ with _t_sihhi:
     # ---------------------------------------------------------------------------
     # 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
 # ---------------------------------------------------------------------------
+    re_sirkulasyon_pompa_sonucu = {}
+    if bolum_634_aktif:
+        st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
+        st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
+        st.caption("Q değeri seçilmiş boylerden otomatik alınır. Emniyet oranı ve hesaplanan debi kullanıcı tarafından gerektiğinde değiştirilebilir.")
+
+        _rs_q_boyler = float(st.session_state.get("boyler_q_kcal_h_v97", 0.0))
+        _rs_q_boyler_kw = _rs_q_boyler * 0.001163
+
+        # Emniyet oranı: varsayılan %15, kullanıcı tarafından değiştirilebilir.
+        re_sirk_emniyet = st.number_input(
+            "Emniyet Oranı (%)",
+            min_value=0.0, max_value=100.0, value=15.0, step=1.0,
+            key="re_sirk_emniyet_v99",
+            help="Re-sirkülasyon debisi hesabında QBOYLER × 0,05 × (1 + emniyet oranı) kullanılır. Varsayılan %15'tir."
+        )
+
+        # 1. AŞAMA: emniyet katsayısı uygulanmadan temel re-sirkülasyon debisi
+        _rs_q_temsiz = (
+            _rs_q_boyler * 0.05 / 5000.0
+            if _rs_q_boyler > 0 else 0.0
+        )
+        # 2. AŞAMA: temel debiye kullanıcı tarafından girilen emniyet oranı uygulanır.
+        _rs_q_hesap = _rs_q_temsiz * (1.0 + float(re_sirk_emniyet) / 100.0)
+
+        if _rs_q_boyler <= 0:
+            st.warning(f"Önce {_63_dinamik_baslik('rapor_bolum_633')} bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
+            _rs_q_temsiz = 0.0
+            _rs_q_hesap = 0.0
+        else:
+            st.success(
+                f"Seçilen boyler ısı yükü: **{_rs_q_boyler:,.0f} kcal/h ≈ {_rs_q_boyler_kw:,.0f} kW**".replace(",", ".")
+            )
+            st.markdown(
+                f"**1. Aşama — Emniyetsiz debi:** V₀ = ({_rs_q_boyler:,.0f} × 0,05) / 5.000 = **{_rs_q_temsiz:.2f} m³/h**".replace(",", ".")
+            )
+            st.markdown(
+                f"**2. Aşama — Emniyetli debi:** V = {_rs_q_temsiz:.2f} × (1 + %{float(re_sirk_emniyet):.0f}) = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
+            )
+
+        # Hesaplanan emniyetli debiyi aşağıdaki pompa seçim debisi alanına otomatik aktar.
+        # Kullanıcı alanı elle değiştirmişse, sonraki rerun'larda manuel değer korunur.
+        _rs_prev_auto = st.session_state.get("re_sirk_q_auto_prev_v100")
+        _rs_q_key = "re_sirk_q_v99"
+        _rs_mevcut_q = st.session_state.get(_rs_q_key)
+        if _rs_mevcut_q is None or (_rs_prev_auto is not None and abs(float(_rs_mevcut_q) - float(_rs_prev_auto)) < 1e-9):
+            st.session_state[_rs_q_key] = float(_rs_q_hesap)
+        st.session_state["re_sirk_q_auto_prev_v100"] = float(_rs_q_hesap)
+
+        st.markdown("#### Pompa Seçim Debisi")
+        re_sirk_q = st.number_input(
+            "Re-sirkülasyon Debisi V [m³/h]",
+            min_value=0.0,
+            step=0.01,
+            format="%.2f",
+            key=_rs_q_key,
+            help="Emniyetli debi otomatik olarak bu alana aktarılır. İsterseniz değeri elle değiştirebilirsiniz."
+        )
+
+        re_sirk_h = st.number_input(
+            "Basma Yüksekliği H [mSS]", min_value=0.5, max_value=20.0, value=5.0, step=0.5,
+            key="re_sirk_h_v99"
+        )
+
+        _rs_c3, _rs_c4 = st.columns(2)
+        with _rs_c3:
+            re_sirk_as = st.selectbox("Asıl Pompa Adedi", [1,2,3], index=0, key="re_sirk_as_v99")
+        with _rs_c4:
+            re_sirk_yedek = st.selectbox("Yedek Pompa Adedi", [1], index=0, key="re_sirk_yedek_v99")
+
+        re_sirk_marka = st.selectbox(
+            "Pompa Markası / Seçim Modu",
+            ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
+            index=0, key="re_sirk_marka_v99",
+        )
+
+        # ------------------------------------------------------------------
+        # POZ NUMARASI SEÇİMİ — otomatik veya manuel
+        # ------------------------------------------------------------------
+        st.markdown("#### Cihaz Poz Numarası Seçimi")
+        _rs_poz_modu = st.radio(
+            "Poz seçim yöntemi",
+            ["Otomatik Poz Seçimi", "Manuel Poz Seçimi"],
+            horizontal=True,
+            key="re_sirk_poz_modu_v99",
+            label_visibility="collapsed",
+        )
+
+        _rs_otomatik_poz, _rs_otomatik_tanim, _rs_otomatik_durum = re_sirk_pompa_pozu_sec(float(re_sirk_q), float(re_sirk_h))
+        if _rs_poz_modu == "Manuel Poz Seçimi":
+            _rs_poz_opsiyonlari = [x["poz"] for x in RE_SIRK_POMPA_POZ_TABLOSU]
+            _rs_mevcut_poz = st.session_state.get("re_sirk_poz_manuel_v99", _rs_otomatik_poz)
+            if _rs_mevcut_poz not in _rs_poz_opsiyonlari:
+                _rs_mevcut_poz = _rs_poz_opsiyonlari[0]
+            re_sirk_poz = st.selectbox(
+                "Cihaz Poz No",
+                _rs_poz_opsiyonlari,
+                index=_rs_poz_opsiyonlari.index(_rs_mevcut_poz),
+                key="re_sirk_poz_manuel_v99",
+            )
+            _rs_poz_kayit = next(x for x in RE_SIRK_POMPA_POZ_TABLOSU if x["poz"] == re_sirk_poz)
+            re_sirk_poz_tanim = _rs_poz_kayit["tanim"]
+            re_sirk_poz_durum = "UYGUN"
+        else:
+            re_sirk_poz = _rs_otomatik_poz
+            re_sirk_poz_tanim = _rs_otomatik_tanim
+            re_sirk_poz_durum = _rs_otomatik_durum
+
+        re_sirk_poz_rapora_aktar = st.checkbox(
+            "Cihaz Poz Numarasını Hesap Raporuna Aktar",
+            value=True,
+            key="re_sirk_poz_rapora_aktar_v99",
+        )
+
+        if re_sirk_poz_durum == "UYGUN":
+            st.success(f"✅ Seçilen Cihaz Poz No: **{re_sirk_poz}**")
+        else:
+            st.error("❌ HATA: Re-sirkülasyon pompası çalışma noktası otomatik poz sınırları dışındadır. Manuel poz seçimi ile müdahale edebilirsiniz.")
+        st.info(f"📌 **Poz Tanımı:** {re_sirk_poz_tanim}")
+
+        # Üretici/model program ekranında görünür; rapora aktarılmaz.
+        re_sirk_model = re_sirk_uretici_sec(float(re_sirk_q), float(re_sirk_h), re_sirk_marka) if re_sirk_q > 0 else None
+        re_curve = []
+        if re_sirk_model:
+            st.success(
+                f"Üretici / Model: **{re_sirk_model['marka']} {re_sirk_model['model']}** | "
+                f"Çalışma noktası: **{re_sirk_q:.2f} m³/h, {re_sirk_model['h_calisma']:.2f} mSS**"
+            )
+            re_curve = re_sirk_model["curve"]
+            re_graph = pompa_grafigi_png(
+                [x[0] for x in re_curve], [x[1] for x in re_curve],
+                float(re_sirk_q), float(re_sirk_model["h_calisma"]),
+                f"{re_sirk_model['marka']} {re_sirk_model['model']} - Üretici Q-H Eğrisi", anonim=False,
+            )
+            st.image(re_graph, caption=f"{re_sirk_model['marka']} {re_sirk_model['model']} - Pompa Performans Eğrisi", use_container_width=True)
+            st.caption(f"Eğri kaynağı: {re_sirk_model['kaynak']}")
+        else:
+            st.warning("Seçilen Q/H noktasını karşılayan doğrulanmış Wilo/Grundfos model eğrisi veri setinde bulunamadı.")
+
+        re_toplam_adet = int(re_sirk_as + re_sirk_yedek)
+        re_sirkulasyon_pompa_sonucu = {
+            "q_boyler_kcal_h": _rs_q_boyler,
+            "q_boyler_kw": _rs_q_boyler_kw,
+            "emniyet_orani": float(re_sirk_emniyet),
+            "q_temsiz_m3h": float(_rs_q_temsiz),
+            "q_hesap_m3h": float(_rs_q_hesap),
+            "q_m3h": float(re_sirk_q),
+            "h_mss": float(re_sirk_h),
+            "asil_adet": int(re_sirk_as),
+            "yedek_adet": int(re_sirk_yedek),
+            "toplam_adet": re_toplam_adet,
+            "adet_str": f"{re_toplam_adet} ({re_sirk_as} Asıl, {re_sirk_yedek} Yedek)",
+            "poz": re_sirk_poz,
+            "poz_tanim": re_sirk_poz_tanim,
+            "poz_durumu": re_sirk_poz_durum,
+            "poz_rapora_aktar": bool(re_sirk_poz_rapora_aktar),
+            "marka": re_sirk_model["marka"] if re_sirk_model else "",
+            "model": re_sirk_model["model"] if re_sirk_model else "",
+            "guc_kw": float(re_sirk_model["p2_kw"]) if re_sirk_model else 0.20,
+            "tip": "Frekans Kontrollü, Düz Boruya Takılabilen Tekli Tip Sirkülâsyon Pompası.",
+            "pompa_curve": re_curve,
+            "h_calisma": re_sirk_model["h_calisma"] if re_sirk_model else float(re_sirk_h),
+            "pompa_kaynak": re_sirk_model["kaynak"] if re_sirk_model else "Doğrulanmış üretici eğrisi bulunamadı",
+            "q_secim_m3h": float(re_sirk_q),
+        }
+        st.session_state["re_sirkulasyon_pompa_sonucu_v99"] = re_sirkulasyon_pompa_sonucu
+
+
+with _t_yangin:
+    st.header("7. YANGIN TESİSATI")
+    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
+
     # 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ
     # ---------------------------------------------------------------------------
     yumusatma_secimler = []
@@ -7195,177 +7367,6 @@ with _t_sihhi:
         }
 
         # ---------------------------------------------------------------------------
-    re_sirkulasyon_pompa_sonucu = {}
-    if bolum_634_aktif:
-        st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
-        st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
-        st.caption("Q değeri seçilmiş boylerden otomatik alınır. Emniyet oranı ve hesaplanan debi kullanıcı tarafından gerektiğinde değiştirilebilir.")
-
-        _rs_q_boyler = float(st.session_state.get("boyler_q_kcal_h_v97", 0.0))
-        _rs_q_boyler_kw = _rs_q_boyler * 0.001163
-
-        # Emniyet oranı: varsayılan %15, kullanıcı tarafından değiştirilebilir.
-        re_sirk_emniyet = st.number_input(
-            "Emniyet Oranı (%)",
-            min_value=0.0, max_value=100.0, value=15.0, step=1.0,
-            key="re_sirk_emniyet_v99",
-            help="Re-sirkülasyon debisi hesabında QBOYLER × 0,05 × (1 + emniyet oranı) kullanılır. Varsayılan %15'tir."
-        )
-
-        # 1. AŞAMA: emniyet katsayısı uygulanmadan temel re-sirkülasyon debisi
-        _rs_q_temsiz = (
-            _rs_q_boyler * 0.05 / 5000.0
-            if _rs_q_boyler > 0 else 0.0
-        )
-        # 2. AŞAMA: temel debiye kullanıcı tarafından girilen emniyet oranı uygulanır.
-        _rs_q_hesap = _rs_q_temsiz * (1.0 + float(re_sirk_emniyet) / 100.0)
-
-        if _rs_q_boyler <= 0:
-            st.warning(f"Önce {_63_dinamik_baslik('rapor_bolum_633')} bölümünde boyler seçimi/hesabı yapılmalıdır. Re-sirkülasyon debisi seçilmiş boyler kapasitesinden otomatik alınacaktır.")
-            _rs_q_temsiz = 0.0
-            _rs_q_hesap = 0.0
-        else:
-            st.success(
-                f"Seçilen boyler ısı yükü: **{_rs_q_boyler:,.0f} kcal/h ≈ {_rs_q_boyler_kw:,.0f} kW**".replace(",", ".")
-            )
-            st.markdown(
-                f"**1. Aşama — Emniyetsiz debi:** V₀ = ({_rs_q_boyler:,.0f} × 0,05) / 5.000 = **{_rs_q_temsiz:.2f} m³/h**".replace(",", ".")
-            )
-            st.markdown(
-                f"**2. Aşama — Emniyetli debi:** V = {_rs_q_temsiz:.2f} × (1 + %{float(re_sirk_emniyet):.0f}) = **{_rs_q_hesap:.2f} m³/h**".replace(",", ".")
-            )
-
-        # Hesaplanan emniyetli debiyi aşağıdaki pompa seçim debisi alanına otomatik aktar.
-        # Kullanıcı alanı elle değiştirmişse, sonraki rerun'larda manuel değer korunur.
-        _rs_prev_auto = st.session_state.get("re_sirk_q_auto_prev_v100")
-        _rs_q_key = "re_sirk_q_v99"
-        _rs_mevcut_q = st.session_state.get(_rs_q_key)
-        if _rs_mevcut_q is None or (_rs_prev_auto is not None and abs(float(_rs_mevcut_q) - float(_rs_prev_auto)) < 1e-9):
-            st.session_state[_rs_q_key] = float(_rs_q_hesap)
-        st.session_state["re_sirk_q_auto_prev_v100"] = float(_rs_q_hesap)
-
-        st.markdown("#### Pompa Seçim Debisi")
-        re_sirk_q = st.number_input(
-            "Re-sirkülasyon Debisi V [m³/h]",
-            min_value=0.0,
-            step=0.01,
-            format="%.2f",
-            key=_rs_q_key,
-            help="Emniyetli debi otomatik olarak bu alana aktarılır. İsterseniz değeri elle değiştirebilirsiniz."
-        )
-
-        re_sirk_h = st.number_input(
-            "Basma Yüksekliği H [mSS]", min_value=0.5, max_value=20.0, value=5.0, step=0.5,
-            key="re_sirk_h_v99"
-        )
-
-        _rs_c3, _rs_c4 = st.columns(2)
-        with _rs_c3:
-            re_sirk_as = st.selectbox("Asıl Pompa Adedi", [1,2,3], index=0, key="re_sirk_as_v99")
-        with _rs_c4:
-            re_sirk_yedek = st.selectbox("Yedek Pompa Adedi", [1], index=0, key="re_sirk_yedek_v99")
-
-        re_sirk_marka = st.selectbox(
-            "Pompa Markası / Seçim Modu",
-            ["Otomatik (Wilo + Grundfos)", "Wilo", "Grundfos"],
-            index=0, key="re_sirk_marka_v99",
-        )
-
-        # ------------------------------------------------------------------
-        # POZ NUMARASI SEÇİMİ — otomatik veya manuel
-        # ------------------------------------------------------------------
-        st.markdown("#### Cihaz Poz Numarası Seçimi")
-        _rs_poz_modu = st.radio(
-            "Poz seçim yöntemi",
-            ["Otomatik Poz Seçimi", "Manuel Poz Seçimi"],
-            horizontal=True,
-            key="re_sirk_poz_modu_v99",
-            label_visibility="collapsed",
-        )
-
-        _rs_otomatik_poz, _rs_otomatik_tanim, _rs_otomatik_durum = re_sirk_pompa_pozu_sec(float(re_sirk_q), float(re_sirk_h))
-        if _rs_poz_modu == "Manuel Poz Seçimi":
-            _rs_poz_opsiyonlari = [x["poz"] for x in RE_SIRK_POMPA_POZ_TABLOSU]
-            _rs_mevcut_poz = st.session_state.get("re_sirk_poz_manuel_v99", _rs_otomatik_poz)
-            if _rs_mevcut_poz not in _rs_poz_opsiyonlari:
-                _rs_mevcut_poz = _rs_poz_opsiyonlari[0]
-            re_sirk_poz = st.selectbox(
-                "Cihaz Poz No",
-                _rs_poz_opsiyonlari,
-                index=_rs_poz_opsiyonlari.index(_rs_mevcut_poz),
-                key="re_sirk_poz_manuel_v99",
-            )
-            _rs_poz_kayit = next(x for x in RE_SIRK_POMPA_POZ_TABLOSU if x["poz"] == re_sirk_poz)
-            re_sirk_poz_tanim = _rs_poz_kayit["tanim"]
-            re_sirk_poz_durum = "UYGUN"
-        else:
-            re_sirk_poz = _rs_otomatik_poz
-            re_sirk_poz_tanim = _rs_otomatik_tanim
-            re_sirk_poz_durum = _rs_otomatik_durum
-
-        re_sirk_poz_rapora_aktar = st.checkbox(
-            "Cihaz Poz Numarasını Hesap Raporuna Aktar",
-            value=True,
-            key="re_sirk_poz_rapora_aktar_v99",
-        )
-
-        if re_sirk_poz_durum == "UYGUN":
-            st.success(f"✅ Seçilen Cihaz Poz No: **{re_sirk_poz}**")
-        else:
-            st.error("❌ HATA: Re-sirkülasyon pompası çalışma noktası otomatik poz sınırları dışındadır. Manuel poz seçimi ile müdahale edebilirsiniz.")
-        st.info(f"📌 **Poz Tanımı:** {re_sirk_poz_tanim}")
-
-        # Üretici/model program ekranında görünür; rapora aktarılmaz.
-        re_sirk_model = re_sirk_uretici_sec(float(re_sirk_q), float(re_sirk_h), re_sirk_marka) if re_sirk_q > 0 else None
-        re_curve = []
-        if re_sirk_model:
-            st.success(
-                f"Üretici / Model: **{re_sirk_model['marka']} {re_sirk_model['model']}** | "
-                f"Çalışma noktası: **{re_sirk_q:.2f} m³/h, {re_sirk_model['h_calisma']:.2f} mSS**"
-            )
-            re_curve = re_sirk_model["curve"]
-            re_graph = pompa_grafigi_png(
-                [x[0] for x in re_curve], [x[1] for x in re_curve],
-                float(re_sirk_q), float(re_sirk_model["h_calisma"]),
-                f"{re_sirk_model['marka']} {re_sirk_model['model']} - Üretici Q-H Eğrisi", anonim=False,
-            )
-            st.image(re_graph, caption=f"{re_sirk_model['marka']} {re_sirk_model['model']} - Pompa Performans Eğrisi", use_container_width=True)
-            st.caption(f"Eğri kaynağı: {re_sirk_model['kaynak']}")
-        else:
-            st.warning("Seçilen Q/H noktasını karşılayan doğrulanmış Wilo/Grundfos model eğrisi veri setinde bulunamadı.")
-
-        re_toplam_adet = int(re_sirk_as + re_sirk_yedek)
-        re_sirkulasyon_pompa_sonucu = {
-            "q_boyler_kcal_h": _rs_q_boyler,
-            "q_boyler_kw": _rs_q_boyler_kw,
-            "emniyet_orani": float(re_sirk_emniyet),
-            "q_temsiz_m3h": float(_rs_q_temsiz),
-            "q_hesap_m3h": float(_rs_q_hesap),
-            "q_m3h": float(re_sirk_q),
-            "h_mss": float(re_sirk_h),
-            "asil_adet": int(re_sirk_as),
-            "yedek_adet": int(re_sirk_yedek),
-            "toplam_adet": re_toplam_adet,
-            "adet_str": f"{re_toplam_adet} ({re_sirk_as} Asıl, {re_sirk_yedek} Yedek)",
-            "poz": re_sirk_poz,
-            "poz_tanim": re_sirk_poz_tanim,
-            "poz_durumu": re_sirk_poz_durum,
-            "poz_rapora_aktar": bool(re_sirk_poz_rapora_aktar),
-            "marka": re_sirk_model["marka"] if re_sirk_model else "",
-            "model": re_sirk_model["model"] if re_sirk_model else "",
-            "guc_kw": float(re_sirk_model["p2_kw"]) if re_sirk_model else 0.20,
-            "tip": "Frekans Kontrollü, Düz Boruya Takılabilen Tekli Tip Sirkülâsyon Pompası.",
-            "pompa_curve": re_curve,
-            "h_calisma": re_sirk_model["h_calisma"] if re_sirk_model else float(re_sirk_h),
-            "pompa_kaynak": re_sirk_model["kaynak"] if re_sirk_model else "Doğrulanmış üretici eğrisi bulunamadı",
-            "q_secim_m3h": float(re_sirk_q),
-        }
-        st.session_state["re_sirkulasyon_pompa_sonucu_v99"] = re_sirkulasyon_pompa_sonucu
-
-
-with _t_yangin:
-    st.header("7. YANGIN TESİSATI")
-    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
 
 with _t_isitma:
     st.header("8. ISITMA TESİSATI")
