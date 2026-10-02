@@ -1688,7 +1688,7 @@ ek_yag_ayirici_notu = str(st.session_state.get("ek_yag_ayirici_notu", ""))
 
 
 # ---------------------------------------------------------------------------
-# 6.2.3 YAĞ AYIRICI HESAP MOTORU — YAĞ AYIRICI HESABI.xlsx ile birebir
+# 6.2.3 YAĞ AYIRICI HESAP MOTORU — YAĞ AYIRICI HESABI.xlsx ile birebir
 # ---------------------------------------------------------------------------
 # Excel'deki 4 sayfa YA-01 ... YA-04 aynı hesap şablonunu kullanır.
 # Programda ekipman adetleri kullanıcı tarafından değiştirilebilir; aşağıdaki
@@ -3372,7 +3372,7 @@ with _t_sihhi:
             st.markdown('<div id="bolum_623"></div>', unsafe_allow_html=True)
             st.subheader("6.2.3 YAĞ AYIRICI SEÇİMLERİ")
             st.caption(
-                "Hesap modülü, yüklenen YAĞ AYIRICI HESABI.xlsx dosyasındaki YA-01 ... YA-04 "
+                "Hesap modülü, yüklenen YAĞ AYIRICI HESABI.xlsx dosyasındaki YA-01 ... YA-04 "
                 "sayfalarının ekipman, qi, eşzamanlılık ve faktör mantığını aynen kullanır. "
                 "Petrol / hidrokarbon ayırıcıları bu bölümün kapsamı dışındadır."
             )
@@ -3417,7 +3417,7 @@ with _t_sihhi:
 
             yag_ayirici_hesaplari = {}
             for _ya in yag_ayirici_secilenler:
-                st.markdown(f"### {_ya} ÖZEL DEBİ VE KAPASİTE HESAP MODÜLÜ")
+                st.markdown(f"### {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:")
                 _default_adetler = YAG_AYIRICI_VARSAYILAN_ADETLERI
                 _adetler = []
 
@@ -7960,12 +7960,6 @@ if _rapor_olustur_sidebar:
         # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
         if bolum_623_aktif:
           doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
-          doc.add_paragraph(
-              "Yağ ayırıcı hesapları, kullanıcı tarafından yüklenen YAĞ AYIRICI HESABI.xlsx "
-              "dosyasındaki YA-01 ... YA-04 hesap şablonunda yer alan ekipman, qi, eşzamanlılık "
-              "ve faktör mantığı esas alınarak hazırlanmıştır."
-          )
-
           yag_rapor_maddeleri = []
           for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
             if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
@@ -7977,13 +7971,16 @@ if _rapor_olustur_sidebar:
                 yag_rapor_maddeleri.append(_not.strip())
 
           if yag_rapor_maddeleri:
-            doc.add_heading("6.2.3.1 YAĞ AYIRICI GENEL ESASLARI", level=3)
+            _genel_esas_p = doc.add_paragraph()
+            _genel_esas_r = _genel_esas_p.add_run("yağ ayırıcı genel esasları")
+            _genel_esas_r.bold = True
+            _genel_esas_r.italic = True
             for yam in yag_rapor_maddeleri:
               doc.add_paragraph(yam, style="List Bullet")
 
           # Excel'deki her YA sayfası için bağımsız hesap raporu.
           for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=2):
-            doc.add_heading(f"6.2.3.{_ya_index} {_ya} ÖZEL DEBİ VE KAPASİTE HESAP MODÜLÜ", level=3)
+            doc.add_heading(f"{_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
             doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
 
             _tab = doc.add_table(rows=1, cols=6)
