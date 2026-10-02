@@ -7981,8 +7981,8 @@ if _rapor_olustur_sidebar:
               doc.add_paragraph(yam, style="List Bullet")
 
           # Excel'deki her YA sayfası için bağımsız hesap raporu.
-          for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=2):
-            doc.add_heading(f"{_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
+          for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=1):
+            doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
             doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
 
             _tab = doc.add_table(rows=1, cols=6)
