@@ -7972,9 +7972,11 @@ if _rapor_olustur_sidebar:
 
           if yag_rapor_maddeleri:
             _genel_esas_p = doc.add_paragraph()
-            _genel_esas_r = _genel_esas_p.add_run("yağ ayırıcı genel esasları")
+            _genel_esas_r = _genel_esas_p.add_run("Yağ Ayırıcı Genel Esasları")
             _genel_esas_r.bold = True
             _genel_esas_r.italic = True
+            _genel_esas_r.font.size = Pt(12)
+            _genel_esas_r.font.color.rgb = RGBColor(68, 114, 196)
             for yam in yag_rapor_maddeleri:
               doc.add_paragraph(yam, style="List Bullet")
 
