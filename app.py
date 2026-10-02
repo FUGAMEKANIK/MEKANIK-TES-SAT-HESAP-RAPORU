@@ -7043,159 +7043,6 @@ with _t_sihhi:
                     return _v
         return 0.0
 
-    if bolum_635_aktif:
-        st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
-        st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
-        st.markdown("### **_Yumuşatma Cihazı Seçimi Genel Esasları_**")
-        yumusatma_keys = [f"yumusatma_sec_{i}" for i in range(1, len(yumusatma_maddeleri) + 1)]
-        _toplu_secim_butonlari(yumusatma_keys, grup_adi="yumusatma_635")
-        for i, madde in enumerate(yumusatma_maddeleri, start=1):
-            yumusatma_secimler.append(st.checkbox(madde, key=f"yumusatma_sec_{i}", value=True))
-
-        st.markdown("#### İLAVE SU YUMUŞATMA CİHAZI SEÇİM MADDELERİ")
-        ek_yumusatma_notu = st.text_area(
-            "İlave Su Yumuşatma Cihazı Seçim Maddesi (Her satıra bir tane)",
-            "", height=80, key="ek_yumusatma_notu"
-        )
-
-        st.markdown("### SU YUMUŞATMA CİHAZI KAPASİTE VE CİHAZ SEÇİMİ")
-
-        # Sistem tipi proje bazında seçilebilir. Tekli sistem şimdilik hesaplamaya dahil edilmez.
-        yumusatma_sistem_tipi = st.selectbox(
-            "Su Yumuşatma Cihazı Tipi",
-            ["Tam Otomatik", "İkili Tandem"],
-            index=1,
-            key="yumusatma_sistem_tipi",
-            help="Proje ihtiyacına göre tam otomatik veya iki tanklı tandem sistem seçilebilir.",
-        )
-        yumusatma_adet = int(st.selectbox(
-            "Su Yumuşatma Cihazı Adedi",
-            [1, 2, 3],
-            index=0,
-            key="yumusatma_adet",
-            format_func=lambda x: f"{x} adet",
-        ))
-
-        _genlesme_hacmi_l = _genlesme_sistem_hacmi_litre_getir()
-        _genlesme_hacmi_m3 = _genlesme_hacmi_l / 1000.0
-        _manual_hacim_default = float(st.session_state.get("yumusatma_sistem_hacmi_manual", _genlesme_hacmi_m3))
-        if _manual_hacim_default <= 0:
-            _manual_hacim_default = 0.0
-
-        yc1, yc2 = st.columns(2)
-        with yc1:
-            yumusatma_sistem_hacmi_m3 = float(st.number_input(
-                "Sistemdeki su hacmi [m³]",
-                min_value=0.0,
-                step=0.1,
-                value=_manual_hacim_default,
-                key="yumusatma_sistem_hacmi_manual",
-                help="Varsayılan olarak kapalı genleşme deposu hesabından alınır. İsterseniz burada elle değiştirebilirsiniz.",
-            ))
-        with yc2:
-            yumusatma_doldurma_suresi_h = float(st.number_input(
-                "Sistemin doldurma süresi [saat]",
-                min_value=0.1,
-                step=0.5,
-                value=float(st.session_state.get("yumusatma_doldurma_suresi_h", 6.0)),
-                key="yumusatma_doldurma_suresi_h",
-                help="Varsayılan 6 saattir; kullanıcı tarafından değiştirilebilir.",
-            ))
-
-        yumusatma_gerekli_debi_m3h = (
-            yumusatma_sistem_hacmi_m3 / yumusatma_doldurma_suresi_h
-            if yumusatma_doldurma_suresi_h > 0 else 0.0
-        )
-        _yumusatma_poz_listesi = (
-            YUMUSATMA_POZLARI_TAM_OTOMATIK
-            if yumusatma_sistem_tipi == "Tam Otomatik"
-            else YUMUSATMA_POZLARI_TANDEM
-        )
-        yumusatma_poz_oto = _yumusatma_poz_otomatik_sec(_yumusatma_poz_listesi, yumusatma_gerekli_debi_m3h)
-
-        st.markdown(
-            '<span style="color:#4472C4; font-weight:bold; font-style:italic;">'
-            'Yumuşatma cihazı kapasite hesabı:'
-            '</span>',
-            unsafe_allow_html=True
-        )
-        st.write(
-            f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
-            f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
-        )
-        st.write(
-            f"Gerekli yumuşatma debisi = {yumusatma_sistem_hacmi_m3:.2f} / "
-            f"{yumusatma_doldurma_suresi_h:.2f} = **{yumusatma_gerekli_debi_m3h:.2f} m³/h**"
-        )
-
-        if yumusatma_poz_oto:
-            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = yumusatma_poz_oto
-        else:
-            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = ("", 0, 0, "", 0, 0)
-
-        yumusatma_poz_modu = st.selectbox(
-            "Cihaz Poz No Seçim Modu",
-            ["Otomatik (kapasiteye göre)", "Manuel Seçim"],
-            index=0,
-            key="yumusatma_poz_modu"
-        )
-        if yumusatma_poz_modu.startswith("Otomatik"):
-            yumusatma_poz_no = _oto_poz_no
-        else:
-            _poz_secenekleri = [x[0] for x in _yumusatma_poz_listesi]
-            _mevcut_poz = st.session_state.get("yumusatma_poz_manual", _oto_poz_no)
-            _idx = _poz_secenekleri.index(_mevcut_poz) if _mevcut_poz in _poz_secenekleri else 0
-            yumusatma_poz_no = st.selectbox(
-                "İkili Tandem Cihaz Poz No",
-                _poz_secenekleri,
-                index=_idx,
-                key="yumusatma_poz_manual",
-            )
-
-        _secilen_poz = _yumusatma_poz_kaydi(_yumusatma_poz_listesi, yumusatma_poz_no)
-        if _secilen_poz:
-            _, yumusatma_kapasite, yumusatma_recine, yumusatma_baglanti, yumusatma_reg_kapasitesi, yumusatma_toplam_sertlik = _secilen_poz
-        else:
-            yumusatma_kapasite = yumusatma_recine = yumusatma_reg_kapasitesi = yumusatma_toplam_sertlik = 0.0
-            yumusatma_baglanti = ""
-
-        yumusatma_poz_rapora = st.checkbox(
-            "Cihaz Poz No rapora aktarılsın", value=True, key="yumusatma_poz_rapora"
-        )
-
-        _tip_rapor = "ikili tam otomatik tandem" if yumusatma_sistem_tipi == "İkili Tandem" else "tam otomatik"
-        st.success(
-            f"**{yumusatma_kapasite:.2f} m³/h'lik {_tip_rapor} tip su yumuşatma cihazı** "
-            f"projelendirilmiştir."
-        )
-        st.caption(
-            f"Poz: {yumusatma_poz_no or '—'} | Reçine: {yumusatma_recine:.0f} L | "
-            f"Giriş/Çıkış: {yumusatma_baglanti or '—'} | "
-            f"Kapasite: {yumusatma_reg_kapasitesi:.2f} m³/reg | "
-            f"Toplam sertlik: {yumusatma_toplam_sertlik:.0f} °Fr·m³/reg"
-        )
-
-        st.session_state["yumusatma_sonucu"] = {
-            "sistem_tipi": yumusatma_sistem_tipi,
-            "adet": yumusatma_adet,
-            "sistem_hacmi_m3": yumusatma_sistem_hacmi_m3,
-            "genlesme_hacmi_m3": _genlesme_hacmi_m3,
-            "doldurma_suresi_h": yumusatma_doldurma_suresi_h,
-            "gerekli_debi_m3h": yumusatma_gerekli_debi_m3h,
-            "kapasite": yumusatma_kapasite,
-            "recine_l": yumusatma_recine,
-            "baglanti": yumusatma_baglanti,
-            "rej_kapasitesi_m3_reg": yumusatma_reg_kapasitesi,
-            "toplam_sertlik_fr_m3_reg": yumusatma_toplam_sertlik,
-            "poz_no": yumusatma_poz_no,
-            "poz_rapora": yumusatma_poz_rapora,
-            "poz_aciklama": ("İki tanklı tam otomatik su yumuşatma cihazı (tandem)" if yumusatma_sistem_tipi == "İkili Tandem" else "Tam otomatik su yumuşatma cihazı"),
-            "secimler": yumusatma_secimler,
-            "ek_not": ek_yumusatma_notu,
-        }
-
-        # ---------------------------------------------------------------------------
-    re_sirkulasyon_pompa_sonucu = {}
     if bolum_634_aktif:
         st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
         st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
@@ -7522,6 +7369,159 @@ if _rapor_olustur_sidebar:
     )
     doc.add_paragraph(yapi_metni)
 
+    if bolum_635_aktif:
+        st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
+        st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
+        st.markdown("### **_Yumuşatma Cihazı Seçimi Genel Esasları_**")
+        yumusatma_keys = [f"yumusatma_sec_{i}" for i in range(1, len(yumusatma_maddeleri) + 1)]
+        _toplu_secim_butonlari(yumusatma_keys, grup_adi="yumusatma_635")
+        for i, madde in enumerate(yumusatma_maddeleri, start=1):
+            yumusatma_secimler.append(st.checkbox(madde, key=f"yumusatma_sec_{i}", value=True))
+
+        st.markdown("#### İLAVE SU YUMUŞATMA CİHAZI SEÇİM MADDELERİ")
+        ek_yumusatma_notu = st.text_area(
+            "İlave Su Yumuşatma Cihazı Seçim Maddesi (Her satıra bir tane)",
+            "", height=80, key="ek_yumusatma_notu"
+        )
+
+        st.markdown("### SU YUMUŞATMA CİHAZI KAPASİTE VE CİHAZ SEÇİMİ")
+
+        # Sistem tipi proje bazında seçilebilir. Tekli sistem şimdilik hesaplamaya dahil edilmez.
+        yumusatma_sistem_tipi = st.selectbox(
+            "Su Yumuşatma Cihazı Tipi",
+            ["Tam Otomatik", "İkili Tandem"],
+            index=1,
+            key="yumusatma_sistem_tipi",
+            help="Proje ihtiyacına göre tam otomatik veya iki tanklı tandem sistem seçilebilir.",
+        )
+        yumusatma_adet = int(st.selectbox(
+            "Su Yumuşatma Cihazı Adedi",
+            [1, 2, 3],
+            index=0,
+            key="yumusatma_adet",
+            format_func=lambda x: f"{x} adet",
+        ))
+
+        _genlesme_hacmi_l = _genlesme_sistem_hacmi_litre_getir()
+        _genlesme_hacmi_m3 = _genlesme_hacmi_l / 1000.0
+        _manual_hacim_default = float(st.session_state.get("yumusatma_sistem_hacmi_manual", _genlesme_hacmi_m3))
+        if _manual_hacim_default <= 0:
+            _manual_hacim_default = 0.0
+
+        yc1, yc2 = st.columns(2)
+        with yc1:
+            yumusatma_sistem_hacmi_m3 = float(st.number_input(
+                "Sistemdeki su hacmi [m³]",
+                min_value=0.0,
+                step=0.1,
+                value=_manual_hacim_default,
+                key="yumusatma_sistem_hacmi_manual",
+                help="Varsayılan olarak kapalı genleşme deposu hesabından alınır. İsterseniz burada elle değiştirebilirsiniz.",
+            ))
+        with yc2:
+            yumusatma_doldurma_suresi_h = float(st.number_input(
+                "Sistemin doldurma süresi [saat]",
+                min_value=0.1,
+                step=0.5,
+                value=float(st.session_state.get("yumusatma_doldurma_suresi_h", 6.0)),
+                key="yumusatma_doldurma_suresi_h",
+                help="Varsayılan 6 saattir; kullanıcı tarafından değiştirilebilir.",
+            ))
+
+        yumusatma_gerekli_debi_m3h = (
+            yumusatma_sistem_hacmi_m3 / yumusatma_doldurma_suresi_h
+            if yumusatma_doldurma_suresi_h > 0 else 0.0
+        )
+        _yumusatma_poz_listesi = (
+            YUMUSATMA_POZLARI_TAM_OTOMATIK
+            if yumusatma_sistem_tipi == "Tam Otomatik"
+            else YUMUSATMA_POZLARI_TANDEM
+        )
+        yumusatma_poz_oto = _yumusatma_poz_otomatik_sec(_yumusatma_poz_listesi, yumusatma_gerekli_debi_m3h)
+
+        st.markdown(
+            '<span style="color:#4472C4; font-weight:bold; font-style:italic;">'
+            'Yumuşatma cihazı kapasite hesabı:'
+            '</span>',
+            unsafe_allow_html=True
+        )
+        st.write(
+            f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
+            f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
+        )
+        st.write(
+            f"Gerekli yumuşatma debisi = {yumusatma_sistem_hacmi_m3:.2f} / "
+            f"{yumusatma_doldurma_suresi_h:.2f} = **{yumusatma_gerekli_debi_m3h:.2f} m³/h**"
+        )
+
+        if yumusatma_poz_oto:
+            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = yumusatma_poz_oto
+        else:
+            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = ("", 0, 0, "", 0, 0)
+
+        yumusatma_poz_modu = st.selectbox(
+            "Cihaz Poz No Seçim Modu",
+            ["Otomatik (kapasiteye göre)", "Manuel Seçim"],
+            index=0,
+            key="yumusatma_poz_modu"
+        )
+        if yumusatma_poz_modu.startswith("Otomatik"):
+            yumusatma_poz_no = _oto_poz_no
+        else:
+            _poz_secenekleri = [x[0] for x in _yumusatma_poz_listesi]
+            _mevcut_poz = st.session_state.get("yumusatma_poz_manual", _oto_poz_no)
+            _idx = _poz_secenekleri.index(_mevcut_poz) if _mevcut_poz in _poz_secenekleri else 0
+            yumusatma_poz_no = st.selectbox(
+                "İkili Tandem Cihaz Poz No",
+                _poz_secenekleri,
+                index=_idx,
+                key="yumusatma_poz_manual",
+            )
+
+        _secilen_poz = _yumusatma_poz_kaydi(_yumusatma_poz_listesi, yumusatma_poz_no)
+        if _secilen_poz:
+            _, yumusatma_kapasite, yumusatma_recine, yumusatma_baglanti, yumusatma_reg_kapasitesi, yumusatma_toplam_sertlik = _secilen_poz
+        else:
+            yumusatma_kapasite = yumusatma_recine = yumusatma_reg_kapasitesi = yumusatma_toplam_sertlik = 0.0
+            yumusatma_baglanti = ""
+
+        yumusatma_poz_rapora = st.checkbox(
+            "Cihaz Poz No rapora aktarılsın", value=True, key="yumusatma_poz_rapora"
+        )
+
+        _tip_rapor = "ikili tam otomatik tandem" if yumusatma_sistem_tipi == "İkili Tandem" else "tam otomatik"
+        st.success(
+            f"**{yumusatma_kapasite:.2f} m³/h'lik {_tip_rapor} tip su yumuşatma cihazı** "
+            f"projelendirilmiştir."
+        )
+        st.caption(
+            f"Poz: {yumusatma_poz_no or '—'} | Reçine: {yumusatma_recine:.0f} L | "
+            f"Giriş/Çıkış: {yumusatma_baglanti or '—'} | "
+            f"Kapasite: {yumusatma_reg_kapasitesi:.2f} m³/reg | "
+            f"Toplam sertlik: {yumusatma_toplam_sertlik:.0f} °Fr·m³/reg"
+        )
+
+        st.session_state["yumusatma_sonucu"] = {
+            "sistem_tipi": yumusatma_sistem_tipi,
+            "adet": yumusatma_adet,
+            "sistem_hacmi_m3": yumusatma_sistem_hacmi_m3,
+            "genlesme_hacmi_m3": _genlesme_hacmi_m3,
+            "doldurma_suresi_h": yumusatma_doldurma_suresi_h,
+            "gerekli_debi_m3h": yumusatma_gerekli_debi_m3h,
+            "kapasite": yumusatma_kapasite,
+            "recine_l": yumusatma_recine,
+            "baglanti": yumusatma_baglanti,
+            "rej_kapasitesi_m3_reg": yumusatma_reg_kapasitesi,
+            "toplam_sertlik_fr_m3_reg": yumusatma_toplam_sertlik,
+            "poz_no": yumusatma_poz_no,
+            "poz_rapora": yumusatma_poz_rapora,
+            "poz_aciklama": ("İki tanklı tam otomatik su yumuşatma cihazı (tandem)" if yumusatma_sistem_tipi == "İkili Tandem" else "Tam otomatik su yumuşatma cihazı"),
+            "secimler": yumusatma_secimler,
+            "ek_not": ek_yumusatma_notu,
+        }
+
+        # ---------------------------------------------------------------------------
+    re_sirkulasyon_pompa_sonucu = {}
     if bolum_2_aktif:
             # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
             ana_baslik_ekle("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
