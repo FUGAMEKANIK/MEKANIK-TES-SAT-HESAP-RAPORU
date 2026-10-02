@@ -1443,6 +1443,14 @@ def _tum_bolumleri_kaldir():
 # Bölüm seçimleri artık sol menüde tutulur. Bölüm adları aynı zamanda
 # sayfadaki ilgili başlığa bağlantıdır; böylece tıklandığında doğrudan
 # seçilen bölüme gidilir. Checkbox'lar rapora dahil/hariç mantığını korur.
+def _bolum_numara_siralama(etiket):
+    """Bölüm etiketini 6.1.2 < 6.1.10 gibi doğal sayısal sıraya göre sıralar."""
+    import re
+    m = re.match(r"^(\d+(?:\.\d+)*)", str(etiket).strip())
+    if not m:
+        return (999999,)
+    return tuple(int(x) for x in m.group(1).split("."))
+
 _BOLUM_NAV = [
     ("1. Kapak Bilgileri", "bolum_1", "rapor_bolum_1"),
     ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
@@ -1473,6 +1481,11 @@ _BOLUM_NAV = [
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
     ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
 ]
+
+# 6.x dahil tüm bölüm navigasyonunu doğal sayısal sırada tut.
+# Böylece 6.3.4 her zaman 6.3.5'ten, 6.3.2 her zaman 6.3.3'ten önce gelir.
+_BOLUM_NAV.sort(key=lambda x: _bolum_numara_siralama(x[0]))
+
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
     st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
