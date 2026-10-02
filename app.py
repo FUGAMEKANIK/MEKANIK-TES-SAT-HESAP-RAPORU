@@ -7113,7 +7113,12 @@ with _t_sihhi:
         )
         yumusatma_poz_oto = _yumusatma_poz_otomatik_sec(_yumusatma_poz_listesi, yumusatma_gerekli_debi_m3h)
 
-        st.markdown("**Yumuşatma cihazı kapasite hesabı:**")
+        st.markdown(
+            '<span style="color:#4472C4; font-weight:bold; font-style:italic;">'
+            'Yumuşatma cihazı kapasite hesabı:'
+            '</span>',
+            unsafe_allow_html=True
+        )
         st.write(
             f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
             f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
@@ -9712,10 +9717,19 @@ if _rapor_olustur_sidebar:
             _reg_kap = float(_yum_sonuc.get("rej_kapasitesi_m3_reg", 0.0))
             _sertlik = float(_yum_sonuc.get("toplam_sertlik_fr_m3_reg", 0.0))
 
-            doc.add_paragraph("Yumuşatma cihazı kapasite hesabı:")
+            _p_yum_kapasite = doc.add_paragraph()
+            _r_yum_kapasite = _p_yum_kapasite.add_run("Yumuşatma cihazı kapasite hesabı:")
+            _r_yum_kapasite.bold = True
+            _r_yum_kapasite.italic = True
+            _r_yum_kapasite.font.name = "Times New Roman"
+            _r_yum_kapasite.font.size = Pt(12)
+            _r_yum_kapasite.font.color.rgb = RGBColor(68, 114, 196)
+
+            _vh_litre = _vh * 1000.0
+            _vh_gen_litre = _vh_gen * 1000.0
             doc.add_paragraph(
-                f"Sistemdeki su hacmi: V = {_vh:.2f} m³"
-                + (f" (Kapalı genleşme deposu hesabından alınan değer: {_vh_gen:.2f} m³)" if _vh_gen > 0 else " (kullanıcı tarafından girilen değer)")
+                f"Sistemdeki su hacmi: V = {_vh_litre:.0f} lt - {_vh:.2f} m³"
+                + (f" (Kapalı genleşme deposu hesabından alınan değer: {_vh_gen_litre:.0f} lt - {_vh_gen:.2f} m³)" if _vh_gen > 0 else " (kullanıcı tarafından girilen değer)")
             )
             doc.add_paragraph(f"Sistemin doldurma süresi: t = {_ts:.2f} saat")
             doc.add_paragraph(f"Gerekli yumuşatma debisi: Q = V / t = {_vh:.2f} / {_ts:.2f} = {_qd:.2f} m³/h")
