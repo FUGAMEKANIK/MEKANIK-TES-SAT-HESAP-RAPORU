@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 from copy import deepcopy
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_COLOR_INDEX, WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
@@ -7985,19 +7985,47 @@ if _rapor_olustur_sidebar:
             doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
             doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
 
-            _tab = doc.add_table(rows=1, cols=6)
+            # Eşzamanlılık faktörlerini Excel şablonundaki gibi ayrı ayrı göster.
+            # Kullanılan adet hangi kademeye denk geliyorsa o Zi hücresi sarı vurgulanır.
+            _tab = doc.add_table(rows=1, cols=10)
             _tab.style = "Table Grid"
             _hdr = _tab.rows[0].cells
-            for _cell, _baslik in zip(_hdr, ["Ekipman", "Adet n", "qi [L/s]", "n × qi", "Zi(n)", "Pis su debisi [L/s]"]):
+            _basliklar = [
+                "Ekipman", "Adet n", "qi [L/s]", "n × qi",
+                "Zi – 1 adet", "Zi – 2 adet", "Zi – 3 adet",
+                "Zi – 4 adet", "Zi – 5+ adet", "Pis su debisi [L/s]"
+            ]
+            for _cell, _baslik in zip(_hdr, _basliklar):
               _cell.text = _baslik
+
             for _satir in _hesap["satirlar"]:
               _cells = _tab.add_row().cells
               _cells[0].text = _satir["ekipman"]
               _cells[1].text = str(_satir["adet"])
               _cells[2].text = f"{_satir['qi']:.2f}"
               _cells[3].text = f"{_satir['n_x_qi']:.2f}"
-              _cells[4].text = f"{_satir['zi']:.2f}"
-              _cells[5].text = f"{_satir['pis_su_debisi']:.2f}"
+
+              # Excel'deki Zi(n) değerleri: 1/2/3/4/5+ adet.
+              _zi_tip = next((e[2] for e in YAG_AYIRICI_EKIPMANLARI if e[0] == _satir["ekipman"]), "normal")
+              _zi_degerleri = [
+                  _yag_ayirici_zi(1, _zi_tip),
+                  _yag_ayirici_zi(2, _zi_tip),
+                  _yag_ayirici_zi(3, _zi_tip),
+                  _yag_ayirici_zi(4, _zi_tip),
+                  _yag_ayirici_zi(5, _zi_tip),
+              ]
+              for _zi_index, _zi_deger in enumerate(_zi_degerleri):
+                _zi_cell = _cells[4 + _zi_index]
+                _zi_cell.text = f"{_zi_deger:.2f}"
+                # Adet 1,2,3,4 veya 5+ kademesinin aktif olanını sarı boya.
+                _adet = int(_satir["adet"])
+                _aktif_index = min(_adet, 5) - 1
+                if _aktif_index == _zi_index:
+                  for _par in _zi_cell.paragraphs:
+                    for _run in _par.runs:
+                      _run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+              _cells[9].text = f"{_satir['pis_su_debisi']:.2f}"
 
             _p = doc.add_paragraph()
             _r = _p.add_run(f"TOPLAM Qs = { _hesap['qs']:.2f} L/s")
