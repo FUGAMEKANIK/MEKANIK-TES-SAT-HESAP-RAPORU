@@ -8031,21 +8031,43 @@ if _rapor_olustur_sidebar:
             _r = _p.add_run(f"TOPLAM Qs = { _hesap['qs']:.2f} L/s")
             _r.bold = True
 
+            # Faktörlerin seçilme nedeni raporda açıkça gösterilir.
+            # Açıklamalar, YAĞ AYIRICI HESABI.xlsx şablonundaki faktör
+            # eşiklerine göre oluşturulur.
+            _fd_deger = _hesap["fd"]
+            if abs(_fd_deger - 1.0) < 1e-9:
+                _fd_aciklama = "Yağ yoğunluğu ≤ 0.94 g/cm³ olduğu için fd = 1.00 seçilmiştir."
+            else:
+                _fd_aciklama = "Yağ yoğunluğu > 0.94 g/cm³ olduğu için fd = 1.30 seçilmiştir."
+
+            _ft_deger = _hesap["ft"]
+            if abs(_ft_deger - 1.0) < 1e-9:
+                _ft_aciklama = "Su sıcaklığı ≤ 60 °C olduğu için ft = 1.00 seçilmiştir."
+            else:
+                _ft_aciklama = "Su sıcaklığı > 60 °C olduğu için ft = 1.30 seçilmiştir."
+
+            _fr_deger = _hesap["fr"]
+            if abs(_fr_deger - 1.0) < 1e-9:
+                _fr_aciklama = "Temizlik malzemesi kullanılmadığı için fr = 1.00 seçilmiştir."
+            elif abs(_fr_deger - 1.3) < 1e-9:
+                _fr_aciklama = "Temizlik malzemesi kullanıldığı için fr = 1.30 seçilmiştir."
+            else:
+                _fr_aciklama = "Hastane kullanımı için fr = 1.50 seçilmiştir."
+
             _p = doc.add_paragraph()
-            _p.add_run(
-                "Yoğunluk Faktörü (fd): "
-                f"{_hesap['fd']:.2f}"
-            )
+            _r = _p.add_run(f"Yoğunluk Faktörü (fd): {_fd_deger:.2f}")
+            _r.bold = True
+            _p.add_run(f" — {_fd_aciklama}")
+
             _p = doc.add_paragraph()
-            _p.add_run(
-                "Sıcaklık Faktörü (ft): "
-                f"{_hesap['ft']:.2f}"
-            )
+            _r = _p.add_run(f"Sıcaklık Faktörü (ft): {_ft_deger:.2f}")
+            _r.bold = True
+            _p.add_run(f" — {_ft_aciklama}")
+
             _p = doc.add_paragraph()
-            _p.add_run(
-                "Deterjan Faktörü (fr): "
-                f"{_hesap['fr']:.2f}"
-            )
+            _r = _p.add_run(f"Deterjan Faktörü (fr): {_fr_deger:.2f}")
+            _r.bold = True
+            _p.add_run(f" — {_fr_aciklama}")
 
             _p = doc.add_paragraph()
             _r = _p.add_run(
