@@ -1443,14 +1443,6 @@ def _tum_bolumleri_kaldir():
 # Bölüm seçimleri artık sol menüde tutulur. Bölüm adları aynı zamanda
 # sayfadaki ilgili başlığa bağlantıdır; böylece tıklandığında doğrudan
 # seçilen bölüme gidilir. Checkbox'lar rapora dahil/hariç mantığını korur.
-def _bolum_numara_siralama(etiket):
-    """Bölüm etiketini 6.1.2 < 6.1.10 gibi doğal sayısal sıraya göre sıralar."""
-    import re
-    m = re.match(r"^(\d+(?:\.\d+)*)", str(etiket).strip())
-    if not m:
-        return (999999,)
-    return tuple(int(x) for x in m.group(1).split("."))
-
 _BOLUM_NAV = [
     ("1. Kapak Bilgileri", "bolum_1", "rapor_bolum_1"),
     ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
@@ -1481,11 +1473,6 @@ _BOLUM_NAV = [
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
     ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
 ]
-
-# 6.x dahil tüm bölüm navigasyonunu doğal sayısal sırada tut.
-# Böylece 6.3.4 her zaman 6.3.5'ten, 6.3.2 her zaman 6.3.3'ten önce gelir.
-_BOLUM_NAV.sort(key=lambda x: _bolum_numara_siralama(x[0]))
-
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
     st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
@@ -7133,15 +7120,8 @@ with _t_sihhi:
             unsafe_allow_html=True
         )
         st.write(
-            f"Sistemdeki su hacmi: V = **{yumusatma_sistem_hacmi_m3 * 1000:.0f} lt - "
-            f"{yumusatma_sistem_hacmi_m3:.2f} m³**"
-            + (
-                f" (Kapalı genleşme deposu hesabından alınan değer: "
-                f"{_genlesme_hacmi_l:.0f} lt - {_genlesme_hacmi_m3:.2f} m³)"
-                if _genlesme_hacmi_l > 0
-                else " (kullanıcı tarafından girilen değer)"
-            )
-            + f" | Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
+            f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
+            f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
         )
         st.write(
             f"Gerekli yumuşatma debisi = {yumusatma_sistem_hacmi_m3:.2f} / "
@@ -8924,14 +8904,22 @@ if _rapor_olustur_sidebar:
               f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
           )
           if _hidrolik_tablo:
-              doc.add_paragraph("Kontrol edilen çaplar:")
+              doc.add_paragraph("TAŞMA BORUSU ÇAP SEÇİMİ VE HİDROLİK KONTROL TABLOSU")
+              _tbl = doc.add_table(rows=1, cols=5)
+              _tbl.style = "Table Grid"
+              _hdr = _tbl.rows[0].cells
+              _headers = ["Boru Çapı", "Tasarım Kapasitesi", "Manning Kapasitesi", "Manning Hızı", "Durum"]
+              for _i, _h in enumerate(_headers):
+                  _hdr[_i].text = _h
+                  for _run in _hdr[_i].paragraphs[0].runs:
+                      _run.bold = True
               for _x in _hidrolik_tablo:
-                  doc.add_paragraph(
-                      f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
-                      f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
-                      f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
-                      f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
-                  )
+                  _row = _tbl.add_row().cells
+                  _row[0].text = f"DN {_x.get('dn', 0)}"
+                  _row[1].text = f"{_x.get('q_kapasite_lps', 0):.2f} L/s"
+                  _row[2].text = f"{_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s"
+                  _row[3].text = f"{_x.get('hiz_ms', 0):.2f} m/s"
+                  _row[4].text = "UYGUN" if _x.get('uygun') else "YETERSİZ"
           doc.add_paragraph(
               "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
               "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
