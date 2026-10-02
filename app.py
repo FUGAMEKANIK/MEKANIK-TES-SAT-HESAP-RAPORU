@@ -7043,6 +7043,7 @@ with _t_sihhi:
                     return _v
         return 0.0
 
+    re_sirkulasyon_pompa_sonucu = {}
     if bolum_634_aktif:
         st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
         st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
@@ -7224,150 +7225,6 @@ with _t_sogutma:
 
 with _t_havalandirma:
     st.header("10. HAVALANDIRMA TESİSATI")
-    st.info("Havalandırma tesisatı modülü bu sekme altında yer alacaktır.")
-
-# Rapor Oluştur Butonu
-_proje_otomatik_kaydet()
-
-_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", False)
-if _rapor_olustur_sidebar:
-
-  _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
-  gecersiz_var = any(
-      p.get("poz_durumu") != "UYGUN" for p in (psp_parametreleri or {}).values()
-  ) or (
-      bolum_634_aktif
-      and _re_sirk_rapor_kontrol
-      and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN"
-  )
-  if gecersiz_var:
-    st.error(
-        "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
-        " tek pompa debisi poz sınırları dışındadır."
-    )
-  else:
-    if not is_adi:
-      st.warning(
-          "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
-          " ancak kapak başlığı boş bırakılacak."
-      )
-
-    aktif_sirket = (
-        sirket_adi
-        if sirket_adi
-        else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
-    )
-    aktif_is = is_adi if is_adi else ""
-
-    doc = Document()
-
-    def ana_baslik_ekle(metin):
-        """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
-        p = doc.add_heading(metin, level=1)
-        p.paragraph_format.page_break_before = True
-        p.paragraph_format.keep_with_next = True
-        p.paragraph_format.keep_together = True
-        p.paragraph_format.widow_control = True
-        return p
-
-    cover_section = doc.sections[0]
-    cover_section.top_margin = Inches(1.15)
-    cover_section.bottom_margin = Inches(1.0)
-    cover_section.left_margin = Inches(1.0)
-    cover_section.right_margin = Inches(1.0)
-    cover_section.header_distance = Inches(0.25)
-    cover_section.footer_distance = Inches(0.25)
-
-    # 1. SAYFA: KAPAK SAYFASI
-    p_sirket = doc.add_paragraph()
-    p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_sirket = p_sirket.add_run(aktif_sirket.upper())
-    run_sirket.font.size = Pt(13)
-    run_sirket.font.bold = True
-    run_sirket.font.name = "Arial"
-
-    doc.add_paragraph()
-    doc.add_paragraph()
-
-    if aktif_is:
-      p_is = doc.add_paragraph()
-      p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
-      run_is_baslik = p_is.add_run("PROJE ADI:\n")
-      run_is_baslik.font.size = Pt(11)
-      run_is_baslik.font.name = "Arial"
-
-      run_is = p_is.add_run(aktif_is)
-      run_is.font.size = Pt(16)
-      run_is.font.bold = True
-      run_is.font.italic = False
-      run_is.font.name = "Arial"
-      run_is.font.color.rgb = RGBColor(0, 0, 0)
-
-      doc.add_paragraph()
-
-    p_tur = doc.add_paragraph()
-    p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_tur = p_tur.add_run(rapor_turu.upper())
-    run_tur.font.size = Pt(14)
-    run_tur.font.bold = True
-    run_tur.font.name = "Arial"
-
-    for _ in range(4):
-      doc.add_paragraph()
-
-    p_alt = doc.add_paragraph()
-    p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_hazirlayan = p_alt.add_run(
-        f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
-        f" {mmo_no}\n\nTarih:\n{tarih}"
-    )
-    run_hazirlayan.font.size = Pt(11)
-    run_hazirlayan.font.name = "Arial"
-
-    # Word açılışında başlık alanları ve içindekiler otomatik güncellensin
-    enable_update_fields_on_open(doc)
-
-    # 2. SAYFA: İÇİNDEKİLER
-    doc.add_page_break()
-    doc.add_heading("İÇİNDEKİLER", level=1)
-    p_toc = doc.add_paragraph()
-    add_toc(p_toc)
-
-
-    # 3. SAYFA: GÖVDE
-    doc.add_page_break()
-    body_section = doc.add_section()
-    body_section.top_margin = Inches(0.85)
-    body_section.bottom_margin = Inches(0.75)
-    body_section.left_margin = Inches(1.0)
-    body_section.right_margin = Inches(1.0)
-    body_section.header_distance = Inches(0.25)
-    body_section.footer_distance = Inches(0.25)
-
-    # --- 1. GENEL BİLGİLER ---
-    ana_baslik_ekle("1. GENEL BİLGİLER")
-    # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
-    p_giris = doc.add_paragraph()
-    p_giris.add_run("Bu raporda ")
-    if aktif_is:
-        _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
-        _r_proje = p_giris.add_run(_genel_proje_ifade)
-        _r_proje.font.name = "Times New Roman"
-        _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-        _r_proje.font.bold = True
-        _r_proje.font.italic = True
-        _r_proje.font.color.rgb = RGBColor(0, 0, 0)
-    else:
-        p_giris.add_run("ilgili proje")
-    p_giris.add_run(
-        " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
-        "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
-        "tesisat sistem çözümleri tespit edilmiştir."
-    )
-    yapi_metni = (
-        f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
-    )
-    doc.add_paragraph(yapi_metni)
 
     if bolum_635_aktif:
         st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
@@ -7521,7 +7378,151 @@ if _rapor_olustur_sidebar:
         }
 
         # ---------------------------------------------------------------------------
-    re_sirkulasyon_pompa_sonucu = {}
+    st.info("Havalandırma tesisatı modülü bu sekme altında yer alacaktır.")
+
+# Rapor Oluştur Butonu
+_proje_otomatik_kaydet()
+
+_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", False)
+if _rapor_olustur_sidebar:
+
+  _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
+  gecersiz_var = any(
+      p.get("poz_durumu") != "UYGUN" for p in (psp_parametreleri or {}).values()
+  ) or (
+      bolum_634_aktif
+      and _re_sirk_rapor_kontrol
+      and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN"
+  )
+  if gecersiz_var:
+    st.error(
+        "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
+        " tek pompa debisi poz sınırları dışındadır."
+    )
+  else:
+    if not is_adi:
+      st.warning(
+          "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
+          " ancak kapak başlığı boş bırakılacak."
+      )
+
+    aktif_sirket = (
+        sirket_adi
+        if sirket_adi
+        else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
+    )
+    aktif_is = is_adi if is_adi else ""
+
+    doc = Document()
+
+    def ana_baslik_ekle(metin):
+        """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
+        p = doc.add_heading(metin, level=1)
+        p.paragraph_format.page_break_before = True
+        p.paragraph_format.keep_with_next = True
+        p.paragraph_format.keep_together = True
+        p.paragraph_format.widow_control = True
+        return p
+
+    cover_section = doc.sections[0]
+    cover_section.top_margin = Inches(1.15)
+    cover_section.bottom_margin = Inches(1.0)
+    cover_section.left_margin = Inches(1.0)
+    cover_section.right_margin = Inches(1.0)
+    cover_section.header_distance = Inches(0.25)
+    cover_section.footer_distance = Inches(0.25)
+
+    # 1. SAYFA: KAPAK SAYFASI
+    p_sirket = doc.add_paragraph()
+    p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_sirket = p_sirket.add_run(aktif_sirket.upper())
+    run_sirket.font.size = Pt(13)
+    run_sirket.font.bold = True
+    run_sirket.font.name = "Arial"
+
+    doc.add_paragraph()
+    doc.add_paragraph()
+
+    if aktif_is:
+      p_is = doc.add_paragraph()
+      p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
+      run_is_baslik = p_is.add_run("PROJE ADI:\n")
+      run_is_baslik.font.size = Pt(11)
+      run_is_baslik.font.name = "Arial"
+
+      run_is = p_is.add_run(aktif_is)
+      run_is.font.size = Pt(16)
+      run_is.font.bold = True
+      run_is.font.italic = False
+      run_is.font.name = "Arial"
+      run_is.font.color.rgb = RGBColor(0, 0, 0)
+
+      doc.add_paragraph()
+
+    p_tur = doc.add_paragraph()
+    p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_tur = p_tur.add_run(rapor_turu.upper())
+    run_tur.font.size = Pt(14)
+    run_tur.font.bold = True
+    run_tur.font.name = "Arial"
+
+    for _ in range(4):
+      doc.add_paragraph()
+
+    p_alt = doc.add_paragraph()
+    p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_hazirlayan = p_alt.add_run(
+        f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
+        f" {mmo_no}\n\nTarih:\n{tarih}"
+    )
+    run_hazirlayan.font.size = Pt(11)
+    run_hazirlayan.font.name = "Arial"
+
+    # Word açılışında başlık alanları ve içindekiler otomatik güncellensin
+    enable_update_fields_on_open(doc)
+
+    # 2. SAYFA: İÇİNDEKİLER
+    doc.add_page_break()
+    doc.add_heading("İÇİNDEKİLER", level=1)
+    p_toc = doc.add_paragraph()
+    add_toc(p_toc)
+
+
+    # 3. SAYFA: GÖVDE
+    doc.add_page_break()
+    body_section = doc.add_section()
+    body_section.top_margin = Inches(0.85)
+    body_section.bottom_margin = Inches(0.75)
+    body_section.left_margin = Inches(1.0)
+    body_section.right_margin = Inches(1.0)
+    body_section.header_distance = Inches(0.25)
+    body_section.footer_distance = Inches(0.25)
+
+    # --- 1. GENEL BİLGİLER ---
+    ana_baslik_ekle("1. GENEL BİLGİLER")
+    # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
+    p_giris = doc.add_paragraph()
+    p_giris.add_run("Bu raporda ")
+    if aktif_is:
+        _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
+        _r_proje = p_giris.add_run(_genel_proje_ifade)
+        _r_proje.font.name = "Times New Roman"
+        _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+        _r_proje.font.bold = True
+        _r_proje.font.italic = True
+        _r_proje.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        p_giris.add_run("ilgili proje")
+    p_giris.add_run(
+        " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
+        "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
+        "tesisat sistem çözümleri tespit edilmiştir."
+    )
+    yapi_metni = (
+        f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
+    )
+    doc.add_paragraph(yapi_metni)
+
     if bolum_2_aktif:
             # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
             ana_baslik_ekle("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
