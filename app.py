@@ -7405,8 +7405,116 @@ with _t_sihhi:
 
 
 with _t_yangin:
+    # -----------------------------------------------------------------------
+    # 7. YANGIN TESİSATI
+    # Bu aşamada yalnızca bölüm/alt bölüm altyapısı oluşturulmuştur.
+    # Gerçek hesap, seçim ve poz verileri sonraki adımlarda eklenecektir.
+    # -----------------------------------------------------------------------
     st.header("7. YANGIN TESİSATI")
-    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
+    st.caption(
+        "Yangın tesisatı bölümü modüler olarak hazırlanmıştır. "
+        "Hesap ve ekipman seçimleri 7.1'den itibaren adım adım eklenecektir."
+    )
+
+    _yangin_bolumleri = [
+        ("bolum_71", "rapor_bolum_71", "7.1 YANGIN TESİSATI GENEL ESASLARI",
+         []),
+        ("bolum_72", "rapor_bolum_72", "7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", [
+            ("bolum_721", "rapor_bolum_721", "7.2.1 Bina Kullanım Amacı"),
+            ("bolum_722", "rapor_bolum_722", "7.2.2 Yangın Tehlike Sınıfı"),
+            ("bolum_723", "rapor_bolum_723", "7.2.3 Yangın Bölmeleri"),
+            ("bolum_724", "rapor_bolum_724", "7.2.4 Tasarım Kriterleri"),
+            ("bolum_725", "rapor_bolum_725", "7.2.5 Tasarım Debisi"),
+        ]),
+        ("bolum_73", "rapor_bolum_73", "7.3 YANGIN SUYU DEPOSU HESABI", [
+            ("bolum_731", "rapor_bolum_731", "7.3.1 Gerekli Yangın Suyu Hacmi"),
+            ("bolum_732", "rapor_bolum_732", "7.3.2 Yangın Suyu Deposu Seçimi"),
+            ("bolum_733", "rapor_bolum_733", "7.3.3 Depo Hacmi Kontrolü"),
+        ]),
+        ("bolum_74", "rapor_bolum_74", "7.4 YANGIN POMPA GRUBU SEÇİMİ", [
+            ("bolum_741", "rapor_bolum_741", "7.4.1 Ana Yangın Pompası"),
+            ("bolum_742", "rapor_bolum_742", "7.4.2 Yedek Yangın Pompası"),
+            ("bolum_743", "rapor_bolum_743", "7.4.3 Jokey Pompa"),
+            ("bolum_744", "rapor_bolum_744", "7.4.4 Pompa Basma Yüksekliği"),
+        ]),
+        ("bolum_75", "rapor_bolum_75", "7.5 YANGIN DOLABI / HİDRANT TESİSATI", [
+            ("bolum_751", "rapor_bolum_751", "7.5.1 Yangın Dolabı"),
+            ("bolum_752", "rapor_bolum_752", "7.5.2 Hidrant"),
+            ("bolum_753", "rapor_bolum_753", "7.5.3 Basınç Kontrolü"),
+        ]),
+        ("bolum_76", "rapor_bolum_76", "7.6 SPRİNKLER TESİSATI", [
+            ("bolum_761", "rapor_bolum_761", "7.6.1 Tehlike Sınıfı"),
+            ("bolum_762", "rapor_bolum_762", "7.6.2 Tasarım Alanı"),
+            ("bolum_763", "rapor_bolum_763", "7.6.3 Debi Hesabı"),
+            ("bolum_764", "rapor_bolum_764", "7.6.4 Basınç Hesabı"),
+            ("bolum_765", "rapor_bolum_765", "7.6.5 Hidrolik Hesap"),
+        ]),
+        ("bolum_77", "rapor_bolum_77", "7.7 YANGIN TESİSATI HİDROLİK HESAPLARI", []),
+        ("bolum_78", "rapor_bolum_78", "7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ", []),
+        ("bolum_79", "rapor_bolum_79", "7.9 YANGIN TESİSATI SONUÇ TABLOSU", []),
+    ]
+
+    for _key, _rapor_key, _baslik, _altlar in _yangin_bolumleri:
+        st.session_state.setdefault(_key, True)
+        st.session_state.setdefault(_rapor_key, True)
+
+        if not st.session_state.get(_key, True):
+            continue
+
+        st.subheader(_baslik)
+
+        if _baslik.startswith("7.1"):
+            st.info(
+                "Bu bölümde yangın tesisatının genel esasları, kullanılacak standartlar, "
+                "sistem bileşenleri ve tasarım kabulleri tanımlanacaktır. Gerçek içerik sonraki aşamada eklenecektir."
+            )
+        elif _baslik.startswith("7.2"):
+            st.info(
+                "Bina kullanım amacı, yangın tehlike sınıfı, yangın bölmeleri, tasarım kriterleri "
+                "ve tasarım debisinin belirlenmesi için giriş ve seçim ekranları burada oluşturulacaktır."
+            )
+        elif _baslik.startswith("7.3"):
+            st.info(
+                "Yangın suyu ihtiyacı, gerekli depo hacmi, yangın suyu deposu seçimi ve depo hacmi "
+                "kontrolü burada hesaplanacaktır."
+            )
+        elif _baslik.startswith("7.4"):
+            st.info(
+                "Ana yangın pompası, yedek pompa, jokey pompa ve pompa basma yüksekliği seçimleri "
+                "tasarım debisi ve basınç ihtiyacına bağlı olarak burada oluşturulacaktır."
+            )
+        elif _baslik.startswith("7.5"):
+            st.info(
+                "Yangın dolabı, hidrant ve basınç kontrolü için gerekli giriş ve hesap ekranları "
+                "bu bölümde oluşturulacaktır."
+            )
+        elif _baslik.startswith("7.6"):
+            st.info(
+                "Sprinkler tehlike sınıfı, tasarım alanı, debi, basınç ve hidrolik hesap modülleri "
+                "bu bölüm altında oluşturulacaktır."
+            )
+        elif _baslik.startswith("7.7"):
+            st.info(
+                "Yangın tesisatının boru çapları, akış, basınç kayıpları ve gerekli hidrolik hesapları "
+                "bu bölümde birleştirilecektir."
+            )
+        elif _baslik.startswith("7.8"):
+            st.info(
+                "Yangın tesisatı ekipmanları, cihaz özellikleri, adetleri ve gerektiğinde poz numaraları "
+                "bu bölümde seçilecektir."
+            )
+        elif _baslik.startswith("7.9"):
+            st.info(
+                "7. bölümde yapılan hesap ve seçimlerin sonuçları burada tek bir özet tabloda "
+                "toplanacaktır."
+            )
+
+        for _alt_key, _alt_rapor_key, _alt_baslik in _altlar:
+            st.session_state.setdefault(_alt_key, True)
+            st.session_state.setdefault(_alt_rapor_key, True)
+            if st.session_state.get(_alt_key, True):
+                st.markdown(f"**{_alt_baslik}**")
+                st.caption("Bu alt bölümün gerçek hesap/seçim ekranı sonraki geliştirme adımında eklenecektir.")
 
 with _t_isitma:
     st.header("8. ISITMA TESİSATI")
