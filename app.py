@@ -7629,6 +7629,19 @@ with _t_yangin:
                     on_change=_yangin_71_rapor_sync,
                     args=("rapor_bolum_713", _ui_713_rapor_key),
                 )
+                st.markdown("""
+                **Yangın Tesisatı Tasarımında Kullanılacak Standartlar ve Tasarım Esasları**
+
+                Yangın tesisatı tasarım ve hesaplamalarında, öncelikli olarak **Türkiye'de yürürlükte bulunan ilgili mevzuat, yönetmelikler ve Türk Standartları (TS / TS EN)** esas alınacaktır. Tasarımın her aşamasında, uygulanabilir ve ilgili konuya yönelik bir Türk Standardının bulunması halinde öncelikle bu standartlara göre değerlendirme ve hesaplama yapılacaktır.
+
+                Türk Standartlarının ilgili sistem, ekipman veya tasarım konusu için **yeterli teknik düzenleme içermediği, kapsam dışında kaldığı veya ilgili hususu ayrıntılı olarak düzenlemediği durumlarda**, uluslararası kabul görmüş standartlardan yararlanılacaktır. Bu kapsamda özellikle **NFPA standartları** ve ilgili diğer uluslararası standartlar, sistemin niteliğine ve tasarım konusuna uygun olarak kullanılabilecektir.
+
+                Birden fazla standardın uygulanabilir olduğu durumlarda, standartlar arasında **kapsam, teknik gereklilikler ve uygulama esasları açısından uyum** gözetilecek; aynı tasarım parametresi için çelişen hükümler bulunması halinde, proje kapsamında esas alınan standart ve tasarım kriteri açıkça belirtilecektir.
+
+                Kullanılacak standartların seçiminde **güncel ve yürürlükteki baskılarının** esas alınması, tasarımın ilgili yangın güvenliği mevzuatı ile uyumlu olması ve seçilen standardın tasarlanan sistemin özelliklerine uygun olması temel prensip olarak kabul edilecektir.
+
+                **Bu bölümde listelenen standartlar, yangın tesisatı tasarımında başvurulabilecek standartları göstermekte olup, her bir proje için yalnızca ilgili sistem ve tasarım kapsamına giren standartlar kullanılacaktır.**
+                """)
                 _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
                 for _tab, _prefix, _liste in [
                     (_ts_tab, "ts", _yangin_713_ts_standartlari),
@@ -10116,6 +10129,18 @@ if _rapor_olustur_sidebar:
             _std_vals = _ts_vals + _nfpa_vals
             if any(_std_vals):
                 doc.add_heading("7.1.3 YANGIN TESİSATI STANDARTLARI", level=3)
+                p_std = doc.add_paragraph()
+                r_std = p_std.add_run("Yangın Tesisatı Tasarımında Kullanılacak Standartlar ve Tasarım Esasları")
+                r_std.bold = True
+                r_std.italic = True
+                for _metin in [
+                    "Yangın tesisatı tasarım ve hesaplamalarında, öncelikli olarak Türkiye'de yürürlükte bulunan ilgili mevzuat, yönetmelikler ve Türk Standartları (TS / TS EN) esas alınacaktır. Tasarımın her aşamasında, uygulanabilir ve ilgili konuya yönelik bir Türk Standardının bulunması halinde öncelikle bu standartlara göre değerlendirme ve hesaplama yapılacaktır.",
+                    "Türk Standartlarının ilgili sistem, ekipman veya tasarım konusu için yeterli teknik düzenleme içermediği, kapsam dışında kaldığı veya ilgili hususu ayrıntılı olarak düzenlemediği durumlarda, uluslararası kabul görmüş standartlardan yararlanılacaktır. Bu kapsamda özellikle NFPA standartları ve ilgili diğer uluslararası standartlar, sistemin niteliğine ve tasarım konusuna uygun olarak kullanılabilecektir.",
+                    "Birden fazla standardın uygulanabilir olduğu durumlarda, standartlar arasında kapsam, teknik gereklilikler ve uygulama esasları açısından uyum gözetilecek; aynı tasarım parametresi için çelişen hükümler bulunması halinde, proje kapsamında esas alınan standart ve tasarım kriteri açıkça belirtilecektir.",
+                    "Kullanılacak standartların seçiminde güncel ve yürürlükteki baskılarının esas alınması, tasarımın ilgili yangın güvenliği mevzuatı ile uyumlu olması ve seçilen standardın tasarlanan sistemin özelliklerine uygun olması temel prensip olarak kabul edilecektir.",
+                    "Bu bölümde listelenen standartlar, yangın tesisatı tasarımında başvurulabilecek standartları göstermekte olup, her bir proje için yalnızca ilgili sistem ve tasarım kapsamına giren standartlar kullanılacaktır.",
+                ]:
+                    doc.add_paragraph(_metin)
                 for _i, _std in enumerate(_yangin_713_standartlari):
                     if _std_vals[_i]:
                         p = doc.add_paragraph()
