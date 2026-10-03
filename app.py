@@ -7951,11 +7951,19 @@ with _t_yangin:
                             ),
                         )
                     st.write(f"**Ek-1/B + Ek-1/C otomatik sonucu (en yüksek seçilen sınıf):** {_otomatik}")
+
                     if _secili_kayitlar:
-                        st.write("**Seçilen kullanım alanları:** " + ", ".join(x["etiket"] for x in _secili_kayitlar))
-                    st.write(f"**Seçim durumu:** {'Manuel müdahale' if _manuel else 'Otomatik'}")
-                    if _manuel and _etkin != _otomatik:
-                        st.warning(f"Manuel sınıf, Ek-1/B otomatik sonucundan farklıdır: {_otomatik} → {_etkin}")
+                        st.markdown("**Çoklu seçilen kullanım alanları ve yangın tehlike sınıfları:**")
+                        for _kayit in _secili_kayitlar:
+                            st.markdown(f"- {_kayit['etiket']} — **{_kayit['sinif']}**")
+
+                    st.markdown(
+                        f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; '
+                        f'padding:8px 12px; border-radius:4px; margin-top:8px;">'
+                        f'<b>Seçilen yangın tehlike sınıfı:</b> {_etkin}'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
                     st.session_state["yangin_722_etkin_sinif"] = _etkin
                     st.session_state["yangin_722_otomatik_sinif"] = _otomatik
                     st.session_state["yangin_722_secim_kaynagi"] = "Manuel" if _manuel else "BYKHY Ek-1/B"
@@ -10504,9 +10512,7 @@ if _rapor_olustur_sidebar:
             )
             _rs.bold = True
 
-            # Ek-1/C tablosu yalnızca en az bir Ek-1/C kullanım alanı
-            # seçilmişse rapora alınır. Kullanıcı Ek-1/C seçmediyse bu tablo
-            # raporda gereksiz yere yer almaz.
+            # Ek-1/C — Yüksek Tehlike Kullanım Alanları
             _secili_c = _ek1c_secili_kayitlar()
             if _secili_c:
                 doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
@@ -10542,29 +10548,41 @@ if _rapor_olustur_sidebar:
 
         if _r722:
             doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
+
+            doc.add_paragraph("Çoklu seçilen kullanım alanları ve yangın tehlike sınıfları:")
+            _t722_secimler = doc.add_table(rows=1, cols=2)
+            _t722_secimler.style = "Table Grid"
+            _t722_secimler.rows[0].cells[0].text = "SEÇİLEN KULLANIM ALANI"
+            _t722_secimler.rows[0].cells[1].text = "YANGIN TEHLİKE SINIFI"
+            for _c in _t722_secimler.rows[0].cells:
+                for _pr in _c.paragraphs:
+                    for _run in _pr.runs:
+                        _run.bold = True
+            for _kayit in _secili_kayitlar:
+                _cc = _t722_secimler.add_row().cells
+                _cc[0].text = str(_kayit.get("etiket", ""))
+                _cc[1].text = str(_kayit.get("sinif", ""))
+
             _t722 = doc.add_table(rows=0, cols=2)
             _t722.style = "Table Grid"
             _rws = [
                 ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
-                ("Seçilen yangın tehlike sınıfı (Ek-1/B + Ek-1/C en yüksek)", _otomatik),
-                ("Uygulanacak yangın tehlike sınıfı", _etkin),
+                ("Ek-1/B + Ek-1/C otomatik sonucu (en yüksek)", _otomatik),
+                ("Seçilen yangın tehlike sınıfı", _etkin),
             ]
             for _etiket, _deger in _rws:
                 _cc = _t722.add_row().cells
                 _cc[0].text = _etiket
                 _cc[1].text = str(_deger)
-                if _etiket.startswith("Seçilen yangın tehlike sınıfı"):
-                    for _rr in _cc[0].paragraphs[0].runs:
-                        _rr.bold = True
-                    for _rr in _cc[1].paragraphs[0].runs:
-                        _rr.bold = True
-            if _manuel and _etkin != _otomatik:
-                _pp = doc.add_paragraph()
-                _rr = _pp.add_run(
-                    f"Not: Manuel seçim Ek-1/B otomatik sonucundan farklıdır "
-                    f"({_otomatik} → {_etkin})."
-                )
-                _rr.bold = True
+                if _etiket == "Seçilen yangın tehlike sınıfı":
+                    for _cell in _cc:
+                        _tcPr = _cell._tc.get_or_add_tcPr()
+                        _shd = OxmlElement("w:shd")
+                        _shd.set(qn("w:fill"), "FFF2CC")
+                        _tcPr.append(_shd)
+                        for _pr in _cell.paragraphs:
+                            for _run in _pr.runs:
+                                _run.bold = True
             _src722 = doc.add_paragraph()
             _src722.add_run(
                 "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu, "
