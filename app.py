@@ -1408,7 +1408,7 @@ BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
     "rapor_bolum_631_2_7", "rapor_bolum_632",
     "rapor_bolum_633", "rapor_bolum_634", "rapor_bolum_635",
-    "rapor_bolum_7", "rapor_bolum_71", "rapor_bolum_711", "rapor_bolum_712",
+    "rapor_bolum_7", "rapor_bolum_71", "rapor_bolum_711", "rapor_bolum_712", "rapor_bolum_713",
     "rapor_bolum_72", "rapor_bolum_721", "rapor_bolum_722", "rapor_bolum_723", "rapor_bolum_724", "rapor_bolum_725",
     "rapor_bolum_73", "rapor_bolum_731", "rapor_bolum_732", "rapor_bolum_733",
     "rapor_bolum_74", "rapor_bolum_741", "rapor_bolum_742", "rapor_bolum_743", "rapor_bolum_744",
@@ -1483,6 +1483,7 @@ _BOLUM_NAV = [
     ("7.1 YANGIN TESİSATI GENEL ESASLARI", "bolum_71", "rapor_bolum_71"),
     ("7.1.1 Yangın Tesisatının Amacı ve Kapsamı", "bolum_711", "rapor_bolum_711"),
     ("7.1.2 Yangın Tesisatı Tasarım Esasları", "bolum_712", "rapor_bolum_712"),
+    ("7.1.3 Yangın Tesisatı Standartları", "bolum_713", "rapor_bolum_713"),
     ("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", "bolum_72", "rapor_bolum_72"),
     ("7.2.1 Bina Kullanım Amacı", "bolum_721", "rapor_bolum_721"),
     ("7.2.2 Yangın Tehlike Sınıfı", "bolum_722", "rapor_bolum_722"),
@@ -7465,10 +7466,63 @@ with _t_yangin:
         "Yangın tesisatı tasarımında kullanılan bütün kabullerin ve hesap parametrelerinin proje raporunda açıkça gösterilmesi", "Yangın tesisatı tasarımında kullanılan standart ve yönetmeliklerin proje başında tanımlanması",
         "Yangın tesisatı tasarım kriterlerinin depo, pompa, hidrant, sprinkler ve hidrolik hesap modüllerine aktarılabilecek şekilde kayıt altına alınması",
     ]
+    # -------------------------------------------------------------------
+    # 7.1.3 YANGIN TESİSATI STANDARTLARI
+    # Standartlar iki ayrı sekmede tutulur: TS / TS EN ve NFPA.
+    # Her standart bağımsız olarak seçilebilir ve seçilenler rapora aktarılır.
+    # -------------------------------------------------------------------
+    _yangin_713_ts_standartlari = [
+        "Binaların Yangından Korunması Hakkında Yönetmelik (BYKHY)",
+        "TS EN 12845 — Sabit yangın söndürme sistemleri — Otomatik sprinkler sistemleri — Tasarım, kurulum ve bakım",
+        "TS EN 671-1 — Sabit yangın söndürme sistemleri — Hortum sistemleri — Bölüm 1: Yarı sert hortumlu hortum makaraları",
+        "TS EN 671-2 — Sabit yangın söndürme sistemleri — Hortum sistemleri — Bölüm 2: Yassı hortumlu hortum sistemleri",
+        "TS EN 14384 — Yerüstü hidrantları",
+        "TS EN 14339 — Yeraltı hidrantları",
+        "TS EN 13565-1 — Sabit yangın söndürme sistemleri — Köpük sistemleri — Bölüm 1: Bileşenler",
+        "TS EN 13565-2 — Sabit yangın söndürme sistemleri — Köpük sistemleri — Bölüm 2: Tasarım, yapım ve bakım",
+        "TS EN 15004 serisi — Sabit yangın söndürme sistemleri — Gazlı söndürme sistemleri",
+        "TS EN 54 serisi — Yangın algılama ve yangın alarm sistemleri",
+        "TS EN 12259 serisi — Sabit yangın söndürme sistemleri — Sprinkler sistemleri bileşenleri",
+        "TS EN 17451 — Sabit yangın söndürme sistemleri — Sprinkler sistemlerinin kurulumu — Proje, montaj ve kabul hususları",
+        "TS EN 14816 — Sabit yangın söndürme sistemleri — Su püskürtme sistemleri — Tasarım, kurulum ve bakım",
+        "TS EN 14972 serisi — Sabit yangın söndürme sistemleri — Su sisi sistemleri",
+        "TS EN 13501 serisi — Yapı mamulleri ve yapı elemanlarının yangın sınıflandırması",
+    ]
+
+    _yangin_713_nfpa_standartlari = [
+        "NFPA 10 — Standard for Portable Fire Extinguishers (Taşınabilir Yangın Söndürücüler Standardı)",
+        "NFPA 11 — Standard for Low-, Medium-, and High-Expansion Foam (Düşük, Orta ve Yüksek Genleşmeli Köpük Standardı)",
+        "NFPA 12 — Standard on Carbon Dioxide Extinguishing Systems (Karbondioksitli Söndürme Sistemleri Standardı)",
+        "NFPA 12A — Standard on Halon 1301 Fire Extinguishing Systems (Halon 1301 Yangın Söndürme Sistemleri Standardı)",
+        "NFPA 13 — Standard for the Installation of Sprinkler Systems (Sprinkler Sistemlerinin Kurulumu Standardı)",
+        "NFPA 13D — Standard for the Installation of Sprinkler Systems in One- and Two-Family Dwellings and Manufactured Homes (Tek ve İki Ailelik Konutlar ve İmal Edilmiş Konutlarda Sprinkler Sistemlerinin Kurulumu Standardı)",
+        "NFPA 13R — Standard for the Installation of Sprinkler Systems in Low-Rise Residential Occupancies (Alçak Katlı Konut Yapılarında Sprinkler Sistemlerinin Kurulumu Standardı)",
+        "NFPA 14 — Standard for the Installation of Standpipe and Hose Systems (Yangın Düşey Boru ve Hortum Sistemlerinin Kurulumu Standardı)",
+        "NFPA 15 — Standard for Water Spray Fixed Systems for Fire Protection (Yangından Korunma İçin Sabit Su Püskürtme Sistemleri Standardı)",
+        "NFPA 16 — Standard for the Installation of Foam-Water Sprinkler and Foam-Water Spray Systems (Köpük-Su Sprinkler ve Köpük-Su Püskürtme Sistemlerinin Kurulumu Standardı)",
+        "NFPA 17 — Standard for Dry Chemical Extinguishing Systems (Kuru Kimyevi Tozlu Söndürme Sistemleri Standardı)",
+        "NFPA 17A — Standard for Wet Chemical Extinguishing Systems (Islak Kimyasal Söndürme Sistemleri Standardı)",
+        "NFPA 18 — Standard on Wetting Agents (Islatıcı Maddeler Standardı)",
+        "NFPA 18A — Standard on Water Additives for Fire Control and Vapor Mitigation (Yangın Kontrolü ve Buhar Azaltımı İçin Su Katkı Maddeleri Standardı)",
+        "NFPA 20 — Standard for the Installation of Stationary Pumps for Fire Protection (Yangından Korunma İçin Sabit Yangın Pompalarının Kurulumu Standardı)",
+        "NFPA 22 — Standard for Water Tanks for Private Fire Protection (Özel Yangın Korunması İçin Su Depoları Standardı)",
+        "NFPA 24 — Standard for the Installation of Private Fire Service Mains and Their Appurtenances (Özel Yangın Servis Boru Şebekeleri ve Bağlantı Elemanlarının Kurulumu Standardı)",
+        "NFPA 25 — Standard for the Inspection, Testing, and Maintenance of Water-Based Fire Protection Systems (Su Bazlı Yangından Korunma Sistemlerinin Muayene, Test ve Bakım Standardı)",
+        "NFPA 72 — National Fire Alarm and Signaling Code (Ulusal Yangın Alarm ve Sinyalizasyon Kodu)",
+        "NFPA 750 — Standard on Water Mist Fire Protection Systems (Su Sisi Yangından Korunma Sistemleri Standardı)",
+        "NFPA 770 — Standard on Hybrid (Water and Inert Gas) Fire-Extinguishing Systems (Hibrit Su ve İnert Gazlı Yangın Söndürme Sistemleri Standardı)",
+        "NFPA 2001 — Standard on Clean Agent Fire Extinguishing Systems (Temiz Gazlı Söndürme Sistemleri Standardı)",
+        "NFPA 2010 — Standard for Fixed Aerosol Fire-Extinguishing Systems (Sabit Aerosol Yangın Söndürme Sistemleri Standardı)",
+    ]
+
     _yangin_71_gruplari = [
         ("7.1.1 YANGIN TESİSATININ AMACI VE KAPSAMI", _yangin_711_maddeleri, "yangin_711_secimler", "rapor_bolum_711"),
         ("7.1.2 YANGIN TESİSATI TASARIM ESASLARI", _yangin_712_maddeleri, "yangin_712_secimler", "rapor_bolum_712"),
     ]
+
+    _yangin_713_standartlari = _yangin_713_ts_standartlari + _yangin_713_nfpa_standartlari
+    st.session_state.setdefault("yangin_713_secimler", [True] * len(_yangin_713_standartlari))
+    st.session_state.setdefault("rapor_bolum_713", True)
     for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
         st.session_state.setdefault(_key71, [True] * len(_maddeler71))
         st.session_state.setdefault(_rrk71, True)
@@ -7486,6 +7540,7 @@ with _t_yangin:
         ("bolum_71", "rapor_bolum_71", "7.1 YANGIN TESİSATI GENEL ESASLARI", [
             ("bolum_711", "rapor_bolum_711", "7.1.1 Yangın Tesisatının Amacı ve Kapsamı"),
             ("bolum_712", "rapor_bolum_712", "7.1.2 Yangın Tesisatı Tasarım Esasları"),
+            ("bolum_713", "rapor_bolum_713", "7.1.3 Yangın Tesisatı Standartları"),
         ]),
         ("bolum_72", "rapor_bolum_72", "7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", [
             ("bolum_721", "rapor_bolum_721", "7.2.1 Bina Kullanım Amacı"),
@@ -7532,7 +7587,35 @@ with _t_yangin:
         st.subheader(_baslik)
 
         if _baslik.startswith("7.1"):
-            st.caption("7.1 alt maddeleri ayrı ayrı seçilebilir. İşaretli maddeler rapora aktarılır.")
+            # 7.1.3 standart kütüphanesi: iki sekme, bağımsız seçim ve toplu seçim.
+            st.subheader("7.1.3 YANGIN TESİSATI STANDARTLARI")
+            _ui_713_rapor_key = "yangin_713_rapor_ui"
+            st.session_state.setdefault(_ui_713_rapor_key, bool(st.session_state.get("rapor_bolum_713", True)))
+            st.checkbox("7.1.3 bölümü rapora eklensin", key=_ui_713_rapor_key, on_change=_yangin_71_rapor_sync, args=("rapor_bolum_713", _ui_713_rapor_key))
+            _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
+            for _tab, _prefix, _liste in [
+                (_ts_tab, "ts", _yangin_713_ts_standartlari),
+                (_nfpa_tab, "nfpa", _yangin_713_nfpa_standartlari),
+            ]:
+                with _tab:
+                    _b1, _b2 = st.columns(2)
+                    if _b1.button("✓ TÜMÜNÜ SEÇ", key=f"yangin_713_{_prefix}_tum_sec", use_container_width=True):
+                        for _i in range(len(_liste)):
+                            st.session_state[f"yangin_713_{_prefix}_{_i}"] = True
+                        st.rerun()
+                    if _b2.button("✕ TÜMÜNÜ KALDIR", key=f"yangin_713_{_prefix}_tum_kaldir", use_container_width=True):
+                        for _i in range(len(_liste)):
+                            st.session_state[f"yangin_713_{_prefix}_{_i}"] = False
+                        st.rerun()
+                    for _i, _std in enumerate(_liste):
+                        st.session_state.setdefault(f"yangin_713_{_prefix}_{_i}", True)
+                        st.checkbox(_std, key=f"yangin_713_{_prefix}_{_i}")
+            _ts_vals = [bool(st.session_state.get(f"yangin_713_ts_{_i}", True)) for _i in range(len(_yangin_713_ts_standartlari))]
+            _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
+            st.session_state["yangin_713_secimler"] = _ts_vals + _nfpa_vals
+
+            # 7.1.1 ve 7.1.2 mevcut seçim arayüzleri
+            st.caption("7.1.1 ve 7.1.2 alt maddeleri ayrı ayrı seçilebilir. İşaretli maddeler rapora aktarılır.")
             for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
                 with st.expander(_baslik71, expanded=False):
                     c1, c2, c3 = st.columns([1, 1, 2])
@@ -10017,6 +10100,18 @@ if _rapor_olustur_sidebar:
                     p = doc.add_paragraph()
                     r = p.add_run("• " + madde)
                     r.bold = True
+
+        if st.session_state.get("rapor_bolum_713", True):
+            _ts_vals = [bool(st.session_state.get(f"yangin_713_ts_{_i}", True)) for _i in range(len(_yangin_713_ts_standartlari))]
+            _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
+            _std_vals = _ts_vals + _nfpa_vals
+            if any(_std_vals):
+                doc.add_heading("7.1.3 YANGIN TESİSATI STANDARTLARI", level=3)
+                for _i, _std in enumerate(_yangin_713_standartlari):
+                    if _std_vals[_i]:
+                        p = doc.add_paragraph()
+                        r = p.add_run("• " + _std)
+                        r.bold = True
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
