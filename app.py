@@ -1,4 +1,3 @@
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
 from datetime import datetime
 import io
 import json
@@ -7621,14 +7620,48 @@ with _t_yangin:
     # Eski tekli seçim anahtarını koruyarak yeni çoklu seçim yapısına geçiş.
     _eski_secim = st.session_state.get("yangin_721_ek1b_secim", "")
     st.session_state.setdefault("yangin_721_ek1b_secimler", [])
+    st.session_state.setdefault("yangin_721_ek1c_secimler", [])
     if not isinstance(st.session_state.get("yangin_721_ek1b_secimler"), list):
         st.session_state["yangin_721_ek1b_secimler"] = []
+    if not isinstance(st.session_state.get("yangin_721_ek1c_secimler"), list):
+        st.session_state["yangin_721_ek1c_secimler"] = []
     if not st.session_state["yangin_721_ek1b_secimler"] and _eski_secim:
         _eski_kayit = next((x for x in _ek1b_bina_kayitlari if x["etiket"] == _eski_secim), None)
         if _eski_kayit:
             st.session_state["yangin_721_ek1b_secimler"] = [_eski_kayit["etiket"]]
+
+    # BYKHY Ek-1/C — Yüksek Tehlike Kullanım Alanları.
+    # Kaynak kılavuzdaki Ek-1/C tablosu 4 tehlike sütunundan oluşur.
+    _ek1c_basliklari = [
+        "Yüksek Tehlike -1", "Yüksek Tehlike -2",
+        "Yüksek Tehlike -3", "Yüksek Tehlike -4"
+    ]
+    _ek1c_satirlari = [
+        {"hücreler": ["Döşemelik kumaş ve muşamba fabrikaları; kumaş ve muşamba yer döşemeleri imalatı", "Aydınlatma fişeği fabrikaları", "Selüloz nitrat fabrikaları", "Havai fişek fabrikaları"]},
+        {"hücreler": ["Boya, renklendirici (ahşap renklendirici ve koruyucuları-pnoteks) ve vernik imalatı", "Plastik köpük ve sünger imalathaneleri, lastik köpük eşyaları", "", ""]},
+        {"hücreler": ["Yapay kauçuk, reçine, lamba isi ve terebentin imalatı", "Katran damıtma", "", ""]},
+        {"hücreler": ["Talaş fabrikaları; odun yünü imalatı", "Otobüs ambarı, yüklü kamyonlar ve vagonlar; otobüsler, yüksüz kamyonlar ve demiryolu vagonları için depolar", "", ""]},
+    ]
+    _ek1c_bina_secenekleri = [
+        ("Döşemelik kumaş ve muşamba fabrikaları; kumaş ve muşamba yer döşemeleri imalatı", 0),
+        ("Aydınlatma fişeği fabrikaları", 1),
+        ("Selüloz nitrat fabrikaları", 2),
+        ("Havai fişek fabrikaları", 3),
+        ("Boya, renklendirici (ahşap renklendirici ve koruyucuları-pnoteks) ve vernik imalatı", 0),
+        ("Plastik köpük ve sünger imalathaneleri, lastik köpük eşyaları", 1),
+        ("Yapay kauçuk, reçine, lamba isi ve terebentin imalatı", 0),
+        ("Katran damıtma", 1),
+        ("Talaş fabrikaları; odun yünü imalatı", 0),
+        ("Otobüs ambarı, yüklü kamyonlar ve vagonlar; otobüsler, yüksüz kamyonlar ve demiryolu vagonları için depolar", 1),
+    ]
+    _ek1c_bina_kayitlari = [
+        {"etiket": _etiket, "sinif": _ek1c_basliklari[_kolon], "kolon": _kolon, "satir": _i}
+        for _i, (_etiket, _kolon) in enumerate(_ek1c_bina_secenekleri)
+    ]
+
     st.session_state.setdefault("yangin_721_manuel", False)
     st.session_state.setdefault("yangin_721_manuel_sinif", _ek1b_basliklari[0])
+    _tum_yangin_tehlike_siniflari = ["Düşük Tehlike"] + _ek1b_basliklari + _ek1c_basliklari
     st.session_state.setdefault("rapor_bolum_721", True)
     st.session_state.setdefault("rapor_bolum_722", True)
 
@@ -7636,14 +7669,33 @@ with _t_yangin:
         _secimler = st.session_state.get("yangin_721_ek1b_secimler", []) or []
         return [x for x in _ek1b_bina_kayitlari if x["etiket"] in _secimler]
 
+    def _ek1c_secili_kayitlar():
+        _secimler = st.session_state.get("yangin_721_ek1c_secimler", []) or []
+        return [x for x in _ek1c_bina_kayitlari if x["etiket"] in _secimler]
+
+    def _yangin_721_secili_kayitlar():
+        return _ek1b_secili_kayitlar() + _ek1c_secili_kayitlar()
+
     def _ek1b_secili_kayit():
         _kayitlar = _ek1b_secili_kayitlar()
         return _kayitlar[0] if _kayitlar else None
 
+    def _yangin_tehlike_sinif_sirasi(_sinif):
+        _s = str(_sinif or "")
+        if _s.startswith("Düşük"):
+            return 0
+        if _s.startswith("Orta Tehlike"):
+            try: return 1 + int(_s.split("-")[-1].strip())
+            except Exception: return 1
+        if _s.startswith("Yüksek Tehlike"):
+            try: return 5 + int(_s.split("-")[-1].strip())
+            except Exception: return 5
+        return -1
+
     def _ek1b_otomatik_sinif(_kayitlar):
         if not _kayitlar:
             return "Belirlenemedi"
-        return _ek1b_basliklari[max(int(x["kolon"]) for x in _kayitlar)]
+        return max((_x["sinif"] if "sinif" in _x else _ek1b_basliklari[int(_x["kolon"])] for _x in _kayitlar), key=_yangin_tehlike_sinif_sirasi)
 
     def _ek1b_html_tablo(_secili_kayitlar):
         _sec_hucreleri = {(x["satir"], int(x["kolon"])) for x in (_secili_kayitlar or [])}
@@ -7656,6 +7708,22 @@ with _t_yangin:
             _html += f'<tr><td style="border:1px solid #777;padding:7px;font-weight:700">{_satir["tur"]}</td>'
             for _j, _metin in enumerate(_satir["hücreler"]):
                 _bg = '#fff2cc' if ((_satir["tur"], _j) in _sec_hucreleri) else '#ffffff'
+                _html += f'<td style="border:1px solid #777;padding:7px;background:{_bg};vertical-align:top">{_metin or ""}</td>'
+            _html += '</tr>'
+        _html += '</table></div>'
+        return _html
+
+    def _ek1c_html_tablo(_secili_kayitlar):
+        _sec_hucreleri = {(int(x["satir"]), int(x["kolon"])) for x in (_secili_kayitlar or [])}
+        _html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+        _html += '<tr>'
+        for _h in _ek1c_basliklari:
+            _html += f'<th style="border:1px solid #777;padding:7px;background:#e6e6e6">{_h}</th>'
+        _html += '</tr>'
+        for _i, _satir in enumerate(_ek1c_satirlari):
+            _html += '<tr>'
+            for _j, _metin in enumerate(_satir["hücreler"]):
+                _bg = '#fff2cc' if ((_i, _j) in _sec_hucreleri) else '#ffffff'
                 _html += f'<td style="border:1px solid #777;padding:7px;background:{_bg};vertical-align:top">{_metin or ""}</td>'
             _html += '</tr>'
         _html += '</table></div>'
@@ -7816,7 +7884,13 @@ with _t_yangin:
                             "BYKHY Ek-1/B'ye göre bina / kullanım alanı (birden fazla seçilebilir)",
                             [x["etiket"] for x in _ek1b_bina_kayitlari],
                             key="yangin_721_ek1b_secimler",
-                            placeholder="Bina / kullanım alanlarını seçiniz",
+                            placeholder="Ek-1/B kullanım alanlarını seçiniz",
+                        )
+                        st.multiselect(
+                            "BYKHY Ek-1/C'ye göre yüksek tehlike kullanım alanı (birden fazla seçilebilir)",
+                            [x["etiket"] for x in _ek1c_bina_kayitlari],
+                            key="yangin_721_ek1c_secimler",
+                            placeholder="Ek-1/C kullanım alanlarını seçiniz",
                         )
                     with _c721b:
                         _ui_721_rapor_key = "yangin_721_rapor_ui"
@@ -7829,14 +7903,19 @@ with _t_yangin:
                             ),
                         )
 
-                    _secili_kayitlar = _ek1b_secili_kayitlar()
+                    _secili_kayitlar = _yangin_721_secili_kayitlar()
                     _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
                     # Ek-1/B tablosu ekranı gereksiz yere uzatmasın; üst bölümlerdeki
                     # açılır/kapanır yapı ile aynı mantıkta, varsayılan olarak kapalı gösterilir.
                     with st.expander("📋 BYKHY EK-1/B TABLOSUNU GÖSTER / GİZLE", expanded=False):
                         st.markdown("**BYKHY Ek-1/B — Orta Tehlike Kullanım Alanları**")
-                        st.markdown(_ek1b_html_tablo(_secili_kayitlar), unsafe_allow_html=True)
+                        st.markdown(_ek1b_html_tablo(_ek1b_secili_kayitlar()), unsafe_allow_html=True)
                         st.caption("Tablo, Bakanlık BYKHY Kılavuzu Ek-1/B'deki kullanım türleri ve Orta Tehlike sınıfları esas alınarak gösterilmektedir.")
+                    _secili_c = _ek1c_secili_kayitlar()
+                    with st.expander("📋 BYKHY EK-1/C TABLOSUNU GÖSTER / GİZLE", expanded=False):
+                        st.markdown("**BYKHY Ek-1/C — Yüksek Tehlike Kullanım Alanları**")
+                        st.markdown(_ek1c_html_tablo(_secili_c), unsafe_allow_html=True)
+                        st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu, Ek-1/C — Yüksek Tehlike Kullanım Alanları.")
                     if _secili_kayitlar:
                         st.success(f"Seçilen kullanım alanı sayısı: **{len(_secili_kayitlar)}** — en yüksek otomatik yangın tehlike sınıfı: **{_otomatik}**")
 
@@ -7847,13 +7926,13 @@ with _t_yangin:
                     if st.session_state.get("yangin_721_manuel", False):
                         st.selectbox(
                             "Manuel yangın tehlike sınıfı",
-                            _ek1b_basliklari,
+                            _tum_yangin_tehlike_siniflari,
                             key="yangin_721_manuel_sinif",
                         )
 
             if st.session_state.get(_k722, True):
                 with st.expander("7.2.2 YANGIN TEHLİKE SINIFI", expanded=True):
-                    _secili_kayitlar = _ek1b_secili_kayitlar()
+                    _secili_kayitlar = _yangin_721_secili_kayitlar()
                     _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
                     _manuel = bool(st.session_state.get("yangin_721_manuel", False))
                     _etkin = st.session_state.get("yangin_721_manuel_sinif", _otomatik) if _manuel else _otomatik
@@ -7870,7 +7949,7 @@ with _t_yangin:
                                 "rapor_bolum_722", bool(st.session_state.get("yangin_722_rapor_ui", True))
                             ),
                         )
-                    st.write(f"**Ek-1/B otomatik sonucu (en yüksek seçilen sınıf):** {_otomatik}")
+                    st.write(f"**Ek-1/B + Ek-1/C otomatik sonucu (en yüksek seçilen sınıf):** {_otomatik}")
                     if _secili_kayitlar:
                         st.write("**Seçilen kullanım alanları:** " + ", ".join(x["etiket"] for x in _secili_kayitlar))
                     st.write(f"**Seçim durumu:** {'Manuel müdahale' if _manuel else 'Otomatik'}")
@@ -10360,7 +10439,7 @@ if _rapor_olustur_sidebar:
 
         doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
 
-        _secili_kayitlar = _ek1b_secili_kayitlar()
+        _secili_kayitlar = _yangin_721_secili_kayitlar()
         _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
         _manuel = bool(st.session_state.get("yangin_721_manuel", False))
         _etkin = (
@@ -10376,7 +10455,7 @@ if _rapor_olustur_sidebar:
                     ", ".join(x["etiket"] for x in _secili_kayitlar)
                 )
                 doc.add_paragraph(
-                    f"Ek-1/B'ye göre otomatik yangın tehlike sınıfı (en yüksek seçilen sınıf): {_otomatik}"
+                    f"Ek-1/B + Ek-1/C'ye göre otomatik yangın tehlike sınıfı (en yüksek seçilen sınıf): {_otomatik}"
                 )
             else:
                 doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
@@ -10424,13 +10503,46 @@ if _rapor_olustur_sidebar:
             )
             _rs.bold = True
 
+            # Ek-1/C — Yüksek Tehlike Kullanım Alanları
+            _secili_c = _ek1c_secili_kayitlar()
+            doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
+            _tc = doc.add_table(rows=1, cols=4)
+            _tc.style = "Table Grid"
+            for _i, _h in enumerate(_ek1c_basliklari):
+                _tc.rows[0].cells[_i].text = _h
+                for _r in _tc.rows[0].cells[_i].paragraphs[0].runs:
+                    _r.bold = True
+            _sec_c_hucreleri = {(int(x["satir"]), int(x["kolon"])) for x in _secili_c}
+            for _i, _satir in enumerate(_ek1c_satirlari):
+                _cells = _tc.add_row().cells
+                for _j, _metin in enumerate(_satir["hücreler"]):
+                    _cells[_j].text = _metin
+                    if (_i, _j) in _sec_c_hucreleri:
+                        _tcPr = _cells[_j]._tc.get_or_add_tcPr()
+                        _shd = OxmlElement("w:shd")
+                        _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
+                        _tcPr.append(_shd)
+                        for _r in _cells[_j].paragraphs[0].runs:
+                            _r.bold = True
+            _pc = doc.add_paragraph()
+            _rc = _pc.add_run(
+                "Sarı hücreler, seçilen Ek-1/C yüksek tehlike kullanım alanlarının tablodaki "
+                "karşılıklarını göstermektedir."
+            )
+            _rc.italic = True
+            _src_c = doc.add_paragraph()
+            _src_c.add_run(
+                "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
+                "Ek-1/C: Yüksek Tehlike Kullanım Alanları, s. 245."
+            ).bold = True
+
         if _r722:
             doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
             _t722 = doc.add_table(rows=0, cols=2)
             _t722.style = "Table Grid"
             _rws = [
                 ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
-                ("Ek-1/B otomatik yangın tehlike sınıfı (en yüksek)", _otomatik),
+                ("Otomatik yangın tehlike sınıfı (Ek-1/B + Ek-1/C en yüksek)", _otomatik),
                 ("Uygulanacak yangın tehlike sınıfı", _etkin),
             ]
             for _etiket, _deger in _rws:
@@ -10447,7 +10559,7 @@ if _rapor_olustur_sidebar:
             _src722 = doc.add_paragraph()
             _src722.add_run(
                 "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu, "
-                "Ek-1/B; tehlike sınıfının farklı bölümlerdeki kullanım alanlarına göre "
+                "Ek-1/B ve Ek-1/C; tehlike sınıfının farklı bölümlerdeki kullanım alanlarına göre "
                 "en yüksek sınıfa göre belirlenmesi için Madde 19."
             ).italic = True
 
