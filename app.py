@@ -7587,11 +7587,48 @@ with _t_yangin:
         st.subheader(_baslik)
 
         if _baslik.startswith("7.1"):
-            # 7.1.3 standart kütüphanesi: 7.1.1 ve 7.1.2 gibi açılır/kapanır bölüm.
+            # 7.1 alt maddeleri tek bir hiyerarşi içinde açılır/kapanır.
+            # 7.1.1 ve 7.1.2 madde seçimleri; 7.1.3 ise standart kütüphanesi içerir.
+            st.caption("7.1 alt maddeleri ayrı ayrı açılıp kapatılabilir. İşaretli maddeler rapora aktarılır.")
+
+            for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
+                with st.expander(_baslik71, expanded=False):
+                    c1, c2, c3 = st.columns([1, 1, 2])
+                    with c1:
+                        if st.button("✓ TÜMÜNÜ SEÇ", key=f"{_key71}_tum_sec", use_container_width=True):
+                            _yangin_71_toplu_sec(_key71, _maddeler71, True)
+                            st.rerun()
+                    with c2:
+                        if st.button("✕ TÜMÜNÜ KALDIR", key=f"{_key71}_tum_kaldir", use_container_width=True):
+                            _yangin_71_toplu_sec(_key71, _maddeler71, False)
+                            st.rerun()
+                    with c3:
+                        _ui_rapor_key = f"yangin_71_rapor_ui_{_rrk71}"
+                        st.session_state.setdefault(_ui_rapor_key, bool(st.session_state.get(_rrk71, True)))
+                        st.checkbox(
+                            "Bu alt bölüm rapora eklensin",
+                            key=_ui_rapor_key,
+                            on_change=_yangin_71_rapor_sync,
+                            args=(_rrk71, _ui_rapor_key),
+                        )
+                    vals = list(st.session_state.get(_key71, [True] * len(_maddeler71)))
+                    for i, madde in enumerate(_maddeler71):
+                        item_key = f"{_key71}_item_{i}"
+                        st.session_state.setdefault(item_key, bool(vals[i]))
+                        st.checkbox(f"• {madde}", key=item_key)
+                        vals[i] = bool(st.session_state.get(item_key, vals[i]))
+                    st.session_state[_key71] = vals
+
+            # 7.1.3 standart kütüphanesi de aynı seviyede açılır/kapanır.
             with st.expander("7.1.3 YANGIN TESİSATI STANDARTLARI", expanded=False):
                 _ui_713_rapor_key = "yangin_713_rapor_ui"
                 st.session_state.setdefault(_ui_713_rapor_key, bool(st.session_state.get("rapor_bolum_713", True)))
-                st.checkbox("7.1.3 bölümü rapora eklensin", key=_ui_713_rapor_key, on_change=_yangin_71_rapor_sync, args=("rapor_bolum_713", _ui_713_rapor_key))
+                st.checkbox(
+                    "7.1.3 bölümü rapora eklensin",
+                    key=_ui_713_rapor_key,
+                    on_change=_yangin_71_rapor_sync,
+                    args=("rapor_bolum_713", _ui_713_rapor_key),
+                )
                 _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
                 for _tab, _prefix, _liste in [
                     (_ts_tab, "ts", _yangin_713_ts_standartlari),
@@ -7614,37 +7651,6 @@ with _t_yangin:
                 _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
                 st.session_state["yangin_713_secimler"] = _ts_vals + _nfpa_vals
 
-            # 7.1.1 ve 7.1.2 mevcut seçim arayüzleri
-            st.caption("7.1.1 ve 7.1.2 alt maddeleri ayrı ayrı seçilebilir. İşaretli maddeler rapora aktarılır.")
-            for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
-                with st.expander(_baslik71, expanded=False):
-                    c1, c2, c3 = st.columns([1, 1, 2])
-                    with c1:
-                        if st.button("✓ TÜMÜNÜ SEÇ", key=f"{_key71}_tum_sec", use_container_width=True):
-                            _yangin_71_toplu_sec(_key71, _maddeler71, True)
-                            st.rerun()
-                    with c2:
-                        if st.button("✕ TÜMÜNÜ KALDIR", key=f"{_key71}_tum_kaldir", use_container_width=True):
-                            _yangin_71_toplu_sec(_key71, _maddeler71, False)
-                            st.rerun()
-                    with c3:
-                        # Sidebar'daki rapor seçim kutuları ile aynı Streamlit key'i
-                        # tekrar kullanılmamalıdır. Aksi halde DuplicateElementKey oluşur.
-                        _ui_rapor_key = f"yangin_71_rapor_ui_{_rrk71}"
-                        st.session_state.setdefault(_ui_rapor_key, bool(st.session_state.get(_rrk71, True)))
-                        st.checkbox(
-                            "Bu alt bölüm rapora eklensin",
-                            key=_ui_rapor_key,
-                            on_change=_yangin_71_rapor_sync,
-                            args=(_rrk71, _ui_rapor_key),
-                        )
-                    vals = list(st.session_state.get(_key71, [True] * len(_maddeler71)))
-                    for i, madde in enumerate(_maddeler71):
-                        item_key = f"{_key71}_item_{i}"
-                        st.session_state.setdefault(item_key, bool(vals[i]))
-                        st.checkbox(f"• {madde}", key=item_key)
-                        vals[i] = bool(st.session_state.get(item_key, vals[i]))
-                    st.session_state[_key71] = vals
         elif _baslik.startswith("7.2"):
             st.info(
                 "Bina kullanım amacı, yangın tehlike sınıfı, yangın bölmeleri, tasarım kriterleri "
@@ -7686,12 +7692,15 @@ with _t_yangin:
                 "toplanacaktır."
             )
 
-        for _alt_key, _alt_rapor_key, _alt_baslik in _altlar:
-            st.session_state.setdefault(_alt_key, True)
-            st.session_state.setdefault(_alt_rapor_key, True)
-            if st.session_state.get(_alt_key, True):
-                st.markdown(f"**{_alt_baslik}**")
-                st.caption("Bu alt bölümün gerçek hesap/seçim ekranı sonraki geliştirme adımında eklenecektir.")
+        # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
+        # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
+        if not _baslik.startswith("7.1"):
+            for _alt_key, _alt_rapor_key, _alt_baslik in _altlar:
+                st.session_state.setdefault(_alt_key, True)
+                st.session_state.setdefault(_alt_rapor_key, True)
+                if st.session_state.get(_alt_key, True):
+                    st.markdown(f"**{_alt_baslik}**")
+                    st.caption("Bu alt bölümün gerçek hesap/seçim ekranı sonraki geliştirme adımında eklenecektir.")
 
 with _t_isitma:
     st.header("8. ISITMA TESİSATI")
