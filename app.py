@@ -7515,6 +7515,96 @@ with _t_yangin:
         "NFPA 2010 — Standard for Fixed Aerosol Fire-Extinguishing Systems (Sabit Aerosol Yangın Söndürme Sistemleri Standardı)",
     ]
 
+    # -------------------------------------------------------------------
+    # 7.2.1 / 7.2.2 - BYKHY EK-1/B BİNA KULLANIMI / TEHLİKE SINIFI
+    # Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu,
+    # Ek-1/B Orta Tehlike Kullanım Alanları.
+    # -------------------------------------------------------------------
+    _ek1b_basliklari = ["Orta Tehlike -1", "Orta Tehlike -2", "Orta Tehlike -3", "Orta Tehlike -4"]
+    _ek1b_satirlari = [
+        {
+            "tur": "Cam ve seramikler",
+            "hücreler": ["", "", "Cam fabrikaları", ""],
+        },
+        {
+            "tur": "Kimyasallar",
+            "hücreler": ["Çimento işleri", "Fotoğraf laboratuvarları, fotoğraf film fabrikaları", "Boyama işlemleri, sabun fabrikaları", "Mum ve balmumu fabrikaları, kibrit fabrikaları, boyahaneler"],
+        },
+        {
+            "tur": "Mühendislik",
+            "hücreler": ["Metal levha üretimi", "Otomotiv fabrikaları, tamirhaneleri", "Elektronik fabrikaları, buzdolabı ve çamaşır makinesi fabrikaları", ""],
+        },
+        {
+            "tur": "Yiyecek ve içecekler",
+            "hücreler": ["Mezbahalar, mandıralar", "Fırınlar, bisküvi, çikolata, şekerleme imalathaneleri, bira fabrikaları", "Hayvan yemi fabrikaları, meyve kurutma, suyu çıkarılmış sebze ve çorba fabrikaları, şeker imalathaneleri, tahıl değirmenleri", "Alkol damıtma"],
+        },
+        {
+            "tur": "Çeşitli",
+            "hücreler": ["Hastaneler, oteller, konutlar, lokantalar, kütüphaneler (kitap depoları hariç), okullar, bürolar", "Fizik laboratuvarları, çamaşırhaneler, otoparklar, müzeler", "Radyo ve televizyon yayınevleri, tren istasyonları, tesisat odaları", "Sinemalar, tiyatrolar, konser salonları, tütün fabrikaları"],
+        },
+        {
+            "tur": "Kâğıt",
+            "hücreler": ["Cilthaneler, mukavva fabrikaları, kâğıt fabrikaları, baskı işleri ve matbaalar", "", "", "Atık kâğıt işletmeleri"],
+        },
+        {
+            "tur": "Lastik ve plastik",
+            "hücreler": ["Kablo fabrikaları, plastik döküm ve plastik eşya (köpük plastik hariç), kauçuk eşya fabrikaları, sentetik lif (akrilik hariç) fabrikaları, vulkanize fabrikaları", "", "Halat fabrikaları", ""],
+        },
+        {
+            "tur": "Dükkânlar ve ofisler",
+            "hücreler": ["Bilgisayara veri işleme ofisleri (veri saklama odaları, hariç)", "Büyük mağazalar, alışveriş merkezleri", "", "Sergi salonları"],
+        },
+        {
+            "tur": "Tekstiller ve konfeksiyon",
+            "hücreler": ["Deri eşya fabrikaları", "Halı fabrikaları (kauçuk ve köpük plastik hariç), kumaş ve giysi fabrikaları, fiber levha fabrikaları, ayakkabı imalathaneleri, triko (örgü), ev tekstili (bez) fabrikaları, yatak, şilte fabrikaları (köpük plastik hariç), dikim ve dokuma atölyeleri, yün ve yünlü kumaş atölyeleri", "", "Pamuk iplikhanesi, keten ve kenevir hazırlama tesisleri"],
+        },
+        {
+            "tur": "Kereste ve tahta",
+            "hücreler": ["Ahşap işleri fabrikaları, mobilya fabrikaları (köpük plastikler hariç), mobilya mağazaları, koltuk, kanepe ve benzeri döşemelerinin (plastik köpük hariç) imalathaneleri", "Odun talaşı fabrikaları, yonga levha fabrikaları, kontrplak levhaları", "", ""],
+        },
+    ]
+    _ek1b_secenekleri = []
+    for _satir in _ek1b_satirlari:
+        for _j, _metin in enumerate(_satir["hücreler"]):
+            if str(_metin).strip():
+                _ek1b_secenekleri.append({
+                    "etiket": f'{_satir["tur"]} → {_metin}',
+                    "kullanim_turu": _satir["tur"],
+                    "metin": _metin,
+                    "sinif": _ek1b_basliklari[_j],
+                    "satir": _satir["tur"],
+                    "kolon": _j,
+                })
+    _ek1b_secim_etiketleri = [x["etiket"] for x in _ek1b_secenekleri]
+    _ek1b_ui_secenekleri = ["— Seçiniz —"] + _ek1b_secim_etiketleri
+    if st.session_state.get("yangin_721_ek1b_secim") not in _ek1b_ui_secenekleri:
+        st.session_state["yangin_721_ek1b_secim"] = "— Seçiniz —"
+    st.session_state.setdefault("yangin_721_manuel", False)
+    st.session_state.setdefault("yangin_721_manuel_sinif", _ek1b_basliklari[0])
+    st.session_state.setdefault("rapor_bolum_721", True)
+    st.session_state.setdefault("rapor_bolum_722", True)
+
+    def _ek1b_secili_kayit():
+        _sec = st.session_state.get("yangin_721_ek1b_secim", "")
+        return next((x for x in _ek1b_secenekleri if x["etiket"] == _sec), None)
+
+    def _ek1b_html_tablo(_secili):
+        _sec_satir = _secili.get("satir", "") if _secili else ""
+        _sec_kolon = int(_secili.get("kolon", -1)) if _secili else -1
+        _html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+        _html += '<tr><th style="border:1px solid #777;padding:7px;background:#e6e6e6">KULLANIM TÜRÜ</th>'
+        for _h in _ek1b_basliklari:
+            _html += f'<th style="border:1px solid #777;padding:7px;background:#e6e6e6">{_h}</th>'
+        _html += '</tr>'
+        for _satir in _ek1b_satirlari:
+            _html += f'<tr><td style="border:1px solid #777;padding:7px;font-weight:700">{_satir["tur"]}</td>'
+            for _j, _metin in enumerate(_satir["hücreler"]):
+                _bg = '#fff2cc' if (_satir["tur"] == _sec_satir and _j == _sec_kolon) else '#ffffff'
+                _html += f'<td style="border:1px solid #777;padding:7px;background:{_bg};vertical-align:top">{_metin or ""}</td>'
+            _html += '</tr>'
+        _html += '</table></div>'
+        return _html
+
     _yangin_71_gruplari = [
         ("7.1.1 YANGIN TESİSATININ AMACI VE KAPSAMI", _yangin_711_maddeleri, "yangin_711_secimler", "rapor_bolum_711"),
         ("7.1.2 YANGIN TESİSATI TASARIM ESASLARI", _yangin_712_maddeleri, "yangin_712_secimler", "rapor_bolum_712"),
@@ -7629,19 +7719,6 @@ with _t_yangin:
                     on_change=_yangin_71_rapor_sync,
                     args=("rapor_bolum_713", _ui_713_rapor_key),
                 )
-                st.markdown("""
-                **Yangın Tesisatı Tasarımında Kullanılacak Standartlar ve Tasarım Esasları**
-
-                Yangın tesisatı tasarım ve hesaplamalarında, öncelikli olarak **Türkiye'de yürürlükte bulunan ilgili mevzuat, yönetmelikler ve Türk Standartları (TS / TS EN)** esas alınacaktır. Tasarımın her aşamasında, uygulanabilir ve ilgili konuya yönelik bir Türk Standardının bulunması halinde öncelikle bu standartlara göre değerlendirme ve hesaplama yapılacaktır.
-
-                Türk Standartlarının ilgili sistem, ekipman veya tasarım konusu için **yeterli teknik düzenleme içermediği, kapsam dışında kaldığı veya ilgili hususu ayrıntılı olarak düzenlemediği durumlarda**, uluslararası kabul görmüş standartlardan yararlanılacaktır. Bu kapsamda özellikle **NFPA standartları** ve ilgili diğer uluslararası standartlar, sistemin niteliğine ve tasarım konusuna uygun olarak kullanılabilecektir.
-
-                Birden fazla standardın uygulanabilir olduğu durumlarda, standartlar arasında **kapsam, teknik gereklilikler ve uygulama esasları açısından uyum** gözetilecek; aynı tasarım parametresi için çelişen hükümler bulunması halinde, proje kapsamında esas alınan standart ve tasarım kriteri açıkça belirtilecektir.
-
-                Kullanılacak standartların seçiminde **güncel ve yürürlükteki baskılarının** esas alınması, tasarımın ilgili yangın güvenliği mevzuatı ile uyumlu olması ve seçilen standardın tasarlanan sistemin özelliklerine uygun olması temel prensip olarak kabul edilecektir.
-
-                **Bu bölümde listelenen standartlar, yangın tesisatı tasarımında başvurulabilecek standartları göstermekte olup, her bir proje için yalnızca ilgili sistem ve tasarım kapsamına giren standartlar kullanılacaktır.**
-                """)
                 _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
                 for _tab, _prefix, _liste in [
                     (_ts_tab, "ts", _yangin_713_ts_standartlari),
@@ -7665,10 +7742,65 @@ with _t_yangin:
                 st.session_state["yangin_713_secimler"] = _ts_vals + _nfpa_vals
 
         elif _baslik.startswith("7.2"):
-            st.info(
-                "Bina kullanım amacı, yangın tehlike sınıfı, yangın bölmeleri, tasarım kriterleri "
-                "ve tasarım debisinin belirlenmesi için giriş ve seçim ekranları burada oluşturulacaktır."
-            )
+            # 7.2.1 - Ek-1/B üzerinden bina/kullanım alanı seçimi ve otomatik tehlike sınıfı
+            _alt721 = next((x for x in _altlar if x[0] == "bolum_721"), None)
+            _alt722 = next((x for x in _altlar if x[0] == "bolum_722"), None)
+            _k721, _r721, _b721 = _alt721 if _alt721 else ("bolum_721", "rapor_bolum_721", "7.2.1 Bina Kullanım Amacı")
+            _k722, _r722, _b722 = _alt722 if _alt722 else ("bolum_722", "rapor_bolum_722", "7.2.2 Yangın Tehlike Sınıfı")
+            st.session_state.setdefault(_k721, True)
+            st.session_state.setdefault(_k722, True)
+            st.session_state.setdefault(_r721, True)
+            st.session_state.setdefault(_r722, True)
+
+            if st.session_state.get(_k721, True):
+                with st.expander("7.2.1 BİNA KULLANIM AMACI", expanded=True):
+                    _c721a, _c721b = st.columns([3, 1])
+                    with _c721a:
+                        st.selectbox(
+                            "BYKHY Ek-1/B'ye göre bina / kullanım alanı",
+                            _ek1b_ui_secenekleri,
+                            key="yangin_721_ek1b_secim",
+                        )
+                    with _c721b:
+                        st.checkbox("7.2.1 rapora eklensin", key="rapor_bolum_721")
+
+                    _secili = _ek1b_secili_kayit()
+                    _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+                    st.markdown("**BYKHY Ek-1/B — Orta Tehlike Kullanım Alanları**")
+                    st.markdown(_ek1b_html_tablo(_secili), unsafe_allow_html=True)
+                    if _secili:
+                        st.success(f"Otomatik yangın tehlike sınıfı: **{_otomatik}**")
+                    st.caption("Tablo, Bakanlık BYKHY Kılavuzu Ek-1/B'deki kullanım türleri ve Orta Tehlike sınıfları esas alınarak gösterilmektedir.")
+
+                    st.checkbox(
+                        "Yangın tehlike sınıfına manuel müdahale et",
+                        key="yangin_721_manuel",
+                    )
+                    if st.session_state.get("yangin_721_manuel", False):
+                        st.selectbox(
+                            "Manuel yangın tehlike sınıfı",
+                            _ek1b_basliklari,
+                            key="yangin_721_manuel_sinif",
+                        )
+
+            if st.session_state.get(_k722, True):
+                with st.expander("7.2.2 YANGIN TEHLİKE SINIFI", expanded=True):
+                    _secili = _ek1b_secili_kayit()
+                    _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+                    _manuel = bool(st.session_state.get("yangin_721_manuel", False))
+                    _etkin = st.session_state.get("yangin_721_manuel_sinif", _otomatik) if _manuel else _otomatik
+                    _c722a, _c722b = st.columns([3, 1])
+                    with _c722a:
+                        st.metric("Uygulanacak Yangın Tehlike Sınıfı", _etkin)
+                    with _c722b:
+                        st.checkbox("7.2.2 rapora eklensin", key="rapor_bolum_722")
+                    st.write(f"**Ek-1/B otomatik sonucu:** {_otomatik}")
+                    st.write(f"**Seçim durumu:** {'Manuel müdahale' if _manuel else 'Otomatik'}")
+                    if _manuel and _etkin != _otomatik:
+                        st.warning(f"Manuel sınıf, Ek-1/B otomatik sonucundan farklıdır: {_otomatik} → {_etkin}")
+                    st.session_state["yangin_722_etkin_sinif"] = _etkin
+                    st.session_state["yangin_722_otomatik_sinif"] = _otomatik
+                    st.session_state["yangin_722_secim_kaynagi"] = "Manuel" if _manuel else "BYKHY Ek-1/B"
         elif _baslik.startswith("7.3"):
             st.info(
                 "Yangın suyu ihtiyacı, gerekli depo hacmi, yangın suyu deposu seçimi ve depo hacmi "
@@ -7707,7 +7839,7 @@ with _t_yangin:
 
         # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
         # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
-        if not _baslik.startswith("7.1"):
+        if not _baslik.startswith("7.1") and not _baslik.startswith("7.2"):
             for _alt_key, _alt_rapor_key, _alt_baslik in _altlar:
                 st.session_state.setdefault(_alt_key, True)
                 st.session_state.setdefault(_alt_rapor_key, True)
@@ -10105,6 +10237,86 @@ if _rapor_olustur_sidebar:
                 _cells[1].text = str(_deger)
 
     # -----------------------------------------------------------------------
+    # 7.2 RAPORU - Ek-1/B tablosu + 7.2.2 otomatik/manuel sonuç
+    # -----------------------------------------------------------------------
+    _yangin_72_any = (
+        st.session_state.get("rapor_bolum_7", True)
+        and (
+            st.session_state.get("rapor_bolum_721", False)
+            or st.session_state.get("rapor_bolum_722", False)
+        )
+    )
+    _yangin_7_baslik_yazildi = False
+    if st.session_state.get("rapor_bolum_7", True) and (
+        st.session_state.get("rapor_bolum_71", True)
+        or _yangin_72_any
+    ):
+        # 7.1 bloğu aşağıda çalışıyorsa ana başlığı tekrar yazma; aksi halde 7.2 ile başlat.
+        if not (st.session_state.get("rapor_bolum_71", True)):
+            ana_baslik_ekle("7. YANGIN TESİSATI")
+            _yangin_7_baslik_yazildi = True
+        if st.session_state.get("rapor_bolum_721", True) or st.session_state.get("rapor_bolum_722", True):
+            if not _yangin_7_baslik_yazildi and not st.session_state.get("rapor_bolum_71", True):
+                ana_baslik_ekle("7. YANGIN TESİSATI")
+
+            _secili = _ek1b_secili_kayit()
+            _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+            _manuel = bool(st.session_state.get("yangin_721_manuel", False))
+            _etkin = st.session_state.get("yangin_721_manuel_sinif", _otomatik) if _manuel else _otomatik
+
+            if st.session_state.get("rapor_bolum_721", True):
+                doc.add_heading("7.2.1 BİNA KULLANIM AMACI", level=3)
+                if _secili:
+                    doc.add_paragraph(f"Bina / Kullanım Alanı: {_secili['metin']}")
+                    doc.add_paragraph(f"Ek-1/B Kullanım Türü: {_secili['kullanim_turu']}")
+                    doc.add_paragraph(f"Ek-1/B otomatik yangın tehlike sınıfı: {_otomatik}")
+                else:
+                    doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
+
+                _tbl = doc.add_table(rows=1, cols=5)
+                _tbl.style = "Table Grid"
+                _hdr = _tbl.rows[0].cells
+                _headers = ["KULLANIM TÜRÜ"] + _ek1b_basliklari
+                for _i, _h in enumerate(_headers):
+                    _hdr[_i].text = _h
+                    for _r in _hdr[_i].paragraphs[0].runs:
+                        _r.bold = True
+                for _satir in _ek1b_satirlari:
+                    _cells = _tbl.add_row().cells
+                    _cells[0].text = _satir["tur"]
+                    for _j, _metin in enumerate(_satir["hücreler"]):
+                        _cells[_j + 1].text = _metin
+                        if _secili and _satir["tur"] == _secili["satir"] and _j == _secili["kolon"]:
+                            _tcPr = _cells[_j + 1]._tc.get_or_add_tcPr()
+                            from docx.oxml import OxmlElement
+                            _shd = OxmlElement('w:shd')
+                            _shd.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'FFF2CC')
+                            _tcPr.append(_shd)
+                            for _r in _cells[_j + 1].paragraphs[0].runs:
+                                _r.bold = True
+                _pnot = doc.add_paragraph()
+                _rn = _pnot.add_run("Sarı hücre, seçilen bina/kullanım alanının Ek-1/B tablosundaki karşılığını göstermektedir.")
+                _rn.italic = True
+
+            if st.session_state.get("rapor_bolum_722", True):
+                doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
+                _t722 = doc.add_table(rows=0, cols=2)
+                _t722.style = "Table Grid"
+                _rws = [
+                    ("Ek-1/B otomatik yangın tehlike sınıfı", _otomatik),
+                    ("Uygulanacak yangın tehlike sınıfı", _etkin),
+                    ("Seçim durumu", "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B"),
+                ]
+                for _etiket, _deger in _rws:
+                    _cc = _t722.add_row().cells
+                    _cc[0].text = _etiket
+                    _cc[1].text = str(_deger)
+                if _manuel and _etkin != _otomatik:
+                    _pp = doc.add_paragraph()
+                    _rr = _pp.add_run(f"Not: Manuel seçim Ek-1/B otomatik sonucundan farklıdır ({_otomatik} → {_etkin}).")
+                    _rr.bold = True
+
+    # -----------------------------------------------------------------------
     # 7. YANGIN TESİSATI - 7.1 RAPORU
     # -----------------------------------------------------------------------
     if st.session_state.get("rapor_bolum_7", True) and st.session_state.get("rapor_bolum_71", True):
@@ -10129,18 +10341,6 @@ if _rapor_olustur_sidebar:
             _std_vals = _ts_vals + _nfpa_vals
             if any(_std_vals):
                 doc.add_heading("7.1.3 YANGIN TESİSATI STANDARTLARI", level=3)
-                p_std = doc.add_paragraph()
-                r_std = p_std.add_run("Yangın Tesisatı Tasarımında Kullanılacak Standartlar ve Tasarım Esasları")
-                r_std.bold = True
-                r_std.italic = True
-                for _metin in [
-                    "Yangın tesisatı tasarım ve hesaplamalarında, öncelikli olarak Türkiye'de yürürlükte bulunan ilgili mevzuat, yönetmelikler ve Türk Standartları (TS / TS EN) esas alınacaktır. Tasarımın her aşamasında, uygulanabilir ve ilgili konuya yönelik bir Türk Standardının bulunması halinde öncelikle bu standartlara göre değerlendirme ve hesaplama yapılacaktır.",
-                    "Türk Standartlarının ilgili sistem, ekipman veya tasarım konusu için yeterli teknik düzenleme içermediği, kapsam dışında kaldığı veya ilgili hususu ayrıntılı olarak düzenlemediği durumlarda, uluslararası kabul görmüş standartlardan yararlanılacaktır. Bu kapsamda özellikle NFPA standartları ve ilgili diğer uluslararası standartlar, sistemin niteliğine ve tasarım konusuna uygun olarak kullanılabilecektir.",
-                    "Birden fazla standardın uygulanabilir olduğu durumlarda, standartlar arasında kapsam, teknik gereklilikler ve uygulama esasları açısından uyum gözetilecek; aynı tasarım parametresi için çelişen hükümler bulunması halinde, proje kapsamında esas alınan standart ve tasarım kriteri açıkça belirtilecektir.",
-                    "Kullanılacak standartların seçiminde güncel ve yürürlükteki baskılarının esas alınması, tasarımın ilgili yangın güvenliği mevzuatı ile uyumlu olması ve seçilen standardın tasarlanan sistemin özelliklerine uygun olması temel prensip olarak kabul edilecektir.",
-                    "Bu bölümde listelenen standartlar, yangın tesisatı tasarımında başvurulabilecek standartları göstermekte olup, her bir proje için yalnızca ilgili sistem ve tasarım kapsamına giren standartlar kullanılacaktır.",
-                ]:
-                    doc.add_paragraph(_metin)
                 for _i, _std in enumerate(_yangin_713_standartlari):
                     if _std_vals[_i]:
                         p = doc.add_paragraph()
