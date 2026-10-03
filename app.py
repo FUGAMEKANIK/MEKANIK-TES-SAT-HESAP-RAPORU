@@ -10543,13 +10543,17 @@ if _rapor_olustur_sidebar:
             _t722.style = "Table Grid"
             _rws = [
                 ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
-                ("Otomatik yangın tehlike sınıfı (Ek-1/B + Ek-1/C en yüksek)", _otomatik),
+                ("Seçilen yangın tehlike sınıfı (Ek-1/B + Ek-1/C en yüksek)", _otomatik),
                 ("Uygulanacak yangın tehlike sınıfı", _etkin),
             ]
             for _etiket, _deger in _rws:
                 _cc = _t722.add_row().cells
                 _cc[0].text = _etiket
                 _cc[1].text = str(_deger)
+                if _etiket.startswith("Seçilen yangın tehlike sınıfı"):
+                    for _pr in _cc[0].paragraphs:
+                        for _run in _pr.runs:
+                            _run.bold = True
             if _manuel and _etkin != _otomatik:
                 _pp = doc.add_paragraph()
                 _rr = _pp.add_run(
