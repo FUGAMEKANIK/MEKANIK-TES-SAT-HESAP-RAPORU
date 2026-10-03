@@ -7762,7 +7762,15 @@ with _t_yangin:
                             key="yangin_721_ek1b_secim",
                         )
                     with _c721b:
-                        st.checkbox("7.2.1 rapora eklensin", key="rapor_bolum_721")
+                        _ui_721_rapor_key = "yangin_721_rapor_ui"
+                        st.session_state.setdefault(_ui_721_rapor_key, bool(st.session_state.get("rapor_bolum_721", True)))
+                        st.checkbox(
+                            "7.2.1 rapora eklensin",
+                            key=_ui_721_rapor_key,
+                            on_change=lambda: st.session_state.__setitem__(
+                                "rapor_bolum_721", bool(st.session_state.get("yangin_721_rapor_ui", True))
+                            ),
+                        )
 
                     _secili = _ek1b_secili_kayit()
                     _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
@@ -7793,7 +7801,15 @@ with _t_yangin:
                     with _c722a:
                         st.metric("Uygulanacak Yangın Tehlike Sınıfı", _etkin)
                     with _c722b:
-                        st.checkbox("7.2.2 rapora eklensin", key="rapor_bolum_722")
+                        _ui_722_rapor_key = "yangin_722_rapor_ui"
+                        st.session_state.setdefault(_ui_722_rapor_key, bool(st.session_state.get("rapor_bolum_722", True)))
+                        st.checkbox(
+                            "7.2.2 rapora eklensin",
+                            key=_ui_722_rapor_key,
+                            on_change=lambda: st.session_state.__setitem__(
+                                "rapor_bolum_722", bool(st.session_state.get("yangin_722_rapor_ui", True))
+                            ),
+                        )
                     st.write(f"**Ek-1/B otomatik sonucu:** {_otomatik}")
                     st.write(f"**Seçim durumu:** {'Manuel müdahale' if _manuel else 'Otomatik'}")
                     if _manuel and _etkin != _otomatik:
