@@ -7490,6 +7490,9 @@ with _t_yangin:
         for i, v in enumerate(vals):
             st.session_state[f"{_key71}_item_{i}"] = v
 
+    def _yangin_71_rapor_sync(_rrk, _ui_key):
+        st.session_state[_rrk] = bool(st.session_state.get(_ui_key, True))
+
     _yangin_bolumleri = [
         ("bolum_71", "rapor_bolum_71", "7.1 YANGIN TESİSATI GENEL ESASLARI", [
             ("bolum_711", "rapor_bolum_711", "7.1.1 Yangın Tesisatının Amacı ve Kapsamı"),
@@ -7554,7 +7557,16 @@ with _t_yangin:
                             _yangin_71_toplu_sec(_key71, _maddeler71, False)
                             st.rerun()
                     with c3:
-                        st.checkbox("Bu alt bölüm rapora eklensin", key=_rrk71)
+                        # Sidebar'daki rapor seçim kutuları ile aynı Streamlit key'i
+                        # tekrar kullanılmamalıdır. Aksi halde DuplicateElementKey oluşur.
+                        _ui_rapor_key = f"yangin_71_rapor_ui_{_rrk71}"
+                        st.session_state.setdefault(_ui_rapor_key, bool(st.session_state.get(_rrk71, True)))
+                        st.checkbox(
+                            "Bu alt bölüm rapora eklensin",
+                            key=_ui_rapor_key,
+                            on_change=_yangin_71_rapor_sync,
+                            args=(_rrk71, _ui_rapor_key),
+                        )
                     vals = list(st.session_state.get(_key71, [True] * len(_maddeler71)))
                     for i, madde in enumerate(_maddeler71):
                         item_key = f"{_key71}_item_{i}"
