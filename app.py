@@ -1294,21 +1294,17 @@ def _tum_bolumleri_kaldir():
         st.session_state[_anahtar] = False
 
 # ---------------------------------------------------------------------------
-# SOL MENÜ / HİYERARŞİK BÖLÜM NAVİGASYONU
+# SOL MENÜ / BÖLÜM NAVİGASYONU
 # ---------------------------------------------------------------------------
-# Ana tesisat grupları kendi alt bölümlerini içerir. Böylece sol menüde
-# örneğin 6. SIHHİ TESİSAT açıldığında yalnızca 6.x bölümleri,
-# 7. YANGIN TESİSATI açıldığında ise 7.x bölümleri görülür.
-_BOLUM_NAV_GENEL = [
+# Bölümler önceki düz liste yapısında tutulur. Her bölüm kendi rapor
+# dahil/hariç seçimini korur ve bağlantı ile ilgili sayfaya gider.
+_BOLUM_NAV = [
     ("1. Kapak Bilgileri", "bolum_1", "rapor_bolum_1"),
     ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
     ("3. Mekanik Tesisat Proje Kapsamı", "bolum_3", "rapor_bolum_3"),
     ("4. Tesiste Kullanılacak Isı İletim Akışkanları", "bolum_4", "rapor_bolum_4"),
     ("5. İklim, Konfor Şartları ve Tasarım Kriterleri", "bolum_5", "rapor_bolum_5"),
     ("5.1 Dış Hava Tasarım Kriterleri", "bolum_51", "rapor_bolum_51"),
-]
-
-_BOLUM_NAV_SIHHI = [
     ("6. Sıhhi Tesisat", "bolum_6", "rapor_bolum_6"),
     ("6.1 Sıhhi Tesisat Ön Bilgiler", "bolum_61", "rapor_bolum_61"),
     ("6.1.1 Temiz Su Hesabı", "bolum_611", "rapor_bolum_611"),
@@ -1330,9 +1326,7 @@ _BOLUM_NAV_SIHHI = [
     ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
     ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
-]
-
-_BOLUM_NAV_YANGIN = [
+    ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
     ("7. YANGIN TESİSATI", "bolum_7", "rapor_bolum_7"),
     ("7.1 YANGIN TESİSATI GENEL ESASLARI", "bolum_71", "rapor_bolum_71"),
     ("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", "bolum_72", "rapor_bolum_72"),
@@ -1363,32 +1357,14 @@ _BOLUM_NAV_YANGIN = [
     ("7.7 YANGIN TESİSATI HİDROLİK HESAPLARI", "bolum_77", "rapor_bolum_77"),
     ("7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ", "bolum_78", "rapor_bolum_78"),
     ("7.9 YANGIN TESİSATI SONUÇ TABLOSU", "bolum_79", "rapor_bolum_79"),
-]
-
-_BOLUM_NAV_DIGER = [
     ("8. ISITMA TESİSATI", "bolum_8", "rapor_bolum_8"),
     ("9. SOĞUTMA TESİSATI", "bolum_9", "rapor_bolum_9"),
     ("10. HAVALANDIRMA TESİSATI", "bolum_10", "rapor_bolum_10"),
 ]
 
-def _nav_satiri(_baslik, _anchor, _key, _seviye=0):
-    if _key not in st.session_state:
-        st.session_state[_key] = True
-    if _anchor.startswith("bolum_63"):
-        _baslik = _63_sidebar_baslik(_key, _baslik)
-    _pad = "" if _seviye == 0 else ("&nbsp;" * (4 * _seviye))
-    _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
-    with _c_nav:
-        st.markdown(
-            f'<a class="proje-nav-tab" style="padding-left:{8 + _seviye*16}px;" href="#{_anchor}">{_pad}▸ {_baslik}</a>',
-            unsafe_allow_html=True,
-        )
-    with _c_chk:
-        st.checkbox("", key=_key, label_visibility="collapsed")
-
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
-    st.caption("Ana tesisat grubunu açın; alt bölümler kendi grubunun altında gösterilir.")
+    st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
 
     c1, c2 = st.columns(2)
     with c1:
@@ -1397,27 +1373,19 @@ with st.sidebar:
         st.button("☐ TÜMÜNÜ KALDIR", key="rapor_tumunu_kaldir_v92", on_click=_tum_bolumleri_kaldir, use_container_width=True)
 
     st.markdown("### Bölümler")
-
-    with st.expander("📘 1–5 GENEL BİLGİLER", expanded=True):
-        for _item in _BOLUM_NAV_GENEL:
-            _nav_satiri(*_item, _seviye=0)
-
-    with st.expander("🚰 6. SIHHİ TESİSAT", expanded=False):
-        for _item in _BOLUM_NAV_SIHHI:
-            _nav_satiri(*_item, _seviye=0)
-
-    with st.expander("🔥 7. YANGIN TESİSATI", expanded=True):
-        for _item in _BOLUM_NAV_YANGIN:
-            _nav_satiri(*_item, _seviye=0)
-
-    with st.expander("♨ 8. ISITMA TESİSATI", expanded=False):
-        _nav_satiri(*_BOLUM_NAV_DIGER[0], _seviye=0)
-
-    with st.expander("❄ 9. SOĞUTMA TESİSATI", expanded=False):
-        _nav_satiri(*_BOLUM_NAV_DIGER[1], _seviye=0)
-
-    with st.expander("💨 10. HAVALANDIRMA TESİSATI", expanded=False):
-        _nav_satiri(*_BOLUM_NAV_DIGER[2], _seviye=0)
+    for _baslik, _anchor, _key in _BOLUM_NAV:
+        if _key not in st.session_state:
+            st.session_state[_key] = True
+        if _anchor.startswith("bolum_63"):
+            _baslik = _63_sidebar_baslik(_key, _baslik)
+        _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
+        with _c_nav:
+            st.markdown(
+                f'<a class="proje-nav-tab" href="#{_anchor}">▸ {_baslik}</a>',
+                unsafe_allow_html=True,
+            )
+        with _c_chk:
+            st.checkbox("", key=_key, label_visibility="collapsed")
 
 # Rapor Oluştur Butonu
 _proje_otomatik_kaydet()
