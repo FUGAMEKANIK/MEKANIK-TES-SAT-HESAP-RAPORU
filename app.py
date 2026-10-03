@@ -7774,11 +7774,14 @@ with _t_yangin:
 
                     _secili = _ek1b_secili_kayit()
                     _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
-                    st.markdown("**BYKHY Ek-1/B — Orta Tehlike Kullanım Alanları**")
-                    st.markdown(_ek1b_html_tablo(_secili), unsafe_allow_html=True)
+                    # Ek-1/B tablosu ekranı gereksiz yere uzatmasın; üst bölümlerdeki
+                    # açılır/kapanır yapı ile aynı mantıkta, varsayılan olarak kapalı gösterilir.
+                    with st.expander("📋 BYKHY EK-1/B TABLOSUNU GÖSTER / GİZLE", expanded=False):
+                        st.markdown("**BYKHY Ek-1/B — Orta Tehlike Kullanım Alanları**")
+                        st.markdown(_ek1b_html_tablo(_secili), unsafe_allow_html=True)
+                        st.caption("Tablo, Bakanlık BYKHY Kılavuzu Ek-1/B'deki kullanım türleri ve Orta Tehlike sınıfları esas alınarak gösterilmektedir.")
                     if _secili:
                         st.success(f"Otomatik yangın tehlike sınıfı: **{_otomatik}**")
-                    st.caption("Tablo, Bakanlık BYKHY Kılavuzu Ek-1/B'deki kullanım türleri ve Orta Tehlike sınıfları esas alınarak gösterilmektedir.")
 
                     st.checkbox(
                         "Yangın tehlike sınıfına manuel müdahale et",
@@ -10253,86 +10256,6 @@ if _rapor_olustur_sidebar:
                 _cells[1].text = str(_deger)
 
     # -----------------------------------------------------------------------
-    # 7.2 RAPORU - Ek-1/B tablosu + 7.2.2 otomatik/manuel sonuç
-    # -----------------------------------------------------------------------
-    _yangin_72_any = (
-        st.session_state.get("rapor_bolum_7", True)
-        and (
-            st.session_state.get("rapor_bolum_721", False)
-            or st.session_state.get("rapor_bolum_722", False)
-        )
-    )
-    _yangin_7_baslik_yazildi = False
-    if st.session_state.get("rapor_bolum_7", True) and (
-        st.session_state.get("rapor_bolum_71", True)
-        or _yangin_72_any
-    ):
-        # 7.1 bloğu aşağıda çalışıyorsa ana başlığı tekrar yazma; aksi halde 7.2 ile başlat.
-        if not (st.session_state.get("rapor_bolum_71", True)):
-            ana_baslik_ekle("7. YANGIN TESİSATI")
-            _yangin_7_baslik_yazildi = True
-        if st.session_state.get("rapor_bolum_721", True) or st.session_state.get("rapor_bolum_722", True):
-            if not _yangin_7_baslik_yazildi and not st.session_state.get("rapor_bolum_71", True):
-                ana_baslik_ekle("7. YANGIN TESİSATI")
-
-            _secili = _ek1b_secili_kayit()
-            _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
-            _manuel = bool(st.session_state.get("yangin_721_manuel", False))
-            _etkin = st.session_state.get("yangin_721_manuel_sinif", _otomatik) if _manuel else _otomatik
-
-            if st.session_state.get("rapor_bolum_721", True):
-                doc.add_heading("7.2.1 BİNA KULLANIM AMACI", level=3)
-                if _secili:
-                    doc.add_paragraph(f"Bina / Kullanım Alanı: {_secili['metin']}")
-                    doc.add_paragraph(f"Ek-1/B Kullanım Türü: {_secili['kullanim_turu']}")
-                    doc.add_paragraph(f"Ek-1/B otomatik yangın tehlike sınıfı: {_otomatik}")
-                else:
-                    doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
-
-                _tbl = doc.add_table(rows=1, cols=5)
-                _tbl.style = "Table Grid"
-                _hdr = _tbl.rows[0].cells
-                _headers = ["KULLANIM TÜRÜ"] + _ek1b_basliklari
-                for _i, _h in enumerate(_headers):
-                    _hdr[_i].text = _h
-                    for _r in _hdr[_i].paragraphs[0].runs:
-                        _r.bold = True
-                for _satir in _ek1b_satirlari:
-                    _cells = _tbl.add_row().cells
-                    _cells[0].text = _satir["tur"]
-                    for _j, _metin in enumerate(_satir["hücreler"]):
-                        _cells[_j + 1].text = _metin
-                        if _secili and _satir["tur"] == _secili["satir"] and _j == _secili["kolon"]:
-                            _tcPr = _cells[_j + 1]._tc.get_or_add_tcPr()
-                            from docx.oxml import OxmlElement
-                            _shd = OxmlElement('w:shd')
-                            _shd.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'FFF2CC')
-                            _tcPr.append(_shd)
-                            for _r in _cells[_j + 1].paragraphs[0].runs:
-                                _r.bold = True
-                _pnot = doc.add_paragraph()
-                _rn = _pnot.add_run("Sarı hücre, seçilen bina/kullanım alanının Ek-1/B tablosundaki karşılığını göstermektedir.")
-                _rn.italic = True
-
-            if st.session_state.get("rapor_bolum_722", True):
-                doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
-                _t722 = doc.add_table(rows=0, cols=2)
-                _t722.style = "Table Grid"
-                _rws = [
-                    ("Ek-1/B otomatik yangın tehlike sınıfı", _otomatik),
-                    ("Uygulanacak yangın tehlike sınıfı", _etkin),
-                    ("Seçim durumu", "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B"),
-                ]
-                for _etiket, _deger in _rws:
-                    _cc = _t722.add_row().cells
-                    _cc[0].text = _etiket
-                    _cc[1].text = str(_deger)
-                if _manuel and _etkin != _otomatik:
-                    _pp = doc.add_paragraph()
-                    _rr = _pp.add_run(f"Not: Manuel seçim Ek-1/B otomatik sonucundan farklıdır ({_otomatik} → {_etkin}).")
-                    _rr.bold = True
-
-    # -----------------------------------------------------------------------
     # 7. YANGIN TESİSATI - 7.1 RAPORU
     # -----------------------------------------------------------------------
     if st.session_state.get("rapor_bolum_7", True) and st.session_state.get("rapor_bolum_71", True):
@@ -10362,6 +10285,102 @@ if _rapor_olustur_sidebar:
                         p = doc.add_paragraph()
                         r = p.add_run("• " + _std)
                         r.bold = True
+
+    # -----------------------------------------------------------------------
+    # 7.2 RAPORU - Ek-1/B tablosu + 7.2.2 otomatik/manuel sonuç
+    # 7.2, 7.1 raporundan sonra yazılır; böylece Word raporunda bölüm sırası
+    # program ekranındaki 7.1 -> 7.2 akışıyla birebir aynı olur.
+    # -----------------------------------------------------------------------
+    _r72_parent = bool(st.session_state.get("rapor_bolum_72", True))
+    _r721 = bool(st.session_state.get("rapor_bolum_721", True))
+    _r722 = bool(st.session_state.get("rapor_bolum_722", True))
+
+    if st.session_state.get("rapor_bolum_7", True) and _r72_parent and (_r721 or _r722):
+        # 7.1 kapalıysa 7. ana başlığı burada oluştur. 7.1 açıksa ana başlık
+        # zaten yukarıdaki 7.1 rapor bloğunda oluşturulmuştur.
+        if not st.session_state.get("rapor_bolum_71", True):
+            ana_baslik_ekle("7. YANGIN TESİSATI")
+
+        doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
+
+        _secili = _ek1b_secili_kayit()
+        _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+        _manuel = bool(st.session_state.get("yangin_721_manuel", False))
+        _etkin = (
+            st.session_state.get("yangin_721_manuel_sinif", _otomatik)
+            if _manuel else _otomatik
+        )
+
+        if _r721:
+            doc.add_heading("7.2.1 BİNA KULLANIM AMACI", level=3)
+            if _secili:
+                doc.add_paragraph(f"Bina / Kullanım Alanı: {_secili['metin']}")
+                doc.add_paragraph(f"Ek-1/B Kullanım Türü: {_secili['kullanim_turu']}")
+                doc.add_paragraph(f"Ek-1/B otomatik yangın tehlike sınıfı: {_otomatik}")
+            else:
+                doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
+
+            # Ek-1/B tablosu: program ekranındaki tabloyla aynı veri kaynağı.
+            _tbl = doc.add_table(rows=1, cols=5)
+            _tbl.style = "Table Grid"
+            _hdr = _tbl.rows[0].cells
+            _headers = ["KULLANIM TÜRÜ"] + _ek1b_basliklari
+            for _i, _h in enumerate(_headers):
+                _hdr[_i].text = _h
+                for _r in _hdr[_i].paragraphs[0].runs:
+                    _r.bold = True
+
+            for _satir in _ek1b_satirlari:
+                _cells = _tbl.add_row().cells
+                _cells[0].text = _satir["tur"]
+                for _j, _metin in enumerate(_satir["hücreler"]):
+                    _cells[_j + 1].text = _metin
+                    if (
+                        _secili
+                        and _satir["tur"] == _secili["satir"]
+                        and _j == _secili["kolon"]
+                    ):
+                        _tcPr = _cells[_j + 1]._tc.get_or_add_tcPr()
+                        from docx.oxml import OxmlElement
+                        _shd = OxmlElement("w:shd")
+                        _shd.set(
+                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill",
+                            "FFF2CC",
+                        )
+                        _tcPr.append(_shd)
+                        for _r in _cells[_j + 1].paragraphs[0].runs:
+                            _r.bold = True
+
+            _pnot = doc.add_paragraph()
+            _rn = _pnot.add_run(
+                "Sarı hücre, seçilen bina/kullanım alanının Ek-1/B tablosundaki "
+                "karşılığını göstermektedir."
+            )
+            _rn.italic = True
+
+        if _r722:
+            doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
+            _t722 = doc.add_table(rows=0, cols=2)
+            _t722.style = "Table Grid"
+            _rws = [
+                ("Ek-1/B otomatik yangın tehlike sınıfı", _otomatik),
+                ("Uygulanacak yangın tehlike sınıfı", _etkin),
+                (
+                    "Seçim durumu",
+                    "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B",
+                ),
+            ]
+            for _etiket, _deger in _rws:
+                _cc = _t722.add_row().cells
+                _cc[0].text = _etiket
+                _cc[1].text = str(_deger)
+            if _manuel and _etkin != _otomatik:
+                _pp = doc.add_paragraph()
+                _rr = _pp.add_run(
+                    f"Not: Manuel seçim Ek-1/B otomatik sonucundan farklıdır "
+                    f"({_otomatik} → {_etkin})."
+                )
+                _rr.bold = True
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
