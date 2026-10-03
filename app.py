@@ -7427,10 +7427,19 @@ with _t_yangin:
     )
 
     _yangin_711_maddeleri = [
-        "Yangın tesisatının temel amacı", "Can ve mal güvenliğinin sağlanması", "Yangının kontrol altına alınması ve söndürülmesi",
-        "Yangın tesisatının koruma kapsamı", "Yangın suyu ihtiyacının karşılanması", "Yangın dolabı sisteminin kapsama alınması",
-        "Hidrant sisteminin kapsama alınması", "Sprinkler sisteminin kapsama alınması", "Yangın pompa grubunun kapsama alınması",
-        "Yangın suyu depolama sisteminin kapsama alınması", "Yangın tesisatının bina diğer sistemleriyle ilişkisi", "Yangın tesisatının işletme ve bakım esasları",
+        "Can ve mal güvenliğinin sağlanması",
+        "Yangının kontrol altına alınması ve söndürülmesi",
+        "Yangın tesisatının koruma kapsamı",
+        "Yangın suyu ihtiyacının karşılanması gereksinimleri",
+        "Yangın dolabı sistemi tasarımı ve hesaplamaları",
+        "Hidrant sistemi tasarımı ve hesaplamaları",
+        "Sprinkler sistemi tasarımı ve hesaplamaları",
+        "Gazlı söndürme sistemi tasarımı ve hesaplamaları",
+        "Köpüklü söndürme sistemleri tasarımı ve hesaplamaları",
+        "Yangın pompa grubunun tasarımı ve hesaplamaları",
+        "Yangın suyu depolama sisteminin tasarım ve hesaplamaları",
+        "Yangın tesisatının bina otomasyonu ve diğer tesisat tasarımlarıyla ilişkisi",
+        "Yangın tesisatının işletme ve bakım esasları",
     ]
     _yangin_712_maddeleri = [
         "Yangın tesisatı tasarımında yapının kullanım amacı, yapı özellikleri, kullanıcı profili ve kullanım yoğunluğunun dikkate alınması",
