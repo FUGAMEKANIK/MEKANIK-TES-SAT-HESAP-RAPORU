@@ -7521,76 +7521,128 @@ with _t_yangin:
     # Ek-1/B Orta Tehlike Kullanım Alanları.
     # -------------------------------------------------------------------
     _ek1b_basliklari = ["Orta Tehlike -1", "Orta Tehlike -2", "Orta Tehlike -3", "Orta Tehlike -4"]
+    # BYKHY Kılavuzu Ek-1/B — Orta Tehlike Kullanım Alanları.
+    # Hücre metinleri Bakanlık kılavuzundaki tablo esas alınarak korunmuştur.
     _ek1b_satirlari = [
-        {
-            "tur": "Cam ve seramikler",
-            "hücreler": ["", "", "Cam fabrikaları", ""],
-        },
-        {
-            "tur": "Kimyasallar",
-            "hücreler": ["Çimento işleri", "Fotoğraf laboratuvarları, fotoğraf film fabrikaları", "Boyama işlemleri, sabun fabrikaları", "Mum ve balmumu fabrikaları, kibrit fabrikaları, boyahaneler"],
-        },
-        {
-            "tur": "Mühendislik",
-            "hücreler": ["Metal levha üretimi", "Otomotiv fabrikaları, tamirhaneleri", "Elektronik fabrikaları, buzdolabı ve çamaşır makinesi fabrikaları", ""],
-        },
-        {
-            "tur": "Yiyecek ve içecekler",
-            "hücreler": ["Mezbahalar, mandıralar", "Fırınlar, bisküvi, çikolata, şekerleme imalathaneleri, bira fabrikaları", "Hayvan yemi fabrikaları, meyve kurutma, suyu çıkarılmış sebze ve çorba fabrikaları, şeker imalathaneleri, tahıl değirmenleri", "Alkol damıtma"],
-        },
-        {
-            "tur": "Çeşitli",
-            "hücreler": ["Hastaneler, oteller, konutlar, lokantalar, kütüphaneler (kitap depoları hariç), okullar, bürolar", "Fizik laboratuvarları, çamaşırhaneler, otoparklar, müzeler", "Radyo ve televizyon yayınevleri, tren istasyonları, tesisat odaları", "Sinemalar, tiyatrolar, konser salonları, tütün fabrikaları"],
-        },
-        {
-            "tur": "Kâğıt",
-            "hücreler": ["Cilthaneler, mukavva fabrikaları, kâğıt fabrikaları, baskı işleri ve matbaalar", "", "", "Atık kâğıt işletmeleri"],
-        },
-        {
-            "tur": "Lastik ve plastik",
-            "hücreler": ["Kablo fabrikaları, plastik döküm ve plastik eşya (köpük plastik hariç), kauçuk eşya fabrikaları, sentetik lif (akrilik hariç) fabrikaları, vulkanize fabrikaları", "", "Halat fabrikaları", ""],
-        },
-        {
-            "tur": "Dükkânlar ve ofisler",
-            "hücreler": ["Bilgisayara veri işleme ofisleri (veri saklama odaları, hariç)", "Büyük mağazalar, alışveriş merkezleri", "", "Sergi salonları"],
-        },
-        {
-            "tur": "Tekstiller ve konfeksiyon",
-            "hücreler": ["Deri eşya fabrikaları", "Halı fabrikaları (kauçuk ve köpük plastik hariç), kumaş ve giysi fabrikaları, fiber levha fabrikaları, ayakkabı imalathaneleri, triko (örgü), ev tekstili (bez) fabrikaları, yatak, şilte fabrikaları (köpük plastik hariç), dikim ve dokuma atölyeleri, yün ve yünlü kumaş atölyeleri", "", "Pamuk iplikhanesi, keten ve kenevir hazırlama tesisleri"],
-        },
-        {
-            "tur": "Kereste ve tahta",
-            "hücreler": ["Ahşap işleri fabrikaları, mobilya fabrikaları (köpük plastikler hariç), mobilya mağazaları, koltuk, kanepe ve benzeri döşemelerinin (plastik köpük hariç) imalathaneleri", "Odun talaşı fabrikaları, yonga levha fabrikaları, kontrplak levhaları", "", ""],
-        },
+        {"tur": "Cam ve seramikler", "hücreler": ["", "", "Cam fabrikaları", ""]},
+        {"tur": "Kimyasallar", "hücreler": ["Çimento işleri", "Fotoğraf laboratuvarları, fotoğraf film fabrikaları", "Boyama işlemleri, sabun fabrikaları", "Mum ve balmumu fabrikaları, kibrit fabrikaları, boyahaneler"]},
+        {"tur": "Mühendislik", "hücreler": ["Metal levha üretimi", "Otomotiv fabrikaları, tamirhaneleri", "Elektronik fabrikaları, buzdolabı ve çamaşır makinesi fabrikaları", ""]},
+        {"tur": "Yiyecek ve içecekler", "hücreler": ["Mezbahalar, mandıralar", "Fırınlar, bisküvi, çikolata, şekerleme imalathaneleri, bira fabrikaları", "Hayvan yemi fabrikaları, meyve kurutma, suyu çıkarılmış sebze ve çorba fabrikaları, şeker imalathaneleri, tahıl değirmenleri", "Alkol damıtma"]},
+        {"tur": "Çeşitli", "hücreler": ["Hastaneler, oteller, konutlar, lokantalar, kütüphaneler (kitap depoları hariç), okullar, bürolar", "Fizik laboratuvarları, çamaşırhaneler, otoparklar, müzeler", "Radyo ve televizyon yayınevleri, tren istasyonları, tesisat odaları", "Sinemalar, tiyatrolar, konser salonları, tütün fabrikaları"]},
+        {"tur": "Kâğıt", "hücreler": ["Cilthaneler, mukavva fabrikaları, kâğıt fabrikaları, baskı işleri ve matbaalar", "", "", "Atık kâğıt işletmeleri"]},
+        {"tur": "Lastik ve plastik", "hücreler": ["Kablo fabrikaları, plastik döküm ve plastik eşya (köpük plastik hariç), kauçuk eşya fabrikaları, sentetik lif (akrilik hariç) fabrikaları, vulkanize fabrikaları", "", "Halat fabrikaları", ""]},
+        {"tur": "Dükkânlar ve ofisler", "hücreler": ["Bilgisayara veri işleme ofisleri (veri saklama odaları, hariç)", "Büyük mağazalar, alışveriş merkezleri", "", "Sergi salonları"]},
+        {"tur": "Tekstiller ve konfeksiyon", "hücreler": ["Deri eşya fabrikaları", "Halı fabrikaları (kauçuk ve köpük plastik hariç), kumaş ve giysi fabrikaları, fiber levha fabrikaları, ayakkabı imalathaneleri, triko (örgü), ev tekstili (bez) fabrikaları, yatak, şilte fabrikaları (köpük plastik hariç), dikim ve dokuma atölyeleri, yün ve yünlü kumaş atölyeleri", "", "Pamuk iplikhanesi, keten ve kenevir hazırlama tesisleri"]},
+        {"tur": "Kereste ve tahta", "hücreler": ["Ahşap işleri fabrikaları, mobilya fabrikaları (köpük plastikler hariç), mobilya mağazaları, koltuk, kanepe ve benzeri döşemelerinin (plastik köpük hariç) imalathaneleri", "Odun talaşı fabrikaları, yonga levha fabrikaları, kontrplak levhaları", "", ""]},
     ]
-    _ek1b_secenekleri = []
-    for _satir in _ek1b_satirlari:
-        for _j, _metin in enumerate(_satir["hücreler"]):
-            if str(_metin).strip():
-                _ek1b_secenekleri.append({
-                    "etiket": f'{_satir["tur"]} → {_metin}',
-                    "kullanim_turu": _satir["tur"],
-                    "metin": _metin,
-                    "sinif": _ek1b_basliklari[_j],
-                    "satir": _satir["tur"],
-                    "kolon": _j,
-                })
-    _ek1b_secim_etiketleri = [x["etiket"] for x in _ek1b_secenekleri]
-    _ek1b_ui_secenekleri = ["— Seçiniz —"] + _ek1b_secim_etiketleri
-    if st.session_state.get("yangin_721_ek1b_secim") not in _ek1b_ui_secenekleri:
-        st.session_state["yangin_721_ek1b_secim"] = "— Seçiniz —"
+
+    # Seçim ekranında aynı tablo hücresindeki farklı kullanım alanlarının
+    # birbirinden bağımsız seçilebilmesi için hücreler ayrıca tekil kullanım
+    # alanlarına ayrılır. Her kayıt yine aynı Ek-1/B hücresine bağlıdır.
+    _ek1b_bina_secenekleri = [
+        ("Cam fabrikaları", "Cam ve seramikler", 2),
+        ("Çimento işleri", "Kimyasallar", 0),
+        ("Fotoğraf laboratuvarları, fotoğraf film fabrikaları", "Kimyasallar", 1),
+        ("Boyama işlemleri, sabun fabrikaları", "Kimyasallar", 2),
+        ("Mum ve balmumu fabrikaları, kibrit fabrikaları, boyahaneler", "Kimyasallar", 3),
+        ("Metal levha üretimi", "Mühendislik", 0),
+        ("Otomotiv fabrikaları, tamirhaneleri", "Mühendislik", 1),
+        ("Elektronik fabrikaları, buzdolabı ve çamaşır makinesi fabrikaları", "Mühendislik", 2),
+        ("Mezbahalar, mandıralar", "Yiyecek ve içecekler", 0),
+        ("Fırınlar, bisküvi, çikolata, şekerleme imalathaneleri, bira fabrikaları", "Yiyecek ve içecekler", 1),
+        ("Hayvan yemi fabrikaları, meyve kurutma, suyu çıkarılmış sebze ve çorba fabrikaları, şeker imalathaneleri, tahıl değirmenleri", "Yiyecek ve içecekler", 2),
+        ("Alkol damıtma", "Yiyecek ve içecekler", 3),
+        ("Hastaneler", "Çeşitli", 0),
+        ("Oteller", "Çeşitli", 0),
+        ("Konutlar", "Çeşitli", 0),
+        ("Lokantalar", "Çeşitli", 0),
+        ("Kütüphaneler (kitap depoları hariç)", "Çeşitli", 0),
+        ("Okullar", "Çeşitli", 0),
+        ("Bürolar", "Çeşitli", 0),
+        ("Fizik laboratuvarları", "Çeşitli", 1),
+        ("Çamaşırhaneler", "Çeşitli", 1),
+        ("Otoparklar", "Çeşitli", 1),
+        ("Müzeler", "Çeşitli", 1),
+        ("Radyo ve televizyon yayınevleri", "Çeşitli", 2),
+        ("Tren istasyonları", "Çeşitli", 2),
+        ("Tesisat odaları", "Çeşitli", 2),
+        ("Sinemalar", "Çeşitli", 3),
+        ("Tiyatrolar", "Çeşitli", 3),
+        ("Konser salonları", "Çeşitli", 3),
+        ("Tütün fabrikaları", "Çeşitli", 3),
+        ("Cilthaneler", "Kâğıt", 0),
+        ("Mukavva fabrikaları", "Kâğıt", 0),
+        ("Kâğıt fabrikaları", "Kâğıt", 0),
+        ("Baskı işleri ve matbaalar", "Kâğıt", 0),
+        ("Atık kâğıt işletmeleri", "Kâğıt", 3),
+        ("Kablo fabrikaları", "Lastik ve plastik", 0),
+        ("Plastik döküm ve plastik eşya (köpük plastik hariç)", "Lastik ve plastik", 0),
+        ("Kauçuk eşya fabrikaları", "Lastik ve plastik", 0),
+        ("Sentetik lif (akrilik hariç) fabrikaları", "Lastik ve plastik", 0),
+        ("Vulkanize fabrikaları", "Lastik ve plastik", 0),
+        ("Halat fabrikaları", "Lastik ve plastik", 2),
+        ("Bilgisayara veri işleme ofisleri (veri saklama odaları, hariç)", "Dükkânlar ve ofisler", 0),
+        ("Büyük mağazalar", "Dükkânlar ve ofisler", 1),
+        ("Alışveriş merkezleri", "Dükkânlar ve ofisler", 1),
+        ("Sergi salonları", "Dükkânlar ve ofisler", 3),
+        ("Deri eşya fabrikaları", "Tekstiller ve konfeksiyon", 0),
+        ("Halı fabrikaları (kauçuk ve köpük plastik hariç)", "Tekstiller ve konfeksiyon", 1),
+        ("Kumaş ve giysi fabrikaları", "Tekstiller ve konfeksiyon", 1),
+        ("Fiber levha fabrikaları", "Tekstiller ve konfeksiyon", 1),
+        ("Ayakkabı imalathaneleri", "Tekstiller ve konfeksiyon", 1),
+        ("Triko (örgü)", "Tekstiller ve konfeksiyon", 1),
+        ("Ev tekstili (bez) fabrikaları", "Tekstiller ve konfeksiyon", 1),
+        ("Yatak, şilte fabrikaları (köpük plastik hariç)", "Tekstiller ve konfeksiyon", 1),
+        ("Dikim ve dokuma atölyeleri", "Tekstiller ve konfeksiyon", 1),
+        ("Yün ve yünlü kumaş atölyeleri", "Tekstiller ve konfeksiyon", 1),
+        ("Pamuk iplikhanesi, keten ve kenevir hazırlama tesisleri", "Tekstiller ve konfeksiyon", 3),
+        ("Ahşap işleri fabrikaları", "Kereste ve tahta", 0),
+        ("Mobilya fabrikaları (köpük plastikler hariç)", "Kereste ve tahta", 0),
+        ("Mobilya mağazaları", "Kereste ve tahta", 0),
+        ("Koltuk, kanepe ve benzeri döşemelerinin (plastik köpük hariç) imalathaneleri", "Kereste ve tahta", 0),
+        ("Odun talaşı fabrikaları", "Kereste ve tahta", 1),
+        ("Yonga levha fabrikaları", "Kereste ve tahta", 1),
+        ("Kontrplak levhaları", "Kereste ve tahta", 1),
+    ]
+    _ek1b_bina_kayitlari = []
+    for _etiket, _tur, _kolon in _ek1b_bina_secenekleri:
+        _ek1b_bina_kayitlari.append({
+            "etiket": _etiket,
+            "kullanim_turu": _tur,
+            "sinif": _ek1b_basliklari[_kolon],
+            "kolon": _kolon,
+            "satir": _tur,
+        })
+
+    # Eski tekli seçim anahtarını koruyarak yeni çoklu seçim yapısına geçiş.
+    _eski_secim = st.session_state.get("yangin_721_ek1b_secim", "")
+    st.session_state.setdefault("yangin_721_ek1b_secimler", [])
+    if not isinstance(st.session_state.get("yangin_721_ek1b_secimler"), list):
+        st.session_state["yangin_721_ek1b_secimler"] = []
+    if not st.session_state["yangin_721_ek1b_secimler"] and _eski_secim:
+        _eski_kayit = next((x for x in _ek1b_bina_kayitlari if x["etiket"] == _eski_secim), None)
+        if _eski_kayit:
+            st.session_state["yangin_721_ek1b_secimler"] = [_eski_kayit["etiket"]]
     st.session_state.setdefault("yangin_721_manuel", False)
     st.session_state.setdefault("yangin_721_manuel_sinif", _ek1b_basliklari[0])
     st.session_state.setdefault("rapor_bolum_721", True)
     st.session_state.setdefault("rapor_bolum_722", True)
 
-    def _ek1b_secili_kayit():
-        _sec = st.session_state.get("yangin_721_ek1b_secim", "")
-        return next((x for x in _ek1b_secenekleri if x["etiket"] == _sec), None)
+    def _ek1b_secili_kayitlar():
+        _secimler = st.session_state.get("yangin_721_ek1b_secimler", []) or []
+        return [x for x in _ek1b_bina_kayitlari if x["etiket"] in _secimler]
 
-    def _ek1b_html_tablo(_secili):
-        _sec_satir = _secili.get("satir", "") if _secili else ""
-        _sec_kolon = int(_secili.get("kolon", -1)) if _secili else -1
+    def _ek1b_secili_kayit():
+        _kayitlar = _ek1b_secili_kayitlar()
+        return _kayitlar[0] if _kayitlar else None
+
+    def _ek1b_otomatik_sinif(_kayitlar):
+        if not _kayitlar:
+            return "Belirlenemedi"
+        return _ek1b_basliklari[max(int(x["kolon"]) for x in _kayitlar)]
+
+    def _ek1b_html_tablo(_secili_kayitlar):
+        _sec_hucreleri = {(x["satir"], int(x["kolon"])) for x in (_secili_kayitlar or [])}
         _html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
         _html += '<tr><th style="border:1px solid #777;padding:7px;background:#e6e6e6">KULLANIM TÜRÜ</th>'
         for _h in _ek1b_basliklari:
@@ -7599,7 +7651,7 @@ with _t_yangin:
         for _satir in _ek1b_satirlari:
             _html += f'<tr><td style="border:1px solid #777;padding:7px;font-weight:700">{_satir["tur"]}</td>'
             for _j, _metin in enumerate(_satir["hücreler"]):
-                _bg = '#fff2cc' if (_satir["tur"] == _sec_satir and _j == _sec_kolon) else '#ffffff'
+                _bg = '#fff2cc' if ((_satir["tur"], _j) in _sec_hucreleri) else '#ffffff'
                 _html += f'<td style="border:1px solid #777;padding:7px;background:{_bg};vertical-align:top">{_metin or ""}</td>'
             _html += '</tr>'
         _html += '</table></div>'
@@ -7756,10 +7808,11 @@ with _t_yangin:
                 with st.expander("7.2.1 BİNA KULLANIM AMACI", expanded=True):
                     _c721a, _c721b = st.columns([3, 1])
                     with _c721a:
-                        st.selectbox(
-                            "BYKHY Ek-1/B'ye göre bina / kullanım alanı",
-                            _ek1b_ui_secenekleri,
-                            key="yangin_721_ek1b_secim",
+                        st.multiselect(
+                            "BYKHY Ek-1/B'ye göre bina / kullanım alanı (birden fazla seçilebilir)",
+                            [x["etiket"] for x in _ek1b_bina_kayitlari],
+                            key="yangin_721_ek1b_secimler",
+                            placeholder="Bina / kullanım alanlarını seçiniz",
                         )
                     with _c721b:
                         _ui_721_rapor_key = "yangin_721_rapor_ui"
@@ -7772,16 +7825,16 @@ with _t_yangin:
                             ),
                         )
 
-                    _secili = _ek1b_secili_kayit()
-                    _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+                    _secili_kayitlar = _ek1b_secili_kayitlar()
+                    _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
                     # Ek-1/B tablosu ekranı gereksiz yere uzatmasın; üst bölümlerdeki
                     # açılır/kapanır yapı ile aynı mantıkta, varsayılan olarak kapalı gösterilir.
                     with st.expander("📋 BYKHY EK-1/B TABLOSUNU GÖSTER / GİZLE", expanded=False):
                         st.markdown("**BYKHY Ek-1/B — Orta Tehlike Kullanım Alanları**")
-                        st.markdown(_ek1b_html_tablo(_secili), unsafe_allow_html=True)
+                        st.markdown(_ek1b_html_tablo(_secili_kayitlar), unsafe_allow_html=True)
                         st.caption("Tablo, Bakanlık BYKHY Kılavuzu Ek-1/B'deki kullanım türleri ve Orta Tehlike sınıfları esas alınarak gösterilmektedir.")
-                    if _secili:
-                        st.success(f"Otomatik yangın tehlike sınıfı: **{_otomatik}**")
+                    if _secili_kayitlar:
+                        st.success(f"Seçilen kullanım alanı sayısı: **{len(_secili_kayitlar)}** — en yüksek otomatik yangın tehlike sınıfı: **{_otomatik}**")
 
                     st.checkbox(
                         "Yangın tehlike sınıfına manuel müdahale et",
@@ -7796,8 +7849,8 @@ with _t_yangin:
 
             if st.session_state.get(_k722, True):
                 with st.expander("7.2.2 YANGIN TEHLİKE SINIFI", expanded=True):
-                    _secili = _ek1b_secili_kayit()
-                    _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+                    _secili_kayitlar = _ek1b_secili_kayitlar()
+                    _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
                     _manuel = bool(st.session_state.get("yangin_721_manuel", False))
                     _etkin = st.session_state.get("yangin_721_manuel_sinif", _otomatik) if _manuel else _otomatik
                     _c722a, _c722b = st.columns([3, 1])
@@ -7813,7 +7866,9 @@ with _t_yangin:
                                 "rapor_bolum_722", bool(st.session_state.get("yangin_722_rapor_ui", True))
                             ),
                         )
-                    st.write(f"**Ek-1/B otomatik sonucu:** {_otomatik}")
+                    st.write(f"**Ek-1/B otomatik sonucu (en yüksek seçilen sınıf):** {_otomatik}")
+                    if _secili_kayitlar:
+                        st.write("**Seçilen kullanım alanları:** " + ", ".join(x["etiket"] for x in _secili_kayitlar))
                     st.write(f"**Seçim durumu:** {'Manuel müdahale' if _manuel else 'Otomatik'}")
                     if _manuel and _etkin != _otomatik:
                         st.warning(f"Manuel sınıf, Ek-1/B otomatik sonucundan farklıdır: {_otomatik} → {_etkin}")
@@ -10296,15 +10351,13 @@ if _rapor_olustur_sidebar:
     _r722 = bool(st.session_state.get("rapor_bolum_722", True))
 
     if st.session_state.get("rapor_bolum_7", True) and _r72_parent and (_r721 or _r722):
-        # 7.1 kapalıysa 7. ana başlığı burada oluştur. 7.1 açıksa ana başlık
-        # zaten yukarıdaki 7.1 rapor bloğunda oluşturulmuştur.
         if not st.session_state.get("rapor_bolum_71", True):
             ana_baslik_ekle("7. YANGIN TESİSATI")
 
         doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
 
-        _secili = _ek1b_secili_kayit()
-        _otomatik = _secili["sinif"] if _secili else "Belirlenemedi"
+        _secili_kayitlar = _ek1b_secili_kayitlar()
+        _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
         _manuel = bool(st.session_state.get("yangin_721_manuel", False))
         _etkin = (
             st.session_state.get("yangin_721_manuel_sinif", _otomatik)
@@ -10313,14 +10366,17 @@ if _rapor_olustur_sidebar:
 
         if _r721:
             doc.add_heading("7.2.1 BİNA KULLANIM AMACI", level=3)
-            if _secili:
-                doc.add_paragraph(f"Bina / Kullanım Alanı: {_secili['metin']}")
-                doc.add_paragraph(f"Ek-1/B Kullanım Türü: {_secili['kullanim_turu']}")
-                doc.add_paragraph(f"Ek-1/B otomatik yangın tehlike sınıfı: {_otomatik}")
+            if _secili_kayitlar:
+                doc.add_paragraph(
+                    "Seçilen bina / kullanım alanları: " +
+                    ", ".join(x["etiket"] for x in _secili_kayitlar)
+                )
+                doc.add_paragraph(
+                    f"Ek-1/B'ye göre otomatik yangın tehlike sınıfı (en yüksek seçilen sınıf): {_otomatik}"
+                )
             else:
                 doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
 
-            # Ek-1/B tablosu: program ekranındaki tabloyla aynı veri kaynağı.
             _tbl = doc.add_table(rows=1, cols=5)
             _tbl.style = "Table Grid"
             _hdr = _tbl.rows[0].cells
@@ -10330,16 +10386,13 @@ if _rapor_olustur_sidebar:
                 for _r in _hdr[_i].paragraphs[0].runs:
                     _r.bold = True
 
+            _sec_hucreleri = {(x["satır"] if "satır" in x else x["satir"], int(x["kolon"])) for x in _secili_kayitlar}
             for _satir in _ek1b_satirlari:
                 _cells = _tbl.add_row().cells
                 _cells[0].text = _satir["tur"]
                 for _j, _metin in enumerate(_satir["hücreler"]):
                     _cells[_j + 1].text = _metin
-                    if (
-                        _secili
-                        and _satir["tur"] == _secili["satir"]
-                        and _j == _secili["kolon"]
-                    ):
+                    if (_satir["tur"], _j) in _sec_hucreleri:
                         _tcPr = _cells[_j + 1]._tc.get_or_add_tcPr()
                         from docx.oxml import OxmlElement
                         _shd = OxmlElement("w:shd")
@@ -10353,22 +10406,29 @@ if _rapor_olustur_sidebar:
 
             _pnot = doc.add_paragraph()
             _rn = _pnot.add_run(
-                "Sarı hücre, seçilen bina/kullanım alanının Ek-1/B tablosundaki "
-                "karşılığını göstermektedir."
+                "Sarı hücreler, seçilen bina/kullanım alanlarının Ek-1/B tablosundaki "
+                "karşılıklarını göstermektedir. Birden fazla kullanım alanı seçildiğinde, "
+                "Madde 19 esasına göre en yüksek tehlike sınıfı otomatik olarak esas alınır."
             )
             _rn.italic = True
+
+            # Kaynak / tablo künyesi: raporda tablonun nereden alındığı açıkça belirtilir.
+            _pkaynak = doc.add_paragraph()
+            _rs = _pkaynak.add_run(
+                "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
+                "Ek-1/B: Orta Tehlike Kullanım Alanları, s. 243."
+            )
+            _rs.bold = True
 
         if _r722:
             doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
             _t722 = doc.add_table(rows=0, cols=2)
             _t722.style = "Table Grid"
             _rws = [
-                ("Ek-1/B otomatik yangın tehlike sınıfı", _otomatik),
+                ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
+                ("Ek-1/B otomatik yangın tehlike sınıfı (en yüksek)", _otomatik),
                 ("Uygulanacak yangın tehlike sınıfı", _etkin),
-                (
-                    "Seçim durumu",
-                    "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B",
-                ),
+                ("Seçim durumu", "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B"),
             ]
             for _etiket, _deger in _rws:
                 _cc = _t722.add_row().cells
@@ -10381,6 +10441,12 @@ if _rapor_olustur_sidebar:
                     f"({_otomatik} → {_etkin})."
                 )
                 _rr.bold = True
+            _src722 = doc.add_paragraph()
+            _src722.add_run(
+                "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu, "
+                "Ek-1/B; tehlike sınıfının farklı bölümlerdeki kullanım alanlarına göre "
+                "en yüksek sınıfa göre belirlenmesi için Madde 19."
+            ).italic = True
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
