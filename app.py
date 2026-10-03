@@ -1408,7 +1408,7 @@ BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
     "rapor_bolum_631_2_7", "rapor_bolum_632",
     "rapor_bolum_633", "rapor_bolum_634", "rapor_bolum_635",
-    "rapor_bolum_7", "rapor_bolum_71", "rapor_bolum_711", "rapor_bolum_712", "rapor_bolum_713",
+    "rapor_bolum_7", "rapor_bolum_71", "rapor_bolum_711", "rapor_bolum_712",
     "rapor_bolum_72", "rapor_bolum_721", "rapor_bolum_722", "rapor_bolum_723", "rapor_bolum_724", "rapor_bolum_725",
     "rapor_bolum_73", "rapor_bolum_731", "rapor_bolum_732", "rapor_bolum_733",
     "rapor_bolum_74", "rapor_bolum_741", "rapor_bolum_742", "rapor_bolum_743", "rapor_bolum_744",
@@ -1483,7 +1483,6 @@ _BOLUM_NAV = [
     ("7.1 YANGIN TESİSATI GENEL ESASLARI", "bolum_71", "rapor_bolum_71"),
     ("7.1.1 Yangın Tesisatının Amacı ve Kapsamı", "bolum_711", "rapor_bolum_711"),
     ("7.1.2 Yangın Tesisatı Tasarım Esasları", "bolum_712", "rapor_bolum_712"),
-    ("7.1.3 Yangın Tesisatı Sistem Bileşenleri", "bolum_713", "rapor_bolum_713"),
     ("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", "bolum_72", "rapor_bolum_72"),
     ("7.2.1 Bina Kullanım Amacı", "bolum_721", "rapor_bolum_721"),
     ("7.2.2 Yangın Tehlike Sınıfı", "bolum_722", "rapor_bolum_722"),
@@ -7466,28 +7465,9 @@ with _t_yangin:
         "Yangın tesisatı tasarımında kullanılan bütün kabullerin ve hesap parametrelerinin proje raporunda açıkça gösterilmesi", "Yangın tesisatı tasarımında kullanılan standart ve yönetmeliklerin proje başında tanımlanması",
         "Yangın tesisatı tasarım kriterlerinin depo, pompa, hidrant, sprinkler ve hidrolik hesap modüllerine aktarılabilecek şekilde kayıt altına alınması",
     ]
-    _yangin_713_maddeleri = [
-        "Yangın tesisatının; yangın suyu kaynağı, depolama, pompalama, dağıtım ve yangın söndürme ekipmanlarından oluşan bütünleşik bir sistem olarak değerlendirilmesi",
-        "Yangın suyu deposunun yangın söndürme sistemlerinin ihtiyaç duyduğu suyu gerekli miktar ve süre boyunca sağlayacak şekilde sistem içerisinde konumlandırılması",
-        "Yangın pompa grubunun ana pompa, gerekli yedek pompa ve jokey pompadan oluşan bütünleşik bir sistem olarak değerlendirilmesi", "Ana yangın pompasının tasarım debi ve basınç ihtiyacını karşılayacak şekilde seçilmesi",
-        "Yedek yangın pompasının ana pompanın devre dışı kalması durumunda gerekli çalışma şartlarını sürdürebilecek kapasitede değerlendirilmesi", "Jokey pompanın tesisattaki küçük basınç düşümlerini karşılayacak şekilde değerlendirilmesi",
-        "Yangın pompa grubunun emiş ve basma hatlarının pompa çalışma şartlarını ve gerekli debinin sürekliliğini sağlayacak şekilde düzenlenmesi", "Yangın tesisatı ana dağıtım boru şebekesinin yangın suyunu korunması gereken bölümlere güvenilir şekilde ulaştıracak biçimde oluşturulması",
-        "Yangın tesisatı boru şebekesinin ana dağıtım hatları, kolonlar, branşmanlar ve terminal bağlantılarından oluşan sistem bütünlüğü içerisinde değerlendirilmesi", "Yangın dolaplarının yangına ilk müdahaleyi sağlayacak ekipmanlar olarak sistem içerisinde değerlendirilmesi",
-        "Yangın dolaplarının hortum, lans, vana ve gerekli bağlantı elemanları ile birlikte bir bütün olarak değerlendirilmesi", "Hidrant sisteminin bina çevresindeki yangınlara dışarıdan müdahale edilmesini sağlayacak yangın suyu dağıtım sistemi olarak değerlendirilmesi",
-        "Hidrantların erişilebilirlik ve gerekli yangın suyu bağlantılarını sağlayacak şekilde düzenlenmesi", "Sprinkler sisteminin gerekli görülen yapılarda sprinkler başlıkları, branşman boruları, dağıtım boruları, kontrol vanaları ve ilgili ekipmanlardan oluşan bütünleşik bir sistem olarak değerlendirilmesi",
-        "Sprinkler başlıklarının korunacak alanın özellikleri ve belirlenen tasarım kriterlerine göre uygun tip ve kapasitede seçilmesi", "Sprinkler sisteminde kontrol ve alarm vanalarının sistem durumunun izlenmesine imkân verecek şekilde düzenlenmesi",
-        "Yangın tesisatında kesme vanalarının, test vanalarının ve kontrol elemanlarının erişilebilir olacak şekilde konumlandırılması", "Yangın tesisatının farklı bölümlerinin kontrol edilebilmesi için gerekli zonlama ve kontrol düzenlerinin oluşturulması",
-        "Yangın tesisatında sistemin test edilebilmesi amacıyla gerekli test bağlantılarının ve test noktalarının oluşturulması", "Yangın tesisatında boru şebekesinin boşaltılabilmesi için gerekli drenaj ve tahliye bağlantılarının oluşturulması",
-        "Yangın tesisatında hava tahliyesine yönelik gerekli düzenlerin değerlendirilmesi", "Yangın tesisatı ekipmanlarının çalışma basınçlarının sistemin maksimum basınç koşullarıyla uyumlu olacak şekilde kontrol edilmesi",
-        "Yangın tesisatında kullanılan vana, çekvalf, filtre, bağlantı elemanı ve diğer yardımcı ekipmanların sistem debisi ve basınç şartlarına uygun seçilmesi", "Yangın tesisatı elektriksel kontrol ve izleme ekipmanlarının sistem çalışma durumunu takip edebilecek şekilde değerlendirilmesi",
-        "Yangın pompa grubu, yangın suyu deposu, boru şebekesi, yangın dolabı, hidrant ve sprinkler sistemleri arasındaki hidrolik bağlantıların birlikte değerlendirilmesi", "Yangın tesisatı sistem bileşenlerinin bakım, test, kontrol ve parça değişimine imkân verecek şekilde erişilebilir olarak düzenlenmesi",
-        "Yangın tesisatı ekipmanlarının yerleşiminde mimari, elektrik, statik ve diğer mekanik tesisatlarla koordinasyonun sağlanması", "Yangın tesisatında kullanılan ana ekipmanların teknik özelliklerinin, kapasite bilgilerinin ve gerekli olması halinde cihaz poz numaralarının proje raporunda gösterilmesi",
-        "Yangın tesisatı sistem bileşenlerinin 7.2 bölümünde belirlenecek yangın tehlike sınıfı ve tasarım kriterleriyle uyumlu olması", "Yangın tesisatı sistem bileşenlerinin 7.3–7.7 bölümlerinde yapılacak hesap ve seçim sonuçlarıyla uyumlu olarak belirlenmesi",
-    ]
     _yangin_71_gruplari = [
         ("7.1.1 YANGIN TESİSATININ AMACI VE KAPSAMI", _yangin_711_maddeleri, "yangin_711_secimler", "rapor_bolum_711"),
         ("7.1.2 YANGIN TESİSATI TASARIM ESASLARI", _yangin_712_maddeleri, "yangin_712_secimler", "rapor_bolum_712"),
-        ("7.1.3 YANGIN TESİSATI SİSTEM BİLEŞENLERİ", _yangin_713_maddeleri, "yangin_713_secimler", "rapor_bolum_713"),
     ]
     for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
         st.session_state.setdefault(_key71, [True] * len(_maddeler71))
@@ -7506,7 +7486,6 @@ with _t_yangin:
         ("bolum_71", "rapor_bolum_71", "7.1 YANGIN TESİSATI GENEL ESASLARI", [
             ("bolum_711", "rapor_bolum_711", "7.1.1 Yangın Tesisatının Amacı ve Kapsamı"),
             ("bolum_712", "rapor_bolum_712", "7.1.2 Yangın Tesisatı Tasarım Esasları"),
-            ("bolum_713", "rapor_bolum_713", "7.1.3 Yangın Tesisatı Sistem Bileşenleri"),
         ]),
         ("bolum_72", "rapor_bolum_72", "7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", [
             ("bolum_721", "rapor_bolum_721", "7.2.1 Bina Kullanım Amacı"),
