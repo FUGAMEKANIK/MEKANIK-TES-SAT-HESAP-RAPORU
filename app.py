@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 from copy import deepcopy
 from docx import Document
-from docx.enum.text import WD_COLOR_INDEX, WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
@@ -125,148 +125,6 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
                 _time.sleep(0.7 * (_deneme + 1))
 
     return None, None, _son_url
-
-
-@st.cache_data(ttl=86400, show_spinner=False)
-def mgm_aylik_ortalama_yagis_mm(il_adi):
-    """MGM resmi iklim istatistiklerinden 12 aylık ortalama yağışları
-    doğrudan HTML tablo satırından okur.
-
-    Dönen değer: (aylik_dict, olcum_periyodu, url).
-    """
-    import re as _re
-    import unicodedata as _unicodedata
-    from html.parser import HTMLParser
-
-    il_adi = str(il_adi or "").strip()
-    if not il_adi:
-        return {}, "", None
-
-    _il_url = "".join(
-        ch for ch in _unicodedata.normalize("NFKD", il_adi)
-        if not _unicodedata.combining(ch)
-    ).upper()
-    _il_url = (
-        _il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
-        .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
-    )
-    _il_url = MGM_IL_URL_KODU.get(il_adi, _il_url)
-
-    _base = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
-    # MGM'de kullanılan farklı çalışan URL biçimleri. k=H özellikle
-    # Resmi İklim İstatistikleri tablosunu doğrudan döndürmektedir.
-    _urls = [
-        f"{_base}?k=H&m={_il_url}",
-        f"{_base}?k=undefined&m={_il_url}",
-        f"{_base}?m={_il_url}",
-    ]
-    _headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/140.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.7",
-        "Connection": "close",
-    }
-    _aylar = [
-        "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
-    ]
-    _baslik = "Aylık Toplam Yağış Miktarı Ortalaması (mm)"
-
-    class _MGMTableParser(HTMLParser):
-        def __init__(self):
-            super().__init__(convert_charrefs=True)
-            self.rows = []
-            self._row = None
-            self._cell = None
-            self._buf = []
-
-        def handle_starttag(self, tag, attrs):
-            tag = tag.lower()
-            if tag == "tr":
-                self._row = []
-            elif tag in ("td", "th") and self._row is not None:
-                self._cell = tag
-                self._buf = []
-
-        def handle_data(self, data):
-            if self._cell is not None:
-                self._buf.append(data)
-
-        def handle_endtag(self, tag):
-            tag = tag.lower()
-            if tag in ("td", "th") and self._cell is not None:
-                self._row.append(" ".join("".join(self._buf).split()))
-                self._cell = None
-                self._buf = []
-            elif tag == "tr" and self._row is not None:
-                if self._row:
-                    self.rows.append(self._row)
-                self._row = None
-
-    def _sayiya_cevir(_text):
-        _t = str(_text or "").strip().replace(" ", "")
-        # MGM Türkçe ondalık gösterimini destekle.
-        _t = _t.replace("mm", "").strip()
-        if not _re.fullmatch(r"[-+]?\d+(?:[.,]\d+)?", _t):
-            return None
-        try:
-            return float(_t.replace(",", "."))
-        except ValueError:
-            return None
-
-    for _url in _urls:
-        try:
-            _req = urllib.request.Request(_url, headers=_headers)
-            with urllib.request.urlopen(_req, timeout=20) as _response:
-                _html = _response.read().decode("utf-8", errors="ignore")
-
-            # 1) Önce gerçek HTML tablosunu parse et.
-            _parser = _MGMTableParser()
-            _parser.feed(_html)
-            for _row in _parser.rows:
-                _etiket = " ".join(str(_x) for _x in _row[:2])
-                if _baslik.lower() in _etiket.lower():
-                    _sayilar = []
-                    for _hucre in _row[1:]:
-                        _n = _sayiya_cevir(_hucre)
-                        if _n is not None:
-                            _sayilar.append(_n)
-                    if len(_sayilar) >= 12:
-                        _aylik = dict(zip(_aylar, _sayilar[:12]))
-                        _metin = " ".join(_row)
-                        _donem = ""
-                        _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _metin, flags=_re.I)
-                        if _m:
-                            _donem = _m.group(1).strip()
-                        # Dönem çoğunlukla ayrı bir satırda olduğundan HTML
-                        # genelinde de ara.
-                        if not _donem:
-                            _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _html, flags=_re.I)
-                            if _m:
-                                _donem = _m.group(1).strip()
-                        return _aylik, _donem, _url
-
-            # 2) HTML yapısı değişirse, yalnızca ilgili satırı düz metinden
-            # yakalayan güvenli bir geri dönüş yöntemi kullan.
-            _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _html, flags=_re.I | _re.S)
-            _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I | _re.S)
-            _metin = _re.sub(r"<[^>]+>", " | ", _metin)
-            _metin = _re.sub(r"\s+", " ", _metin).strip()
-            _pos = _metin.lower().find(_baslik.lower())
-            if _pos >= 0:
-                _parca = _metin[_pos:_pos + 1200]
-                _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?", _parca)
-                _nums = [float(v.replace(",", ".")) for v in _vals]
-                if len(_nums) >= 12:
-                    return dict(zip(_aylar, _nums[:12])), "", _url
-        except Exception:
-            continue
-
-    return {}, "", _urls[0]
 
 
 # MGM'nin il seçimindeki resmi 81 il listesi.
@@ -399,7 +257,6 @@ st.markdown(
     <div id="sayfa_basi"></div>
     <div class="hizli-navigasyon">
         <a href="#sayfa_basi">⬆ Başa Git</a>
-        <a href="#sayfa_orta">↕ Ortaya Git</a>
         <a href="#sayfa_sonu">⬇ Sona Git</a>
     </div>
     """,
@@ -1395,19 +1252,18 @@ _BOLUM_63_COCUKLARI = [
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
     ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
-    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
 ]
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
 BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_1", "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
     "rapor_bolum_5", "rapor_bolum_51", "rapor_bolum_6", "rapor_bolum_61",
-    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622", "rapor_bolum_623",
+    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622",
     "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_631_1", "rapor_bolum_631_2",
     "rapor_bolum_631_2_1", "rapor_bolum_631_2_2", "rapor_bolum_631_2_3",
     "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
-    "rapor_bolum_631_2_7", "rapor_bolum_632",
-    "rapor_bolum_633", "rapor_bolum_634", "rapor_bolum_635",
+    "rapor_bolum_631_2_7", "rapor_bolum_631_2_8", "rapor_bolum_632",
+    "rapor_bolum_633", "rapor_bolum_634",
 ]
 def _63_dinamik_no(anahtar):
     """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
@@ -1456,22 +1312,21 @@ _BOLUM_NAV = [
     ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
     ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
     ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
-    ("6.2.3 YAĞ AYIRICI SEÇİMLERİ", "bolum_623", "rapor_bolum_623"),
     ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
     ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
     ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
     ("6.3.1.2 Yağmur Suyu Deposu Seçimi", "bolum_631_2", "rapor_bolum_631_2"),
     ("6.3.1.2.1 Yağmur Suyu Toplama Hesabı", "bolum_631_2_1", "rapor_bolum_631_2_1"),
     ("6.3.1.2.2 Yağmur Suyu Filtresi Seçimi", "bolum_631_2_2", "rapor_bolum_631_2_2"),
-    ("6.3.1.2.3 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_3", "rapor_bolum_631_2_3"),
-    ("6.3.1.2.4 Taşma Hattı Hesabı", "bolum_631_2_4", "rapor_bolum_631_2_4"),
-    ("6.3.1.2.5 Taşma Sifonu / Koku Kapanı", "bolum_631_2_5", "rapor_bolum_631_2_5"),
-    ("6.3.1.2.6 Depo Girişi / Sakin Giriş", "bolum_631_2_6", "rapor_bolum_631_2_6"),
-    ("6.3.1.2.7 Havalandırma ve Haşere Koruması", "bolum_631_2_7", "rapor_bolum_631_2_7"),
+    ("6.3.1.2.3 İlk Yağış Ayırıcı Seçimi", "bolum_631_2_3", "rapor_bolum_631_2_3"),
+    ("6.3.1.2.4 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_4", "rapor_bolum_631_2_4"),
+    ("6.3.1.2.5 Taşma Hattı Hesabı", "bolum_631_2_5", "rapor_bolum_631_2_5"),
+    ("6.3.1.2.6 Taşma Sifonu / Koku Kapanı", "bolum_631_2_6", "rapor_bolum_631_2_6"),
+    ("6.3.1.2.7 Depo Girişi / Sakin Giriş", "bolum_631_2_7", "rapor_bolum_631_2_7"),
+    ("6.3.1.2.8 Havalandırma ve Haşere Koruması", "bolum_631_2_8", "rapor_bolum_631_2_8"),
     ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
     ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
     ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
-    ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
 ]
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
@@ -1562,13 +1417,10 @@ bolum_611_aktif_ui = st.session_state.get("rapor_bolum_611", False)
 bolum_62_aktif_ui = st.session_state.get("rapor_bolum_62", False)
 bolum_621_aktif_ui = st.session_state.get("rapor_bolum_621", False)
 bolum_622_aktif_ui = st.session_state.get("rapor_bolum_622", False)
-bolum_623_aktif_ui = st.session_state.get("rapor_bolum_623", False)
 bolum_63_aktif_ui = st.session_state.get("rapor_bolum_63", False)
 bolum_631_aktif_ui = st.session_state.get("rapor_bolum_631", False)
 bolum_632_aktif_ui = st.session_state.get("rapor_bolum_632", False)
 bolum_633_aktif_ui = st.session_state.get("rapor_bolum_633", False)
-bolum_634_aktif_ui = st.session_state.get("rapor_bolum_634", False)
-bolum_635_aktif_ui = st.session_state.get("rapor_bolum_635", False)
 
 # ---------------------------------------------------------------------------
 # ALT GRUPLAR İÇİN TOPLU SEÇİM BUTONLARI
@@ -1625,12 +1477,10 @@ bolum_61_aktif = bool(st.session_state.get("rapor_bolum_61", False)) or bolum_61
 
 bolum_621_aktif = bool(st.session_state.get("rapor_bolum_621", False))
 bolum_622_aktif = bool(st.session_state.get("rapor_bolum_622", False))
-bolum_623_aktif = bool(st.session_state.get("rapor_bolum_623", False))
 bolum_62_aktif = (
     bool(st.session_state.get("rapor_bolum_62", False))
     or bolum_621_aktif
     or bolum_622_aktif
-    or bolum_623_aktif
 )
 
 # 6.3.1 ana checkbox'ı bu grubun ana aç/kapat kontrolüdür.
@@ -1642,7 +1492,7 @@ bolum_631_1_aktif = bolum_631_aktif and bool(st.session_state.get("rapor_bolum_6
 bolum_631_2_alt_anahtarlar = [
     "rapor_bolum_631_2", "rapor_bolum_631_2_1", "rapor_bolum_631_2_2",
     "rapor_bolum_631_2_3", "rapor_bolum_631_2_4", "rapor_bolum_631_2_5",
-    "rapor_bolum_631_2_6", "rapor_bolum_631_2_7",
+    "rapor_bolum_631_2_6", "rapor_bolum_631_2_7", "rapor_bolum_631_2_8",
 ]
 bolum_631_2_aktif = bolum_631_aktif and any(
     bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar
@@ -1650,21 +1500,19 @@ bolum_631_2_aktif = bolum_631_aktif and any(
 bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
 bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
 bolum_634_aktif = bool(st.session_state.get("rapor_bolum_634", False))
-bolum_635_aktif = bool(st.session_state.get("rapor_bolum_635", False))
 bolum_63_aktif = (
     bool(st.session_state.get("rapor_bolum_63", False))
     or bolum_631_aktif
     or bolum_632_aktif
     or bolum_633_aktif
     or bolum_634_aktif
-    or bolum_635_aktif
 )
 
 bolum_6_aktif = (
     bool(st.session_state.get("rapor_bolum_6", False))
     or bolum_61_aktif or bolum_611_aktif
-    or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif or bolum_623_aktif
-    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif or bolum_635_aktif
+    or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif
+    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif
 )
 
 bolum_2_aktif = bool(st.session_state.get("rapor_bolum_2", False))
@@ -1676,147 +1524,6 @@ bolum_4_aktif = bool(st.session_state.get("rapor_bolum_4", False))
 # aşağıda üzerine yazılır.
 secilen_depo_tipi_metni = ""
 sih_depo_tipleri = []
-# 6.2.3 Yağ Ayırıcı seçimleri için güvenli başlangıç değerleri.
-yag_ayirici_maddeleri = [
-    "Mutfak/yemekhane atık suyu yağ ayırıcıdan geçirilecektir.",
-    "Yağ ayırıcı kapasitesi, sisteme gelen atık su debisine göre belirlenecektir.",
-    "Yağ ayırıcı hesabında mutfak ekipmanlarının eş zamanlı kullanım durumu dikkate alınacaktır.",
-    "Yağ ayırıcı, kolay temizlenebilir ve bakım yapılabilir özellikte olacaktır.",
-    "Yağ ayırıcı üzerinde yeterli büyüklükte bakım ve temizleme kapağı bulunacaktır.",
-    "Yağ ayırıcı, yağ ve katı maddelerin kanalizasyon sistemine taşınmasını önleyecek şekilde seçilecektir.",
-    "Yağ ayırıcı çıkışında gerekli koku kontrolü ve havalandırma düzeni sağlanacaktır.",
-    "Yağ ayırıcının montajı, bakım ve temizlik sırasında kolay erişilebilecek şekilde yapılacaktır.",
-    "Yağ ayırıcının giriş ve çıkış bağlantı çapları tesisat boru çaplarına uygun olacaktır.",
-    "Yağ ayırıcı kapasitesi ve bağlantı çapı raporda gösterilecektir.",
-]
-yag_ayirici_secimler = [bool(st.session_state.get(f"yag_ayirici_sec_{i}", True)) for i in range(1, 11)]
-ek_yag_ayirici_notu = str(st.session_state.get("ek_yag_ayirici_notu", ""))
-
-
-# ---------------------------------------------------------------------------
-# 6.2.3 YAĞ AYIRICI HESAP MOTORU — YAĞ AYIRICI HESABI.xlsx ile birebir
-# ---------------------------------------------------------------------------
-# Excel'deki 4 sayfa YA-01 ... YA-04 aynı hesap şablonunu kullanır.
-# Programda ekipman adetleri kullanıcı tarafından değiştirilebilir; aşağıdaki
-# varsayılan adetler Excel dosyasındaki ilgili sayfalardaki örnek değerlerdir.
-YAG_AYIRICI_EKIPMANLARI = [
-    ("Pişirme Kazan Çıkışı Ø 25 mm", 1.0, "normal"),
-    ("Pişirme Kazan Çıkışı Ø 50 mm", 2.0, "normal"),
-    ("Devirme Tipi Kazan Çıkışı Ø 70 mm", 1.0, "normal"),
-    ("Devirme Tipi Kazan Çıkışı Ø 100 mm", 3.0, "normal"),
-    ("Sifonlu Evye Çıkışı Ø 40", 0.8, "normal"),
-    ("Sifonlu Evye Çıkışı Ø 50", 1.5, "normal"),
-    ("Sifonsuz Evye Çıkışı Ø 40", 2.5, "normal"),
-    ("Sifonsuz Evye Çıkışı Ø 50", 4.0, "normal"),
-    ("Bulaşık Makinası", 2.0, "bulasik"),
-    ("Devirme Tipi Kızartma Tavası", 1.0, "normal"),
-    ("Normal Kızartma Tavası", 0.1, "normal"),
-    ("Yüksek Basınçlı/Buharlı Temizleme Makinası", 2.0, "normal"),
-    ("Kabuk Soyma Makinası", 1.5, "normal"),
-    ("Sebze Yıkama Makinası", 2.0, "normal"),
-    ("Pişirme Fırını", 0.5, "normal"),
-    ("Yer süzgeci", 0.5, "normal"),
-    ("Musluk DN 15 (R 1/2\")", 0.5, "normal"),
-    ("DN 20 (R 3/4\")", 1.0, "normal"),
-    ("DN 25 (R 1\")", 1.7, "normal"),
-]
-
-# Program başlangıcında bütün yağ ayırıcı ekipman adetleri 0'dır.
-# Excel'deki YA-01 ... YA-04 örnek adetleri referans alınmış olsa da kullanıcıya
-# başlangıç değeri olarak aktarılmaz.
-YAG_AYIRICI_VARSAYILAN_ADETLERI = [0] * len(YAG_AYIRICI_EKIPMANLARI)
-
-# 2026 mekanik tesisat poz listesine göre standart yağ ayırıcılar.
-# Kapasiteler: 1, 2, 3, 4, 7 ve 10 L/s.
-YAG_AYIRICI_POZLARI = [
-    {"poz": "25.620.1201", "kapasite": 1.0, "tanim": "Kapasite: 1 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 47 litre, 880x510x490 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-    {"poz": "25.620.1202", "kapasite": 2.0, "tanim": "Kapasite: 2 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 80 litre, 1190x660x710 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-    {"poz": "25.620.1203", "kapasite": 3.0, "tanim": "Kapasite: 3 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 135 litre, 1250x850x970 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-    {"poz": "25.620.1204", "kapasite": 4.0, "tanim": "Kapasite: 4 lt/sn, et kalınlığı: min.2 mm, yağ hacmi: 160 litre, 1580x910x1030 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-    {"poz": "25.620.1205", "kapasite": 7.0, "tanim": "Kapasite: 7 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 350 litre, 2000x1000x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-    {"poz": "25.620.1206", "kapasite": 10.0, "tanim": "Kapasite: 10 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 500 litre, 2500x1430x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
-]
-
-def _yag_ayirici_poz_otomatik_sec(ns):
-    """NS değerini karşılayan en küçük standart yağ ayırıcı pozunu seçer."""
-    try:
-        gerekli = float(ns)
-    except Exception:
-        gerekli = 0.0
-    if gerekli <= 0:
-        return None
-    for _poz in YAG_AYIRICI_POZLARI:
-        if _poz["kapasite"] >= gerekli:
-            return dict(_poz)
-    return None
-
-def _yag_ayirici_zi(adet, ekipman_tipi="normal"):
-    """Excel'deki Zi(n) kademelerini aynen uygular."""
-    n = int(adet)
-    if ekipman_tipi == "bulasik":
-        # Excel Bulaşık Makinası satırı: 0/1=0.60, 2=0.50, 3=0.40,
-        # 4=0.34, 5 ve üzeri=0.30.
-        if n <= 1:
-            return 0.60
-        if n == 2:
-            return 0.50
-        if n == 3:
-            return 0.40
-        if n == 4:
-            return 0.34
-        return 0.30
-    # Diğer bütün Excel satırları: 0/1=0.45, 2=0.31, 3=0.25,
-    # 4=0.21, 5 ve üzeri=0.20.
-    if n <= 1:
-        return 0.45
-    if n == 2:
-        return 0.31
-    if n == 3:
-        return 0.25
-    if n == 4:
-        return 0.21
-    return 0.20
-
-
-def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasite=0.0, secilen_poz=None, poz_rapora_aktar=False, poz_secim_modu="Otomatik"):
-    satirlar = []
-    qs = 0.0
-    for i, ((ekipman, qi, tip), adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, adetler), start=1):
-        n = int(adet)
-        n_x_qi = n * float(qi)
-        zi = _yag_ayirici_zi(n, tip)
-        pis_su_debisi = n_x_qi * zi
-        qs += pis_su_debisi
-        # Adedi 0 olan ekipmanlar hesap sonucuna ve rapora dahil edilmez.
-        # Böylece kullanılmayan ekipmanlar raporda gereksiz yer kaplamaz.
-        if n > 0:
-            satirlar.append({
-                "sira": i,
-                "ekipman": ekipman,
-                "adet": n,
-                "qi": float(qi),
-                "n_x_qi": n_x_qi,
-                "zi": zi,
-                "pis_su_debisi": pis_su_debisi,
-            })
-    ns = qs * float(fd) * float(ft) * float(fr)
-    return {
-        "ya_adi": ya_adi,
-        "satirlar": satirlar,
-        "qs": qs,
-        "fd": float(fd),
-        "ft": float(ft),
-        "fr": float(fr),
-        "ns": ns,
-        "secilen_kapasite": float(secilen_kapasite),
-        "secilen_poz": dict(secilen_poz) if isinstance(secilen_poz, dict) else None,
-        "poz_rapora_aktar": bool(poz_rapora_aktar),
-        "poz_secim_modu": str(poz_secim_modu),
-    }
-
-# 6.2.3 hesap sonuçları rapor üretiminden önce güvenli biçimde hazır tutulur.
-yag_ayirici_hesaplari = {}
-yag_ayirici_secilenler = list(st.session_state.get("yag_ayirici_secilenler", ["YA-01"]))
 sih_sec_depo_tipi = []
 depo_gerekli_hacim_m3 = 0.0
 depo_gerekli_hacim_litre = 0.0
@@ -3371,174 +3078,6 @@ with _t_sihhi:
             height=80,
         )
 
-        # ---------------------------------------------------------------------------
-        # 6.2.3 YAĞ AYIRICI SEÇİMLERİ — EXCEL HESAP MODELİ
-        # ---------------------------------------------------------------------------
-        if bolum_623_aktif:
-            st.markdown('<div id="bolum_623"></div>', unsafe_allow_html=True)
-            st.subheader("6.2.3 YAĞ AYIRICI SEÇİMLERİ")
-            st.caption(
-                "Hesap modülü, yüklenen YAĞ AYIRICI HESABI.xlsx dosyasındaki YA-01 ... YA-04 "
-                "sayfalarının ekipman, qi, eşzamanlılık ve faktör mantığını aynen kullanır. "
-                "Petrol / hidrokarbon ayırıcıları bu bölümün kapsamı dışındadır."
-            )
-
-            yag_ayirici_maddeleri = [
-                "Mutfak/yemekhane atık suyu yağ ayırıcıdan geçirilecektir.",
-                "Yağ ayırıcı kapasitesi, sisteme gelen atık su debisine göre belirlenecektir.",
-                "Yağ ayırıcı hesabında mutfak ekipmanlarının eş zamanlı kullanım durumu dikkate alınacaktır.",
-                "Yağ ayırıcı, kolay temizlenebilir ve bakım yapılabilir özellikte olacaktır.",
-                "Yağ ayırıcı üzerinde yeterli büyüklükte bakım ve temizleme kapağı bulunacaktır.",
-                "Yağ ayırıcı, yağ ve katı maddelerin kanalizasyon sistemine taşınmasını önleyecek şekilde seçilecektir.",
-                "Yağ ayırıcı çıkışında gerekli koku kontrolü ve havalandırma düzeni sağlanacaktır.",
-                "Yağ ayırıcının montajı, bakım ve temizlik sırasında kolay erişilebilecek şekilde yapılacaktır.",
-                "Yağ ayırıcının giriş ve çıkış bağlantı çapları tesisat boru çaplarına uygun olacaktır.",
-                "Yağ ayırıcı kapasitesi ve bağlantı çapı raporda gösterilecektir.",
-            ]
-
-            yag_ayirici_keys = [f"yag_ayirici_sec_{i}" for i in range(1, len(yag_ayirici_maddeleri) + 1)]
-            _toplu_secim_butonlari(yag_ayirici_keys, grup_adi="yag_ayirici_623")
-
-            yag_ayirici_secimler = []
-            st.markdown("#### YAĞ AYIRICI SEÇİM MADDELERİ")
-            for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
-                secili = st.checkbox(madde, key=f"yag_ayirici_sec_{i}", value=True)
-                yag_ayirici_secimler.append(secili)
-
-            st.markdown("#### İLAVE YAĞ AYIRICI SEÇİM MADDELERİ")
-            ek_yag_ayirici_notu = st.text_area(
-                "İlave Yağ Ayırıcı Seçim Maddesi (Her satıra bir tane)",
-                "",
-                height=100,
-                key="ek_yag_ayirici_notu",
-            )
-
-            st.markdown("#### PROJEDE YER ALACAK YAĞ AYIRICILARI")
-            yag_ayirici_secilenler = st.multiselect(
-                "Projede yer alacak Yağ Ayırıcıları seçin:",
-                ["YA-01", "YA-02", "YA-03", "YA-04"],
-                default=st.session_state.get("yag_ayirici_secilenler", ["YA-01"]),
-                key="yag_ayirici_secilenler",
-            )
-
-            yag_ayirici_hesaplari = {}
-            for _ya in yag_ayirici_secilenler:
-                st.markdown(f"### {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:")
-                _default_adetler = YAG_AYIRICI_VARSAYILAN_ADETLERI
-                _adetler = []
-
-                st.markdown("**Ekipmanlar ve Adet Bilgileri**")
-                _h1, _h2, _h3, _h4, _h5 = st.columns([4.2, 1.0, 1.0, 1.2, 1.2])
-                _h1.markdown("**Ekipman**")
-                _h2.markdown("**Adet n**")
-                _h3.markdown("**qi [L/s]**")
-                _h4.markdown("**n × qi**")
-                _h5.markdown("**Zi(n)**")
-                for _i, ((_ekipman, _qi, _tip), _def_adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, _default_adetler), start=1):
-                    _c1, _c2, _c3, _c4, _c5 = st.columns([4.2, 1.0, 1.0, 1.2, 1.2])
-                    _c1.write(_ekipman)
-                    _adet_key = f"yag_{_ya}_adet_{_i}"
-                    _adet = int(_c2.number_input(
-                        f"Adet {_i}", min_value=0, step=1,
-                        value=int(st.session_state.get(_adet_key, _def_adet)),
-                        key=_adet_key, label_visibility="collapsed",
-                    ))
-                    _c3.write(f"{_qi:.2f}")
-                    _nqi = _adet * _qi
-                    _zi = _yag_ayirici_zi(_adet, _tip)
-                    _c4.write(f"{_nqi:.2f}")
-                    _c5.write(f"{_zi:.2f}")
-                    _adetler.append(_adet)
-
-                _f1, _f2, _f3 = st.columns(3)
-                with _f1:
-                    _fd_sec = st.selectbox(
-                        "Yoğunluk Faktörü (fd)",
-                        ["Yağ Yoğunluğu ≤ 0.94 g/cm³ → fd = 1", "Yağ Yoğunluğu > 0.94 g/cm³ → fd = 1.3"],
-                        index=0,
-                        key=f"yag_{_ya}_fd_sec",
-                    )
-                with _f2:
-                    _ft_sec = st.selectbox(
-                        "Sıcaklık Faktörü (ft)",
-                        ["Su Sıcaklığı ≤ 60 °C → ft = 1", "Su Sıcaklığı > 60 °C → ft = 1.3"],
-                        index=0,
-                        key=f"yag_{_ya}_ft_sec",
-                    )
-                with _f3:
-                    _fr_sec = st.selectbox(
-                        "Deterjan Faktörü (fr)",
-                        [
-                            "Tem. Malz. kullanılmıyor ise → fr = 1",
-                            "Tem. Malz. kullanılıyor ise → fr = 1.3",
-                            "Hastaneler için → fr = 1.5",
-                        ],
-                        index=0,
-                        key=f"yag_{_ya}_fr_sec",
-                    )
-
-                _fd = 1.3 if "> 0.94" in _fd_sec else 1.0
-                _ft = 1.3 if "> 60" in _ft_sec else 1.0
-                _fr = 1.5 if "Hastaneler" in _fr_sec else (1.3 if "kullanılıyor" in _fr_sec else 1.0)
-
-                # Excel ile birebir NS hesabı tamamlandıktan sonra NS'yi karşılayan
-                # en küçük standart poz otomatik seçilir. Kullanıcı isterse manuel
-                # poz seçimine geçebilir.
-                _on_hesap = _yag_ayirici_hesapla(_ya, _adetler, _fd, _ft, _fr, 0.0)
-                _otomatik_poz = _yag_ayirici_poz_otomatik_sec(_on_hesap["ns"])
-
-                _poz_modu = st.selectbox(
-                    "Yağ Ayırıcı Poz Seçim Modu",
-                    ["Otomatik (NS kapasitesine göre)", "Manuel Seçim"],
-                    index=0,
-                    key=f"yag_{_ya}_poz_modu",
-                )
-
-                if _poz_modu.startswith("Otomatik"):
-                    _secilen_poz = _otomatik_poz
-                    if _secilen_poz:
-                        st.success(
-                            f"Otomatik seçilen poz: **{_secilen_poz['poz']}** | "
-                            f"Kapasite: **{_secilen_poz['kapasite']:.0f} L/s** | "
-                            f"Hesaplanan NS: **{_on_hesap['ns']:.2f} L/s**"
-                        )
-                    elif _on_hesap["ns"] > 0:
-                        st.warning(
-                            f"Hesaplanan NS = {_on_hesap['ns']:.2f} L/s. "
-                            "Mevcut 25.620.1201–25.620.1206 poz grubunda bunu karşılayan kapasite bulunamadı."
-                        )
-                else:
-                    _poz_secenekleri = [f"{p['poz']} — {p['kapasite']:.0f} L/s" for p in YAG_AYIRICI_POZLARI]
-                    _manuel_poz_no = st.selectbox(
-                        "Manuel Cihaz Poz No",
-                        [p["poz"] for p in YAG_AYIRICI_POZLARI],
-                        index=0,
-                        key=f"yag_{_ya}_manuel_poz",
-                    )
-                    _secilen_poz = next((dict(p) for p in YAG_AYIRICI_POZLARI if p["poz"] == _manuel_poz_no), None)
-
-                _poz_rapora_aktar = st.checkbox(
-                    "Cihaz Poz No rapora aktarılsın",
-                    value=bool(st.session_state.get(f"yag_{_ya}_poz_rapora_aktar", False)),
-                    key=f"yag_{_ya}_poz_rapora_aktar",
-                )
-
-                _secilen_kapasite = float(_secilen_poz["kapasite"]) if _secilen_poz else 0.0
-                _hesap = _yag_ayirici_hesapla(
-                    _ya, _adetler, _fd, _ft, _fr, _secilen_kapasite,
-                    _secilen_poz, _poz_rapora_aktar, _poz_modu
-                )
-                yag_ayirici_hesaplari[_ya] = _hesap
-
-                st.info(
-                    f"TOPLAM Qs = **{_hesap['qs']:.2f} L/s**  |  "
-                    f"NS = Qs × fd × ft × fr = **{_hesap['ns']:.2f} L/s**"
-                )
-                st.caption(
-                    f"fd = {_hesap['fd']:.2f} | ft = {_hesap['ft']:.2f} | fr = {_hesap['fr']:.2f} | "
-                    f"Seçilen kapasite = {_hesap['secilen_kapasite']:.2f} L/s | "
-                    f"Cihaz Poz No = {(_hesap['secilen_poz']['poz'] if _hesap['secilen_poz'] else 'Seçilmedi')}"
-                )
 
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
@@ -3954,6 +3493,7 @@ with _t_sihhi:
         yagmur_maddeleri = [
             "Yağmur suyu toplama hesabı yapılacaktır.",
             "Yağmur suyu filtresi, hesaplanan yağış debisine uygun kapasitede seçilecektir.",
+            "İlk yağış ayırıcı, çatı yüzeyindeki ilk kirli yağışın depoya girişini önleyecek şekilde düzenlenecektir.",
             "Yağmur suyu deposu hacmi, toplanabilir yağmur suyu ve kullanım ihtiyacı dikkate alınarak belirlenecektir.",
             "Depo taşma hattı, sisteme gelebilecek maksimum yağış debisini güvenli şekilde uzaklaştıracak kapasitede olacaktır.",
             "Taşma hattının kanalizasyona bağlanması halinde koku kapanı ve geri tepme koruması sağlanacaktır.",
@@ -3963,7 +3503,7 @@ with _t_sihhi:
 
         if yagmur_aktif:
             st.markdown('<div id="bolum_631_2_1"></div>', unsafe_allow_html=True)
-            st.markdown("##### • YAĞMUR SUYU TOPLAMA HESABI")
+            st.markdown("##### 6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI")
             c1, c2, c3 = st.columns(3)
             with c1:
                 yagmur_cati_alani = st.number_input(
@@ -3972,66 +3512,33 @@ with _t_sihhi:
                     step=10.0, key="yagmur_cati_alani"
                 )
             with c2:
-                # Seçilen il için MGM'den üç alternatif yağış verisi alınır.
+                # Seçilen ile göre MGM'den resmi maksimum günlük yağış verisini
+                # otomatik getir. İl değiştiğinde P değeri yeni ilin MGM değeriyle
+                # güncellenir; aynı ilde kullanıcı isterse değeri manuel değiştirebilir.
                 _mgm_yagis_mm, _mgm_yagis_tarih, _mgm_yagis_url = mgm_gunluk_en_yuksek_yagis_mm(secilen_il)
-                _mgm_aylik, _mgm_aylik_periyot, _mgm_aylik_url = mgm_aylik_ortalama_yagis_mm(secilen_il)
-                _aylik_degerler = list(_mgm_aylik.values())
-                _ortalama_aylik_yagis = (sum(_aylik_degerler) / 12.0) if len(_aylik_degerler) == 12 else None
-                _en_yuksek_ay = max(_mgm_aylik, key=_mgm_aylik.get) if _mgm_aylik else None
-                _en_yuksek_ay_yagis = _mgm_aylik.get(_en_yuksek_ay) if _en_yuksek_ay else None
-
-                _yagis_yontemleri = [
-                    "Günlük Toplam En Yüksek Yağış Miktarı",
-                    "Ortalama Aylık Yağış Miktarı",
-                    "En Yüksek Aylık Ortalama Yağış Miktarı",
-                ]
-                _yagis_yontemi = st.radio(
-                    "Tasarım yağış verisi seçimi",
-                    _yagis_yontemleri,
-                    index=_yagis_yontemleri.index(st.session_state.get("yagmur_yagis_yontemi", _yagis_yontemleri[0]))
-                    if st.session_state.get("yagmur_yagis_yontemi", _yagis_yontemleri[0]) in _yagis_yontemleri else 0,
-                    key="yagmur_yagis_yontemi",
-                )
-
-                if _yagis_yontemi == _yagis_yontemleri[0]:
-                    _otomatik_p = _mgm_yagis_mm
-                    _yagis_aciklama = (
-                        f"MGM günlük toplam en yüksek yağış: **{_mgm_yagis_mm:.1f} mm** "
-                        f"({_mgm_yagis_tarih})" if _mgm_yagis_mm is not None else "MGM verisi alınamadı."
-                    )
-                elif _yagis_yontemi == _yagis_yontemleri[1]:
-                    _otomatik_p = _ortalama_aylik_yagis
-                    _yagis_aciklama = (
-                        f"12 aylık ortalama yağışların aritmetik ortalaması: **{_ortalama_aylik_yagis:.1f} mm**"
-                        if _ortalama_aylik_yagis is not None else "MGM aylık ortalama yağış verisi alınamadı."
-                    )
-                else:
-                    _otomatik_p = _en_yuksek_ay_yagis
-                    _yagis_aciklama = (
-                        f"En yüksek aylık ortalama yağış: **{_en_yuksek_ay} – {_en_yuksek_ay_yagis:.1f} mm**"
-                        if _en_yuksek_ay_yagis is not None else "MGM aylık ortalama yağış verisi alınamadı."
-                    )
-
-                _onceki_yagis_yontemi = st.session_state.get("yagmur_yagis_yontemi_onceki", "")
                 _onceki_mgm_il = st.session_state.get("yagmur_mgm_il", "")
-                if (_onceki_mgm_il != secilen_il or _onceki_yagis_yontemi != _yagis_yontemi) and _otomatik_p is not None:
-                    st.session_state["yagmur_yagis"] = float(_otomatik_p)
-                st.session_state["yagmur_mgm_il"] = secilen_il
-                st.session_state["yagmur_yagis_yontemi_onceki"] = _yagis_yontemi
+                if _onceki_mgm_il != secilen_il:
+                    if _mgm_yagis_mm is not None:
+                        st.session_state["yagmur_yagis"] = float(_mgm_yagis_mm)
+                    st.session_state["yagmur_mgm_il"] = secilen_il
 
                 yagmur_yagis = st.number_input(
                     "Tasarım yağış yüksekliği P (mm)", min_value=0.0,
                     step=1.0, key="yagmur_yagis",
-                    help="Seçilen yönteme göre MGM verisinden otomatik gelir; istenirse proje tasarım kriterine göre manuel değiştirilebilir."
+                    help="Seçilen il için MGM Resmi İklim İstatistikleri sayfasındaki Günlük Toplam En Yüksek Yağış Miktarı otomatik alınır. İsterseniz proje tasarım kriterinize göre manuel olarak değiştirebilirsiniz."
                 )
-                st.caption(_yagis_aciklama)
-                if _yagis_yontemi != _yagis_yontemleri[0] and _mgm_aylik:
-                    st.caption(
-                        "MGM aylık ortalama yağışları: " +
-                        " | ".join(f"{_ay}: {_deger:.1f} mm" for _ay, _deger in _mgm_aylik.items())
-                    )
+
                 if _mgm_yagis_mm is not None:
+                    st.caption(
+                        f"☁️ MGM verisi — {secilen_il}: **{_mgm_yagis_mm:.1f} mm** "
+                        f"({_mgm_yagis_tarih}). Değer otomatik işlendi."
+                    )
                     st.caption(f"Kaynak: MGM Resmi İklim İstatistikleri — {_mgm_yagis_url}")
+                else:
+                    st.warning(
+                        f"MGM'den {secilen_il} için yağış verisi alınamadı. "
+                        "P değerini manuel giriniz."
+                    )
             with c3:
                 yagmur_akis_katsayisi = st.number_input(
                     "Akış katsayısı C", min_value=0.0, max_value=1.0,
@@ -4039,12 +3546,13 @@ with _t_sihhi:
                     step=0.05, format="%.2f", key="yagmur_akis_katsayisi"
                 )
 
-            # Sarnıca alınacak yağmur suyu oranı ve filtre etkinlik katsayısı.
-            # Kullanıcıya yüzde olarak gösterilir; hesapta yüzde değerleri katsayıya çevrilir.
+            # Yağmur suyunun sarnıca alınan net miktarı için iki yeni tasarım katsayısı.
+            # İlk yağış ayırma hacmi aşağıda hesaplandığından, nihai sarnıç hacmi
+            # ilk yağış hacmi çıkarıldıktan sonra bu oranlarla düzeltilir.
             r1, r2 = st.columns(2)
             with r1:
                 yagmur_sarnic_orani = st.number_input(
-                    "Sarnıca alınacak yağmur suyu oranı (%)",
+                    "İlk yağış hariç sarnıca alınacak yağmur suyu oranı (%)",
                     min_value=0.0, max_value=100.0,
                     value=float(st.session_state.get("yagmur_sarnic_orani", 80.0)),
                     step=1.0, format="%.0f", key="yagmur_sarnic_orani"
@@ -4060,326 +3568,96 @@ with _t_sihhi:
             # Ham yağış hacmi: çatı alanı, tasarım yağışı ve akış katsayısından.
             yagmur_ham_toplanabilir_m3 = yagmur_cati_alani * yagmur_yagis * yagmur_akis_katsayisi / 1000.0
 
-            # Sarnıç hacmi: ham yağış hacmi × sarnıca alınacak oran × filtre etkinliği.
+            # İlk yağış hacmi burada ayrıca hesaplanır; aşağıdaki ilk yağış ayırıcı
+            # bölümünde aynı değer tekrar kullanılmaktadır.
+            _ilk_yagis_l_m2_on_hesap = float(st.session_state.get("ilk_yagis_l_m2", 1.0))
+            yagmur_ilk_yagis_hacmi_on_hesap = yagmur_cati_alani * _ilk_yagis_l_m2_on_hesap / 1000.0
+            yagmur_ilk_yagis_haric_m3 = max(0.0, yagmur_ham_toplanabilir_m3 - yagmur_ilk_yagis_hacmi_on_hesap)
+
+            # Sarnıca fiilen alınacak net yağmur suyu: ilk yağış hariç hacim ×
+            # sarnıç alma oranı × filtre etkinlik katsayısı.
             yagmur_toplanabilir_m3 = (
-                yagmur_ham_toplanabilir_m3
+                yagmur_ilk_yagis_haric_m3
                 * yagmur_sarnic_orani / 100.0
                 * yagmur_filtre_etkinlik / 100.0
             )
 
-            _yr_hesap_str = (
-                f"Sarnıca alınacak yağmur suyu: **V = V_ham × %{yagmur_sarnic_orani:.0f} × "
-                f"%{yagmur_filtre_etkinlik:.0f} = {yagmur_toplanabilir_m3:,.2f} m³**"
+            st.info(
+                f"Sarnıca alınacak net yağmur suyu: **V = (A × P × C / 1000 − V_ilk yağış) × "
+                f"{yagmur_sarnic_orani:.0f}/100 × {yagmur_filtre_etkinlik:.0f}/100 = "
+                f"{yagmur_toplanabilir_m3:,.2f} m³**"
                 .replace(",", "X").replace(".", ",").replace("X", ".")
             )
-            st.info(_yr_hesap_str)
             st.caption(
                 f"Ham yağış hacmi: {yagmur_ham_toplanabilir_m3:.2f} m³ | "
-                f"Sarnıca alınacak oran: %{yagmur_sarnic_orani:.0f} | "
-                f"Filtre etkinliği: %{yagmur_filtre_etkinlik:.0f}"
+                f"İlk yağış hacmi: {yagmur_ilk_yagis_hacmi_on_hesap:.2f} m³ | "
+                f"İlk yağış sonrası: {yagmur_ilk_yagis_haric_m3:.2f} m³"
             )
 
             st.markdown('<div id="bolum_631_2_2"></div>', unsafe_allow_html=True)
-            st.markdown("##### • YAĞMUR SUYU DEPOSU HACİM HESABI")
-
-            # Depo hacmi, seçilen ilin MGM aylık ortalama yağışlarının yıllık
-            # toplamı esas alınarak hesaplanır. Tasarım kriteri: yıllık toplam
-            # yağış hacminin %6'sı depolanacaktır.
-            _mgm_yillik_yagis_mm = (
-                sum(float(v) for v in (_mgm_aylik or {}).values())
-                if isinstance(_mgm_aylik, dict) and len(_mgm_aylik) == 12
-                else None
-            )
-            if _mgm_yillik_yagis_mm is not None:
-                yagmur_yillik_toplam_hacim_m3 = (
-                    yagmur_cati_alani * _mgm_yillik_yagis_mm * yagmur_akis_katsayisi / 1000.0
-                )
-                yagmur_depolama_orani = 6.0
-                yagmur_gerekli_depo = yagmur_yillik_toplam_hacim_m3 * yagmur_depolama_orani / 100.0
-                # Nihai depo hacmi otomatik olarak 5 m³'ün katına yukarı yuvarlanır.
-                # Kullanıcı, aşağıdaki sayı alanından bu değere manuel müdahale edebilir.
-                yagmur_otomatik_depo_hacmi = (
-                    math.ceil(yagmur_gerekli_depo / 5.0) * 5.0
-                    if yagmur_gerekli_depo > 0 else 0.0
-                )
-
-                st.write(
-                    f"Yıllık toplam yağış: **{_mgm_yillik_yagis_mm:.2f} mm** "
-                    f"(MGM aylık ortalamalarının toplamı)"
-                )
-                st.write(
-                    f"Yıllık toplanabilir yağış hacmi: **{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl**"
-                )
-                st.write(
-                    f"Depolanacak oran: **%{yagmur_depolama_orani:.0f}**"
-                )
-                st.write(
-                    f"Hesaplanan gerekli depo hacmi: **{yagmur_gerekli_depo:.2f} m³**"
-                )
-                st.write(
-                    f"Otomatik seçilen depo hacmi (5 m³ katına yukarı yuvarlanmış): **{yagmur_otomatik_depo_hacmi:.2f} m³**"
-                )
-                st.caption(
-                    f"V_yıllık = A × P_yıllık × C / 1000 = "
-                    f"{yagmur_cati_alani:.2f} × {_mgm_yillik_yagis_mm:.2f} × "
-                    f"{yagmur_akis_katsayisi:.2f} / 1000 = "
-                    f"{yagmur_yillik_toplam_hacim_m3:.2f} m³/yıl"
-                )
-                st.caption(
-                    f"V_depo = V_yıllık × %{yagmur_depolama_orani:.0f} = "
-                    f"{yagmur_yillik_toplam_hacim_m3:.2f} × %{yagmur_depolama_orani:.0f} = "
-                    f"{yagmur_gerekli_depo:.2f} m³"
-                )
-            else:
-                yagmur_yillik_toplam_hacim_m3 = 0.0
-                yagmur_depolama_orani = 6.0
-                yagmur_gerekli_depo = 0.0
-                yagmur_otomatik_depo_hacmi = 0.0
-                st.warning(
-                    f"{secilen_il} için MGM'nin 12 aylık yağış verisi alınamadı. "
-                    "Yıllık toplam yağışa bağlı depo hacmi hesaplanamadı."
-                )
-
-            # Üstteki Genel Bilgiler bölümünde seçilen yağmur suyu depo tipi
-            # burada otomatik olarak gösterilir; burada ikinci bir tip seçimi yoktur.
-            st.write(f"Yağmur suyu deposu tipi: **{sih_yagmur_depo_tipi}**")
-
-            # Otomatik 5 m³ katı doğrudan kullanıcı müdahale alanına başlangıç
-            # değeri olarak aktarılır. Kullanıcı daha önce elle değiştirmişse
-            # kendi değeri korunur; yeniden hesaplanan otomatik değer zorla
-            # üzerine yazılmaz.
-            _yagmur_mevcut_depo = st.session_state.get("yagmur_secilen_depo", None)
-            if _yagmur_mevcut_depo is None:
-                _yagmur_depo_baslangic = float(yagmur_otomatik_depo_hacmi)
-                st.session_state["yagmur_secilen_depo"] = _yagmur_depo_baslangic
-            else:
-                _yagmur_depo_baslangic = float(_yagmur_mevcut_depo)
-
-            yagmur_secilen_depo = st.number_input(
-                "Yağmur suyu deposu hacmi (m³) — elle müdahale edilebilir",
-                min_value=0.0,
-                step=0.5,
-                key="yagmur_secilen_depo",
-                help="Program hesaplanan hacmi 5 m³'ün bir üst katına otomatik yuvarlar ve bu değeri başlangıç olarak buraya aktarır. İsterseniz elle değiştirebilirsiniz."
-            )
-
-            # Yağmur suyu deposu poz bağlantısı, Genel Bilgiler / kullanma suyu
-            # deposu seçiminde kullanılan aynı 25.150.xx poz-kapasite tablosuna
-            # bağlanır. Betonarme depolar için bu tabloda poz bulunmadığından
-            # Cihaz Poz No üretilmez.
-            _yagmur_depo_poz_kapasiteleri = {
-                "Paslanmaz Modüler Çelik Su Deposu": [
-                    (1.25, "25.150.1201"), (2.50, "25.150.1202"), (3.75, "25.150.1203"),
-                    (5.00, "25.150.1204"), (6.25, "25.150.1205"), (7.50, "25.150.1206"),
-                    (10.0, "25.150.1207"), (12.5, "25.150.1208"), (15.0, "25.150.1209"),
-                    (20.0, "25.150.1210"), (22.5, "25.150.1211"), (25.0, "25.150.1212"),
-                    (30.0, "25.150.1213"), (37.5, "25.150.1214"), (40.0, "25.150.1215"),
-                    (45.0, "25.150.1216"), (50.0, "25.150.1217"), (56.0, "25.150.1218"),
-                    (59.6, "25.150.1219"), (62.0, "25.150.1220"), (75.0, "25.150.1221"),
-                    (90.0, "25.150.1222"), (93.2, "25.150.1223"), (104.2, "25.150.1224"),
-                    (112.0, "25.150.1225"), (121.5, "25.150.1226"),
-                ],
-                "Galvaniz Modüler Çelik Su Deposu": [
-                    (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
-                    (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
-                    (10.0, "25.150.1307"), (12.5, "25.150.1308"), (15.0, "25.150.1309"),
-                    (20.0, "25.150.1310"), (22.5, "25.150.1311"), (25.0, "25.150.1312"),
-                    (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
-                    (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
-                    (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
-                ],
-            }
-
-            _yagmur_depo_poz_kayitlari = _yagmur_depo_poz_kapasiteleri.get(
-                str(sih_yagmur_depo_tipi or "").strip(), []
-            )
-
-            def _yagmur_depo_en_yakin_poz(hedef_m3):
-                if not _yagmur_depo_poz_kayitlari or hedef_m3 <= 0:
-                    return None
-                return min(
-                    _yagmur_depo_poz_kayitlari,
-                    key=lambda kayit: abs(float(kayit[0]) - float(hedef_m3)),
-                )
-
-            # Manuel nihai hacme göre Cihaz Poz No otomatik belirlenir.
-            # Betonarme depoda poz listesi olmadığı için poz boş bırakılır.
-            yagmur_depo_poz_kaydi = _yagmur_depo_en_yakin_poz(yagmur_secilen_depo)
-            yagmur_depo_poz_kapasitesi = (
-                float(yagmur_depo_poz_kaydi[0]) if yagmur_depo_poz_kaydi else None
-            )
-            yagmur_depo_poz = yagmur_depo_poz_kaydi[1] if yagmur_depo_poz_kaydi else ""
-
-            # Daha önceki depo/hidrofor modüllerindeki aynı rapora aktar / kaldır
-            # mantığı burada da kullanılır. Poz programda görünmeye devam eder;
-            # yalnızca rapora aktarılıp aktarılmayacağı kullanıcı tarafından seçilir.
-            yagmur_depo_poz_rapora_eklensin_key = "yagmur_depo_poz_rapora_eklensin_v1"
-            yagmur_depo_poz_rapora_eklensin = st.checkbox(
-                "Cihaz Poz Numarasını Hesap Raporuna Aktar",
-                value=bool(st.session_state.get(yagmur_depo_poz_rapora_eklensin_key, True)),
-                key=yagmur_depo_poz_rapora_eklensin_key,
-                help=(
-                    "İşaretli ise modüler paslanmaz veya modüler galvaniz su deposunun "
-                    "seçilen Cihaz Poz No bilgisi hesap raporuna eklenir. "
-                    "İşaret kaldırılırsa poz programda görünür ancak rapora aktarılmaz. "
-                    "Betonarme su deposunda Cihaz Poz No gösterilmez."
-                ),
-            )
-
-            if yagmur_depo_poz:
-                st.write(f"Cihaz Poz No: **{yagmur_depo_poz}**")
-            elif str(sih_yagmur_depo_tipi or "").strip() == "Betonarme Su Deposu":
-                st.caption("Betonarme su deposu için tanımlı 25.150.xx Cihaz Poz No bulunmadığından poz numarası gösterilmez.")
-
-            st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
-            st.markdown("##### • YAĞMUR SUYU FİLTRESİ SEÇİMİ")
-
-            # Çevre, Şehircilik ve İklim Değişikliği Bakanlığı mekanik tesisat
-            # birim fiyat tariflerindeki Vortex filtre pozları. Filtre seçimi
-            # yağış süresinden veya m³/h hesabından değil, doğrudan yağmur suyu
-            # toplama alanından (m²) yapılır.
-            YAGMUR_VORTEX_FILTRE_POZLARI = {
-                "Yerüstü Vortex Filtre": [
-                    {"poz": "25.181.5101", "kapasite_m2": 200,  "debi_ls": 4},
-                    {"poz": "25.181.5102", "kapasite_m2": 500,  "debi_ls": 12},
-                    {"poz": "25.181.5103", "kapasite_m2": 1000, "debi_ls": 25},
-                    {"poz": "25.181.5104", "kapasite_m2": 3000, "debi_ls": 80},
-                ],
-                "Yeraltı Vortex Filtre": [
-                    {"poz": "25.181.5201", "kapasite_m2": 200,  "debi_ls": 4},
-                    {"poz": "25.181.5202", "kapasite_m2": 500,  "debi_ls": 12},
-                    {"poz": "25.181.5203", "kapasite_m2": 1000, "debi_ls": 25},
-                    {"poz": "25.181.5204", "kapasite_m2": 3000, "debi_ls": 80},
-                ],
-            }
-
+            st.markdown("##### 6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ")
             f1, f2 = st.columns(2)
             with f1:
+                yagmur_filtre_emniyet = st.number_input(
+                    "Filtre emniyet katsayısı (%)", min_value=0.0,
+                    value=float(st.session_state.get("yagmur_filtre_emniyet", 15.0)),
+                    step=1.0, key="yagmur_filtre_emniyet"
+                )
+            with f2:
                 yagmur_filtre_tipi = st.selectbox(
-                    "Vortex filtre tipi",
-                    list(YAGMUR_VORTEX_FILTRE_POZLARI.keys()),
+                    "Filtre tipi",
+                    ["Kendinden temizlemeli yağmur suyu filtresi", "Sepet filtre", "Vorteks filtre", "Kullanıcı tanımlı filtre"],
                     index=0, key="yagmur_filtre_tipi"
                 )
-
-            yagmur_filtre_pozlari = YAGMUR_VORTEX_FILTRE_POZLARI[yagmur_filtre_tipi]
-
-            # Filtre adedi, toplam toplama alanının mevcut en büyük poz kapasitesine
-            # bölünmesiyle gereken minimum adetten başlatılır. Kullanıcı adedi artırabilir.
-            _en_buyuk_filtre_kapasitesi_m2 = float(yagmur_filtre_pozlari[-1]["kapasite_m2"])
-            yagmur_filtre_gerekli_adet = max(
-                1, int(math.ceil(yagmur_cati_alani / _en_buyuk_filtre_kapasitesi_m2))
-            )
-            _mevcut_filtre_adedi = int(st.session_state.get("yagmur_filtre_adet", 0) or 0)
-            if _mevcut_filtre_adedi < yagmur_filtre_gerekli_adet:
-                st.session_state["yagmur_filtre_adet"] = yagmur_filtre_gerekli_adet
-
-            yagmur_filtre_adet = st.number_input(
-                "Filtre adedi",
-                min_value=1,
-                step=1,
-                value=int(st.session_state.get(
-                    "yagmur_filtre_adet", yagmur_filtre_gerekli_adet
-                )),
-                key="yagmur_filtre_adet",
-                help="Toplam toplama alanı, filtre adedine bölünür. Her filtreye düşen alanı karşılayan en küçük Bakanlık pozu otomatik seçilir. Adedi artırdığınızda poz da otomatik olarak yeniden seçilir."
-            )
-            yagmur_filtre_adet = int(yagmur_filtre_adet)
-
-            # KRİTİK SEÇİM MANTIĞI:
-            # Önce toplam alanı filtre adedine bölüyoruz. Poz seçimi toplam alana
-            # göre değil, tek filtreye düşen alana göre yapılıyor. Böylece örneğin
-            # 5.000 m² alan için 5 adet filtre seçilirse filtre başına 1.000 m²
-            # düşer ve 1.000 m²'lik poz otomatik olarak seçilir.
-            yagmur_filtre_basina_alan_m2 = (
-                yagmur_cati_alani / yagmur_filtre_adet if yagmur_filtre_adet > 0 else 0.0
-            )
-            yagmur_filtre_secimi = next(
-                (x for x in yagmur_filtre_pozlari
-                 if yagmur_filtre_basina_alan_m2 <= float(x["kapasite_m2"])),
-                yagmur_filtre_pozlari[-1]
-            )
-            yagmur_filtre_kapasite_m2 = float(yagmur_filtre_secimi["kapasite_m2"])
-            yagmur_filtre_debisi_ls = float(yagmur_filtre_secimi["debi_ls"])
-            yagmur_filtre_poz = yagmur_filtre_secimi["poz"]
-
-            yagmur_filtre_toplam_kapasite_m2 = yagmur_filtre_kapasite_m2 * yagmur_filtre_adet
-            yagmur_filtre_toplam_debisi_ls = yagmur_filtre_debisi_ls * yagmur_filtre_adet
-            yagmur_filtre_kapasite_yetersiz = yagmur_cati_alani > yagmur_filtre_toplam_kapasite_m2
-
-            with f2:
-                st.metric(
-                    "Tek filtre kapasitesi",
-                    f"{yagmur_filtre_kapasite_m2:,.0f} m²"
-                )
-
-            st.write(
-                f"Toplama alanı: **{yagmur_cati_alani:,.2f} m²** → "
-                f"Filtre adedi: **{yagmur_filtre_adet} adet** → "
-                f"Filtre başına düşen alan: **{yagmur_filtre_basina_alan_m2:,.2f} m²**"
-            )
-            st.write(
-                f"Seçilen kapasite: **{yagmur_filtre_kapasite_m2:,.0f} m²/adet** → "
-                f"Toplam kapasite: **{yagmur_filtre_toplam_kapasite_m2:,.0f} m²**"
-            )
-            st.write(
-                f"Tek filtre maksimum debisi: **{yagmur_filtre_debisi_ls:.0f} L/s** → "
-                f"Toplam maksimum debi: **{yagmur_filtre_toplam_debisi_ls:.0f} L/s**"
-            )
-            st.write(f"Cihaz Poz No: **{yagmur_filtre_poz}**")
-
-            # Poz numarasının rapora aktarılıp aktarılmayacağı kullanıcı tarafından
-            # seçilebilir. Varsayılan olarak rapora dahil edilir.
-            yagmur_filtre_poz_rapora_eklensin = st.checkbox(
-                "Filtre Cihaz Poz No rapora eklensin",
-                value=bool(st.session_state.get("yagmur_filtre_poz_rapora_eklensin", True)),
-                key="yagmur_filtre_poz_rapora_eklensin"
-            )
-
-            # Bakanlık pozlarındaki tüm filtre kapasitelerini kullanıcıya göster.
-            st.markdown("**Vortex filtre poz ve kapasite tablosu:**")
-            _filtre_tablo_satirlari = []
-            for _tip_adi, _poz_listesi in YAGMUR_VORTEX_FILTRE_POZLARI.items():
-                for _poz_kaydi in _poz_listesi:
-                    _filtre_tablo_satirlari.append({
-                        "Filtre Tipi": _tip_adi,
-                        "Cihaz Poz No": _poz_kaydi["poz"],
-                        "Toplama Alanı Kapasitesi (m²)": _poz_kaydi["kapasite_m2"],
-                        "Maksimum Debi (L/s)": _poz_kaydi["debi_ls"],
-                    })
-            st.dataframe(
-                _filtre_tablo_satirlari,
-                use_container_width=True,
-                hide_index=True
-            )
-
-            if yagmur_filtre_kapasite_yetersiz:
-                st.warning(
-                    f"Girilen {yagmur_filtre_adet} adet filtre ile toplam kapasite "
-                    f"{yagmur_filtre_toplam_kapasite_m2:,.0f} m² olup, "
-                    f"{yagmur_cati_alani:,.2f} m² toplama alanını karşılamıyor. "
-                    f"Minimum gerekli adet: {yagmur_filtre_gerekli_adet}."
-                )
-
-            # Taşma hattı hesabında kullanılmak üzere mevcut yağış debisi hesabı
-            # korunur; bu değer artık filtre seçiminde kullanılmaz.
+            # Debi hesabı için yağış süresi kullanıcı tarafından belirlenir.
             yagmur_sure_dk = st.number_input(
                 "Tasarım yağış süresi (dk)", min_value=1.0,
                 value=float(st.session_state.get("yagmur_sure_dk", 15.0)),
                 step=1.0, key="yagmur_sure_dk"
             )
             yagmur_debi_m3h = yagmur_ham_toplanabilir_m3 / (yagmur_sure_dk / 60.0) if yagmur_sure_dk > 0 else 0.0
+            yagmur_filtre_debisi = yagmur_debi_m3h * (1.0 + yagmur_filtre_emniyet / 100.0)
+            st.write(f"Hesaplanan yağış debisi: **{yagmur_debi_m3h:.2f} m³/h**")
+            st.write(f"Filtre seçim debisi: **{yagmur_filtre_debisi:.2f} m³/h**")
+
+            st.markdown('<div id="bolum_631_2_3"></div>', unsafe_allow_html=True)
+            st.markdown("##### 6.3.1.2.3 İLK YAĞIŞ AYIRICI SEÇİMİ")
+            ilk1, ilk2 = st.columns(2)
+            with ilk1:
+                ilk_yagis_l_m2 = st.number_input(
+                    "İlk yağış ayırma miktarı (L/m²)", min_value=0.0,
+                    value=float(st.session_state.get("ilk_yagis_l_m2", 1.0)),
+                    step=0.1, key="ilk_yagis_l_m2"
+                )
+            with ilk2:
+                ilk_yagis_hacmi = yagmur_cati_alani * ilk_yagis_l_m2 / 1000.0
+                st.metric("İlk yağış ayırıcı hacmi", f"{ilk_yagis_hacmi:.2f} m³")
 
             st.markdown('<div id="bolum_631_2_4"></div>', unsafe_allow_html=True)
-            st.markdown("##### • TAŞMA HATTI HESABI")
-            st.caption("Taşma hattı hesabı, çatıdan oluşan ham yağmur suyu hacminin seçilen tasarım süresine dağıtılması ve ardından emniyet katsayısı uygulanmasıyla yapılır.")
-
-            # Hesap adımları program ekranında açıkça gösterilir.
-            st.markdown("**1. Ham yağmur suyu hacmi**")
-            st.latex(r"V_{ham} = A \times P \times C / 1000")
-            st.markdown(
-                f"**Vₕₐₘ = {yagmur_cati_alani:,.2f} m² × {yagmur_yagis:,.2f} mm × {yagmur_akis_katsayisi:.2f} / 1000 = {yagmur_ham_toplanabilir_m3:,.2f} m³**"
+            st.markdown("##### 6.3.1.2.4 YAĞMUR SUYU DEPOSU HACİM HESABI")
+            d1, d2 = st.columns(2)
+            with d1:
+                yagmur_kullanim_gunluk = st.number_input(
+                    "Günlük yağmur suyu kullanım ihtiyacı (m³/gün)", min_value=0.0,
+                    value=float(st.session_state.get("yagmur_kullanim_gunluk", 5.0)),
+                    step=0.5, key="yagmur_kullanim_gunluk"
+                )
+            with d2:
+                yagmur_depolama_gun = st.number_input(
+                    "Depolama süresi (gün)", min_value=1.0,
+                    value=float(st.session_state.get("yagmur_depolama_gun", 3.0)),
+                    step=1.0, key="yagmur_depolama_gun"
+                )
+            yagmur_gerekli_depo = yagmur_kullanim_gunluk * yagmur_depolama_gun
+            yagmur_secilen_depo = st.number_input(
+                "Seçilen yağmur suyu deposu hacmi (m³)", min_value=0.0,
+                value=float(max(yagmur_gerekli_depo, st.session_state.get("yagmur_secilen_depo", yagmur_gerekli_depo))),
+                step=0.5, key="yagmur_secilen_depo"
             )
+            st.write(f"Gerekli depo hacmi: **{yagmur_gerekli_depo:.2f} m³**")
 
+            st.markdown('<div id="bolum_631_2_5"></div>', unsafe_allow_html=True)
+            st.markdown("##### 6.3.1.2.5 TAŞMA HATTI HESABI")
             t1, t2 = st.columns(2)
             with t1:
                 tasma_emniyet = st.number_input(
@@ -4390,353 +3668,26 @@ with _t_sihhi:
             with t2:
                 tasma_debisi = yagmur_debi_m3h * (1.0 + tasma_emniyet / 100.0)
                 st.metric("Hesaplanan taşma debisi", f"{tasma_debisi:.2f} m³/h")
-
-            st.markdown("**2. Tasarım yağış debisi**")
-            st.latex(r"Q_{yağış} = V_{ham} / (t / 60)")
-            st.markdown(
-                f"**Qᵧₐğış = {yagmur_ham_toplanabilir_m3:,.2f} m³ / ({yagmur_sure_dk:,.2f} / 60) = {yagmur_debi_m3h:,.2f} m³/h**"
+            tasma_cap = st.number_input(
+                "Seçilen taşma hattı çapı DN", min_value=0, value=int(st.session_state.get("tasma_cap", 100)),
+                step=10, key="tasma_cap"
             )
-
-            st.markdown("**3. Emniyet katsayısı uygulanmış taşma debisi**")
-            st.latex(r"Q_{taşma} = Q_{yağış} \times (1 + E/100)")
-            st.markdown(
-                f"**Qₜₐşₘₐ = {yagmur_debi_m3h:,.2f} × (1 + {tasma_emniyet:.2f}/100) = {tasma_debisi:,.2f} m³/h**"
-            )
-
-            # ------------------------------------------------------------------
-            # TAŞMA HATTI HİDROLİK KONTROLÜ - MANNING
-            # Cazibeli taşma hattı için tam dolu boru hidrolik kapasitesi
-            # taranır ve hesaplanan taşma debisini karşılayan en küçük DN seçilir.
-            # Manning katsayısı ve eğim kullanıcı tarafından değiştirilebilir.
-            # ------------------------------------------------------------------
-            st.markdown("**4. Taşma hattı hidrolik kontrolü (Manning yöntemi)**")
-            h1, h2 = st.columns(2)
-            with h1:
-                tasma_malzeme = st.selectbox(
-                    "Taşma hattı boru malzemesi",
-                    ["PVC", "PE", "Çelik", "Beton", "Diğer"],
-                    index=["PVC", "PE", "Çelik", "Beton", "Diğer"].index(
-                        st.session_state.get("tasma_malzeme", "PVC")
-                    ),
-                    key="tasma_malzeme",
-                )
-            _manning_n_varsayilan = {
-                "PVC": 0.011,
-                "PE": 0.011,
-                "Çelik": 0.012,
-                "Beton": 0.015,
-                "Diğer": 0.013,
-            }
-            with h2:
-                tasma_manning_n = st.number_input(
-                    "Manning pürüzlülük katsayısı (n)",
-                    min_value=0.001, max_value=0.100,
-                    value=float(st.session_state.get("tasma_manning_n", _manning_n_varsayilan.get(tasma_malzeme, 0.013))),
-                    step=0.001, format="%.3f", key="tasma_manning_n"
-                )
-
-            h3, h4 = st.columns(2)
-            with h3:
-                tasma_egim_yuzde = st.number_input(
-                    "Taşma hattı eğimi (%)", min_value=0.01, max_value=20.0,
-                    value=float(st.session_state.get("tasma_egim_yuzde", 1.0)),
-                    step=0.1, format="%.2f", key="tasma_egim_yuzde"
-                )
-            with h4:
-                # Taşma hattı için proje tasarım kriteri: maksimum akış hızı 3,00 m/s.
-                tasma_max_hiz = st.number_input(
-                    "Kabul edilen maksimum hız (m/s)", min_value=0.10, max_value=20.0,
-                    value=float(st.session_state.get("tasma_max_hiz", 3.0)),
-                    step=0.1, format="%.1f", key="tasma_max_hiz"
-                )
-
-            # Proje tasarım kriteri: taşma hattı tasarım debisi en fazla 200 L/s kabul edilir.
-            # Hesaplanan gerçek değer ayrıca gösterilir; hidrolik ön boyutlandırmada
-            # kullanılan tasarım debisi 200 L/s ile sınırlandırılır.
-            TASMA_MAKS_TASARIM_DEBISI_LPS = 200.0
-            tasma_hesaplanan_Q_lps = tasma_debisi / 3.6
-            tasma_tasarim_Q_lps = min(tasma_hesaplanan_Q_lps, TASMA_MAKS_TASARIM_DEBISI_LPS)
-            tasma_tasarim_debisi_m3h = tasma_tasarim_Q_lps * 3.6
-            tasma_debi_sinirlandi = tasma_hesaplanan_Q_lps > TASMA_MAKS_TASARIM_DEBISI_LPS
-            # Taşma hattı adedi: tek hat yeterli değilse aynı DN sınıfında paralel
-            # iki veya üç hat seçilebilir. Her hatta düşen debi ayrı ayrı kontrol edilir.
-            tasma_hat_adedi = st.selectbox(
-                "Taşma hattı adedi",
-                [1, 2, 3],
-                index=max(0, min(2, int(st.session_state.get("tasma_hat_adedi", 1)) - 1)),
-                format_func=lambda x: f"{x} hat",
-                key="tasma_hat_adedi",
-            )
-
-            tasma_Q_lps = tasma_tasarim_Q_lps
-            tasma_Q_m3s = tasma_Q_lps / 1000.0
-            tasma_hat_Q_lps = tasma_Q_lps / max(1, int(tasma_hat_adedi))
-            tasma_hat_Q_m3s = tasma_hat_Q_lps / 1000.0
-            tasma_S = tasma_egim_yuzde / 100.0
-            tasma_dn_listesi = [50, 65, 80, 100, 125, 150, 200, 250]
-
-            # Her hat için gerekli DN, hat adedine bölünmüş debiye göre belirlenir.
-            tasma_hidrolik_tablo = []
-            for _dn in tasma_dn_listesi:
-                _D = _dn / 1000.0
-                _A = math.pi * _D**2 / 4.0
-                _R = _D / 4.0
-                _Qkap = (1.0 / tasma_manning_n) * _A * (_R ** (2.0 / 3.0)) * math.sqrt(tasma_S) if tasma_S > 0 and tasma_manning_n > 0 else 0.0
-                _Qkap_manning_lps = _Qkap * 1000.0
-                _V_manning = _Qkap / _A if _A > 0 else 0.0
-                # DN200 ve DN250 için 3,00 m/s tasarım hızına göre ayrıca kesit kapasitesi hesaplanır.
-                # Manning kapasitesi ve gerçek Manning hızı ayrı olarak korunur.
-                _Qkap_hiz_lps = _A * tasma_max_hiz * 1000.0 if _dn in (200, 250) else _Qkap_manning_lps
-                _Qkap_kontrol_lps = max(_Qkap_manning_lps, _Qkap_hiz_lps) if _dn in (200, 250) else _Qkap_manning_lps
-                _uygun = (_Qkap_kontrol_lps / 1000.0 >= tasma_hat_Q_m3s)
-                tasma_hidrolik_tablo.append({
-                    "dn": _dn, "alan_m2": _A,
-                    "q_kapasite_lps": _Qkap_kontrol_lps,
-                    "q_manning_lps": _Qkap_manning_lps,
-                    "q_hiz_lps": _Qkap_hiz_lps if _dn in (200, 250) else None,
-                    "hiz_ms": _V_manning, "tasarim_hiz_ms": tasma_max_hiz if _dn in (200, 250) else _V_manning,
-                    "uygun": _uygun,
-                    "hat_gerekli_lps": tasma_hat_Q_lps,
-                    "toplam_kapasite_lps": _Qkap_kontrol_lps * int(tasma_hat_adedi),
-                })
-
-            tasma_hidrolik_secilen = next((x for x in tasma_hidrolik_tablo if x["uygun"]), None)
-            # Proje tasarım kriteri: her bir paralel taşma hattı maksimum DN250 ile sınırlıdır.
-            # Tek hat DN250'yi kurtarmıyorsa 2 veya 3 paralel hat ile debi bölünür.
-            tasma_cap = tasma_hidrolik_secilen["dn"] if tasma_hidrolik_secilen else 200
-            tasma_capasite_lps = next((x["q_kapasite_lps"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
-            tasma_hiz_ms = next((x["hiz_ms"] for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), 0.0)
-            tasma_hidrolik_uygun = bool(tasma_hidrolik_secilen)
-            tasma_toplam_kapasite_lps = tasma_capasite_lps * int(tasma_hat_adedi)
-
-            # 1/2/3 hat seçenekleri içinde DN250 veya daha küçük çapla
-            # tasarım debisini karşılayan ilk seçenek kullanıcıya önerilir.
-            tasma_onerilen_hat_adedi = None
-            tasma_oneri_cap = None
-            for _adet in (1, 2, 3):
-                _q_hat = tasma_Q_lps / _adet
-                _uygun = next(
-                    (x for x in tasma_hidrolik_tablo if x["q_kapasite_lps"] >= _q_hat and x["hiz_ms"] <= tasma_max_hiz),
-                    None,
-                )
-                if _uygun is not None:
-                    tasma_onerilen_hat_adedi = _adet
-                    tasma_oneri_cap = _uygun["dn"]
-                    break
-
-            st.markdown(
-                f"**Hesaplanan taşma debisi:** {tasma_hesaplanan_Q_lps:.2f} L/s = {tasma_debisi:.2f} m³/h"
-            )
-            if tasma_debi_sinirlandi:
-                st.warning(
-                    f"Proje tasarım kriteri gereği hidrolik kontrolde taşma debisi "
-                    f"maksimum {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s ile sınırlandırılmıştır. "
-                    f"Hesaplanan değer {tasma_hesaplanan_Q_lps:.2f} L/s'tir."
-                )
-            st.markdown(
-                f"**Tasarım taşma debisi:** **{tasma_tasarim_Q_lps:.2f} L/s** "
-                f"= **{tasma_tasarim_debisi_m3h:.2f} m³/h** (üst sınır: {TASMA_MAKS_TASARIM_DEBISI_LPS:.0f} L/s)"
-            )
-            st.markdown(
-                f"**Taşma hattı adedi:** {tasma_hat_adedi} hat → her hatta düşen tasarım debisi = "
-                f"{tasma_hat_Q_lps:.2f} L/s"
-            )
-            if tasma_onerilen_hat_adedi is not None:
-                st.info(
-                    f"Önerilen minimum düzen: {tasma_onerilen_hat_adedi} hat × DN {tasma_oneri_cap}. "
-                    f"Kullanıcı seçimi: {tasma_hat_adedi} hat."
-                )
-            st.markdown("**Manning formülünün sayısal uygulanması**")
-            st.latex(r"Q = \frac{1}{n} \times A \times R^{2/3} \times S^{1/2}")
-            if tasma_hidrolik_secilen:
-                _secili_A = float(tasma_hidrolik_secilen.get("alan_m2", 0.0))
-                _secili_D = float(tasma_hidrolik_secilen.get("dn", 0)) / 1000.0
-                _secili_R = _secili_D / 4.0
-                _secili_Qm3s = float(tasma_hidrolik_secilen.get("q_manning_lps", 0.0)) / 1000.0
-                _secili_V = float(tasma_hidrolik_secilen.get("hiz_ms", 0.0))
-                st.markdown(
-                    f"**A = π × D² / 4 = π × {_secili_D:.3f}² / 4 = {_secili_A:.5f} m²**  "
-                    f"  \n**R = D / 4 = {_secili_D:.3f} / 4 = {_secili_R:.5f} m**"
-                )
-                st.markdown(
-                    f"**Q = (1 / {tasma_manning_n:.3f}) × {_secili_A:.5f} × "
-                    f"({_secili_R:.5f})^(2/3) × ({tasma_S:.4f})^(1/2) "
-                    f"= {_secili_Qm3s:.5f} m³/s = {(_secili_Qm3s*1000):.2f} L/s**"
-                )
-                st.markdown(
-                    f"**V = Q / A = {_secili_Qm3s:.5f} / {_secili_A:.5f} = {_secili_V:.2f} m/s**"
-                )
-            else:
-                st.markdown(
-                    f"Manning: Q = (1/n) × A × R^(2/3) × S^(1/2) → "
-                    f"n = {tasma_manning_n:.3f}, S = {tasma_S:.4f} ({tasma_egim_yuzde:.2f}%), "
-                    f"her hat için Q gerekli = {tasma_hat_Q_lps:.2f} L/s"
-                )
-            st.markdown(
-                f"**Her hat için seçilen minimum taşma hattı: DN {tasma_cap}**  "
-                f"→ tek hat tasarım kapasitesi = {tasma_capasite_lps:.2f} L/s, "
-                f"toplam tasarım kapasitesi = {tasma_toplam_kapasite_lps:.2f} L/s, "
-                f"Manning hızı = {tasma_hiz_ms:.2f} m/s"
-            )
-            if tasma_cap in (200, 250):
-                _secili_kayit = next((x for x in tasma_hidrolik_tablo if x["dn"] == tasma_cap), None)
-                if _secili_kayit and _secili_kayit.get("q_hiz_lps") is not None:
-                    st.markdown(
-                        f"**DN {tasma_cap} için {tasma_max_hiz:.2f} m/s tasarım hızına göre kapasite:** "
-                        f"Q = A × V = {_secili_kayit['alan_m2']:.5f} × {tasma_max_hiz:.2f} "
-                        f"= **{_secili_kayit['q_hiz_lps']:.2f} L/s**"
-                    )
-
-            _tablo_satirlari = []
-            for _x in tasma_hidrolik_tablo:
-                _tablo_satirlari.append({
-                    "DN": f"DN {_x['dn']}",
-                    "Tasarım Kapasitesi (L/s)": f"{_x['q_kapasite_lps']:.2f}",
-                    "Manning Kapasitesi (L/s)": f"{_x.get('q_manning_lps', _x['q_kapasite_lps']):.2f}",
-                    "Manning Hızı (m/s)": f"{_x['hiz_ms']:.2f}",
-                    "3 m/s Kapasitesi (L/s)": (f"{_x['q_hiz_lps']:.2f}" if _x.get('q_hiz_lps') is not None else "-"),
-                    "Durum": "UYGUN" if _x["uygun"] else "YETERSİZ"
-                })
-            st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
-            if tasma_hidrolik_uygun:
-                st.success(
-                    f"Hidrolik kontrol: {tasma_hat_adedi} hat × DN {tasma_cap}; "
-                    f"her hat {tasma_hat_Q_lps:.2f} L/s, toplam kapasite {tasma_toplam_kapasite_lps:.2f} L/s. "
-                    f"Hız {tasma_hiz_ms:.2f} m/s ile sınır içinde."
-                )
-            else:
-                st.warning(
-                    f"{tasma_hat_adedi} hat × DN250, hat başına {tasma_hat_Q_lps:.2f} L/s tasarım debisini karşılamıyor. "
-                    "Hat adedini artırın (2 veya 3 hat) veya eğim/malzeme/çıkış koşullarını yeniden değerlendirin."
-                )
-
-            st.caption("Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır.")
-
-            st.markdown('<div id="bolum_631_2_5"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.5 TAŞKAN SİFONU / KOKU KAPANI SEÇİMİ")
-
-            # 25.181.5400 grubu: ÇŞİDB mekanik tesisat pozları.
-            # Seçim, yukarıdaki Manning hidrolik hesabından çıkan minimum DN
-            # değerini karşılayan en küçük Taşkan Sifonu pozuna otomatik bağlanır.
-            TASKAN_SIFONU_POZLARI = [
-                {
-                    "poz": "25.181.5401",
-                    "dn": 110,
-                    "tanim": "Ø 110 mm Taşkan Sifonu",
-                    "ozellik": (
-                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
-                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
-                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
-                    ),
-                },
-                {
-                    "poz": "25.181.5402",
-                    "dn": 160,
-                    "tanim": "Ø 160 mm Taşkan Sifonu",
-                    "ozellik": (
-                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
-                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
-                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
-                    ),
-                },
-                {
-                    "poz": "25.181.5403",
-                    "dn": 200,
-                    "tanim": "Ø 200 mm Taşkan Sifonu",
-                    "ozellik": (
-                        "Depo taşma hattında kanalizasyondan gelebilecek biyolojik zararlıların "
-                        "girişini fiziksel bariyer yapısıyla engelleyen, su yüzeyindeki polenleri "
-                        "süpüren özel sifon yapısına sahip Polietilen (HDPE) taşkan sifonu."
-                    ),
-                },
-            ]
-
-            # Her paralel taşma hattı için bir adet Taşkan Sifonu seçilir.
-            # Taşma hattı DN250 olsa dahi mevcut 25.181.5400 poz grubundaki
-            # en büyük sifon Ø200 olduğundan DN250 -> Ø200 sifon olarak seçilir.
-            if int(tasma_cap) >= 200:
-                tasma_sifonu_secim = next(
-                    (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) == 200),
-                    None,
-                )
-            else:
-                tasma_sifonu_secim = next(
-                    (x for x in TASKAN_SIFONU_POZLARI if int(x["dn"]) >= int(tasma_cap)),
-                    None,
-                )
-            tasma_sifonu_adedi = int(tasma_hat_adedi)
-
-            sifon1, sifon2 = st.columns(2)
-            with sifon1:
-                yagmur_tasma_sifonu = st.checkbox(
-                    "Taşkan sifonu / koku kapanı kullanılacaktır",
-                    value=True,
-                    key="yagmur_tasma_sifonu",
-                )
-            with sifon2:
-                yagmur_tasma_sifonu_poz_rapora_eklensin = st.checkbox(
-                    "Taşkan Sifonu Poz No rapora eklensin",
-                    value=True,
-                    key="yagmur_tasma_sifonu_poz_rapora_eklensin",
-                )
-
-            yagmur_geri_tepme = st.checkbox(
-                "Geri tepme önleyici düzenek", value=True, key="yagmur_geri_tepme"
-            )
-            yagmur_kanal_baglanti = st.checkbox(
-                "Taşma hattı kanalizasyona bağlanacak",
-                value=False,
-                key="yagmur_kanal_baglanti",
-            )
-
-            if yagmur_tasma_sifonu:
-                if tasma_sifonu_secim:
-                    st.success(
-                        f"Otomatik Taşkan Sifonu seçimi: {tasma_sifonu_adedi} adet × "
-                        f"{tasma_sifonu_secim['poz']} — {tasma_sifonu_secim['tanim']} "
-                        f"(her hatta {tasma_hat_Q_lps:.2f} L/s)"
-                    )
-                    st.markdown(
-                        f"**Taşkan Sifonu Özelliği:** {tasma_sifonu_secim['ozellik']}"
-                    )
-                else:
-                    st.error(
-                        f"Hidrolik hesap sonucu DN {tasma_cap} gerekiyor. "
-                        "25.181.5400 Taşkan Sifonu grubunda en büyük mevcut poz Ø200 mm olduğundan uygun poz bulunamadı."
-                    )
 
             st.markdown('<div id="bolum_631_2_6"></div>', unsafe_allow_html=True)
-            st.markdown("##### AKIŞ DÜZENLEYİCİ (CAZİBE YAVAŞLATICI / SAKİNLEŞTİRİCİ GİRİŞ) SEÇİMİ")
-            yagmur_sakin_giris = st.checkbox(
-                "Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) kullanılacaktır",
-                value=True,
-                key="yagmur_sakin_giris",
-            )
-            yagmur_sakin_giris_poz_rapora_eklensin = st.checkbox(
-                "Cihaz Poz No rapora eklensin",
-                value=True,
-                key="yagmur_sakin_giris_poz_rapora_eklensin",
-            )
-            # 25.181.5300 pozunun Bakanlık yapım şartındaki tanım.
-            yagmur_sakin_giris_poz = "25.181.5300"
-            yagmur_sakin_giris_malzeme_ozellik = (
-                "Yağmur suyu deposu girişinde suyun hızını keserek dip tortusunun havalanmasını "
-                "engelleyen, suyun oksijenlenmesini destekleyen, korozyona dayanıklı Polietilen (HDPE) "
-                "veya Paslanmaz Çelik malzemeden mamul akış düzenleyicinin iş yerinde temini ve yerine "
-                "montajı. (Yükseltici Parça ve Kapak Fiyata Dahildir.)"
-            )
-            yagmur_sakin_giris_fonksiyonu = (
-                "Yağmur suyu indirme borularından gelen suyun depoya hızlı bir şekilde dökülmesini "
-                "engeller. Depo tabanındaki tortuların yeniden karışıp suyu bulandırmasının önüne geçer "
-                "ve suyun oksijenlenmesini destekler."
-            )
-            if yagmur_sakin_giris:
-                st.markdown(f"**Cihaz Poz No:** {yagmur_sakin_giris_poz}")
-                st.markdown(f"**Malzeme / Özellik:** {yagmur_sakin_giris_malzeme_ozellik}")
-                st.markdown(f"**Fonksiyonu:** {yagmur_sakin_giris_fonksiyonu}")
+            st.markdown("##### 6.3.1.2.6 TAŞMA SİFONU / KOKU KAPANI")
+            sifon1, sifon2 = st.columns(2)
+            with sifon1:
+                yagmur_tasma_sifonu = st.checkbox("Taşma hattında sifon / koku kapanı", value=True, key="yagmur_tasma_sifonu")
+            with sifon2:
+                yagmur_geri_tepme = st.checkbox("Geri tepme önleyici düzenek", value=True, key="yagmur_geri_tepme")
+            yagmur_kanal_baglanti = st.checkbox("Taşma hattı kanalizasyona bağlanacak", value=False, key="yagmur_kanal_baglanti")
 
             st.markdown('<div id="bolum_631_2_7"></div>', unsafe_allow_html=True)
-            st.markdown("##### 6.3.1.2.7 HAVALANDIRMA VE HAŞERE KORUMASI")
+            st.markdown("##### 6.3.1.2.7 DEPO GİRİŞİ / SAKİN GİRİŞ")
+            yagmur_sakin_giris = st.checkbox("Depo girişinde sakin giriş düzeni kullanılacaktır", value=True, key="yagmur_sakin_giris")
+
+            st.markdown('<div id="bolum_631_2_8"></div>', unsafe_allow_html=True)
+            st.markdown("##### 6.3.1.2.8 HAVALANDIRMA VE HAŞERE KORUMASI")
             h1, h2 = st.columns(2)
             with h1:
                 yagmur_havalandirma = st.checkbox("Depo havalandırması yapılacaktır", value=True, key="yagmur_havalandirma")
@@ -4746,7 +3697,7 @@ with _t_sihhi:
             st.caption("Not: Yağmur suyu pompası bu bölümde seçilmez; gerekli pompa/hidrofor seçimi ilgili hidrofor-pompa modülünde yapılır.")
 
             yagmur_secimler = {
-                "toplama": True, "filtre": True, "depo": True,
+                "toplama": True, "filtre": True, "ilk_yagis": True, "depo": True,
                 "tasma": True, "sifon": yagmur_tasma_sifonu, "sakin_giris": yagmur_sakin_giris,
                 "havalandirma": yagmur_havalandirma, "hasere": yagmur_hasere,
             }
@@ -4754,79 +3705,25 @@ with _t_sihhi:
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
-                "yagis_yontemi": _yagis_yontemi,
-                "mgm_aylik_yagis": _mgm_aylik,
-                "mgm_aylik_periyot": _mgm_aylik_periyot,
-                "mgm_ortalama_aylik_yagis": _ortalama_aylik_yagis,
-                "mgm_en_yuksek_ay": _en_yuksek_ay,
-                "mgm_en_yuksek_ay_yagis": _en_yuksek_ay_yagis,
                 "ham_toplanabilir_m3": yagmur_ham_toplanabilir_m3,
+                "ilk_yagis_haric_m3": yagmur_ilk_yagis_haric_m3,
                 "sarnic_orani": yagmur_sarnic_orani,
                 "filtre_etkinlik": yagmur_filtre_etkinlik,
                 "toplanabilir_m3": yagmur_toplanabilir_m3, "sure_dk": yagmur_sure_dk,
-                "debi_m3h": yagmur_debi_m3h,
-                "filtre_tipi": yagmur_filtre_tipi,
-                "filtre_poz": yagmur_filtre_poz,
-                "filtre_kapasite_m2": yagmur_filtre_kapasite_m2,
-                "filtre_basina_alan_m2": yagmur_filtre_basina_alan_m2,
-                "filtre_adet": yagmur_filtre_adet,
-                "filtre_gerekli_adet": yagmur_filtre_gerekli_adet,
-                "filtre_toplam_kapasite_m2": yagmur_filtre_toplam_kapasite_m2,
-                "filtre_debisi_ls": yagmur_filtre_debisi_ls,
-                "filtre_toplam_debisi_ls": yagmur_filtre_toplam_debisi_ls,
-                "filtre_kapasite_yetersiz": yagmur_filtre_kapasite_yetersiz,
-                "filtre_poz_rapora_eklensin": yagmur_filtre_poz_rapora_eklensin,
-                "mgm_yillik_yagis_mm": _mgm_yillik_yagis_mm,
-                "yillik_toplam_hacim_m3": yagmur_yillik_toplam_hacim_m3,
-                "depolama_orani": yagmur_depolama_orani,
-                "yagmur_depo_tipi": sih_yagmur_depo_tipi,
-                "yagmur_depo_poz": yagmur_depo_poz,
-                "yagmur_depo_poz_kapasitesi": yagmur_depo_poz_kapasitesi,
-                "yagmur_depo_poz_rapora_eklensin": yagmur_depo_poz_rapora_eklensin,
-                "gerekli_depo": yagmur_gerekli_depo,
-                "otomatik_depo_hacmi": yagmur_otomatik_depo_hacmi,
-                "secilen_depo": yagmur_secilen_depo,
-                "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi,
-                "tasma_hesaplanan_Q_lps": tasma_hesaplanan_Q_lps,
-                "tasma_tasarim_Q_lps": tasma_tasarim_Q_lps,
-                "tasma_tasarim_debisi_m3h": tasma_tasarim_debisi_m3h,
-                "tasma_debi_sinirlandi": tasma_debi_sinirlandi,
-                "tasma_maks_tasarim_Q_lps": TASMA_MAKS_TASARIM_DEBISI_LPS,
-                "tasma_cap": tasma_cap,
-                "tasma_hat_adedi": tasma_hat_adedi,
-                "tasma_hat_Q_lps": tasma_hat_Q_lps,
-                "tasma_hat_Q_m3s": tasma_hat_Q_m3s,
-                "tasma_toplam_kapasite_lps": tasma_toplam_kapasite_lps,
-                "tasma_onerilen_hat_adedi": tasma_onerilen_hat_adedi,
-                "tasma_oneri_cap": tasma_oneri_cap,
-                "tasma_Q_lps": tasma_Q_lps, "tasma_Q_m3s": tasma_Q_m3s,
-                "tasma_malzeme": tasma_malzeme, "tasma_manning_n": tasma_manning_n,
-                "tasma_egim_yuzde": tasma_egim_yuzde, "tasma_max_hiz": tasma_max_hiz,
-                "tasma_hidrolik_kapasite_lps": tasma_capasite_lps, "tasma_hidrolik_hiz_ms": tasma_hiz_ms,
-                "tasma_hidrolik_uygun": tasma_hidrolik_uygun, "tasma_hidrolik_tablo": tasma_hidrolik_tablo,
-                "sifon": yagmur_tasma_sifonu,
-                "tasma_sifonu_poz": tasma_sifonu_secim["poz"] if tasma_sifonu_secim else "",
-                "tasma_sifonu_dn": tasma_sifonu_secim["dn"] if tasma_sifonu_secim else 0,
-                "tasma_sifonu_adedi": tasma_sifonu_adedi,
-                "tasma_sifonu_tanim": tasma_sifonu_secim["tanim"] if tasma_sifonu_secim else "",
-                "tasma_sifonu_ozellik": tasma_sifonu_secim["ozellik"] if tasma_sifonu_secim else "",
-                "tasma_sifonu_poz_rapora_eklensin": yagmur_tasma_sifonu_poz_rapora_eklensin,
-                "geri_tepme": yagmur_geri_tepme,
-                "kanal_baglanti": yagmur_kanal_baglanti,
-                "sakin_giris": yagmur_sakin_giris,
-                "sakin_giris_poz": yagmur_sakin_giris_poz,
-                "sakin_giris_poz_rapora_eklensin": yagmur_sakin_giris_poz_rapora_eklensin,
-                "sakin_giris_malzeme_ozellik": yagmur_sakin_giris_malzeme_ozellik,
-                "sakin_giris_fonksiyonu": yagmur_sakin_giris_fonksiyonu,
+                "debi_m3h": yagmur_debi_m3h, "filtre_emniyet": yagmur_filtre_emniyet,
+                "filtre_debisi": yagmur_filtre_debisi, "filtre_tipi": yagmur_filtre_tipi,
+                "ilk_yagis_l_m2": ilk_yagis_l_m2, "ilk_yagis_hacmi": ilk_yagis_hacmi,
+                "kullanim_gunluk": yagmur_kullanim_gunluk, "depolama_gun": yagmur_depolama_gun,
+                "gerekli_depo": yagmur_gerekli_depo, "secilen_depo": yagmur_secilen_depo,
+                "tasma_emniyet": tasma_emniyet, "tasma_debisi": tasma_debisi, "tasma_cap": tasma_cap,
+                "sifon": yagmur_tasma_sifonu, "geri_tepme": yagmur_geri_tepme,
+                "kanal_baglanti": yagmur_kanal_baglanti, "sakin_giris": yagmur_sakin_giris,
                 "havalandirma": yagmur_havalandirma, "hasere": yagmur_hasere,
             }
             st.session_state["yagmur_hesap"] = yagmur_hesap
             st.session_state["yagmur_secimler"] = yagmur_secimler
         else:
             st.info("Yağmur suyu hesabı pasif. Bölüm rapora dahil edilmez.")
-
-        # SAYFA ORTA ANKORU: sağdaki "Ortaya Git" butonu buraya gelir.
-        st.markdown('<div id="sayfa_orta"></div>', unsafe_allow_html=True)
 
         if bolum_632_aktif:
             st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
@@ -6951,98 +5848,7 @@ with _t_sihhi:
 
     # ---------------------------------------------------------------------------
     # 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ
-# ---------------------------------------------------------------------------
-    # 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ
     # ---------------------------------------------------------------------------
-    yumusatma_secimler = []
-    yumusatma_maddeleri = [
-        "Su yumuşatma cihazı, tesisatta kireç ve sertlik oluşumunu azaltmak amacıyla kullanılacaktır.",
-        "Su yumuşatma cihazı kapasitesi, tesisin hesaplanan su tüketimi ve gerekli debi dikkate alınarak belirlenecektir.",
-        "Cihaz seçiminde tesisata giren ham suyun sertlik değeri dikkate alınacaktır.",
-        "Ham su sertliği, mümkün olması halinde su analiz raporundan alınacak; analiz bulunmaması halinde proje kabulleri esas alınacaktır.",
-        "Su yumuşatma cihazı, tesisin gerekli debisini karşılayacak kapasitede seçilecektir.",
-        "Cihaz seçiminde reçine kapasitesi, ham su sertliği ve günlük su tüketimi birlikte değerlendirilecektir.",
-        "Su yumuşatma cihazı, gerekli rejenerasyon işlemini otomatik olarak gerçekleştirecek şekilde seçilecektir.",
-        "Rejenerasyon için gerekli tuz tankı ve tuz kapasitesi, seçilen cihazın çalışma şartlarına uygun olacaktır.",
-        "Rejenerasyon sırasında oluşacak atık suyun tesisat drenaj sistemine uygun şekilde bağlanması sağlanacaktır.",
-        "Cihaz üzerinde bakım ve servis işlemlerinin yapılabilmesi için gerekli erişim mesafeleri bırakılacaktır.",
-        "Su yumuşatma cihazı öncesinde ve sonrasında gerekli vana, by-pass ve bağlantı elemanları tesisat şartlarına uygun olarak düzenlenecektir.",
-        "Kesintisiz yumuşak su ihtiyacı bulunan tesislerde, cihazın çalışma ve rejenerasyon süreleri dikkate alınarak alternatifli/tandem sistem değerlendirilecektir.",
-        "Su yumuşatma cihazının çalışma basıncı, tesisatın mevcut ve hesaplanan basınç şartlarını karşılayacaktır.",
-        "Cihaz seçiminde üretici tarafından belirtilen minimum ve maksimum debi değerleri dikkate alınacaktır.",
-        "Seçilen su yumuşatma cihazı, tesisin kullanım amacına ve su kalitesi ihtiyacına uygun olacaktır.",
-        "Cihazın otomatik kontrol sistemi, rejenerasyon işlemini su tüketimi veya zaman esasına göre gerçekleştirebilecek özellikte olacaktır.",
-        "Su yumuşatma cihazının giriş ve çıkış bağlantıları, tesisat boru çapları ve gerekli debiye uygun olarak seçilecektir.",
-        "Seçilen cihazın teknik özellikleri, reçine miktarı, kapasitesi, bağlantı çapı ve çalışma basıncı proje raporunda belirtilecektir.",
-        "Gerekli görülmesi halinde yumuşatma cihazı çıkışında su sertliğinin kontrol edilebilmesi için numune alma noktası düzenlenecektir.",
-        "Su yumuşatma cihazı, üretici montaj ve işletme şartlarına uygun olarak monte ve işletmeye alınacaktır.",
-    ]
-
-    # 2026 mekanik tesisat pozlarındaki su yumuşatma cihazları.
-    # 3001-3015: tam otomatik; 5001-5015: iki tanklı tam otomatik (tandem).
-    YUMUSATMA_POZLARI_TAM_OTOMATIK = [
-        ("25.165.3001", 1.00, 35,  "3/4\"", 7.00,   210),
-        ("25.165.3002", 1.50, 50,  "1\"",   10.00,  300),
-        ("25.165.3003", 2.25, 75,  "1\"",   15.00,  450),
-        ("25.165.3004", 3.00, 100, "1\"",   20.00,  600),
-        ("25.165.3005", 3.75, 125, "1\"",   25.00,  750),
-        ("25.165.3006", 4.50, 150, "1\"",   30.00,  900),
-        ("25.165.3007", 6.00, 200, "1\"",   40.00,  1200),
-        ("25.165.3008", 9.00, 300, "1 1/4\"", 60.00, 1800),
-        ("25.165.3009", 12.00,400, "1 1/2\"", 80.00, 2400),
-        ("25.165.3010", 15.00,500, "1 1/2\"",100.00, 3000),
-        ("25.165.3011", 18.00,600, "2\"",   120.00, 3600),
-        ("25.165.3012", 24.00,800, "2\"",   160.00, 4800),
-        ("25.165.3013", 30.00,1000,"2 1/2\"",200.00, 6000),
-        ("25.165.3014", 35.00,1200,"3\"",   240.00, 7200),
-        ("25.165.3015", 39.00,1300,"3\"",   260.00, 7800),
-    ]
-    YUMUSATMA_POZLARI_TANDEM = [
-        ("25.165.5001", 1.00, 35,  "3/4\"", 7.00,   210),
-        ("25.165.5002", 1.50, 50,  "1\"",   10.00,  300),
-        ("25.165.5003", 2.25, 75,  "1\"",   15.00,  450),
-        ("25.165.5004", 3.00, 100, "1\"",   20.00,  600),
-        ("25.165.5005", 3.75, 125, "1\"",   25.00,  750),
-        ("25.165.5006", 4.50, 150, "1\"",   30.00,  900),
-        ("25.165.5007", 6.00, 200, "1\"",   40.00,  1200),
-        ("25.165.5008", 9.00, 300, "1 1/4\"", 60.00, 1800),
-        ("25.165.5009", 12.00,400, "1 1/2\"", 80.00, 2400),
-        ("25.165.5010", 15.00,500, "1 1/2\"",100.00, 3000),
-        ("25.165.5011", 18.00,600, "2\"",   120.00, 3600),
-        ("25.165.5012", 24.00,800, "2\"",   160.00, 4800),
-        ("25.165.5013", 30.00,1000,"2 1/2\"",200.00, 6000),
-        ("25.165.5014", 35.00,1200,"3\"",   240.00, 7200),
-        ("25.165.5015", 39.00,1300,"3\"",   260.00, 7800),
-    ]
-
-    def _yumusatma_poz_kaydi(poz_listesi, poz_no):
-        for _p in poz_listesi:
-            if _p[0] == poz_no:
-                return _p
-        return None
-
-    def _yumusatma_poz_otomatik_sec(poz_listesi, debi_m3h):
-        for _p in poz_listesi:
-            if float(_p[1]) >= float(debi_m3h) - 1e-9:
-                return _p
-        return poz_listesi[-1] if poz_listesi else None
-
-    # Kapalı genleşme deposu hesabından gelen toplam sistem hacmi.
-    # Birden fazla hidrofor varsa ilk pozitif toplam hacim esas alınır.
-    def _genlesme_sistem_hacmi_litre_getir():
-        for _i in range(1, 11):
-            for _key in (
-                f"hidrofor_{_i}_tank_ust_toplam",
-                f"hidrofor_{_i}_tank_toplam_ozet",
-            ):
-                try:
-                    _v = float(st.session_state.get(_key, 0.0) or 0.0)
-                except Exception:
-                    _v = 0.0
-                if _v > 0:
-                    return _v
-        return 0.0
-
     re_sirkulasyon_pompa_sonucu = {}
     if bolum_634_aktif:
         st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
@@ -7211,162 +6017,145 @@ with _t_sihhi:
         st.session_state["re_sirkulasyon_pompa_sonucu_v99"] = re_sirkulasyon_pompa_sonucu
 
 
-
-    if bolum_635_aktif:
-        st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
-        st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
-        st.markdown("### **_Yumuşatma Cihazı Seçimi Genel Esasları_**")
-        yumusatma_keys = [f"yumusatma_sec_{i}" for i in range(1, len(yumusatma_maddeleri) + 1)]
-        _toplu_secim_butonlari(yumusatma_keys, grup_adi="yumusatma_635")
-        for i, madde in enumerate(yumusatma_maddeleri, start=1):
-            yumusatma_secimler.append(st.checkbox(madde, key=f"yumusatma_sec_{i}", value=True))
-
-        st.markdown("#### İLAVE SU YUMUŞATMA CİHAZI SEÇİM MADDELERİ")
-        ek_yumusatma_notu = st.text_area(
-            "İlave Su Yumuşatma Cihazı Seçim Maddesi (Her satıra bir tane)",
-            "", height=80, key="ek_yumusatma_notu"
-        )
-
-        st.markdown("### SU YUMUŞATMA CİHAZI KAPASİTE VE CİHAZ SEÇİMİ")
-
-        # Sistem tipi proje bazında seçilebilir. Tekli sistem şimdilik hesaplamaya dahil edilmez.
-        yumusatma_sistem_tipi = st.selectbox(
-            "Su Yumuşatma Cihazı Tipi",
-            ["Tam Otomatik", "İkili Tandem"],
-            index=1,
-            key="yumusatma_sistem_tipi",
-            help="Proje ihtiyacına göre tam otomatik veya iki tanklı tandem sistem seçilebilir.",
-        )
-        yumusatma_adet = int(st.selectbox(
-            "Su Yumuşatma Cihazı Adedi",
-            [1, 2, 3],
-            index=0,
-            key="yumusatma_adet",
-            format_func=lambda x: f"{x} adet",
-        ))
-
-        _genlesme_hacmi_l = _genlesme_sistem_hacmi_litre_getir()
-        _genlesme_hacmi_m3 = _genlesme_hacmi_l / 1000.0
-        _manual_hacim_default = float(st.session_state.get("yumusatma_sistem_hacmi_manual", _genlesme_hacmi_m3))
-        if _manual_hacim_default <= 0:
-            _manual_hacim_default = 0.0
-
-        yc1, yc2 = st.columns(2)
-        with yc1:
-            yumusatma_sistem_hacmi_m3 = float(st.number_input(
-                "Sistemdeki su hacmi [m³]",
-                min_value=0.0,
-                step=0.1,
-                value=_manual_hacim_default,
-                key="yumusatma_sistem_hacmi_manual",
-                help="Varsayılan olarak kapalı genleşme deposu hesabından alınır. İsterseniz burada elle değiştirebilirsiniz.",
-            ))
-        with yc2:
-            yumusatma_doldurma_suresi_h = float(st.number_input(
-                "Sistemin doldurma süresi [saat]",
-                min_value=0.1,
-                step=0.5,
-                value=float(st.session_state.get("yumusatma_doldurma_suresi_h", 6.0)),
-                key="yumusatma_doldurma_suresi_h",
-                help="Varsayılan 6 saattir; kullanıcı tarafından değiştirilebilir.",
-            ))
-
-        yumusatma_gerekli_debi_m3h = (
-            yumusatma_sistem_hacmi_m3 / yumusatma_doldurma_suresi_h
-            if yumusatma_doldurma_suresi_h > 0 else 0.0
-        )
-        _yumusatma_poz_listesi = (
-            YUMUSATMA_POZLARI_TAM_OTOMATIK
-            if yumusatma_sistem_tipi == "Tam Otomatik"
-            else YUMUSATMA_POZLARI_TANDEM
-        )
-        yumusatma_poz_oto = _yumusatma_poz_otomatik_sec(_yumusatma_poz_listesi, yumusatma_gerekli_debi_m3h)
-
-        st.markdown(
-            '<span style="color:#4472C4; font-weight:bold; font-style:italic;">'
-            'Yumuşatma cihazı kapasite hesabı:'
-            '</span>',
-            unsafe_allow_html=True
-        )
-        st.write(
-            f"Sistemdeki su hacmi = **{yumusatma_sistem_hacmi_m3:.2f} m³** | "
-            f"Doldurma süresi = **{yumusatma_doldurma_suresi_h:.2f} saat**"
-        )
-        st.write(
-            f"Gerekli yumuşatma debisi = {yumusatma_sistem_hacmi_m3:.2f} / "
-            f"{yumusatma_doldurma_suresi_h:.2f} = **{yumusatma_gerekli_debi_m3h:.2f} m³/h**"
-        )
-
-        if yumusatma_poz_oto:
-            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = yumusatma_poz_oto
-        else:
-            _oto_poz_no, _oto_debi, _oto_recine, _oto_cap, _oto_kapasite, _oto_sertlik = ("", 0, 0, "", 0, 0)
-
-        yumusatma_poz_modu = st.selectbox(
-            "Cihaz Poz No Seçim Modu",
-            ["Otomatik (kapasiteye göre)", "Manuel Seçim"],
-            index=0,
-            key="yumusatma_poz_modu"
-        )
-        if yumusatma_poz_modu.startswith("Otomatik"):
-            yumusatma_poz_no = _oto_poz_no
-        else:
-            _poz_secenekleri = [x[0] for x in _yumusatma_poz_listesi]
-            _mevcut_poz = st.session_state.get("yumusatma_poz_manual", _oto_poz_no)
-            _idx = _poz_secenekleri.index(_mevcut_poz) if _mevcut_poz in _poz_secenekleri else 0
-            yumusatma_poz_no = st.selectbox(
-                "İkili Tandem Cihaz Poz No",
-                _poz_secenekleri,
-                index=_idx,
-                key="yumusatma_poz_manual",
-            )
-
-        _secilen_poz = _yumusatma_poz_kaydi(_yumusatma_poz_listesi, yumusatma_poz_no)
-        if _secilen_poz:
-            _, yumusatma_kapasite, yumusatma_recine, yumusatma_baglanti, yumusatma_reg_kapasitesi, yumusatma_toplam_sertlik = _secilen_poz
-        else:
-            yumusatma_kapasite = yumusatma_recine = yumusatma_reg_kapasitesi = yumusatma_toplam_sertlik = 0.0
-            yumusatma_baglanti = ""
-
-        yumusatma_poz_rapora = st.checkbox(
-            "Cihaz Poz No rapora aktarılsın", value=True, key="yumusatma_poz_rapora"
-        )
-
-        _tip_rapor = "ikili tam otomatik tandem" if yumusatma_sistem_tipi == "İkili Tandem" else "tam otomatik"
-        st.success(
-            f"**{yumusatma_kapasite:.2f} m³/h'lik {_tip_rapor} tip su yumuşatma cihazı** "
-            f"projelendirilmiştir."
-        )
-        st.caption(
-            f"Poz: {yumusatma_poz_no or '—'} | Reçine: {yumusatma_recine:.0f} L | "
-            f"Giriş/Çıkış: {yumusatma_baglanti or '—'} | "
-            f"Kapasite: {yumusatma_reg_kapasitesi:.2f} m³/reg | "
-            f"Toplam sertlik: {yumusatma_toplam_sertlik:.0f} °Fr·m³/reg"
-        )
-
-        st.session_state["yumusatma_sonucu"] = {
-            "sistem_tipi": yumusatma_sistem_tipi,
-            "adet": yumusatma_adet,
-            "sistem_hacmi_m3": yumusatma_sistem_hacmi_m3,
-            "genlesme_hacmi_m3": _genlesme_hacmi_m3,
-            "doldurma_suresi_h": yumusatma_doldurma_suresi_h,
-            "gerekli_debi_m3h": yumusatma_gerekli_debi_m3h,
-            "kapasite": yumusatma_kapasite,
-            "recine_l": yumusatma_recine,
-            "baglanti": yumusatma_baglanti,
-            "rej_kapasitesi_m3_reg": yumusatma_reg_kapasitesi,
-            "toplam_sertlik_fr_m3_reg": yumusatma_toplam_sertlik,
-            "poz_no": yumusatma_poz_no,
-            "poz_rapora": yumusatma_poz_rapora,
-            "poz_aciklama": ("İki tanklı tam otomatik su yumuşatma cihazı (tandem)" if yumusatma_sistem_tipi == "İkili Tandem" else "Tam otomatik su yumuşatma cihazı"),
-            "secimler": yumusatma_secimler,
-            "ek_not": ek_yumusatma_notu,
-        }
-
-        # ---------------------------------------------------------------------------
 with _t_yangin:
     st.header("7. YANGIN TESİSATI")
-    st.info("Yangın tesisatı modülü bu sekme altında yer alacaktır.")
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.1 YANGIN TESİSATI GENEL ESASLARI
+    # -----------------------------------------------------------------------
+    st.subheader("7.1 YANGIN TESİSATI GENEL ESASLARI")
+    st.caption("Bu bölüm, yangın tesisatı için genel esasların ve proje kabullerinin daha sonra detaylandırılacağı başlangıç bölümüdür.")
+
+    yangin_71_aktif = st.checkbox(
+        "7.1 Yangın Tesisatı Genel Esasları rapora dahil edilsin",
+        value=True,
+        key="yangin_71_aktif_v1"
+    )
+
+    if yangin_71_aktif:
+        st.write("Yangın tesisatının tasarımında ilgili mevzuat, standartlar ve proje kriterleri esas alınacaktır.")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ
+    # -----------------------------------------------------------------------
+    st.subheader("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ")
+    yangin_72_aktif = st.checkbox(
+        "7.2 Yangın Tehlike Sınıfı ve Tasarım Kriterleri rapora dahil edilsin",
+        value=True,
+        key="yangin_72_aktif_v1"
+    )
+    if yangin_72_aktif:
+        st.checkbox("7.2.1 Bina Kullanım Amacı", value=True, key="yangin_721_v1")
+        st.checkbox("7.2.2 Yangın Tehlike Sınıfı", value=True, key="yangin_722_v1")
+        st.checkbox("7.2.3 Yangın Bölmeleri", value=True, key="yangin_723_v1")
+        st.checkbox("7.2.4 Tasarım Kriterleri", value=True, key="yangin_724_v1")
+        st.checkbox("7.2.5 Tasarım Debisi", value=True, key="yangin_725_v1")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.3 YANGIN SUYU DEPOSU HESABI
+    # -----------------------------------------------------------------------
+    st.subheader("7.3 YANGIN SUYU DEPOSU HESABI")
+    yangin_73_aktif = st.checkbox(
+        "7.3 Yangın Suyu Deposu Hesabı rapora dahil edilsin",
+        value=True,
+        key="yangin_73_aktif_v1"
+    )
+    if yangin_73_aktif:
+        st.checkbox("7.3.1 Gerekli Yangın Suyu Hacmi", value=True, key="yangin_731_v1")
+        st.checkbox("7.3.2 Yangın Suyu Deposu Seçimi", value=True, key="yangin_732_v1")
+        st.checkbox("7.3.3 Depo Hacmi Kontrolü", value=True, key="yangin_733_v1")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.4 YANGIN POMPA GRUBU SEÇİMİ
+    # -----------------------------------------------------------------------
+    st.subheader("7.4 YANGIN POMPA GRUBU SEÇİMİ")
+    yangin_74_aktif = st.checkbox(
+        "7.4 Yangın Pompa Grubu Seçimi rapora dahil edilsin",
+        value=True,
+        key="yangin_74_aktif_v1"
+    )
+    if yangin_74_aktif:
+        st.checkbox("7.4.1 Ana Yangın Pompası", value=True, key="yangin_741_v1")
+        st.checkbox("7.4.2 Yedek Yangın Pompası", value=True, key="yangin_742_v1")
+        st.checkbox("7.4.3 Jokey Pompa", value=True, key="yangin_743_v1")
+        st.checkbox("7.4.4 Pompa Basma Yüksekliği", value=True, key="yangin_744_v1")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.5 YANGIN DOLABI / HİDRANT TESİSATI
+    # -----------------------------------------------------------------------
+    st.subheader("7.5 YANGIN DOLABI / HİDRANT TESİSATI")
+    yangin_75_aktif = st.checkbox(
+        "7.5 Yangın Dolabı / Hidrant Tesisatı rapora dahil edilsin",
+        value=True,
+        key="yangin_75_aktif_v1"
+    )
+    if yangin_75_aktif:
+        st.checkbox("7.5.1 Yangın Dolabı", value=True, key="yangin_751_v1")
+        st.checkbox("7.5.2 Hidrant", value=True, key="yangin_752_v1")
+        st.checkbox("7.5.3 Basınç Kontrolü", value=True, key="yangin_753_v1")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.6 SPRİNKLER TESİSATI
+    # -----------------------------------------------------------------------
+    st.subheader("7.6 SPRİNKLER TESİSATI")
+    yangin_76_aktif = st.checkbox(
+        "7.6 Sprinkler Tesisatı rapora dahil edilsin",
+        value=True,
+        key="yangin_76_aktif_v1"
+    )
+    if yangin_76_aktif:
+        st.checkbox("7.6.1 Tehlike Sınıfı", value=True, key="yangin_761_v1")
+        st.checkbox("7.6.2 Tasarım Alanı", value=True, key="yangin_762_v1")
+        st.checkbox("7.6.3 Debi Hesabı", value=True, key="yangin_763_v1")
+        st.checkbox("7.6.4 Basınç Hesabı", value=True, key="yangin_764_v1")
+        st.checkbox("7.6.5 Hidrolik Hesap", value=True, key="yangin_765_v1")
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.7 YANGIN TESİSATI HİDROLİK HESAPLARI
+    # -----------------------------------------------------------------------
+    st.subheader("7.7 YANGIN TESİSATI HİDROLİK HESAPLARI")
+    yangin_77_aktif = st.checkbox(
+        "7.7 Yangın Tesisatı Hidrolik Hesapları rapora dahil edilsin",
+        value=True,
+        key="yangin_77_aktif_v1"
+    )
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ
+    # -----------------------------------------------------------------------
+    st.subheader("7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ")
+    yangin_78_aktif = st.checkbox(
+        "7.8 Yangın Tesisatı Ekipman Seçimleri rapora dahil edilsin",
+        value=True,
+        key="yangin_78_aktif_v1"
+    )
+
+    st.markdown("---")
+
+    # -----------------------------------------------------------------------
+    # 7.9 YANGIN TESİSATI SONUÇ TABLOSU
+    # -----------------------------------------------------------------------
+    st.subheader("7.9 YANGIN TESİSATI SONUÇ TABLOSU")
+    yangin_79_aktif = st.checkbox(
+        "7.9 Yangın Tesisatı Sonuç Tablosu rapora dahil edilsin",
+        value=True,
+        key="yangin_79_aktif_v1"
+    )
 
 with _t_isitma:
     st.header("8. ISITMA TESİSATI")
@@ -7378,7 +6167,6 @@ with _t_sogutma:
 
 with _t_havalandirma:
     st.header("10. HAVALANDIRMA TESİSATI")
-
     st.info("Havalandırma tesisatı modülü bu sekme altında yer alacaktır.")
 
 # Rapor Oluştur Butonu
@@ -8208,138 +6996,6 @@ if _rapor_olustur_sidebar:
                 "sağlayacak şekilde imal ve monte edilecektir."
             )
 
-        # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
-        if bolum_623_aktif:
-          doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
-          yag_rapor_maddeleri = []
-          for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
-            if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
-              yag_rapor_maddeleri.append(madde)
-
-          if ek_yag_ayirici_notu.strip():
-            for _not in ek_yag_ayirici_notu.split("\n"):
-              if _not.strip():
-                yag_rapor_maddeleri.append(_not.strip())
-
-          if yag_rapor_maddeleri:
-            _genel_esas_p = doc.add_paragraph()
-            _genel_esas_r = _genel_esas_p.add_run("Yağ Ayırıcı Genel Esasları")
-            _genel_esas_r.bold = True
-            _genel_esas_r.italic = True
-            _genel_esas_r.font.size = Pt(12)
-            _genel_esas_r.font.color.rgb = RGBColor(68, 114, 196)
-            for yam in yag_rapor_maddeleri:
-              doc.add_paragraph(yam, style="List Bullet")
-
-          # Excel'deki her YA sayfası için bağımsız hesap raporu.
-          for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=1):
-            doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
-            doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
-
-            # Eşzamanlılık faktörlerini Excel şablonundaki gibi ayrı ayrı göster.
-            # Kullanılan adet hangi kademeye denk geliyorsa o Zi hücresi sarı vurgulanır.
-            _tab = doc.add_table(rows=1, cols=10)
-            _tab.style = "Table Grid"
-            _hdr = _tab.rows[0].cells
-            _basliklar = [
-                "Ekipman", "Adet n", "qi [L/s]", "n × qi",
-                "Zi – 1 adet", "Zi – 2 adet", "Zi – 3 adet",
-                "Zi – 4 adet", "Zi – 5+ adet", "Pis su debisi [L/s]"
-            ]
-            for _cell, _baslik in zip(_hdr, _basliklar):
-              _cell.text = _baslik
-
-            for _satir in _hesap["satirlar"]:
-              _cells = _tab.add_row().cells
-              _cells[0].text = _satir["ekipman"]
-              _cells[1].text = str(_satir["adet"])
-              _cells[2].text = f"{_satir['qi']:.2f}"
-              _cells[3].text = f"{_satir['n_x_qi']:.2f}"
-
-              # Excel'deki Zi(n) değerleri: 1/2/3/4/5+ adet.
-              _zi_tip = next((e[2] for e in YAG_AYIRICI_EKIPMANLARI if e[0] == _satir["ekipman"]), "normal")
-              _zi_degerleri = [
-                  _yag_ayirici_zi(1, _zi_tip),
-                  _yag_ayirici_zi(2, _zi_tip),
-                  _yag_ayirici_zi(3, _zi_tip),
-                  _yag_ayirici_zi(4, _zi_tip),
-                  _yag_ayirici_zi(5, _zi_tip),
-              ]
-              for _zi_index, _zi_deger in enumerate(_zi_degerleri):
-                _zi_cell = _cells[4 + _zi_index]
-                _zi_cell.text = f"{_zi_deger:.2f}"
-                # Adet 1,2,3,4 veya 5+ kademesinin aktif olanını sarı boya.
-                _adet = int(_satir["adet"])
-                _aktif_index = min(_adet, 5) - 1
-                if _aktif_index == _zi_index:
-                  for _par in _zi_cell.paragraphs:
-                    for _run in _par.runs:
-                      _run.font.highlight_color = WD_COLOR_INDEX.YELLOW
-
-              _cells[9].text = f"{_satir['pis_su_debisi']:.2f}"
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(f"TOPLAM Qs = { _hesap['qs']:.2f} L/s")
-            _r.bold = True
-
-            # Faktörlerin seçilme nedeni raporda açıkça gösterilir.
-            # Açıklamalar, YAĞ AYIRICI HESABI.xlsx şablonundaki faktör
-            # eşiklerine göre oluşturulur.
-            _fd_deger = _hesap["fd"]
-            if abs(_fd_deger - 1.0) < 1e-9:
-                _fd_aciklama = "Yağ yoğunluğu ≤ 0.94 g/cm³ olduğu için fd = 1.00 seçilmiştir."
-            else:
-                _fd_aciklama = "Yağ yoğunluğu > 0.94 g/cm³ olduğu için fd = 1.30 seçilmiştir."
-
-            _ft_deger = _hesap["ft"]
-            if abs(_ft_deger - 1.0) < 1e-9:
-                _ft_aciklama = "Su sıcaklığı ≤ 60 °C olduğu için ft = 1.00 seçilmiştir."
-            else:
-                _ft_aciklama = "Su sıcaklığı > 60 °C olduğu için ft = 1.30 seçilmiştir."
-
-            _fr_deger = _hesap["fr"]
-            if abs(_fr_deger - 1.0) < 1e-9:
-                _fr_aciklama = "Temizlik malzemesi kullanılmadığı için fr = 1.00 seçilmiştir."
-            elif abs(_fr_deger - 1.3) < 1e-9:
-                _fr_aciklama = "Temizlik malzemesi kullanıldığı için fr = 1.30 seçilmiştir."
-            else:
-                _fr_aciklama = "Hastane kullanımı için fr = 1.50 seçilmiştir."
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(f"Yoğunluk Faktörü (fd): {_fd_deger:.2f}")
-            _r.bold = True
-            _p.add_run(f" — {_fd_aciklama}")
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(f"Sıcaklık Faktörü (ft): {_ft_deger:.2f}")
-            _r.bold = True
-            _p.add_run(f" — {_ft_aciklama}")
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(f"Deterjan Faktörü (fr): {_fr_deger:.2f}")
-            _r.bold = True
-            _p.add_run(f" — {_fr_aciklama}")
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(
-                "NS (Nominal Kapasite) = Qs × fd × ft × fr = "
-                f"{_hesap['qs']:.2f} × { _hesap['fd']:.2f} × { _hesap['ft']:.2f} × { _hesap['fr']:.2f} "
-                f"= { _hesap['ns']:.2f} L/s"
-            )
-            _r.bold = True
-
-            _p = doc.add_paragraph()
-            _r = _p.add_run(
-                f"Seçilen yağ ayırıcı kapasitesi: {_hesap['secilen_kapasite']:.2f} L/s"
-            )
-            _r.bold = True
-
-            if _hesap.get("poz_rapora_aktar") and _hesap.get("secilen_poz"):
-              _p = doc.add_paragraph()
-              _r = _p.add_run(f"Cihaz Poz No: {_hesap['secilen_poz']['poz']}")
-              _r.bold = True
-              doc.add_paragraph(f"Yağ Ayırıcı Özelliği: {_hesap['secilen_poz']['tanim']}")
-
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
       if bolum_63_aktif:
         doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
@@ -8523,156 +7179,102 @@ if _rapor_olustur_sidebar:
         if _yagmur_aktif_rapor:
           doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
           _yr = _yagmur_rapor
-          doc.add_heading("• YAĞMUR SUYU TOPLAMA HESABI", level=4)
-          doc.add_paragraph(f"Seçilen İl: {_yr.get('mgm_il', '')}")
-          _yr_yontem = _yr.get("yagis_yontemi", "Günlük Toplam En Yüksek Yağış Miktarı")
-          if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-              if _yr.get("mgm_yagis_mm") is not None:
-                  doc.add_paragraph(
-                      f"Tasarım yağış verisi: {_yr_yontem}. "
-                      f"{_yr.get('mgm_il', '')} ili için P = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
-                      f"({_yr.get('mgm_yagis_tarih', '')})."
-                  )
-          elif _yr_yontem == "Ortalama Aylık Yağış Miktarı":
+          doc.add_heading("6.3.1.2.1 YAĞMUR SUYU TOPLAMA HESABI", level=4)
+          if _yr.get("mgm_yagis_mm") is not None:
               doc.add_paragraph(
-                  f"Tasarım yağış verisi: {_yr_yontem}. "
-                  f"12 aylık ortalama yağış değerlerinin aritmetik ortalaması ile P = "
-                  f"{_yr.get('mgm_ortalama_aylik_yagis', 0):.1f} mm alınmıştır."
-              )
-          else:
-              doc.add_paragraph(
-                  f"Tasarım yağış verisi: {_yr_yontem}. "
-                  f"{_yr.get('mgm_en_yuksek_ay', '')} ayındaki en yüksek aylık ortalama yağış değeri "
-                  f"P = {_yr.get('mgm_en_yuksek_ay_yagis', 0):.1f} mm alınmıştır."
+                  f"MGM verisi: {_yr.get('mgm_il', '')} ili için Günlük Toplam En Yüksek "
+                  f"Yağış Miktarı = {_yr.get('mgm_yagis_mm', 0):.1f} mm "
+                  f"({_yr.get('mgm_yagis_tarih', '')})."
               )
 
-          # Aylık MGM tablosu yalnızca 2. veya 3. tasarım yağış yöntemi seçildiğinde rapora eklenir.
-          if _yr_yontem in ("Ortalama Aylık Yağış Miktarı", "En Yüksek Aylık Ortalama Yağış Miktarı"):
-                        # Seçilen ilin 12 aylık ortalama yağış tablosu rapora eklenir.
-                        _aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
-                        if _aylik_rapor:
-                            doc.add_heading("SEÇİLEN İLİN AYLIK ORTALAMA YAĞIŞ DEĞERLERİ", level=5)
-                            _ay_tbl = doc.add_table(rows=1, cols=3)
-                            _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                            _ay_tbl.autofit = True
-                            _ay_hdr = _ay_tbl.rows[0].cells
-                            _ay_hdr[0].text = "AY"
-                            _ay_hdr[1].text = "ORTALAMA YAĞIŞ (mm)"
-                            _ay_hdr[2].text = "DURUM"
-                            _en_ay = _yr.get("mgm_en_yuksek_ay", "")
-                            for _ay in ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]:
-                                if _ay not in _aylik_rapor: continue
-                                _c = _ay_tbl.add_row().cells
-                                _c[0].text = _ay
-                                _c[1].text = f"{_aylik_rapor[_ay]:.1f}"
-                                _c[2].text = "EN YÜKSEK AY" if _ay == _en_ay else ""
-                                for _cell in _c:
-                                    _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                    for _p in _cell.paragraphs:
-                                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                        for _r in _p.runs: _r.font.size = Pt(8.5)
-                                if _ay == _en_ay:
-                                    for _cell in _c:
-                                        _tcPr = _cell._tc.get_or_add_tcPr()
-                                        _shd = OxmlElement("w:shd"); _shd.set(qn("w:fill"), "FFF2CC"); _tcPr.append(_shd)
-                                        for _p in _cell.paragraphs:
-                                            for _r in _p.runs: _r.bold = True
-                            doc.add_paragraph(
-                                f"12 aylık ortalama değerlerin aritmetik ortalaması: "
-                                f"{_yr.get('mgm_ortalama_aylik_yagis', 0):.1f} mm; "
-                                f"en yüksek aylık ortalama: {_en_ay} = {_yr.get('mgm_en_yuksek_ay_yagis', 0):.1f} mm."
-                            )
+          # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
+          # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
+          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
+          doc.add_paragraph(
+              "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
+              "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
+              "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
+              "satırda gösterilmektedir."
+          )
+          try:
+              _mgm_81 = mgm_81_il_yagis_tablosu()
+          except Exception:
+              _mgm_81 = [(il, None, None, None) for il in MGM_81_IL]
 
-          # 81 il günlük maksimum yağış tablosu yalnızca 1. yöntem seçildiğinde rapora eklenir.
-          if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                        # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
-                        # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
-                        doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
-                        doc.add_paragraph(
-                            "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
-                            "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
-                            "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
-                            "satırda gösterilmektedir."
-                        )
-                        try:
-                            _mgm_81 = mgm_81_il_yagis_tablosu()
-                        except Exception:
-                            _mgm_81 = [(il, None, None, None) for il in MGM_81_IL]
+          _mgm_tbl = doc.add_table(rows=1, cols=3)
+          _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+          _mgm_tbl.autofit = True
+          _hdr = _mgm_tbl.rows[0].cells
+          _hdr[0].text = "İL"
+          _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
+          _hdr[2].text = "TARİH"
 
-                        _mgm_tbl = doc.add_table(rows=1, cols=3)
-                        _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                        _mgm_tbl.autofit = True
-                        _hdr = _mgm_tbl.rows[0].cells
-                        _hdr[0].text = "İL"
-                        _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
-                        _hdr[2].text = "TARİH"
+          # Başlık satırı biçimi.
+          for _cell in _hdr:
+              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+              _tcPr = _cell._tc.get_or_add_tcPr()
+              _shd = OxmlElement("w:shd")
+              _shd.set(qn("w:fill"), "D9E2F3")
+              _tcPr.append(_shd)
+              for _p in _cell.paragraphs:
+                  _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  for _r in _p.runs:
+                      _r.bold = True
+                      _r.font.size = Pt(8.5)
 
-                        # Başlık satırı biçimi.
-                        for _cell in _hdr:
-                            _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                            _tcPr = _cell._tc.get_or_add_tcPr()
-                            _shd = OxmlElement("w:shd")
-                            _shd.set(qn("w:fill"), "D9E2F3")
-                            _tcPr.append(_shd)
-                            for _p in _cell.paragraphs:
-                                _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                for _r in _p.runs:
-                                    _r.bold = True
-                                    _r.font.size = Pt(8.5)
+          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
 
-                        _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+          # Seçilen ili güvenilir biçimde eşleştir:
+          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
+          def _il_karsilastirma_adi(_metin):
+              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
+              return _x.casefold()
 
-                        # Seçilen ili güvenilir biçimde eşleştir:
-                        # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
-                        def _il_karsilastirma_adi(_metin):
-                            _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
-                            return _x.casefold()
+          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
 
-                        _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
+          for _il, _deger, _tarih, _url in _mgm_81:
+              _cells = _mgm_tbl.add_row().cells
+              _is_secili_il = (
+                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
+                  and bool(_secili_mgm_il_karsilastirma)
+              )
 
-                        for _il, _deger, _tarih, _url in _mgm_81:
-                            _cells = _mgm_tbl.add_row().cells
-                            _is_secili_il = (
-                                _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
-                                and bool(_secili_mgm_il_karsilastirma)
-                            )
+              _cells[0].text = _il
+              _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
+              _cells[2].text = _tarih or "-"
 
-                            _cells[0].text = _il
-                            _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
-                            _cells[2].text = _tarih or "-"
+              for _cell in _cells:
+                  _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                  for _p in _cell.paragraphs:
+                      _p.alignment = (
+                          WD_ALIGN_PARAGRAPH.CENTER
+                          if _cell is not _cells[0]
+                          else WD_ALIGN_PARAGRAPH.LEFT
+                      )
+                      for _r in _p.runs:
+                          _r.font.size = Pt(8.5)
 
-                            for _cell in _cells:
-                                _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                for _p in _cell.paragraphs:
-                                    _p.alignment = (
-                                        WD_ALIGN_PARAGRAPH.CENTER
-                                        if _cell is not _cells[0]
-                                        else WD_ALIGN_PARAGRAPH.LEFT
-                                    )
-                                    for _r in _p.runs:
-                                        _r.font.size = Pt(8.5)
+                  # Projede seçilen il satırı sarı renkle vurgulanır.
+                  if _is_secili_il:
+                      _tcPr = _cell._tc.get_or_add_tcPr()
+                      _shd = _tcPr.find(qn("w:shd"))
+                      if _shd is None:
+                          _shd = OxmlElement("w:shd")
+                          _tcPr.append(_shd)
+                      _shd.set(qn("w:fill"), "FFF2CC")
 
-                                # Projede seçilen il satırı sarı renkle vurgulanır.
-                                if _is_secili_il:
-                                    _tcPr = _cell._tc.get_or_add_tcPr()
-                                    _shd = _tcPr.find(qn("w:shd"))
-                                    if _shd is None:
-                                        _shd = OxmlElement("w:shd")
-                                        _tcPr.append(_shd)
-                                    _shd.set(qn("w:fill"), "FFF2CC")
+                      # Seçilen ilin okunabilirliği için satır yazıları kalın.
+                      for _p in _cell.paragraphs:
+                          for _r in _p.runs:
+                              _r.bold = True
 
-                                    # Seçilen ilin okunabilirliği için satır yazıları kalın.
-                                    for _p in _cell.paragraphs:
-                                        for _r in _p.runs:
-                                            _r.bold = True
-
-                            # Seçilen ilin yanına raporda açık bir işaret de koy.
-                            if _is_secili_il:
-                                _cells[0].text = f"{_il}  ← SEÇİLEN İL"
-                                for _p in _cells[0].paragraphs:
-                                    _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                                    for _r in _p.runs:
-                                        _r.bold = True
+              # Seçilen ilin yanına raporda açık bir işaret de koy.
+              if _is_secili_il:
+                  _cells[0].text = f"{_il}  ← SEÇİLEN İL"
+                  for _p in _cells[0].paragraphs:
+                      _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                      for _r in _p.runs:
+                          _r.bold = True
 
           doc.add_paragraph(
               "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
@@ -8680,283 +7282,76 @@ if _rapor_olustur_sidebar:
               "MGM verilerinin ölçüm periyotları illere göre farklılık gösterebilir."
           )
 
-          # Hesap girdileri ve yüzde parametreleri.
+          # Hesap girdileri, MGM kaynak bilgisinin hemen altında gösterilir.
+          doc.add_paragraph(
+              f"Toplama alanı: A = {_yr.get('cati_alani', 0):.2f} m²; "
+              f"tasarım yağış yüksekliği: P = {_yr.get('yagis', 0):.2f} mm; "
+              f"akış katsayısı: C = {_yr.get('akis_katsayisi', 0):.2f}"
+          )
+
+          # Önce ham yağış hacmi, ardından ilk yağış ayırma ve iki yeni katsayı
+          # uygulanarak sarnıca alınacak net hacim gösterilir.
           _yr_A = float(_yr.get('cati_alani', 0) or 0)
           _yr_P = float(_yr.get('yagis', 0) or 0)
           _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
+          _yr_ilk = float(_yr.get('ilk_yagis_hacmi', 0) or 0)
           _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
           _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
-
-          # Hesap girdileri, MGM kaynak bilgisinin hemen altında gösterilir.
-          doc.add_paragraph(
-              f"Toplama alanı: A = {_yr_A:.2f} m²; "
-              f"tasarım yağış yüksekliği: P = {_yr_P:.2f} mm; "
-              f"akış katsayısı: C = {_yr_C:.2f}"
-          )
-
-          doc.add_paragraph(
-              f"Sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
-              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
-          )
-
-          # Ham yağış hacmi ve iki yüzde parametresi uygulanarak sarnıca alınacak hacim.
           _yr_ham_V = float(_yr.get('ham_toplanabilir_m3', _yr_A * _yr_P * _yr_C / 1000.0) or 0)
-          _yr_V = float(_yr.get('toplanabilir_m3', _yr_ham_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
-          doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak su hesabı:")
+          _yr_ilk_haric_V = max(0.0, _yr_ham_V - _yr_ilk)
+          _yr_V = float(_yr.get('toplanabilir_m3', _yr_ilk_haric_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
+          doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak net su hesabı:")
           doc.add_paragraph("V_ham = A × P × C / 1000")
           doc.add_paragraph(
               f"V_ham = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_ham_V:.2f} m³"
           )
           doc.add_paragraph(
-              f"V_sarnıç = V_ham × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f}"
+              f"V_sarnıç = (V_ham − V_ilk yağış) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100"
           )
           doc.add_paragraph(
-              f"V_sarnıç = {_yr_ham_V:.2f} × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f} = {_yr_V:.2f} m³"
+              f"V_sarnıç = ({_yr_ham_V:.2f} − {_yr_ilk:.2f}) × {_yr_sarnic_orani:.0f}/100 × "
+              f"{_yr_filtre_etkinlik:.0f}/100 = {_yr_V:.2f} m³"
+          )
+          doc.add_paragraph(
+              f"İlk yağış hariç sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
+              f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
           )
 
-          doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
-          doc.add_paragraph(
-              f"Yağmur suyu deposu tipi: {_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi)}"
-          )
-          doc.add_paragraph(
-              f"Yıllık toplam yağış: {_yr.get('mgm_yillik_yagis_mm', 0):.2f} mm "
-              "(MGM aylık ortalama yağışlarının toplamı)"
-          )
-          doc.add_paragraph(
-              f"Yıllık toplanabilir yağış hacmi: {_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
-          )
-          doc.add_paragraph(
-              f"Depolanacak oran: %{_yr.get('depolama_orani', 6):.0f}"
-          )
-          doc.add_paragraph(
-              "V_yıllık = A × P_yıllık × C / 1000"
-          )
-          doc.add_paragraph(
-              f"V_yıllık = {_yr.get('cati_alani', 0):.2f} × "
-              f"{_yr.get('mgm_yillik_yagis_mm', 0):.2f} × "
-              f"{_yr.get('akis_katsayisi', 0):.2f} / 1000 = "
-              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} m³/yıl"
-          )
-          doc.add_paragraph(
-              f"V_depo = V_yıllık × %{_yr.get('depolama_orani', 6):.0f} = "
-              f"{_yr.get('yillik_toplam_hacim_m3', 0):.2f} × "
-              f"%{_yr.get('depolama_orani', 6):.0f} = "
-              f"{_yr.get('gerekli_depo', 0):.2f} m³"
-          )
-          doc.add_paragraph(f"Hesaplanan gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
-          _rapor_secilen_depo = float(_yr.get('secilen_depo', 0) or 0)
-          _rapor_depo_tipi = str(_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi) or '').strip()
-          if _rapor_depo_tipi:
-              doc.add_paragraph(
-                  f'Seçilen "{_rapor_depo_tipi}" depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³'
-              )
-          else:
-              doc.add_paragraph(
-                  f"Seçilen depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³"
-              )
-          _rapor_yagmur_depo_poz = str(_yr.get("yagmur_depo_poz", "") or "").strip()
-          if _yr.get("yagmur_depo_poz_rapora_eklensin", True) and _rapor_yagmur_depo_poz:
-              doc.add_paragraph(f"Cihaz Poz No: {_rapor_yagmur_depo_poz}")
-
-          doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
+          doc.add_heading("6.3.1.2.2 YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
           doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
+          doc.add_paragraph(f"Hesaplanan yağış debisi: {_yr.get('debi_m3h', 0):.2f} m³/h")
           doc.add_paragraph(
-              f"Yağmur suyu toplama alanı: {_yr.get('cati_alani', 0):.2f} m²"
-          )
-          doc.add_paragraph(
-              f"Filtre adedi: {_yr.get('filtre_adet', 1):.0f} adet"
-          )
-          doc.add_paragraph(
-              f"Filtre başına düşen toplama alanı: {_yr.get('filtre_basina_alan_m2', 0):.2f} m²"
-          )
-          doc.add_paragraph(
-              f"Tek filtre kapasitesi: {_yr.get('filtre_kapasite_m2', 0):.0f} m²/adet"
-          )
-          doc.add_paragraph(
-              f"Toplam filtre kapasitesi: {_yr.get('filtre_toplam_kapasite_m2', _yr.get('filtre_kapasite_m2', 0)):,.0f} m²"
-          )
-          doc.add_paragraph(
-              f"Tek filtre maksimum debisi: {_yr.get('filtre_debisi_ls', 0):.0f} L/s; "
-              f"toplam maksimum debi: {_yr.get('filtre_toplam_debisi_ls', _yr.get('filtre_debisi_ls', 0)):,.0f} L/s"
-          )
-          if _yr.get('filtre_poz_rapora_eklensin', True):
-              doc.add_paragraph(
-                  f"Cihaz Poz No: {_yr.get('filtre_poz', '')}"
-              )
-          if _yr.get('filtre_kapasite_yetersiz', False):
-              doc.add_paragraph(
-                  "UYARI: Seçilen filtre tipi için mevcut en büyük poz kapasitesi, "
-                  "toplama alanını karşılamamaktadır."
-              )
-
-          doc.add_heading("• TAŞMA HATTI HESABI", level=4)
-          _tasma_A = _yr.get('cati_alani', 0)
-          _tasma_P = _yr.get('yagis', 0)
-          _tasma_C = _yr.get('akis_katsayisi', 0)
-          _tasma_Vham = _yr.get('ham_toplanabilir_m3', 0)
-          _tasma_t = _yr.get('sure_dk', 0)
-          _tasma_Q = _yr.get('debi_m3h', 0)
-          _tasma_E = _yr.get('tasma_emniyet', 0)
-          _tasma_Qson = _yr.get('tasma_debisi', 0)
-          _tasma_DN = _yr.get('tasma_cap', 0)
-          _tasma_Q_lps = _yr.get('tasma_Q_lps', _tasma_Qson / 3.6)
-          _tasma_hesaplanan_Q_lps = _yr.get('tasma_hesaplanan_Q_lps', _tasma_Qson / 3.6)
-          _tasma_tasarim_Q_lps = _yr.get('tasma_tasarim_Q_lps', _tasma_Q_lps)
-          _tasma_tasarim_debisi_m3h = _yr.get('tasma_tasarim_debisi_m3h', _tasma_tasarim_Q_lps * 3.6)
-          _tasma_debi_sinirlandi = _yr.get('tasma_debi_sinirlandi', False)
-          _tasma_maks_tasarim_Q_lps = _yr.get('tasma_maks_tasarim_Q_lps', 200.0)
-          _tasma_n = _yr.get('tasma_manning_n', 0.011)
-          _tasma_malzeme = _yr.get('tasma_malzeme', 'PVC')
-          _tasma_egim = _yr.get('tasma_egim_yuzde', 1.0)
-          _tasma_max_hiz = _yr.get('tasma_max_hiz', 3.0)
-          _tasma_kapasite = _yr.get('tasma_hidrolik_kapasite_lps', 0.0)
-          _tasma_hiz = _yr.get('tasma_hidrolik_hiz_ms', 0.0)
-          _tasma_uygun = _yr.get('tasma_hidrolik_uygun', False)
-          _tasma_hat_adedi = int(_yr.get('tasma_hat_adedi', 1) or 1)
-          _tasma_hat_Q_lps = float(_yr.get('tasma_hat_Q_lps', _tasma_tasarim_Q_lps / _tasma_hat_adedi) or 0)
-          _tasma_toplam_kapasite_lps = float(_yr.get('tasma_toplam_kapasite_lps', _tasma_kapasite * _tasma_hat_adedi) or 0)
-          _tasma_onerilen_hat_adedi = _yr.get('tasma_onerilen_hat_adedi')
-          _tasma_oneri_cap = _yr.get('tasma_oneri_cap')
-
-          doc.add_paragraph("Taşma hattı hesabında çatıdan oluşan ham yağmur suyu hacmi, tasarım yağış süresine dağıtılmış ve ardından emniyet katsayısı uygulanmıştır.")
-          doc.add_paragraph("1. Ham yağmur suyu hacmi:")
-          doc.add_paragraph("Vham = A × P × C / 1000")
-          doc.add_paragraph(
-              f"Vham = {_tasma_A:,.2f} m² × {_tasma_P:,.2f} mm × {_tasma_C:.2f} / 1000 = {_tasma_Vham:,.2f} m³"
-          )
-          doc.add_paragraph("2. Tasarım yağış debisi:")
-          doc.add_paragraph("Qyağış = Vham / (t / 60)")
-          doc.add_paragraph(
-              f"Qyağış = {_tasma_Vham:,.2f} m³ / ({_tasma_t:,.2f} / 60) = {_tasma_Q:,.2f} m³/h"
-          )
-          doc.add_paragraph("3. Emniyet katsayısı uygulanmış taşma debisi:")
-          doc.add_paragraph("Qtaşma = Qyağış × (1 + E / 100)")
-          doc.add_paragraph(
-              f"Qtaşma = {_tasma_Q:,.2f} × (1 + {_tasma_E:.2f} / 100) = {_tasma_Qson:,.2f} m³/h = {_tasma_hesaplanan_Q_lps:,.2f} L/s"
-          )
-          doc.add_paragraph(
-              f"Proje tasarım kriteri: taşma hattı tasarım debisi maksimum {_tasma_maks_tasarim_Q_lps:,.0f} L/s olarak sınırlandırılmıştır."
-          )
-          doc.add_paragraph(
-              f"Tasarım taşma debisi = min({_tasma_hesaplanan_Q_lps:,.2f}, {_tasma_maks_tasarim_Q_lps:,.0f}) = {_tasma_tasarim_Q_lps:,.2f} L/s = {_tasma_tasarim_debisi_m3h:,.2f} m³/h"
-          )
-          if _tasma_debi_sinirlandi:
-              doc.add_paragraph(
-                  "Not: Hesaplanan taşma debisi 200 L/s üst sınırını aştığı için hidrolik ön boyutlandırmada "
-                  "tasarım debisi 200 L/s alınmıştır. Hesaplanan gerçek debi ayrıca yukarıda gösterilmiştir."
-              )
-          doc.add_paragraph(
-              f"Taşma hattı adedi: {_tasma_hat_adedi} adet; her hatta düşen tasarım debisi = "
-              f"{_tasma_tasarim_Q_lps:,.2f} / {_tasma_hat_adedi} = {_tasma_hat_Q_lps:,.2f} L/s"
-          )
-          if _tasma_onerilen_hat_adedi is not None:
-              doc.add_paragraph(
-                  f"DN250 sınırı altında tasarım debisini karşılayan önerilen minimum düzen: "
-                  f"{int(_tasma_onerilen_hat_adedi)} hat × DN {int(_tasma_oneri_cap)}."
-              )
-          doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
-          doc.add_paragraph(
-              f"Boru malzemesi: {_tasma_malzeme}; Manning katsayısı n = {_tasma_n:.3f}; boru eğimi = %{_tasma_egim:.2f}; "
-              f"izin verilen maksimum hız = {_tasma_max_hiz:.2f} m/s"
-          )
-          doc.add_paragraph("Q gerekli = Qtaşma / 3,6")
-          doc.add_paragraph(
-              f"Q gerekli = {_tasma_tasarim_debisi_m3h:,.2f} m³/h / 3,6 = {_tasma_hat_Q_lps:,.2f} L/s/hat = {_tasma_hat_Q_lps/1000.0:,.4f} m³/s/hat"
-          )
-          doc.add_paragraph("Manning formülü:")
-          doc.add_paragraph("Q = (1/n) × A × R^(2/3) × S^(1/2)")
-          _rep_secili_manning = next((x for x in _yr.get('tasma_hidrolik_tablo', []) if int(x.get('dn', 0)) == int(_tasma_DN)), None)
-          if _rep_secili_manning:
-              _rep_D = float(_rep_secili_manning.get('dn', 0)) / 1000.0
-              _rep_A = float(_rep_secili_manning.get('alan_m2', 0.0))
-              _rep_R = _rep_D / 4.0
-              _rep_Qm3s = float(_rep_secili_manning.get('q_manning_lps', 0.0)) / 1000.0
-              _rep_V = float(_rep_secili_manning.get('hiz_ms', 0.0))
-              doc.add_paragraph(
-                  f"D = {_rep_D:.3f} m; A = π × D² / 4 = π × {_rep_D:.3f}² / 4 = {_rep_A:.5f} m²; "
-                  f"R = D / 4 = {_rep_D:.3f} / 4 = {_rep_R:.5f} m; S = {_tasma_egim/100:.4f}."
-              )
-              doc.add_paragraph(
-                  f"Q = (1 / {_tasma_n:.3f}) × {_rep_A:.5f} × ({_rep_R:.5f})^(2/3) × "
-                  f"({_tasma_egim/100:.4f})^(1/2) = {_rep_Qm3s:.5f} m³/s = {_rep_Qm3s*1000:.2f} L/s."
-              )
-              doc.add_paragraph(
-                  f"V = Q / A = {_rep_Qm3s:.5f} / {_rep_A:.5f} = {_rep_V:.2f} m/s; "
-                  f"kabul edilen maksimum hız = {_tasma_max_hiz:.2f} m/s."
-              )
-          doc.add_paragraph(
-              f"Seçilen minimum taşma hattı: {_tasma_hat_adedi} hat × DN {_tasma_DN}; "
-              f"tek hat tasarım kapasitesi = {_tasma_kapasite:,.2f} L/s; "
-              f"toplam tasarım kapasitesi = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
-              f"Manning hızı = {_tasma_hiz:.2f} m/s"
-          )
-          # Hidrolik kontrol tablosu rapor bölümünde kullanılmadan önce alınmalıdır.
-          # Aksi halde DN200/DN250 kapasite satırında değişken tanımsız kalır ve
-          # rapor oluşturma işlemi NameError ile durur.
-          _hidrolik_tablo = _yr.get('tasma_hidrolik_tablo', [])
-          if _tasma_DN in (200, 250):
-              _rep_secili = next((x for x in _hidrolik_tablo if int(x.get('dn', 0)) == int(_tasma_DN)), None)
-              if _rep_secili and _rep_secili.get('q_hiz_lps') is not None:
-                  doc.add_paragraph(
-                      f"DN {_tasma_DN} için {_tasma_max_hiz:.2f} m/s tasarım hızına göre kapasite: "
-                      f"Q = A × V = {_rep_secili.get('alan_m2', 0):.5f} × {_tasma_max_hiz:.2f} "
-                      f"= {_rep_secili.get('q_hiz_lps', 0):.2f} L/s."
-                  )
-          doc.add_paragraph(
-              f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
-          )
-          if _hidrolik_tablo:
-              doc.add_paragraph("TAŞMA BORUSU ÇAP SEÇİMİ VE HİDROLİK KONTROL TABLOSU")
-              _tbl = doc.add_table(rows=1, cols=5)
-              _tbl.style = "Table Grid"
-              _hdr = _tbl.rows[0].cells
-              _headers = ["Boru Çapı", "Tasarım Kapasitesi", "Manning Kapasitesi", "Manning Hızı", "Durum"]
-              for _i, _h in enumerate(_headers):
-                  _hdr[_i].text = _h
-                  for _run in _hdr[_i].paragraphs[0].runs:
-                      _run.bold = True
-              for _x in _hidrolik_tablo:
-                  _row = _tbl.add_row().cells
-                  _row[0].text = f"DN {_x.get('dn', 0)}"
-                  _row[1].text = f"{_x.get('q_kapasite_lps', 0):.2f} L/s"
-                  _row[2].text = f"{_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s"
-                  _row[3].text = f"{_x.get('hiz_ms', 0):.2f} m/s"
-                  _row[4].text = "UYGUN" if _x.get('uygun') else "YETERSİZ"
-          doc.add_paragraph(
-              "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
-              "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
+              f"Filtre seçim debisi: {_yr.get('filtre_debisi', 0):.2f} m³/h "
+              f"(emniyet: %{_yr.get('filtre_emniyet', 0):.0f})"
           )
 
-          doc.add_heading("• TAŞKAN SİFONU / KOKU KAPANI SEÇİMİ", level=4)
+          doc.add_heading("6.3.1.2.3 İLK YAĞIŞ AYIRICI SEÇİMİ", level=4)
           doc.add_paragraph(
-              "Taşkan sifonu / koku kapanı kullanılacaktır." if _yr.get("sifon") else
-              "Taşkan sifonu / koku kapanı öngörülmemiştir."
+              f"İlk yağış ayırma miktarı: {_yr.get('ilk_yagis_l_m2', 0):.2f} L/m²; "
+              f"hesaplanan ayırıcı hacmi: {_yr.get('ilk_yagis_hacmi', 0):.2f} m³"
           )
-          if _yr.get("sifon"):
-              _sifon_poz = str(_yr.get("tasma_sifonu_poz", "") or "").strip()
-              _sifon_dn = int(_yr.get("tasma_sifonu_dn", 0) or 0)
-              _sifon_tanim = str(_yr.get("tasma_sifonu_tanim", "") or "").strip()
-              _sifon_ozellik = str(_yr.get("tasma_sifonu_ozellik", "") or "").strip()
-              _sifon_adedi = int(_yr.get("tasma_sifonu_adedi", _tasma_hat_adedi) or _tasma_hat_adedi)
-              doc.add_paragraph(
-                  f"Hidrolik hesapta kullanılan toplam tasarım taşma debisi: {_tasma_tasarim_Q_lps:,.2f} L/s "
-                  f"(üst sınır {_tasma_maks_tasarim_Q_lps:,.0f} L/s)."
-              )
-              doc.add_paragraph(
-                  f"Taşma hattı düzeni: {_tasma_hat_adedi} paralel hat; her hat için tasarım debisi = "
-                  f"{_tasma_hat_Q_lps:,.2f} L/s."
-              )
-              doc.add_paragraph(
-                  f"Hidrolik hesap sonucu her hat için gerekli minimum taşma hattı: DN {_tasma_DN}."
-              )
-              if _sifon_tanim:
-                  doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_adedi} adet × {_sifon_tanim}")
-              if _sifon_ozellik:
-                  doc.add_paragraph(f"Taşkan Sifonu Özelliği: {_sifon_ozellik}")
-              if _yr.get("tasma_sifonu_poz_rapora_eklensin") and _sifon_poz:
-                  doc.add_paragraph(f"Taşkan Sifonu Cihaz Poz No: {_sifon_poz}")
-              elif _sifon_poz:
-                  doc.add_paragraph("Taşkan Sifonu Cihaz Poz No rapora eklenmemiştir.")
+
+          doc.add_heading("6.3.1.2.4 YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
+          doc.add_paragraph(
+              f"Günlük kullanım ihtiyacı: {_yr.get('kullanim_gunluk', 0):.2f} m³/gün; "
+              f"depolama süresi: {_yr.get('depolama_gun', 0):.0f} gün"
+          )
+          doc.add_paragraph(f"Gerekli depo hacmi: {_yr.get('gerekli_depo', 0):.2f} m³")
+          doc.add_paragraph(f"Seçilen yağmur suyu deposu hacmi: {_yr.get('secilen_depo', 0):.2f} m³")
+
+          doc.add_heading("6.3.1.2.5 TAŞMA HATTI HESABI", level=4)
+          doc.add_paragraph(
+              f"Taşma tasarım debisi: {_yr.get('tasma_debisi', 0):.2f} m³/h "
+              f"(emniyet: %{_yr.get('tasma_emniyet', 0):.0f}); "
+              f"seçilen taşma hattı: DN {_yr.get('tasma_cap', 0)}"
+          )
+
+          doc.add_heading("6.3.1.2.6 TAŞMA SİFONU / KOKU KAPANI", level=4)
+          doc.add_paragraph(
+              "Taşma hattında sifon/koku kapanı kullanılacaktır." if _yr.get("sifon") else
+              "Taşma hattında sifon/koku kapanı öngörülmemiştir."
+          )
           if _yr.get("kanal_baglanti"):
               doc.add_paragraph("Taşma hattı kanalizasyona bağlanacaktır; geri tepme koruması sağlanacaktır.")
           else:
@@ -8964,17 +7359,14 @@ if _rapor_olustur_sidebar:
           if _yr.get("geri_tepme"):
               doc.add_paragraph("Geri tepme önleyici düzenek öngörülmüştür.")
 
-          doc.add_heading("• AKIŞ DÜZENLEYİCİ (CAZİBE YAVAŞLATICI / SAKİNLEŞTİRİCİ GİRİŞ) SEÇİMİ", level=4)
-          if _yr.get("sakin_giris"):
-              doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) kullanılacaktır.")
-              doc.add_paragraph(f"Malzeme / Özellik: {_yr.get('sakin_giris_malzeme_ozellik', '')}")
-              doc.add_paragraph(f"Fonksiyonu: {_yr.get('sakin_giris_fonksiyonu', '')}")
-              if _yr.get("sakin_giris_poz_rapora_eklensin"):
-                  doc.add_paragraph(f"Cihaz Poz No: {_yr.get('sakin_giris_poz', '25.181.5300')}")
-          else:
-              doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) öngörülmemiştir.")
+          doc.add_heading("6.3.1.2.7 DEPO GİRİŞİ / SAKİN GİRİŞ", level=4)
+          doc.add_paragraph(
+              "Depo girişinde sakin giriş düzeni kullanılacaktır."
+              if _yr.get("sakin_giris") else
+              "Depo girişinde ayrıca sakin giriş düzeni öngörülmemiştir."
+          )
 
-          doc.add_heading("• HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
+          doc.add_heading("6.3.1.2.8 HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
           doc.add_paragraph(
               "Depo havalandırması yapılacaktır." if _yr.get("havalandirma") else
               "Depo havalandırması ayrıca belirtilmemiştir."
@@ -9697,75 +8089,6 @@ if _rapor_olustur_sidebar:
             _after.paragraph_format.line_spacing = 1.0
 
 
-    # --- 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ ---
-    if bolum_635_aktif:
-        doc.add_heading(_63_dinamik_baslik("rapor_bolum_635"), level=2)
-        _yum_rapor_maddeleri = [m for i, m in enumerate(yumusatma_maddeleri) if i < len(yumusatma_secimler) and yumusatma_secimler[i]]
-        if ek_yumusatma_notu.strip():
-            _yum_rapor_maddeleri.extend(x.strip() for x in ek_yumusatma_notu.split("\n") if x.strip())
-        if _yum_rapor_maddeleri:
-            _p_yum = doc.add_paragraph()
-            _r_yum = _p_yum.add_run("Yumuşatma Cihazı Seçimi Genel Esasları")
-            _r_yum.bold = True
-            _r_yum.italic = True
-            _r_yum.font.size = Pt(12)
-            _r_yum.font.color.rgb = RGBColor(68, 114, 196)
-            for _m in _yum_rapor_maddeleri:
-                doc.add_paragraph(_m, style="List Bullet")
-
-        _yum_sonuc = st.session_state.get("yumusatma_sonucu", {})
-        if _yum_sonuc:
-            _vh = float(_yum_sonuc.get("sistem_hacmi_m3", 0.0))
-            _vh_gen = float(_yum_sonuc.get("genlesme_hacmi_m3", 0.0))
-            _ts = float(_yum_sonuc.get("doldurma_suresi_h", 6.0))
-            _qd = float(_yum_sonuc.get("gerekli_debi_m3h", 0.0))
-            _kap = float(_yum_sonuc.get("kapasite", 0.0))
-            _poz = str(_yum_sonuc.get("poz_no", ""))
-            _adet = int(_yum_sonuc.get("adet", 1) or 1)
-            _recine = float(_yum_sonuc.get("recine_l", 0.0))
-            _baglanti = str(_yum_sonuc.get("baglanti", ""))
-            _reg_kap = float(_yum_sonuc.get("rej_kapasitesi_m3_reg", 0.0))
-            _sertlik = float(_yum_sonuc.get("toplam_sertlik_fr_m3_reg", 0.0))
-
-            _p_yum_kapasite = doc.add_paragraph()
-            _r_yum_kapasite = _p_yum_kapasite.add_run("Yumuşatma cihazı kapasite hesabı:")
-            _r_yum_kapasite.bold = True
-            _r_yum_kapasite.italic = True
-            _r_yum_kapasite.font.name = "Times New Roman"
-            _r_yum_kapasite.font.size = Pt(12)
-            _r_yum_kapasite.font.color.rgb = RGBColor(68, 114, 196)
-
-            _vh_litre = _vh * 1000.0
-            _vh_gen_litre = _vh_gen * 1000.0
-            doc.add_paragraph(
-                f"Sistemdeki su hacmi: V = {_vh_litre:.0f} lt - {_vh:.2f} m³"
-                + (f" (Kapalı genleşme deposu hesabından alınan değer: {_vh_gen_litre:.0f} lt - {_vh_gen:.2f} m³)" if _vh_gen > 0 else " (kullanıcı tarafından girilen değer)")
-            )
-            doc.add_paragraph(f"Sistemin doldurma süresi: t = {_ts:.2f} saat")
-            doc.add_paragraph(f"Gerekli yumuşatma debisi: Q = V / t = {_vh:.2f} / {_ts:.2f} = {_qd:.2f} m³/h")
-            _tip_rapor_doc = "ikili tam otomatik tandem" if _yum_sonuc.get("sistem_tipi") == "İkili Tandem" else "tam otomatik"
-            doc.add_paragraph(
-                f"Sonuç: {_kap:.2f} m³/h'lik {_tip_rapor_doc} tip su yumuşatma cihazı projelendirilmiştir."
-            )
-
-            _yum_tbl = doc.add_table(rows=0, cols=2)
-            _yum_tbl.style = "Table Grid"
-            _yum_satirlar = [
-                ("Sistem Tipi", str(_yum_sonuc.get("sistem_tipi", ""))),
-                ("Cihaz Adedi", f"{_adet} adet"),
-                ("Seçilen Cihaz Kapasitesi", f"{_kap:.2f} m³/h"),
-                ("Reçine Miktarı", f"{_recine:.0f} L"),
-                ("Giriş / Çıkış Bağlantısı", _baglanti),
-                ("Rejenerasyon Kapasitesi", f"{_reg_kap:.2f} m³/reg"),
-                ("Toplam Sertlik Kapasitesi", f"{_sertlik:.0f} °Fr·m³/reg"),
-            ]
-            if _yum_sonuc.get("poz_rapora") and _poz:
-                _yum_satirlar.append(("Cihaz Poz No", _poz))
-            for _etiket, _deger in _yum_satirlar:
-                _cells = _yum_tbl.add_row().cells
-                _cells[0].text = _etiket
-                _cells[1].text = str(_deger)
-
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
 
@@ -9781,11 +8104,6 @@ if _rapor_olustur_sidebar:
 
     st.session_state["_rapor_hazir_docx_v134"] = buffer.getvalue()
     st.session_state["_rapor_hazir_adi_v134"] = dosya_adi
-
-    # Rapor oluşturma bloğu sayfanın sonunda çalıştığı için, üstteki indirme
-    # düğmesinin yeni oluşturulan dosyayı gösterebilmesi amacıyla bir kez
-    # yeniden çalıştırılır. İstek zaten pop edildiğinden döngü oluşmaz.
-    st.rerun()
 
 
 # SAYFA SONU ANKORU
