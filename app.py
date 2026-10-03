@@ -10504,38 +10504,41 @@ if _rapor_olustur_sidebar:
             )
             _rs.bold = True
 
-            # Ek-1/C — Yüksek Tehlike Kullanım Alanları
+            # Ek-1/C tablosu yalnızca en az bir Ek-1/C kullanım alanı
+            # seçilmişse rapora alınır. Kullanıcı Ek-1/C seçmediyse bu tablo
+            # raporda gereksiz yere yer almaz.
             _secili_c = _ek1c_secili_kayitlar()
-            doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
-            _tc = doc.add_table(rows=1, cols=4)
-            _tc.style = "Table Grid"
-            for _i, _h in enumerate(_ek1c_basliklari):
-                _tc.rows[0].cells[_i].text = _h
-                for _r in _tc.rows[0].cells[_i].paragraphs[0].runs:
-                    _r.bold = True
-            _sec_c_hucreleri = {(int(x["satir"]), int(x["kolon"])) for x in _secili_c}
-            for _i, _satir in enumerate(_ek1c_satirlari):
-                _cells = _tc.add_row().cells
-                for _j, _metin in enumerate(_satir["hücreler"]):
-                    _cells[_j].text = _metin
-                    if (_i, _j) in _sec_c_hucreleri:
-                        _tcPr = _cells[_j]._tc.get_or_add_tcPr()
-                        _shd = OxmlElement("w:shd")
-                        _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
-                        _tcPr.append(_shd)
-                        for _r in _cells[_j].paragraphs[0].runs:
-                            _r.bold = True
-            _pc = doc.add_paragraph()
-            _rc = _pc.add_run(
-                "Sarı hücreler, seçilen Ek-1/C yüksek tehlike kullanım alanlarının tablodaki "
-                "karşılıklarını göstermektedir."
-            )
-            _rc.italic = True
-            _src_c = doc.add_paragraph()
-            _src_c.add_run(
-                "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
-                "Ek-1/C: Yüksek Tehlike Kullanım Alanları, s. 245."
-            ).bold = True
+            if _secili_c:
+                doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
+                _tc = doc.add_table(rows=1, cols=4)
+                _tc.style = "Table Grid"
+                for _i, _h in enumerate(_ek1c_basliklari):
+                    _tc.rows[0].cells[_i].text = _h
+                    for _r in _tc.rows[0].cells[_i].paragraphs[0].runs:
+                        _r.bold = True
+                _sec_c_hucreleri = {(int(x["satir"]), int(x["kolon"])) for x in _secili_c}
+                for _i, _satir in enumerate(_ek1c_satirlari):
+                    _cells = _tc.add_row().cells
+                    for _j, _metin in enumerate(_satir["hücreler"]):
+                        _cells[_j].text = _metin
+                        if (_i, _j) in _sec_c_hucreleri:
+                            _tcPr = _cells[_j]._tc.get_or_add_tcPr()
+                            _shd = OxmlElement("w:shd")
+                            _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
+                            _tcPr.append(_shd)
+                            for _r in _cells[_j].paragraphs[0].runs:
+                                _r.bold = True
+                _pc = doc.add_paragraph()
+                _rc = _pc.add_run(
+                    "Sarı hücreler, seçilen Ek-1/C yüksek tehlike kullanım alanlarının tablodaki "
+                    "karşılıklarını göstermektedir."
+                )
+                _rc.italic = True
+                _src_c = doc.add_paragraph()
+                _src_c.add_run(
+                    "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
+                    "Ek-1/C: Yüksek Tehlike Kullanım Alanları, s. 245."
+                ).bold = True
 
         if _r722:
             doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
@@ -10551,9 +10554,10 @@ if _rapor_olustur_sidebar:
                 _cc[0].text = _etiket
                 _cc[1].text = str(_deger)
                 if _etiket.startswith("Seçilen yangın tehlike sınıfı"):
-                    for _pr in _cc[0].paragraphs:
-                        for _run in _pr.runs:
-                            _run.bold = True
+                    for _rr in _cc[0].paragraphs[0].runs:
+                        _rr.bold = True
+                    for _rr in _cc[1].paragraphs[0].runs:
+                        _rr.bold = True
             if _manuel and _etkin != _otomatik:
                 _pp = doc.add_paragraph()
                 _rr = _pp.add_run(
