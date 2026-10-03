@@ -7587,32 +7587,32 @@ with _t_yangin:
         st.subheader(_baslik)
 
         if _baslik.startswith("7.1"):
-            # 7.1.3 standart kütüphanesi: iki sekme, bağımsız seçim ve toplu seçim.
-            st.subheader("7.1.3 YANGIN TESİSATI STANDARTLARI")
-            _ui_713_rapor_key = "yangin_713_rapor_ui"
-            st.session_state.setdefault(_ui_713_rapor_key, bool(st.session_state.get("rapor_bolum_713", True)))
-            st.checkbox("7.1.3 bölümü rapora eklensin", key=_ui_713_rapor_key, on_change=_yangin_71_rapor_sync, args=("rapor_bolum_713", _ui_713_rapor_key))
-            _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
-            for _tab, _prefix, _liste in [
-                (_ts_tab, "ts", _yangin_713_ts_standartlari),
-                (_nfpa_tab, "nfpa", _yangin_713_nfpa_standartlari),
-            ]:
-                with _tab:
-                    _b1, _b2 = st.columns(2)
-                    if _b1.button("✓ TÜMÜNÜ SEÇ", key=f"yangin_713_{_prefix}_tum_sec", use_container_width=True):
-                        for _i in range(len(_liste)):
-                            st.session_state[f"yangin_713_{_prefix}_{_i}"] = True
-                        st.rerun()
-                    if _b2.button("✕ TÜMÜNÜ KALDIR", key=f"yangin_713_{_prefix}_tum_kaldir", use_container_width=True):
-                        for _i in range(len(_liste)):
-                            st.session_state[f"yangin_713_{_prefix}_{_i}"] = False
-                        st.rerun()
-                    for _i, _std in enumerate(_liste):
-                        st.session_state.setdefault(f"yangin_713_{_prefix}_{_i}", True)
-                        st.checkbox(_std, key=f"yangin_713_{_prefix}_{_i}")
-            _ts_vals = [bool(st.session_state.get(f"yangin_713_ts_{_i}", True)) for _i in range(len(_yangin_713_ts_standartlari))]
-            _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
-            st.session_state["yangin_713_secimler"] = _ts_vals + _nfpa_vals
+            # 7.1.3 standart kütüphanesi: 7.1.1 ve 7.1.2 gibi açılır/kapanır bölüm.
+            with st.expander("7.1.3 YANGIN TESİSATI STANDARTLARI", expanded=False):
+                _ui_713_rapor_key = "yangin_713_rapor_ui"
+                st.session_state.setdefault(_ui_713_rapor_key, bool(st.session_state.get("rapor_bolum_713", True)))
+                st.checkbox("7.1.3 bölümü rapora eklensin", key=_ui_713_rapor_key, on_change=_yangin_71_rapor_sync, args=("rapor_bolum_713", _ui_713_rapor_key))
+                _ts_tab, _nfpa_tab = st.tabs(["TS / TS EN STANDARTLARI", "NFPA STANDARTLARI"])
+                for _tab, _prefix, _liste in [
+                    (_ts_tab, "ts", _yangin_713_ts_standartlari),
+                    (_nfpa_tab, "nfpa", _yangin_713_nfpa_standartlari),
+                ]:
+                    with _tab:
+                        _b1, _b2 = st.columns(2)
+                        if _b1.button("✓ TÜMÜNÜ SEÇ", key=f"yangin_713_{_prefix}_tum_sec", use_container_width=True):
+                            for _i in range(len(_liste)):
+                                st.session_state[f"yangin_713_{_prefix}_{_i}"] = True
+                            st.rerun()
+                        if _b2.button("✕ TÜMÜNÜ KALDIR", key=f"yangin_713_{_prefix}_tum_kaldir", use_container_width=True):
+                            for _i in range(len(_liste)):
+                                st.session_state[f"yangin_713_{_prefix}_{_i}"] = False
+                            st.rerun()
+                        for _i, _std in enumerate(_liste):
+                            st.session_state.setdefault(f"yangin_713_{_prefix}_{_i}", True)
+                            st.checkbox(_std, key=f"yangin_713_{_prefix}_{_i}")
+                _ts_vals = [bool(st.session_state.get(f"yangin_713_ts_{_i}", True)) for _i in range(len(_yangin_713_ts_standartlari))]
+                _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
+                st.session_state["yangin_713_secimler"] = _ts_vals + _nfpa_vals
 
             # 7.1.1 ve 7.1.2 mevcut seçim arayüzleri
             st.caption("7.1.1 ve 7.1.2 alt maddeleri ayrı ayrı seçilebilir. İşaretli maddeler rapora aktarılır.")
