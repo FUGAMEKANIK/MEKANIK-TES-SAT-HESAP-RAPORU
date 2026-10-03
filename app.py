@@ -1,3 +1,4 @@
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
 from datetime import datetime
 import io
 import json
@@ -7642,21 +7643,21 @@ with _t_yangin:
         {"hücreler": ["Yapay kauçuk, reçine, lamba isi ve terebentin imalatı", "Katran damıtma", "", ""]},
         {"hücreler": ["Talaş fabrikaları; odun yünü imalatı", "Otobüs ambarı, yüklü kamyonlar ve vagonlar; otobüsler, yüksüz kamyonlar ve demiryolu vagonları için depolar", "", ""]},
     ]
-    _ek1c_bina_secenekleri = [
-        ("Döşemelik kumaş ve muşamba fabrikaları; kumaş ve muşamba yer döşemeleri imalatı", 0),
-        ("Aydınlatma fişeği fabrikaları", 1),
-        ("Selüloz nitrat fabrikaları", 2),
-        ("Havai fişek fabrikaları", 3),
-        ("Boya, renklendirici (ahşap renklendirici ve koruyucuları-pnoteks) ve vernik imalatı", 0),
-        ("Plastik köpük ve sünger imalathaneleri, lastik köpük eşyaları", 1),
-        ("Yapay kauçuk, reçine, lamba isi ve terebentin imalatı", 0),
-        ("Katran damıtma", 1),
-        ("Talaş fabrikaları; odun yünü imalatı", 0),
-        ("Otobüs ambarı, yüklü kamyonlar ve vagonlar; otobüsler, yüksüz kamyonlar ve demiryolu vagonları için depolar", 1),
-    ]
+    # ÖNEMLİ: Her kullanım alanı, tablodaki GERÇEK satır ve sütun koordinatıyla
+    # tanımlanır. Önceki sürümde burada liste sırası "satır" kabul edildiği için
+    # örneğin Havai fişek fabrikaları seçildiğinde yanlış satırdaki hücre sarıya
+    # boyanabiliyordu.
     _ek1c_bina_kayitlari = [
-        {"etiket": _etiket, "sinif": _ek1c_basliklari[_kolon], "kolon": _kolon, "satir": _i}
-        for _i, (_etiket, _kolon) in enumerate(_ek1c_bina_secenekleri)
+        {"etiket": "Döşemelik kumaş ve muşamba fabrikaları; kumaş ve muşamba yer döşemeleri imalatı", "sinif": "Yüksek Tehlike -1", "kolon": 0, "satir": 0},
+        {"etiket": "Aydınlatma fişeği fabrikaları", "sinif": "Yüksek Tehlike -2", "kolon": 1, "satir": 0},
+        {"etiket": "Selüloz nitrat fabrikaları", "sinif": "Yüksek Tehlike -3", "kolon": 2, "satir": 0},
+        {"etiket": "Havai fişek fabrikaları", "sinif": "Yüksek Tehlike -4", "kolon": 3, "satir": 0},
+        {"etiket": "Boya, renklendirici (ahşap renklendirici ve koruyucuları-pnoteks) ve vernik imalatı", "sinif": "Yüksek Tehlike -1", "kolon": 0, "satir": 1},
+        {"etiket": "Plastik köpük ve sünger imalathaneleri, lastik köpük eşyaları", "sinif": "Yüksek Tehlike -2", "kolon": 1, "satir": 1},
+        {"etiket": "Yapay kauçuk, reçine, lamba isi ve terebentin imalatı", "sinif": "Yüksek Tehlike -1", "kolon": 0, "satir": 2},
+        {"etiket": "Katran damıtma", "sinif": "Yüksek Tehlike -2", "kolon": 1, "satir": 2},
+        {"etiket": "Talaş fabrikaları; odun yünü imalatı", "sinif": "Yüksek Tehlike -1", "kolon": 0, "satir": 3},
+        {"etiket": "Otobüs ambarı, yüklü kamyonlar ve vagonlar; otobüsler, yüksüz kamyonlar ve demiryolu vagonları için depolar", "sinif": "Yüksek Tehlike -2", "kolon": 1, "satir": 3},
     ]
 
     st.session_state.setdefault("yangin_721_manuel", False)
