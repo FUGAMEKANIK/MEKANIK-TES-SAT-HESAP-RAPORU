@@ -7436,6 +7436,10 @@ with _t_yangin:
         "Sprinkler sistemi tasarımı ve hesaplamaları",
         "Gazlı söndürme sistemi tasarımı ve hesaplamaları",
         "Köpüklü söndürme sistemleri tasarımı ve hesaplamaları",
+        "Davlumbaz söndürme sistemleri tasarımı ve hesaplamaları",
+        "Merdiven basınçlandırma sistemleri tasarımı ve hesaplamaları",
+        "Asansör basınçlandırma sistemleri tasarımı ve hesaplamaları",
+        "Duman tahliye sistemleri tasarımı ve hesaplamaları",
         "Yangın pompa grubunun tasarımı ve hesaplamaları",
         "Yangın suyu depolama sisteminin tasarım ve hesaplamaları",
         "Yangın tesisatının bina otomasyonu ve diğer tesisat tasarımlarıyla ilişkisi",
@@ -10428,7 +10432,6 @@ if _rapor_olustur_sidebar:
                 ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
                 ("Ek-1/B otomatik yangın tehlike sınıfı (en yüksek)", _otomatik),
                 ("Uygulanacak yangın tehlike sınıfı", _etkin),
-                ("Seçim durumu", "Manuel müdahale" if _manuel else "Otomatik — BYKHY Ek-1/B"),
             ]
             for _etiket, _deger in _rws:
                 _cc = _t722.add_row().cells
