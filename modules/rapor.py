@@ -2443,78 +2443,6 @@ if _rapor_olustur_sidebar:
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
   
-          # ---------------------------------------------------------------
-          # BİNA / YAPI YÜKSEKLİĞİ ŞEMASI
-          # ---------------------------------------------------------------
-          # ÖNEMLİ: yangin.py ve rapor.py fragment_runner ile exec edildiği için
-          # __file__ her zaman modules/rapor.py'yi göstermeyebilir. Bu nedenle
-          # yalnızca __file__ üzerinden yol üretmek yerine çalışma dizini,
-          # app.py'nin bulunduğu dizin ve olası proje köklerini tarıyoruz.
-          _sema_adi = "bina_yuksekligi_yapi_yuksekligi_sema_opt.png"
-          _sema_adaylari_rapor = []
-          try:
-              _sema_adaylari_rapor.append(Path.cwd() / _sema_adi)
-          except Exception:
-              pass
-          try:
-              _f = Path(__file__).resolve()
-              _sema_adaylari_rapor.extend([
-                  _f.parent / _sema_adi,
-                  _f.parent.parent / _sema_adi,
-              ])
-          except Exception:
-              pass
-          # Streamlit Cloud / GitHub çalışma yolu için yaygın proje köklerini ekle.
-          for _kok in (Path("/mount/src"), Path("/app"), Path("/workspace"), Path("/mnt/data")):
-              _sema_adaylari_rapor.append(_kok / _sema_adi)
-
-          # Önce doğrudan adayları dene. Bulunamazsa yalnızca PNG adıyla
-          # proje ağacında sınırlı bir recursive arama yap.
-          _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
-          if _sema_yolu_rapor is None:
-              for _kok in (Path.cwd(), Path("/mount/src"), Path("/app")):
-                  try:
-                      _bulunan = next(_kok.rglob(_sema_adi), None)
-                      if _bulunan is not None and _bulunan.is_file():
-                          _sema_yolu_rapor = _bulunan
-                          break
-                  except Exception:
-                      continue
-
-          if _sema_yolu_rapor is not None:
-              try:
-                  from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
-                  from docx.shared import Inches as _Inches
-                  _p_sema = doc.add_paragraph()
-                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
-                  _r_sema.bold = True
-                  _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  _pic_p = doc.add_paragraph()
-                  _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
-                  _sema_not = doc.add_paragraph(
-                      "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki "
-                      "mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
-                  )
-                  _sema_not.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  if _sema_not.runs:
-                      _sema_not.runs[0].italic = True
-              except Exception as _sema_hata:
-                  # Resim bulunmuş ancak Word'e eklenememişse raporun tamamını
-                  # bozma; kullanıcıya Streamlit tarafında açık bilgi ver.
-                  try:
-                      st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_sema_hata}")
-                  except Exception:
-                      pass
-          else:
-              try:
-                  st.warning(
-                      "Bina/yapı yüksekliği şeması bulunamadı. "
-                      f"Aranan dosya: {_sema_adi}"
-                  )
-              except Exception:
-                  pass
-
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
           _manuel = bool(st.session_state.get("yangin_721_manuel", False))
@@ -2657,6 +2585,163 @@ if _rapor_olustur_sidebar:
                   "en yüksek sınıfa göre belirlenmesi için Madde 19."
               ).italic = True
   
+          # ---------------------------------------------------------------
+          # BİNA / YAPI YÜKSEKLİĞİ ŞEMASI
+          # ---------------------------------------------------------------
+          # ÖNEMLİ: yangin.py ve rapor.py fragment_runner ile exec edildiği için
+          # __file__ her zaman modules/rapor.py'yi göstermeyebilir. Bu nedenle
+          # yalnızca __file__ üzerinden yol üretmek yerine çalışma dizini,
+          # app.py'nin bulunduğu dizin ve olası proje köklerini tarıyoruz.
+          _sema_adi = "bina_yuksekligi_yapi_yuksekligi_sema_opt.png"
+          _sema_adaylari_rapor = []
+          try:
+              _sema_adaylari_rapor.append(Path.cwd() / _sema_adi)
+          except Exception:
+              pass
+          try:
+              _f = Path(__file__).resolve()
+              _sema_adaylari_rapor.extend([
+                  _f.parent / _sema_adi,
+                  _f.parent.parent / _sema_adi,
+              ])
+          except Exception:
+              pass
+          # Streamlit Cloud / GitHub çalışma yolu için yaygın proje köklerini ekle.
+          for _kok in (Path("/mount/src"), Path("/app"), Path("/workspace"), Path("/mnt/data")):
+              _sema_adaylari_rapor.append(_kok / _sema_adi)
+
+          # Önce doğrudan adayları dene. Bulunamazsa yalnızca PNG adıyla
+          # proje ağacında sınırlı bir recursive arama yap.
+          _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
+          if _sema_yolu_rapor is None:
+              for _kok in (Path.cwd(), Path("/mount/src"), Path("/app")):
+                  try:
+                      _bulunan = next(_kok.rglob(_sema_adi), None)
+                      if _bulunan is not None and _bulunan.is_file():
+                          _sema_yolu_rapor = _bulunan
+                          break
+                  except Exception:
+                      continue
+
+          if _sema_yolu_rapor is not None:
+              try:
+                  from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
+                  from docx.shared import Inches as _Inches
+                  _p_sema = doc.add_paragraph()
+                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
+                  _r_sema.bold = True
+                  _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                  _pic_p = doc.add_paragraph()
+                  _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                  _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
+                  _sema_not = doc.add_paragraph(
+                      "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki "
+                      "mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
+                  )
+                  _sema_not.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                  if _sema_not.runs:
+                      _sema_not.runs[0].italic = True
+              except Exception as _sema_hata:
+                  # Resim bulunmuş ancak Word'e eklenememişse raporun tamamını
+                  # bozma; kullanıcıya Streamlit tarafında açık bilgi ver.
+                  try:
+                      st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_sema_hata}")
+                  except Exception:
+                      pass
+          else:
+              try:
+                  st.warning(
+                      "Bina/yapı yüksekliği şeması bulunamadı. "
+                      f"Aranan dosya: {_sema_adi}"
+                  )
+              except Exception:
+                  pass
+
+          if st.session_state.get("rapor_bolum_73", True):
+              # ------------------------------------------------------------
+              # YAPI / BİNA BİLGİLERİ — 7.3 başlığından önce
+              # ------------------------------------------------------------
+              doc.add_heading("YAPI / BİNA BİLGİLERİ", level=4)
+
+              def _r_sayi(_v, _birim=""):
+                  if _v is None or _v == "":
+                      return "-"
+                  try:
+                      _fv = float(_v)
+                      if abs(_fv) < 1e-12:
+                          return "0" + (f" {_birim}" if _birim else "")
+                      _txt = f"{_fv:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                      return _txt + (f" {_birim}" if _birim else "")
+                  except Exception:
+                      return str(_v) + (f" {_birim}" if _birim else "")
+
+              _gb = [
+                  ("Toplam yapı / kapalı kullanım alanı", st.session_state.get("yangin_genel_toplam_alan_m2", 0), "m²"),
+                  ("Kat sayısı", st.session_state.get("yangin_genel_kat_sayisi", 0), "adet"),
+                  ("Bodrum kat sayısı", st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0), "adet"),
+                  ("Bina yüksekliği", st.session_state.get("yangin_genel_bina_yuksekligi_m", 0), "m"),
+                  ("Yapı yüksekliği", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0), "m"),
+                  ("Merdiven kovası yüksekliği", st.session_state.get("yangin_genel_merdiven_kovasi_yuksekligi_m", 0), "m"),
+                  ("Toplam kişi sayısı", st.session_state.get("yangin_genel_kisi_sayisi", 0), "kişi"),
+                  ("Otopark sayısı / araç kapasitesi", st.session_state.get("yangin_genel_otopark_arac_sayisi", 0), "araç"),
+                  ("Kapalı otopark alanı", st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0), "m²"),
+                  ("Yatak sayısı", st.session_state.get("yangin_genel_yatak_sayisi", 0), "adet"),
+                  ("İmar planlama / yerleşim alanı", st.session_state.get("yangin_genel_imar_alani_m2", 0), "m²"),
+                  ("Acil durum asansörü", "Var" if st.session_state.get("yangin_genel_acil_durum_asansoru", False) else "Yok", ""),
+              ]
+              _tgb = doc.add_table(rows=0, cols=2)
+              _tgb.style = "Table Grid"
+              for _etiket, _val, _birim in _gb:
+                  _cc = _tgb.add_row().cells
+                  _cc[0].text = str(_etiket)
+                  _cc[1].text = str(_val) if isinstance(_val, str) else _r_sayi(_val, _birim)
+                  for _run in _cc[0].paragraphs[0].runs:
+                      _run.bold = True
+
+              # Seçilen kullanım alanları ve etkin yangın tehlike sınıfı
+              # 7.2'deki session-state verisinden yeniden oluşturulur.
+              try:
+                  _secili_kayitlar_73 = _yangin_721_secili_kayitlar()
+              except Exception:
+                  _secili_kayitlar_73 = []
+
+              _otomatik_73 = st.session_state.get("yangin_722_otomatik_sinif", "")
+              _etkin_73_rapor = st.session_state.get("yangin_722_etkin_sinif", "")
+              if not _etkin_73_rapor:
+                  _etkin_73_rapor = st.session_state.get("yangin_721_manuel_sinif", "") if st.session_state.get("yangin_721_manuel", False) else _otomatik_73
+              if not _otomatik_73 and _secili_kayitlar_73:
+                  try:
+                      _otomatik_73 = _ek1b_otomatik_sinif(_secili_kayitlar_73)
+                  except Exception:
+                      _otomatik_73 = "Belirlenemedi"
+              if not _etkin_73_rapor:
+                  _etkin_73_rapor = _otomatik_73 or "Belirlenemedi"
+
+              _tsec73 = doc.add_table(rows=0, cols=2)
+              _tsec73.style = "Table Grid"
+              _sec_satirlari_73 = [
+                  ("Seçilen bina / kullanım alanları", ", ".join(str(x.get("etiket", "")) for x in _secili_kayitlar_73) if _secili_kayitlar_73 else "Seçilmedi"),
+                  ("Ek-1/B + Ek-1/C otomatik tehlike sınıfı", _otomatik_73 or "Belirlenemedi"),
+                  ("Uygulanacak yangın tehlike sınıfı", _etkin_73_rapor),
+                  ("Tehlike sınıfı seçim kaynağı", st.session_state.get("yangin_722_secim_kaynagi", "BYKHY Ek-1/B")),
+              ]
+              for _etiket, _deger in _sec_satirlari_73:
+                  _cc = _tsec73.add_row().cells
+                  _cc[0].text = _etiket
+                  _cc[1].text = str(_deger)
+                  for _run in _cc[0].paragraphs[0].runs:
+                      _run.bold = True
+                  if _etiket == "Uygulanacak yangın tehlike sınıfı":
+                      for _cell in _cc:
+                          _tcPr = _cell._tc.get_or_add_tcPr()
+                          _shd = OxmlElement("w:shd")
+                          _shd.set(qn("w:fill"), "FFF2CC")
+                          _tcPr.append(_shd)
+                          for _pr in _cell.paragraphs:
+                              for _run in _pr.runs:
+                                  _run.bold = True
+
+
       # -----------------------------------------------------------------------
       # 7.3 - 7.15 YANGIN TESİSATI ALT BÖLÜMLERİ
       # Her başlık ayrı bir bölüm olarak tutulur; hesap içerikleri sonraki
@@ -2702,89 +2787,6 @@ if _rapor_olustur_sidebar:
                   # 7.3 bölümü: program ekranındaki içerik, seçilen tehlike sınıfı ve
                   # Genel Bina Bilgileri doğrudan rapora aktarılır.
                   if _bk == "bolum_73":
-                      # ------------------------------------------------------------
-                      # 7.3 - YAPI / BİNA BİLGİLERİ
-                      # ------------------------------------------------------------
-                      doc.add_heading("YAPI / BİNA BİLGİLERİ", level=4)
-
-                      def _r_sayi(_v, _birim=""):
-                          if _v is None or _v == "":
-                              return "-"
-                          try:
-                              _fv = float(_v)
-                              if abs(_fv) < 1e-12:
-                                  return "0" + (f" {_birim}" if _birim else "")
-                              _txt = f"{_fv:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                              return _txt + (f" {_birim}" if _birim else "")
-                          except Exception:
-                              return str(_v) + (f" {_birim}" if _birim else "")
-
-                      _gb = [
-                          ("Toplam yapı / kapalı kullanım alanı", st.session_state.get("yangin_genel_toplam_alan_m2", 0), "m²"),
-                          ("Kat sayısı", st.session_state.get("yangin_genel_kat_sayisi", 0), "adet"),
-                          ("Bodrum kat sayısı", st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0), "adet"),
-                          ("Bina yüksekliği", st.session_state.get("yangin_genel_bina_yuksekligi_m", 0), "m"),
-                          ("Yapı yüksekliği", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0), "m"),
-                          ("Merdiven kovası yüksekliği", st.session_state.get("yangin_genel_merdiven_kovasi_yuksekligi_m", 0), "m"),
-                          ("Toplam kişi sayısı", st.session_state.get("yangin_genel_kisi_sayisi", 0), "kişi"),
-                          ("Otopark sayısı / araç kapasitesi", st.session_state.get("yangin_genel_otopark_arac_sayisi", 0), "araç"),
-                          ("Kapalı otopark alanı", st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0), "m²"),
-                          ("Yatak sayısı", st.session_state.get("yangin_genel_yatak_sayisi", 0), "adet"),
-                          ("İmar planlama / yerleşim alanı", st.session_state.get("yangin_genel_imar_alani_m2", 0), "m²"),
-                          ("Acil durum asansörü", "Var" if st.session_state.get("yangin_genel_acil_durum_asansoru", False) else "Yok", ""),
-                      ]
-                      _tgb = doc.add_table(rows=0, cols=2)
-                      _tgb.style = "Table Grid"
-                      for _etiket, _val, _birim in _gb:
-                          _cc = _tgb.add_row().cells
-                          _cc[0].text = str(_etiket)
-                          _cc[1].text = str(_val) if isinstance(_val, str) else _r_sayi(_val, _birim)
-                          for _run in _cc[0].paragraphs[0].runs:
-                              _run.bold = True
-
-                      # Seçilen kullanım alanları ve etkin yangın tehlike sınıfı
-                      # 7.2'deki session-state verisinden yeniden oluşturulur.
-                      try:
-                          _secili_kayitlar_73 = _yangin_721_secili_kayitlar()
-                      except Exception:
-                          _secili_kayitlar_73 = []
-
-                      _otomatik_73 = st.session_state.get("yangin_722_otomatik_sinif", "")
-                      _etkin_73_rapor = st.session_state.get("yangin_722_etkin_sinif", "")
-                      if not _etkin_73_rapor:
-                          _etkin_73_rapor = st.session_state.get("yangin_721_manuel_sinif", "") if st.session_state.get("yangin_721_manuel", False) else _otomatik_73
-                      if not _otomatik_73 and _secili_kayitlar_73:
-                          try:
-                              _otomatik_73 = _ek1b_otomatik_sinif(_secili_kayitlar_73)
-                          except Exception:
-                              _otomatik_73 = "Belirlenemedi"
-                      if not _etkin_73_rapor:
-                          _etkin_73_rapor = _otomatik_73 or "Belirlenemedi"
-
-                      _tsec73 = doc.add_table(rows=0, cols=2)
-                      _tsec73.style = "Table Grid"
-                      _sec_satirlari_73 = [
-                          ("Seçilen bina / kullanım alanları", ", ".join(str(x.get("etiket", "")) for x in _secili_kayitlar_73) if _secili_kayitlar_73 else "Seçilmedi"),
-                          ("Ek-1/B + Ek-1/C otomatik tehlike sınıfı", _otomatik_73 or "Belirlenemedi"),
-                          ("Uygulanacak yangın tehlike sınıfı", _etkin_73_rapor),
-                          ("Tehlike sınıfı seçim kaynağı", st.session_state.get("yangin_722_secim_kaynagi", "BYKHY Ek-1/B")),
-                      ]
-                      for _etiket, _deger in _sec_satirlari_73:
-                          _cc = _tsec73.add_row().cells
-                          _cc[0].text = _etiket
-                          _cc[1].text = str(_deger)
-                          for _run in _cc[0].paragraphs[0].runs:
-                              _run.bold = True
-                          if _etiket == "Uygulanacak yangın tehlike sınıfı":
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-                                  for _pr in _cell.paragraphs:
-                                      for _run in _pr.runs:
-                                          _run.bold = True
-
                       # ------------------------------------------------------------
                       # 7.3.1 - Ekrandaki görünümle aynı mantıkta: numaralı konu + açıklama
                       # ------------------------------------------------------------
