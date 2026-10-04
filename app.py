@@ -477,10 +477,6 @@ def _proje_widget_anahtari_mi(anahtar):
     # StreamlitValueAssignmentNotAllowedError oluşur.
     if anahtar.startswith("alt_grup_sec_v55_") or anahtar.startswith("alt_grup_kaldir_v55_"):
         return True
-    # 7.1 yangın bölümü toplu seçim butonları Streamlit widget state'idir;
-    # eski proje kayıtlarından yüklenmeleri ValueAssignmentNotAllowedError üretir.
-    if "_tum_sec_v" in anahtar or "_tum_kaldir_v" in anahtar:
-        return True
     # data_editor widget anahtarları Streamlit tarafından yönetilir.
     if "editor" in anahtar.lower():
         return True
@@ -7812,8 +7808,10 @@ with _t_yangin:
                         # Eski sürümlerden kalmış aynı anahtarlar varsa Streamlit,
                         # st.button oluşturulurken StreamlitValueAssignmentNotAllowedError
                         # verebiliyor. Bu nedenle buton anahtarlarını her çalıştırmada temizliyoruz.
-                        _tum_sec_btn_key = f"{_key71}_tum_sec_v3"
-                        _tum_kaldir_btn_key = f"{_key71}_tum_kaldir_v3"
+                        _tum_sec_btn_key = f"{_key71}_tum_sec_v2"
+                        _tum_kaldir_btn_key = f"{_key71}_tum_kaldir_v2"
+                        st.session_state.pop(_tum_sec_btn_key, None)
+                        st.session_state.pop(_tum_kaldir_btn_key, None)
                         if st.button("✓ TÜMÜNÜ SEÇ", key=_tum_sec_btn_key, use_container_width=True):
                             _yangin_71_toplu_sec(_key71, _maddeler71, True)
                             st.rerun()
@@ -7855,8 +7853,10 @@ with _t_yangin:
                 ]:
                     with _tab:
                         _b1, _b2 = st.columns(2)
-                        _713_tum_sec_key = f"yangin_713_{_prefix}_tum_sec_v3"
-                        _713_tum_kaldir_key = f"yangin_713_{_prefix}_tum_kaldir_v3"
+                        _713_tum_sec_key = f"yangin_713_{_prefix}_tum_sec_v2"
+                        _713_tum_kaldir_key = f"yangin_713_{_prefix}_tum_kaldir_v2"
+                        st.session_state.pop(_713_tum_sec_key, None)
+                        st.session_state.pop(_713_tum_kaldir_key, None)
                         if _b1.button("✓ TÜMÜNÜ SEÇ", key=_713_tum_sec_key, use_container_width=True):
                             for _i in range(len(_liste)):
                                 st.session_state[f"yangin_713_{_prefix}_{_i}"] = True
@@ -8370,6 +8370,9 @@ _rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", Fals
 if _rapor_olustur_sidebar:
 
   _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
+  # Raporu gereksiz yere engellememek için yalnızca açıkça UYGUN DEĞİL
+  # olarak işaretlenmiş seçimler raporu durdurur. Boş/eksik poz_durumu
+  # bilgisi tek başına rapor oluşturmayı engellemez.
   gecersiz_var = any(
       str(p.get("poz_durumu", "")).strip().upper() in {"UYGUN DEĞİL", "UYGUN DEGIL", "GEÇERSİZ", "GECERSIZ"}
       for p in (psp_parametreleri or {}).values()
@@ -10972,10 +10975,78 @@ if _rapor_olustur_sidebar:
                 _run7.italic = True
                 _run7.font.size = Pt(15)
                 _run7.font.color.rgb = RGBColor(31, 78, 121)
-                _body7 = doc.add_paragraph(
-                    "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
-                )
-                _body7.paragraph_format.space_after = Pt(6)
+                if _bt.startswith("7.3 "):
+                    _p731 = doc.add_paragraph()
+                    _r731 = _p731.add_run("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI")
+                    _r731.bold = True
+                    _r731.italic = True
+                    _r731.font.size = Pt(13)
+                    _r731.font.color.rgb = RGBColor(31, 78, 121)
+                    for _no, _baslik_yd, _metin_yd in [
+                        ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
+                        ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
+                        ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
+                        ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır."),
+                        ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır."),
+                        ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
+                        ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır."),
+                        ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
+                        ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
+                    ]:
+                        _pp = doc.add_paragraph()
+                        _rr = _pp.add_run(f"{_no}. {_baslik_yd}: ")
+                        _rr.bold = True
+                        _pp.add_run(_metin_yd)
+
+                    _p732 = doc.add_paragraph()
+                    _r732 = _p732.add_run("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ")
+                    _r732.bold = True
+                    _r732.italic = True
+                    _r732.font.size = Pt(13)
+                    _r732.font.color.rgb = RGBColor(31, 78, 121)
+                    doc.add_paragraph(
+                        "BYKHY Ek-8/C’ye göre 7.2’de seçilen yangın tehlike sınıfına karşılık gelen "
+                        "yangın dolabı debisi, hidrant debisi ve süre değerleri aşağıda gösterilmiştir."
+                    )
+                    _rtab = doc.add_table(rows=1, cols=3)
+                    _rtab.style = "Table Grid"
+                    for _cell, _txt in zip(_rtab.rows[0].cells, ["Bina Tehlike Sınıfı", "Yangın Dolabı Debisi (L/dak)", "Süre (dak)"]):
+                        _cell.text = _txt
+                        for _pr in _cell.paragraphs:
+                            for _run in _pr.runs:
+                                _run.bold = True
+                    _ek8c_rapor = [("Düşük tehlike",100,30),("Orta Tehlike-1-2",100,60),("Orta Tehlike-3-4",100,60),("Yüksek Tehlike",200,90)]
+                    _ek8c_grup_rapor = st.session_state.get("yangin_73_ek8c_grup", "")
+                    for _grup, _qd, _sure in _ek8c_rapor:
+                        _cc = _rtab.add_row().cells
+                        for _cell, _val in zip(_cc, [_grup, _qd, _sure]):
+                            _cell.text = str(_val)
+                        if _grup == _ek8c_grup_rapor:
+                            for _cell in _cc:
+                                _tcPr = _cell._tc.get_or_add_tcPr()
+                                _shd = OxmlElement("w:shd")
+                                _shd.set(qn("w:fill"), "FFF2CC")
+                                _tcPr.append(_shd)
+                                for _pr in _cell.paragraphs:
+                                    for _run in _pr.runs:
+                                        _run.bold = True
+                    _q73 = int(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0) or 0)
+                    if _ek8c_grup_rapor and _q73:
+                        _pr = doc.add_paragraph()
+                        _rr = _pr.add_run(
+                            f"7.2’den otomatik seçilen Ek-8/C değeri: {_ek8c_grup_rapor} — "
+                            f"Seçilen yangın suyu debisi: {_q73} L/dak"
+                        )
+                        _rr.bold = True
+                    doc.add_paragraph(
+                        "Not: Hidrant sistemi ve hidrant debisi 7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde ayrıca geliştirilecektir. "
+                        "Seçilen yangın dolabı debisi ileride 7.12 yangın suyu deposu kapasite hesabında kullanılacaktır."
+                    )
+                else:
+                    _body7 = doc.add_paragraph(
+                        "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                    )
+                    _body7.paragraph_format.space_after = Pt(6)
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
