@@ -2443,28 +2443,75 @@ if _rapor_olustur_sidebar:
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
   
-          # Program ekranındaki bina yüksekliği / yapı yüksekliği şemasını
-          # Word raporuna da ekle. Görsel, Streamlit UI'sından değil proje kökündeki
-          # PNG dosyasından okunur.
-          _sema_kok_rapor = Path(__file__).resolve().parent.parent
-          _sema_adaylari_rapor = [
-              _sema_kok_rapor / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
-              *_sema_kok_rapor.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
-          ]
+          # ---------------------------------------------------------------
+          # BİNA / YAPI YÜKSEKLİĞİ ŞEMASI
+          # ---------------------------------------------------------------
+          # ÖNEMLİ: yangin.py ve rapor.py fragment_runner ile exec edildiği için
+          # __file__ her zaman modules/rapor.py'yi göstermeyebilir. Bu nedenle
+          # yalnızca __file__ üzerinden yol üretmek yerine çalışma dizini,
+          # app.py'nin bulunduğu dizin ve olası proje köklerini tarıyoruz.
+          _sema_adi = "bina_yuksekligi_yapi_yuksekligi_sema_opt.png"
+          _sema_adaylari_rapor = []
+          try:
+              _sema_adaylari_rapor.append(Path.cwd() / _sema_adi)
+          except Exception:
+              pass
+          try:
+              _f = Path(__file__).resolve()
+              _sema_adaylari_rapor.extend([
+                  _f.parent / _sema_adi,
+                  _f.parent.parent / _sema_adi,
+              ])
+          except Exception:
+              pass
+          # Streamlit Cloud / GitHub çalışma yolu için yaygın proje köklerini ekle.
+          for _kok in (Path("/mount/src"), Path("/app"), Path("/workspace"), Path("/mnt/data")):
+              _sema_adaylari_rapor.append(_kok / _sema_adi)
+
+          # Önce doğrudan adayları dene. Bulunamazsa yalnızca PNG adıyla
+          # proje ağacında sınırlı bir recursive arama yap.
           _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
+          if _sema_yolu_rapor is None:
+              for _kok in (Path.cwd(), Path("/mount/src"), Path("/app")):
+                  try:
+                      _bulunan = next(_kok.rglob(_sema_adi), None)
+                      if _bulunan is not None and _bulunan.is_file():
+                          _sema_yolu_rapor = _bulunan
+                          break
+                  except Exception:
+                      continue
+
           if _sema_yolu_rapor is not None:
               try:
+                  from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
+                  from docx.shared import Inches as _Inches
                   _p_sema = doc.add_paragraph()
-                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim:")
+                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
                   _r_sema.bold = True
-                  doc.add_picture(str(_sema_yolu_rapor), width=Inches(6.2))
-                  doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                  _pic_p = doc.add_paragraph()
+                  _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                  _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
                   _sema_not = doc.add_paragraph(
                       "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki "
                       "mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
                   )
+                  _sema_not.alignment = _WD_ALIGN_PARAGRAPH.CENTER
                   if _sema_not.runs:
                       _sema_not.runs[0].italic = True
+              except Exception as _sema_hata:
+                  # Resim bulunmuş ancak Word'e eklenememişse raporun tamamını
+                  # bozma; kullanıcıya Streamlit tarafında açık bilgi ver.
+                  try:
+                      st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_sema_hata}")
+                  except Exception:
+                      pass
+          else:
+              try:
+                  st.warning(
+                      "Bina/yapı yüksekliği şeması bulunamadı. "
+                      f"Aranan dosya: {_sema_adi}"
+                  )
               except Exception:
                   pass
 
