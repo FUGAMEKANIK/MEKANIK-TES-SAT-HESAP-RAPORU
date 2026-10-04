@@ -2607,14 +2607,28 @@ if _rapor_olustur_sidebar:
           except Exception:
               pass
           # Streamlit Cloud / GitHub çalışma yolu için yaygın proje köklerini ekle.
-          for _kok in (Path("/mount/src"), Path("/app"), Path("/workspace"), Path("/mnt/data")):
+          for _kok in (
+              Path("/mount/src"),
+              Path("/app"),
+              Path("/workspace"),
+              Path("/mnt/data"),
+              Path("/mount/src/mekanik-tes-sat-hesap-raporu"),
+              Path("/mount/src/MEKANIK-TES-SAT-HESAP-RAPORU"),
+          ):
               _sema_adaylari_rapor.append(_kok / _sema_adi)
 
           # Önce doğrudan adayları dene. Bulunamazsa yalnızca PNG adıyla
           # proje ağacında sınırlı bir recursive arama yap.
           _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
           if _sema_yolu_rapor is None:
-              for _kok in (Path.cwd(), Path("/mount/src"), Path("/app")):
+              for _kok in (
+                  Path.cwd(),
+                  Path("/mount/src"),
+                  Path("/app"),
+                  Path("/workspace"),
+                  Path("/mount/src/mekanik-tes-sat-hesap-raporu"),
+                  Path("/mount/src/MEKANIK-TES-SAT-HESAP-RAPORU"),
+              ):
                   try:
                       _bulunan = next(_kok.rglob(_sema_adi), None)
                       if _bulunan is not None and _bulunan.is_file():
@@ -2649,13 +2663,30 @@ if _rapor_olustur_sidebar:
                   except Exception:
                       pass
           else:
-              try:
-                  st.warning(
-                      "Bina/yapı yüksekliği şeması bulunamadı. "
-                      f"Aranan dosya: {_sema_adi}"
-                  )
-              except Exception:
-                  pass
+              # Streamlit Cloud'da depo adı/çalışma dizini farklı olabildiği için
+              # bilinen proje kökünü bir kez daha doğrudan kontrol et.
+              _det_s = Path("/mount/src/mekanik-tes-sat-hesap-raporu") / _sema_adi
+              if _det_s.is_file():
+                  _sema_yolu_rapor = _det_s
+                  try:
+                      _p_sema = doc.add_paragraph()
+                      _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                      _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
+                      _r_sema.bold = True
+                      _pic_p = doc.add_paragraph()
+                      _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                      _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
+                  except Exception as _e2:
+                      try: st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_e2}")
+                      except Exception: pass
+              else:
+                  try:
+                      st.warning(
+                          "Bina/yapı yüksekliği şeması bulunamadı. "
+                          f"Aranan dosya: {_sema_adi}"
+                      )
+                  except Exception:
+                      pass
 
           if st.session_state.get("rapor_bolum_73", True):
               # ------------------------------------------------------------
