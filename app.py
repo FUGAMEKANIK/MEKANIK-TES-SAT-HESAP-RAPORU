@@ -8190,13 +8190,23 @@ with _t_yangin:
             ), unsafe_allow_html=True)
 
         elif _baslik.startswith("7.3 "):
+            # ------------------------------------------------------------------
+            # 7.3 YANGIN DOLABI SİSTEMİ
+            # 7.2 GENEL BİNA BİLGİLERİ ve seçilen etkin yangın tehlike sınıfı
+            # bu bölümün ortak veri kaynağıdır.
+            # ------------------------------------------------------------------
             with st.expander("7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
                 st.markdown(
                     '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
                     "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
                     unsafe_allow_html=True,
                 )
-                st.caption("Bu bölümde önce yürürlükteki yangın yönetmeliğinde yangın dolapları ile ilgili hükümler esas alınacak, hesap ve ekipman seçimleri daha sonra bu esaslar üzerine geliştirilecektir.")
+                st.caption(
+                    "7.3 bölümü, 7.2 GENEL BİNA BİLGİLERİ ve seçilen yangın tehlike sınıfından "
+                    "otomatik olarak veri alır. Bu bölümde belirlenen Ek-8/C değerleri ileride "
+                    "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde "
+                    "yangın suyu deposu hesabının veri kaynağı olarak kullanılacaktır."
+                )
 
                 _ui_73_rapor_key = "yangin_73_rapor_ui"
                 st.session_state.setdefault(_ui_73_rapor_key, bool(st.session_state.get("rapor_bolum_73", True)))
@@ -8207,59 +8217,6 @@ with _t_yangin:
                         "rapor_bolum_73", bool(st.session_state.get("yangin_73_rapor_ui", True))
                     ),
                 )
-
-                # 7.2 GENEL BİNA BİLGİLERİNDEN ortak verileri doğrudan al.
-                # Bu bölümde tekrar aynı bilgiler kullanıcıdan istenmez.
-                _gbi_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
-                _gbi_kat = int(st.session_state.get("yangin_genel_kat_sayisi", 0) or 0)
-                _gbi_bodrum = int(st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0) or 0)
-                _gbi_bina_h = float(st.session_state.get("yangin_genel_bina_yuksekligi_m", 0.0) or 0.0)
-                _gbi_yapi_h = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
-                _gbi_kisi = int(st.session_state.get("yangin_genel_kisi_sayisi", 0) or 0)
-                _gbi_park = int(st.session_state.get("yangin_genel_otopark_arac_sayisi", 0) or 0)
-                _gbi_park_alan = float(st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0.0) or 0.0)
-                _gbi_yatak = int(st.session_state.get("yangin_genel_yatak_sayisi", 0) or 0)
-                _gbi_imar = float(st.session_state.get("yangin_genel_imar_alani_m2", 0.0) or 0.0)
-                _gbi_acil_asansor = bool(st.session_state.get("yangin_genel_acil_durum_asansoru", False))
-                _gbi_tehlike = st.session_state.get("yangin_722_etkin_sinif", "Seçilmedi")
-
-                with st.expander("ⓘ 7.2 GENEL BİNA BİLGİLERİNDEN ALINAN ORTAK VERİLER", expanded=True):
-                    st.caption("Bu değerler 7.2 GENEL BİNA BİLGİLERİ bölümünden otomatik alınır. 7.3 içinde tekrar girilmez.")
-                    _g1, _g2, _g3 = st.columns(3)
-                    with _g1:
-                        st.metric("Toplam yapı / kapalı alan", f"{_gbi_alan:,.2f} m²")
-                        st.metric("Kat sayısı / bodrum", f"{_gbi_kat} / {_gbi_bodrum}")
-                        st.metric("Toplam kişi", f"{_gbi_kisi}")
-                    with _g2:
-                        st.metric("Bina yüksekliği", f"{_gbi_bina_h:,.2f} m")
-                        st.metric("Yapı yüksekliği", f"{_gbi_yapi_h:,.2f} m")
-                        st.metric("Etkin yangın tehlike sınıfı", str(_gbi_tehlike))
-                    with _g3:
-                        st.metric("Kapalı otopark alanı", f"{_gbi_park_alan:,.2f} m²")
-                        st.metric("Otopark araç kapasitesi", f"{_gbi_park}")
-                        st.metric("Yatak sayısı", f"{_gbi_yatak}")
-                    st.caption(
-                        f"İmar / yerleşim alanı: {_gbi_imar:,.2f} m²  |  "
-                        f"Acil durum asansörü: {'VAR' if _gbi_acil_asansor else 'YOK'}"
-                    )
-
-                # 7.3.1'deki zorunluluk ön kontrolünü ortak bina verileriyle ilişkilendir.
-                _gbi_alan_esigi_1000 = _gbi_alan > 1000.0
-                _gbi_alan_esigi_2000 = _gbi_alan > 2000.0
-                _gbi_yuksek_bina_verisi = (_gbi_bina_h > 0.0 or _gbi_yapi_h > 0.0)
-                st.markdown("**7.3 YANGIN DOLABI ZORUNLULUK ÖN KONTROLÜ**")
-                if _gbi_alan <= 0 and not _gbi_yuksek_bina_verisi:
-                    st.warning("GENEL BİNA BİLGİLERİ bölümünde alan ve yükseklik bilgileri girilmediği için yangın dolabı zorunluluğu henüz değerlendirilemiyor.")
-                else:
-                    _gbi_kontrol = []
-                    if _gbi_alan_esigi_1000:
-                        _gbi_kontrol.append("1000 m² alan eşiği aşılıyor")
-                    if _gbi_alan_esigi_2000:
-                        _gbi_kontrol.append("2000 m² alan eşiği aşılıyor")
-                    if _gbi_yuksek_bina_verisi:
-                        _gbi_kontrol.append("bina/yapı yüksekliği bilgisi mevcut")
-                    st.info("Ortak bina verilerine göre: " + ("; ".join(_gbi_kontrol) if _gbi_kontrol else "ilgili alan eşikleri aşılmıyor."))
-                    st.caption("Kesin zorunluluk kararı, yapının kullanım türü ve yönetmelikteki diğer koşullar birlikte değerlendirilerek verilecektir.")
 
                 st.markdown(
                     '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
@@ -8281,19 +8238,101 @@ with _t_yangin:
                     st.markdown(f"**{_no}. {_baslik_yd}**")
                     st.write(_metin_yd)
 
+                # --------------------------------------------------------------
+                # 7.3.2 - BYKHY EK-8/C
+                # --------------------------------------------------------------
                 st.markdown(
                     '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:14px;">'
                     "7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ</div>",
                     unsafe_allow_html=True,
                 )
                 st.write(
-                    "Yönetmeliğe göre sulu söndürme sistemlerinde gerekli su basınç ve debisinin şebekeden karşılanamaması durumunda yangın pompa istasyonu ve deposu oluşturulur. "
-                    "Yalnızca yangın dolapları sistemi bulunuyorsa, su kapasitesi ilgili tasarım debilerinin tehlike sınıfına göre öngörülen süre ile çarpılması esasına göre belirlenir."
+                    "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C, bina tehlike sınıfına "
+                    "göre yangın dolabı ve hidrant sistemi için ilâve edilecek su ihtiyaçlarını belirler. "
+                    "Aşağıdaki değerler 7.2 bölümünde seçilen etkin yangın tehlike sınıfına göre otomatik seçilir."
                 )
 
-                st.info(
-                    "Bir sonraki aşamada 7.3 içerisinde; yangın dolabı zorunluluk kontrolü, dolap sayısı, yerleşim mesafesi, hortum tipi, tasarım debisi, tasarım basıncı, hidrolik hesap ve cihaz/poz seçimi ayrı ayrı geliştirilecektir."
-                )
+                _ek8c_verileri = [
+                    ("Düşük tehlike", 100, 400, 30),
+                    ("Orta Tehlike-1-2", 100, 400, 60),
+                    ("Orta Tehlike-3-4", 100, 1000, 60),
+                    ("Yüksek Tehlike", 200, 1500, 90),
+                ]
+                _etkin_73 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                if not _etkin_73:
+                    _etkin_73 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+
+                def _ek8c_grup_esle(_sinif):
+                    _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
+                    if _s.startswith("düşük"):
+                        return "Düşük tehlike"
+                    if _s.startswith("ortatehlike-1") or _s.startswith("ortatehlike-2"):
+                        return "Orta Tehlike-1-2"
+                    if _s.startswith("ortatehlike-3") or _s.startswith("ortatehlike-4"):
+                        return "Orta Tehlike-3-4"
+                    if _s.startswith("yüksek"):
+                        return "Yüksek Tehlike"
+                    return ""
+
+                _ek8c_secili_grup = _ek8c_grup_esle(_etkin_73)
+                _ek8c_kayit = next((x for x in _ek8c_verileri if x[0] == _ek8c_secili_grup), None)
+
+                _ek8c_rows = []
+                for _grup, _q_dolap, _q_hidrant, _sure in _ek8c_verileri:
+                    _sec = _grup == _ek8c_secili_grup
+                    _ek8c_rows.append({
+                        "grup": _grup, "dolap": _q_dolap, "hidrant": _q_hidrant,
+                        "sure": _sure, "secili": _sec,
+                    })
+
+                st.markdown("**BYKHY Ek-8/C — Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları**")
+                _h = st.columns([2.3, 1.6, 1.6, 1.1])
+                for _c, _txt in zip(_h, ["Bina Tehlike Sınıfı", "İlave Yangın Dolabı Debisi (L/dak)", "İlave Hidrant Debisi (L/dak)", "Süre (dak)"]):
+                    _c.markdown(f"**{_txt}**")
+                for _row in _ek8c_rows:
+                    _bg = "#FFF2CC" if _row["secili"] else "#FFFFFF"
+                    _cols = st.columns([2.3, 1.6, 1.6, 1.1])
+                    for _c, _val in zip(_cols, [_row["grup"], f'{_row["dolap"]:,}'.replace(',', '.'), f'{_row["hidrant"]:,}'.replace(',', '.'), _row["sure"]]):
+                        _c.markdown(
+                            f'<div style="background-color:{_bg}; border:1px solid #D9D9D9; padding:7px 8px; min-height:32px;">{_val}</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                if _ek8c_kayit:
+                    _q_dolap = int(_ek8c_kayit[1])
+                    _q_hidrant = int(_ek8c_kayit[2])
+                    _sure = int(_ek8c_kayit[3])
+                    _v_dolap_l = _q_dolap * _sure
+                    _v_hidrant_l = _q_hidrant * _sure
+                    _v_toplam_l = (_q_dolap + _q_hidrant) * _sure
+
+                    st.session_state["yangin_73_ek8c_grup"] = _ek8c_kayit[0]
+                    st.session_state["yangin_73_ek8c_yangin_dolabi_debisi_ldak"] = _q_dolap
+                    st.session_state["yangin_73_ek8c_hidrant_debisi_ldak"] = _q_hidrant
+                    st.session_state["yangin_73_ek8c_sure_dak"] = _sure
+                    st.session_state["yangin_73_ek8c_yangin_dolabi_su_hacmi_l"] = _v_dolap_l
+                    st.session_state["yangin_73_ek8c_hidrant_su_hacmi_l"] = _v_hidrant_l
+                    st.session_state["yangin_73_ek8c_toplam_su_hacmi_l"] = _v_toplam_l
+
+                    st.markdown(
+                        f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
+                        f'<b>7.2’den otomatik seçilen değerler:</b> {_ek8c_kayit[0]} → Yangın dolabı: <b>{_q_dolap} L/dak</b> | Hidrant: <b>{_q_hidrant} L/dak</b> | Süre: <b>{_sure} dk</b><br>'
+                        f'<b>İleride depo hesabına aktarılacak Ek-8/C su hacmi:</b> <b>{_v_toplam_l:,} L ({_v_toplam_l/1000:.2f} m³)</b>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.caption(
+                        "Not: Bu toplam, Ek-8/C tablosundaki yangın dolabı ve hidrant ilave debilerinin "
+                        "seçilen süre ile çarpımından elde edilen ön hacim bilgisidir. 7.12 yangın suyu deposu "
+                        "hesabında sistemlerin birlikte bulunup bulunmadığı ve ilgili yönetmelik hükümleri ayrıca dikkate alınacaktır."
+                    )
+                else:
+                    st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için Ek-8/C değeri otomatik seçilemedi.")
+
+                st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
+
+        elif _baslik.startswith(("7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
+            st.info("Bu bölümün tasarım ve hesaplama içeriği bir sonraki aşamada ayrı olarak geliştirilecektir.")
 
         # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
         # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
@@ -10924,10 +10963,78 @@ if _rapor_olustur_sidebar:
                 _run7.italic = True
                 _run7.font.size = Pt(15)
                 _run7.font.color.rgb = RGBColor(31, 78, 121)
-                _body7 = doc.add_paragraph(
-                    "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
-                )
-                _body7.paragraph_format.space_after = Pt(6)
+                if _bt.startswith("7.3 "):
+                    _p731 = doc.add_paragraph()
+                    _r731 = _p731.add_run("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI")
+                    _r731.bold = True
+                    _r731.italic = True
+                    _r731.font.size = Pt(13)
+                    _r731.font.color.rgb = RGBColor(31, 78, 121)
+                    for _no, _baslik_yd, _metin_yd in [
+                        ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
+                        ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
+                        ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
+                        ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır."),
+                        ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır."),
+                        ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
+                        ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır."),
+                        ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
+                        ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
+                    ]:
+                        _pp = doc.add_paragraph()
+                        _rr = _pp.add_run(f"{_no}. {_baslik_yd}: ")
+                        _rr.bold = True
+                        _pp.add_run(_metin_yd)
+
+                    _p732 = doc.add_paragraph()
+                    _r732 = _p732.add_run("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ")
+                    _r732.bold = True
+                    _r732.italic = True
+                    _r732.font.size = Pt(13)
+                    _r732.font.color.rgb = RGBColor(31, 78, 121)
+                    doc.add_paragraph(
+                        "BYKHY Ek-8/C’ye göre 7.2’de seçilen yangın tehlike sınıfına karşılık gelen "
+                        "yangın dolabı debisi, hidrant debisi ve süre değerleri aşağıda gösterilmiştir."
+                    )
+                    _rtab = doc.add_table(rows=1, cols=4)
+                    _rtab.style = "Table Grid"
+                    for _cell, _txt in zip(_rtab.rows[0].cells, ["Bina Tehlike Sınıfı", "Yangın Dolabı Debisi (L/dak)", "Hidrant Debisi (L/dak)", "Süre (dak)"]):
+                        _cell.text = _txt
+                        for _pr in _cell.paragraphs:
+                            for _run in _pr.runs:
+                                _run.bold = True
+                    _ek8c_rapor = [("Düşük tehlike",100,400,30),("Orta Tehlike-1-2",100,400,60),("Orta Tehlike-3-4",100,1000,60),("Yüksek Tehlike",200,1500,90)]
+                    _ek8c_grup_rapor = st.session_state.get("yangin_73_ek8c_grup", "")
+                    for _grup, _qd, _qh, _sure in _ek8c_rapor:
+                        _cc = _rtab.add_row().cells
+                        for _cell, _val in zip(_cc, [_grup, _qd, _qh, _sure]):
+                            _cell.text = str(_val)
+                        if _grup == _ek8c_grup_rapor:
+                            for _cell in _cc:
+                                _tcPr = _cell._tc.get_or_add_tcPr()
+                                _shd = OxmlElement("w:shd")
+                                _shd.set(qn("w:fill"), "FFF2CC")
+                                _tcPr.append(_shd)
+                                for _pr in _cell.paragraphs:
+                                    for _run in _pr.runs:
+                                        _run.bold = True
+                    _v73 = int(st.session_state.get("yangin_73_ek8c_toplam_su_hacmi_l", 0) or 0)
+                    if _ek8c_grup_rapor and _v73:
+                        _pr = doc.add_paragraph()
+                        _rr = _pr.add_run(
+                            f"7.2’den otomatik seçilen Ek-8/C değeri: {_ek8c_grup_rapor} — "
+                            f"Toplam ilave su hacmi: {_v73:,} L ({_v73/1000:.2f} m³)"
+                        )
+                        _rr.bold = True
+                    doc.add_paragraph(
+                        "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C. "
+                        "Ek-8/C değerleri ileride 7.12 yangın suyu depolama hesabında kullanılmak üzere saklanmıştır."
+                    ).italic = True
+                else:
+                    _body7 = doc.add_paragraph(
+                        "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                    )
+                    _body7.paragraph_format.space_after = Pt(6)
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
