@@ -392,7 +392,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
             else:
                 st.subheader(_baslik)
 
-            if _baslik.startswith("7.1"):
+            if _baslik.startswith("7.1 "):
                 # 7.1 alt maddeleri tek bir hiyerarşi içinde açılır/kapanır.
                 # 7.1.1 ve 7.1.2 madde seçimleri; 7.1.3 ise standart kütüphanesi içerir.
                 st.caption("7.1 alt maddeleri ayrı ayrı açılıp kapatılabilir. İşaretli maddeler rapora aktarılır.")
