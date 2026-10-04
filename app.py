@@ -7870,6 +7870,95 @@ with _t_yangin:
             st.session_state.setdefault(_r721, True)
             st.session_state.setdefault(_r722, True)
 
+            # ------------------------------------------------------------------
+            # GENEL BİNA BİLGİLERİ
+            # Bu bilgiler 7.3 ve sonraki yangın tesisatı modüllerinin ortak
+            # veri kaynağıdır. Şimdilik yalnızca program ekranında kullanılır;
+            # rapor üretimine aktarılmaz.
+            # ------------------------------------------------------------------
+            with st.expander("GENEL BİNA BİLGİLERİ", expanded=True):
+                st.markdown(
+                    '<div style="font-size:16px;font-weight:700;font-style:italic;">'
+                    'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
+                    unsafe_allow_html=True,
+                )
+                st.caption(
+                    "Bu bilgiler, aşağıdaki yangın tesisatı bölümlerinde yapılacak "
+                    "ön değerlendirme ve hesaplamalarda ortak veri olarak kullanılacaktır. "
+                    "Şimdilik rapora aktarılmaz."
+                )
+
+                _b1, _b2, _b3 = st.columns(3)
+                with _b1:
+                    st.number_input(
+                        "Toplam yapı / kapalı kullanım alanı (m²)",
+                        min_value=0.0, step=10.0,
+                        key="yangin_genel_toplam_alan_m2",
+                    )
+                    st.number_input(
+                        "Kat sayısı", min_value=0, step=1,
+                        key="yangin_genel_kat_sayisi",
+                    )
+                    st.number_input(
+                        "Bodrum kat sayısı", min_value=0, step=1,
+                        key="yangin_genel_bodrum_kat_sayisi",
+                    )
+                with _b2:
+                    st.number_input(
+                        "Bina yüksekliği (m)", min_value=0.0, step=0.10,
+                        key="yangin_genel_bina_yuksekligi_m",
+                    )
+                    st.number_input(
+                        "Yapı yüksekliği (m)", min_value=0.0, step=0.10,
+                        key="yangin_genel_yapi_yuksekligi_m",
+                    )
+                    st.number_input(
+                        "Merdiven kovası yüksekliği (m)", min_value=0.0, step=0.10,
+                        key="yangin_genel_merdiven_kovasi_yuksekligi_m",
+                    )
+                with _b3:
+                    st.number_input(
+                        "Toplam kişi sayısı", min_value=0, step=1,
+                        key="yangin_genel_kisi_sayisi",
+                    )
+                    st.number_input(
+                        "Otopark sayısı / araç kapasitesi", min_value=0, step=1,
+                        key="yangin_genel_otopark_arac_sayisi",
+                    )
+                    st.number_input(
+                        "Kapalı otopark alanı (m²)", min_value=0.0, step=10.0,
+                        key="yangin_genel_kapali_otopark_alan_m2",
+                    )
+
+                _b4, _b5, _b6 = st.columns(3)
+                with _b4:
+                    st.number_input(
+                        "Yatak sayısı (varsa)", min_value=0, step=1,
+                        key="yangin_genel_yatak_sayisi",
+                    )
+                with _b5:
+                    st.number_input(
+                        "İmar planlama / yerleşim alanı (m²)", min_value=0.0, step=10.0,
+                        key="yangin_genel_imar_alani_m2",
+                    )
+                with _b6:
+                    st.checkbox(
+                        "Acil durum asansörü bulunuyor",
+                        key="yangin_genel_acil_durum_asansoru",
+                    )
+
+            _genel_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
+            _kat = int(st.session_state.get("yangin_genel_kat_sayisi", 0) or 0)
+            _bodrum = int(st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0) or 0)
+            _bina_h = float(st.session_state.get("yangin_genel_bina_yuksekligi_m", 0.0) or 0.0)
+            _yapi_h = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+            _merdiven_h = float(st.session_state.get("yangin_genel_merdiven_kovasi_yuksekligi_m", 0.0) or 0.0)
+            _otopark_arac = int(st.session_state.get("yangin_genel_otopark_arac_sayisi", 0) or 0)
+            _otopark_alan = float(st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0.0) or 0.0)
+            _yatak = int(st.session_state.get("yangin_genel_yatak_sayisi", 0) or 0)
+            _imar_alan = float(st.session_state.get("yangin_genel_imar_alani_m2", 0.0) or 0.0)
+            _acil_asansor = bool(st.session_state.get("yangin_genel_acil_durum_asansoru", False))
+
             if st.session_state.get(_k721, True):
                 with st.expander("7.2.1 BİNA KULLANIM AMACI", expanded=True):
                     _c721a, _c721b = st.columns([3, 1])
@@ -7960,59 +8049,121 @@ with _t_yangin:
                     st.session_state["yangin_722_etkin_sinif"] = _etkin
                     st.session_state["yangin_722_otomatik_sinif"] = _otomatik
                     st.session_state["yangin_722_secim_kaynagi"] = "Manuel" if _manuel else "BYKHY Ek-1/B"
-        elif _baslik.startswith("7.3 "):
-            with st.expander("7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
-                st.markdown(
-                    '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
-                    "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
-                    unsafe_allow_html=True,
-                )
-                st.caption("Bu bölümde önce yürürlükteki yangın yönetmeliğinde yangın dolapları ile ilgili hükümler esas alınacak, hesap ve ekipman seçimleri daha sonra bu esaslar üzerine geliştirilecektir.")
+            # --------------------------------------------------------------
+            # GENEL YANGIN SİSTEMİ GEREKSİNİMLERİ — SADECE PROGRAM EKRANI
+            # Yönetmelik ön değerlendirmesi. Rapor veri akışına aktarılmaz.
+            # --------------------------------------------------------------
+            _secili_kullanim = [x["etiket"] for x in _yangin_721_secili_kayitlar()]
+            _kullanim_metni = " ".join(_secili_kullanim).lower()
+            _etkin_sinif = st.session_state.get("yangin_722_etkin_sinif", "Belirlenemedi")
+            _yuksek_bina = _yapi_h > 30.50
+            _konut = "konut" in _kullanim_metni
 
-                _ui_73_rapor_key = "yangin_73_rapor_ui"
-                st.session_state.setdefault(_ui_73_rapor_key, bool(st.session_state.get("rapor_bolum_73", True)))
-                st.checkbox(
-                    "7.3 rapora eklensin",
-                    key=_ui_73_rapor_key,
-                    on_change=lambda: st.session_state.__setitem__(
-                        "rapor_bolum_73", bool(st.session_state.get("yangin_73_rapor_ui", True))
-                    ),
+            # Yangın dolabı — Madde 94/1-b-1
+            _dolap_gerekce = []
+            if _yuksek_bina:
+                _dolap_gerekce.append("Yapı yüksekliği 30,50 m eşiğini aşıyor")
+            if _genel_alan > 2000:
+                _dolap_gerekce.append("Toplam kapalı kullanım alanı 2000 m² eşiğini aşıyor")
+            if any(k in _kullanim_metni for k in ["imalathane", "atölye", "depo", "otel", "motel", "sağlık", "toplanma", "eğitim"] ) and _genel_alan > 1000:
+                _dolap_gerekce.append("Kullanım türü ve 1000 m² eşiği birlikte sağlanıyor")
+            _dolap = bool(_dolap_gerekce)
+
+            # Sprinkler — Madde 96/2'deki temel eşikler.
+            _spr_gerekce = []
+            if (_yapi_h > 30.50 and not _konut):
+                _spr_gerekce.append("Konut dışı bina ve yapı yüksekliği 30,50 m üzeri")
+            if (_konut and _yapi_h > 51.50):
+                _spr_gerekce.append("Konut ve yapı yüksekliği 51,50 m üzeri")
+            if _otopark_alan > 600 or _otopark_arac > 10:
+                _spr_gerekce.append("Kapalı otopark için yönetmelik eşiği sağlanıyor")
+            if _yatak > 200 or ("otel" in _kullanim_metni and _yatak > 100):
+                _spr_gerekce.append("Yataklı kullanım için yönetmelik eşiği sağlanıyor")
+            if (any(k in _kullanim_metni for k in ["mağaza", "alışveriş", "ticaret", "eğlence"]) and _genel_alan > 2000):
+                _spr_gerekce.append("Katlı mağaza/alışveriş/ticaret/eğlence alanı 2000 m² üzeri")
+            if any(k in _kullanim_metni for k in ["parlayıcı", "kolay alevlen", "yanıcı madde"]) and _genel_alan > 1000:
+                _spr_gerekce.append("Kolay alevlenici/parlayıcı madde kullanımında 1000 m² eşiği")
+            _sprinkler = bool(_spr_gerekce)
+
+            # Merdiven basınçlandırma — Madde 89. Merdiven yüksekliği girilmişse
+            # onu, girilmemişse yapı yüksekliğini yalnızca ön değerlendirme için kullan.
+            _merdiven_esas_h = _merdiven_h if _merdiven_h > 0 else _yapi_h
+            _bas_gerekce = []
+            if not _konut and _merdiven_esas_h > 30.50:
+                _bas_gerekce.append("Konut dışı bina ve merdiven kovası yüksekliği 30,50 m üzeri")
+            if _bodrum > 4:
+                _bas_gerekce.append("Bodrum kat sayısı 4'ten fazla")
+            if _konut and _yapi_h > 51.50:
+                _bas_gerekce.append("Konut ve yapı yüksekliği 51,50 m üzeri")
+            _merdiven_bas = bool(_bas_gerekce)
+
+            # Acil durum asansörü kuyusu basınçlandırması — Madde 89/4.
+            _asansor_bas = _acil_asansor
+
+            # Duman tahliye — Madde 86/3.
+            _duman_gerekce = []
+            if _otopark_alan > 2000:
+                _duman_gerekce.append("Kapalı otopark alanı 2000 m² üzeri")
+            _duman = bool(_duman_gerekce)
+
+            # Hidrant — Madde 95/7. Alan bilgisi yoksa karar verilemez.
+            _hidrant = _imar_alan > 5000
+            _hidrant_belirsiz = _imar_alan <= 0
+
+            def _gereksinim_satiri(_baslik, _durum, _aciklama):
+                _bg = "#C6EFCE" if _durum == "GEREKLİ" else ("#FFF2CC" if _durum == "EK BİLGİ GEREKLİ" else "#E7E6E6")
+                return (
+                    f'<div style="background:{_bg};border:1px solid #999;padding:9px 12px;'
+                    f'margin:4px 0;border-radius:5px;">'
+                    f'<b>{_baslik}</b> &nbsp; <b>{_durum}</b><br>'
+                    f'<span style="font-size:13px;">{_aciklama}</span></div>'
                 )
 
-                st.markdown(
-                    '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
-                    "7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI</div>",
-                    unsafe_allow_html=True,
-                )
-                _yd_esaslari = [
-                    ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
-                    ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
-                    ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
-                    ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır."),
-                    ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır."),
-                    ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
-                    ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır."),
-                    ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
-                    ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
-                ]
-                for _no, _baslik_yd, _metin_yd in _yd_esaslari:
-                    st.markdown(f"**{_no}. {_baslik_yd}**")
-                    st.write(_metin_yd)
+            st.markdown(
+                '<div style="font-size:18px;font-weight:700;font-style:italic;">'
+                'YANGIN YÖNETMELİĞİNE GÖRE SİSTEM GEREKSİNİMLERİ ÖN DEĞERLENDİRMESİ'
+                '</div>', unsafe_allow_html=True
+            )
+            st.caption(
+                "Bu tablo yalnızca program içi ön değerlendirmedir. Kesin proje kararı; "
+                "ilgili tüm kullanım alanları, yangın bölmeleri, mimari veriler ve hidrolik "
+                "hesaplar tamamlandıktan sonra verilecektir."
+            )
 
-                st.markdown(
-                    '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:14px;">'
-                    "7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ</div>",
-                    unsafe_allow_html=True,
-                )
-                st.write(
-                    "Yönetmeliğe göre sulu söndürme sistemlerinde gerekli su basınç ve debisinin şebekeden karşılanamaması durumunda yangın pompa istasyonu ve deposu oluşturulur. "
-                    "Yalnızca yangın dolapları sistemi bulunuyorsa, su kapasitesi ilgili tasarım debilerinin tehlike sınıfına göre öngörülen süre ile çarpılması esasına göre belirlenir."
-                )
+            st.markdown(_gereksinim_satiri(
+                "YANGIN DOLABI", "GEREKLİ" if _dolap else "GEREKMEYEBİLİR",
+                "; ".join(_dolap_gerekce) if _dolap_gerekce else "Mevcut genel bina verileriyle Madde 94 kapsamındaki zorunluluk eşiği görülmedi."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "SPRİNKLER (YAĞMURLAMA)", "GEREKLİ" if _sprinkler else "GEREKMEYEBİLİR",
+                "; ".join(_spr_gerekce) if _spr_gerekce else "Madde 96 kapsamındaki girilmiş eşiklerden biri şu an sağlanmış görünmüyor."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "HİDRANT", "EK BİLGİ GEREKLİ" if _hidrant_belirsiz else ("GEREKLİ" if _hidrant else "GEREKMEYEBİLİR"),
+                "İmar planlama / yerleşim alanı bilgisi girilmedi. 5000 m² eşiği kontrol edilemiyor." if _hidrant_belirsiz else ("İmar planlama alanı 5000 m² üzeri." if _hidrant else "İmar planlama alanı 5000 m² eşiğini aşmıyor."),
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "MERDİVEN BASINÇLANDIRMA", "GEREKLİ" if _merdiven_bas else "GEREKMEYEBİLİR",
+                "; ".join(_bas_gerekce) if _bas_gerekce else "Madde 89 kapsamındaki girilmiş eşiklerden biri şu an sağlanmış görünmüyor."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "ACİL DURUM ASANSÖRÜ KUYUSU BASINÇLANDIRMA", "GEREKLİ" if _asansor_bas else "GEREKMEYEBİLİR",
+                "Acil durum asansörü bulunduğu işaretlendi." if _asansor_bas else "Acil durum asansörü bulunuyor olarak işaretlenmedi."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "DUMAN TAHLİYE", "GEREKLİ" if _duman else "GEREKMEYEBİLİR",
+                "; ".join(_duman_gerekce) if _duman_gerekce else "Madde 86/3 kapsamındaki 2000 m² kapalı otopark eşiği girilen verilerde sağlanmıyor."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "YANGIN SUYU DEPOSU / POMPA", "DEĞERLENDİRİLECEK",
+                "Sulu söndürme sistemlerinin kesin debi, basınç ve süre değerleri belirlendiğinde Madde 91-92 kapsamında ayrıca hesaplanacaktır."
+            ), unsafe_allow_html=True)
+            st.markdown(_gereksinim_satiri(
+                "GAZLI / KÖPÜKLÜ / DAVLUMBAZ SÖNDÜRME", "RİSKE GÖRE DEĞERLENDİRİLECEK",
+                "Bu sistemler yalnızca genel bina alanı ve yükseklikten otomatik olarak kesinleştirilmeyecek; ilgili kullanım/risk bilgileri ilgili bölümlerde ayrıca sorgulanacaktır."
+            ), unsafe_allow_html=True)
 
-                st.info(
-                    "Bir sonraki aşamada 7.3 içerisinde; yangın dolabı zorunluluk kontrolü, dolap sayısı, yerleşim mesafesi, hortum tipi, tasarım debisi, tasarım basıncı, hidrolik hesap ve cihaz/poz seçimi ayrı ayrı geliştirilecektir."
-                )
-        elif _baslik.startswith(("7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
+        elif _baslik.startswith(("7.3 ", "7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
             st.info("Bu bölümün tasarım ve hesaplama içeriği bir sonraki aşamada ayrı olarak geliştirilecektir.")
 
         # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
@@ -10644,55 +10795,10 @@ if _rapor_olustur_sidebar:
                 _run7.italic = True
                 _run7.font.size = Pt(15)
                 _run7.font.color.rgb = RGBColor(31, 78, 121)
-                if _bt.startswith("7.3 "):
-                    _p731 = doc.add_paragraph()
-                    _r731 = _p731.add_run("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI")
-                    _r731.bold = True
-                    _r731.italic = True
-                    _r731.font.size = Pt(13)
-                    _r731.font.color.rgb = RGBColor(31, 78, 121)
-                    _yd_esaslari_rapor = [
-                        ("Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
-                        ("Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
-                        ("Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
-                        ("Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli cihazların yerleştirilmesine izin verecek büyüklükte olmalı ve hortum ile cihazların kullanımını zorlaştırmamalıdır."),
-                        ("Yuvarlak yarı-sert hortumlu dolaplar", "Eğitimli yangın söndürme personeli veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu dolaplar kullanılır. Hortum TS EN 694’e uygun, 25 mm çapında ve en fazla 30 m uzunluğunda olmalıdır."),
-                        ("Yuvarlak yarı-sert hortumlu dolaplarda tasarım değerleri", "İtfaiye su alma ağzı bulunmayan sistemlerde tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa’dır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
-                        ("Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum çapı 50 mm’yi, uzunluğu 20 m’yi geçmemeli; tasarım debisi 400 L/dak ve lüle giriş basıncı 600 kPa olmalıdır."),
-                        ("Yassı hortumlu dolaplarda basınç kontrolü", "Lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
-                        ("Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’e göre periyodik bakımları yaptırılmalıdır."),
-                    ]
-                    _t731 = doc.add_table(rows=1, cols=3)
-                    _t731.style = "Table Grid"
-                    for _i, _h in enumerate(["NO", "KONU", "YÖNETMELİK ESASI"]):
-                        _t731.rows[0].cells[_i].text = _h
-                        for _pr in _t731.rows[0].cells[_i].paragraphs:
-                            for _run in _pr.runs:
-                                _run.bold = True
-                    for _i, (_konu, _metin) in enumerate(_yd_esaslari_rapor, 1):
-                        _cells = _t731.add_row().cells
-                        _cells[0].text = str(_i)
-                        _cells[1].text = _konu
-                        _cells[2].text = _metin
-
-                    _p732 = doc.add_paragraph()
-                    _r732 = _p732.add_run("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ")
-                    _r732.bold = True
-                    _r732.italic = True
-                    _r732.font.size = Pt(13)
-                    _r732.font.color.rgb = RGBColor(31, 78, 121)
-                    doc.add_paragraph(
-                        "Yönetmeliğe göre sulu söndürme sistemlerinde gerekli su basınç ve debisinin şebekeden karşılanamaması durumunda yangın pompa istasyonu ve deposu oluşturulur. Yalnızca yangın dolapları sistemi bulunuyorsa, su kapasitesi ilgili tasarım debilerinin tehlike sınıfına göre öngörülen süre ile çarpılması esasına göre belirlenir."
-                    )
-                    _src73 = doc.add_paragraph()
-                    _src73.add_run(
-                        "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Madde 92 ve Madde 94; ilgili TS EN 671 serisi standartları."
-                    ).italic = True
-                else:
-                    _body7 = doc.add_paragraph(
-                        "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
-                    )
-                    _body7.paragraph_format.space_after = Pt(6)
+                _body7 = doc.add_paragraph(
+                    "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                )
+                _body7.paragraph_format.space_after = Pt(6)
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
