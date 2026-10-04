@@ -7804,11 +7804,19 @@ with _t_yangin:
                 with st.expander(_baslik71, expanded=False):
                     c1, c2, c3 = st.columns([1, 1, 2])
                     with c1:
-                        if st.button("✓ TÜMÜNÜ SEÇ", key=f"{_key71}_tum_sec", use_container_width=True):
+                        # Bu butonların anahtarları proje/session verisine kaydedilmez.
+                        # Eski sürümlerden kalmış aynı anahtarlar varsa Streamlit,
+                        # st.button oluşturulurken StreamlitValueAssignmentNotAllowedError
+                        # verebiliyor. Bu nedenle buton anahtarlarını her çalıştırmada temizliyoruz.
+                        _tum_sec_btn_key = f"{_key71}_tum_sec_v2"
+                        _tum_kaldir_btn_key = f"{_key71}_tum_kaldir_v2"
+                        st.session_state.pop(_tum_sec_btn_key, None)
+                        st.session_state.pop(_tum_kaldir_btn_key, None)
+                        if st.button("✓ TÜMÜNÜ SEÇ", key=_tum_sec_btn_key, use_container_width=True):
                             _yangin_71_toplu_sec(_key71, _maddeler71, True)
                             st.rerun()
                     with c2:
-                        if st.button("✕ TÜMÜNÜ KALDIR", key=f"{_key71}_tum_kaldir", use_container_width=True):
+                        if st.button("✕ TÜMÜNÜ KALDIR", key=_tum_kaldir_btn_key, use_container_width=True):
                             _yangin_71_toplu_sec(_key71, _maddeler71, False)
                             st.rerun()
                     with c3:
@@ -7845,11 +7853,15 @@ with _t_yangin:
                 ]:
                     with _tab:
                         _b1, _b2 = st.columns(2)
-                        if _b1.button("✓ TÜMÜNÜ SEÇ", key=f"yangin_713_{_prefix}_tum_sec", use_container_width=True):
+                        _713_tum_sec_key = f"yangin_713_{_prefix}_tum_sec_v2"
+                        _713_tum_kaldir_key = f"yangin_713_{_prefix}_tum_kaldir_v2"
+                        st.session_state.pop(_713_tum_sec_key, None)
+                        st.session_state.pop(_713_tum_kaldir_key, None)
+                        if _b1.button("✓ TÜMÜNÜ SEÇ", key=_713_tum_sec_key, use_container_width=True):
                             for _i in range(len(_liste)):
                                 st.session_state[f"yangin_713_{_prefix}_{_i}"] = True
                             st.rerun()
-                        if _b2.button("✕ TÜMÜNÜ KALDIR", key=f"yangin_713_{_prefix}_tum_kaldir", use_container_width=True):
+                        if _b2.button("✕ TÜMÜNÜ KALDIR", key=_713_tum_kaldir_key, use_container_width=True):
                             for _i in range(len(_liste)):
                                 st.session_state[f"yangin_713_{_prefix}_{_i}"] = False
                             st.rerun()
