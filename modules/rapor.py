@@ -2652,14 +2652,95 @@ if _rapor_olustur_sidebar:
                   _run7.italic = True
                   _run7.font.size = Pt(15)
                   _run7.font.color.rgb = RGBColor(31, 78, 121)
-                  # 7.3 bölümü program ekranındaki gerçek içerikleri rapora aktarır.
+                  # 7.3 bölümü: program ekranındaki içerik, seçilen tehlike sınıfı ve
+                  # Genel Bina Bilgileri doğrudan rapora aktarılır.
                   if _bk == "bolum_73":
-                      doc.add_paragraph(
-                          "7.3 bölümü, 7.2 GENEL BİNA BİLGİLERİ ve seçilen yangın tehlike sınıfından "
-                          "otomatik olarak veri alır. Aşağıdaki değerler programdaki seçim ve hesap ekranından "
-                          "rapora aktarılmıştır."
-                      )
+                      # ------------------------------------------------------------
+                      # 7.3 - YAPI / BİNA BİLGİLERİ
+                      # ------------------------------------------------------------
+                      doc.add_heading("YAPI / BİNA BİLGİLERİ", level=4)
 
+                      def _r_sayi(_v, _birim=""):
+                          if _v is None or _v == "":
+                              return "-"
+                          try:
+                              _fv = float(_v)
+                              if abs(_fv) < 1e-12:
+                                  return "0" + (f" {_birim}" if _birim else "")
+                              _txt = f"{_fv:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                              return _txt + (f" {_birim}" if _birim else "")
+                          except Exception:
+                              return str(_v) + (f" {_birim}" if _birim else "")
+
+                      _gb = [
+                          ("Toplam yapı / kapalı kullanım alanı", st.session_state.get("yangin_genel_toplam_alan_m2", 0), "m²"),
+                          ("Kat sayısı", st.session_state.get("yangin_genel_kat_sayisi", 0), "adet"),
+                          ("Bodrum kat sayısı", st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0), "adet"),
+                          ("Bina yüksekliği", st.session_state.get("yangin_genel_bina_yuksekligi_m", 0), "m"),
+                          ("Yapı yüksekliği", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0), "m"),
+                          ("Merdiven kovası yüksekliği", st.session_state.get("yangin_genel_merdiven_kovasi_yuksekligi_m", 0), "m"),
+                          ("Toplam kişi sayısı", st.session_state.get("yangin_genel_kisi_sayisi", 0), "kişi"),
+                          ("Otopark sayısı / araç kapasitesi", st.session_state.get("yangin_genel_otopark_arac_sayisi", 0), "araç"),
+                          ("Kapalı otopark alanı", st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0), "m²"),
+                          ("Yatak sayısı", st.session_state.get("yangin_genel_yatak_sayisi", 0), "adet"),
+                          ("İmar planlama / yerleşim alanı", st.session_state.get("yangin_genel_imar_alani_m2", 0), "m²"),
+                          ("Acil durum asansörü", "Var" if st.session_state.get("yangin_genel_acil_durum_asansoru", False) else "Yok", ""),
+                      ]
+                      _tgb = doc.add_table(rows=0, cols=2)
+                      _tgb.style = "Table Grid"
+                      for _etiket, _val, _birim in _gb:
+                          _cc = _tgb.add_row().cells
+                          _cc[0].text = str(_etiket)
+                          _cc[1].text = str(_val) if isinstance(_val, str) else _r_sayi(_val, _birim)
+                          for _run in _cc[0].paragraphs[0].runs:
+                              _run.bold = True
+
+                      # Seçilen kullanım alanları ve etkin yangın tehlike sınıfı
+                      # 7.2'deki session-state verisinden yeniden oluşturulur.
+                      try:
+                          _secili_kayitlar_73 = _yangin_721_secili_kayitlar()
+                      except Exception:
+                          _secili_kayitlar_73 = []
+
+                      _otomatik_73 = st.session_state.get("yangin_722_otomatik_sinif", "")
+                      _etkin_73_rapor = st.session_state.get("yangin_722_etkin_sinif", "")
+                      if not _etkin_73_rapor:
+                          _etkin_73_rapor = st.session_state.get("yangin_721_manuel_sinif", "") if st.session_state.get("yangin_721_manuel", False) else _otomatik_73
+                      if not _otomatik_73 and _secili_kayitlar_73:
+                          try:
+                              _otomatik_73 = _ek1b_otomatik_sinif(_secili_kayitlar_73)
+                          except Exception:
+                              _otomatik_73 = "Belirlenemedi"
+                      if not _etkin_73_rapor:
+                          _etkin_73_rapor = _otomatik_73 or "Belirlenemedi"
+
+                      _tsec73 = doc.add_table(rows=0, cols=2)
+                      _tsec73.style = "Table Grid"
+                      _sec_satirlari_73 = [
+                          ("Seçilen bina / kullanım alanları", ", ".join(str(x.get("etiket", "")) for x in _secili_kayitlar_73) if _secili_kayitlar_73 else "Seçilmedi"),
+                          ("Ek-1/B + Ek-1/C otomatik tehlike sınıfı", _otomatik_73 or "Belirlenemedi"),
+                          ("Uygulanacak yangın tehlike sınıfı", _etkin_73_rapor),
+                          ("Tehlike sınıfı seçim kaynağı", st.session_state.get("yangin_722_secim_kaynagi", "BYKHY Ek-1/B")),
+                      ]
+                      for _etiket, _deger in _sec_satirlari_73:
+                          _cc = _tsec73.add_row().cells
+                          _cc[0].text = _etiket
+                          _cc[1].text = str(_deger)
+                          for _run in _cc[0].paragraphs[0].runs:
+                              _run.bold = True
+                          if _etiket == "Uygulanacak yangın tehlike sınıfı":
+                              for _cell in _cc:
+                                  _tcPr = _cell._tc.get_or_add_tcPr()
+                                  _shd = OxmlElement("w:shd")
+                                  _shd.set(qn("w:fill"), "FFF2CC")
+                                  _tcPr.append(_shd)
+                                  for _pr in _cell.paragraphs:
+                                      for _run in _pr.runs:
+                                          _run.bold = True
+
+                      # ------------------------------------------------------------
+                      # 7.3.1 - Ekrandaki görünümle aynı mantıkta: numaralı konu + açıklama
+                      # ------------------------------------------------------------
                       doc.add_heading("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI", level=4)
                       _yd_esaslari_rapor = [
                           ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
@@ -2672,17 +2753,15 @@ if _rapor_olustur_sidebar:
                           ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
                           ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
                       ]
-                      _t731 = doc.add_table(rows=1, cols=3)
-                      _t731.style = "Table Grid"
-                      for _i, _h in enumerate(["No", "Konu", "Yönetmelik Esası"]):
-                          _t731.rows[0].cells[_i].text = _h
-                          for _r in _t731.rows[0].cells[_i].paragraphs[0].runs:
-                              _r.bold = True
                       for _no, _konu, _metin in _yd_esaslari_rapor:
-                          _cc = _t731.add_row().cells
-                          _cc[0].text = _no
-                          _cc[1].text = _konu
-                          _cc[2].text = _metin
+                          _pyd = doc.add_paragraph()
+                          _pyd.paragraph_format.space_before = Pt(5)
+                          _pyd.paragraph_format.space_after = Pt(2)
+                          _ryd = _pyd.add_run(f"{_no}. {_konu}")
+                          _ryd.bold = True
+                          _ryd.font.size = Pt(11)
+                          _pyd2 = doc.add_paragraph(_metin)
+                          _pyd2.paragraph_format.space_after = Pt(6)
 
                       doc.add_heading("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ", level=4)
                       doc.add_paragraph(
@@ -2697,9 +2776,47 @@ if _rapor_olustur_sidebar:
                           ("Orta Tehlike-3-4", 100, 60),
                           ("Yüksek Tehlike", 200, 90),
                       ]
+                      # 7.3.2 değerlerini yalnızca 7.3 ekranında daha önce oluşmuş
+                      # session-state değerine bağlama. Rapor butonuna basıldığı anda
+                      # 7.2'de seçilmiş etkin tehlike sınıfından yeniden üret.
+                      _etkin_73_rapor_732 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                      if not _etkin_73_rapor_732:
+                          _otomatik_732 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                          if st.session_state.get("yangin_721_manuel", False):
+                              _etkin_73_rapor_732 = str(st.session_state.get("yangin_721_manuel_sinif", "")).strip()
+                          else:
+                              _etkin_73_rapor_732 = _otomatik_732
+
+                      def _ek8c_grup_esle_rapor(_sinif):
+                          _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
+                          if _s.startswith("düşük"):
+                              return "Düşük tehlike"
+                          if _s.startswith("ortatehlike-1") or _s.startswith("ortatehlike-2"):
+                              return "Orta Tehlike-1-2"
+                          if _s.startswith("ortatehlike-3") or _s.startswith("ortatehlike-4"):
+                              return "Orta Tehlike-3-4"
+                          if _s.startswith("yüksek"):
+                              return "Yüksek Tehlike"
+                          return ""
+
                       _secili_grup_73 = str(st.session_state.get("yangin_73_ek8c_grup", "")).strip()
+                      if not _secili_grup_73:
+                          _secili_grup_73 = _ek8c_grup_esle_rapor(_etkin_73_rapor_732)
+
                       _q_dolap_73 = st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak")
                       _sure_73 = st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak")
+                      _ek8c_fallback = {
+                          "Düşük tehlike": (100, 30),
+                          "Orta Tehlike-1-2": (100, 60),
+                          "Orta Tehlike-3-4": (100, 60),
+                          "Yüksek Tehlike": (200, 90),
+                      }
+                      if _secili_grup_73 in _ek8c_fallback:
+                          _fb_q, _fb_sure = _ek8c_fallback[_secili_grup_73]
+                          if _q_dolap_73 is None:
+                              _q_dolap_73 = _fb_q
+                          if _sure_73 is None:
+                              _sure_73 = _fb_sure
                       if _q_dolap_73 is None:
                           _q_dolap_73 = st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak")
 
