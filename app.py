@@ -115,7 +115,7 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
         for _deneme in range(3):
             try:
                 _req = urllib.request.Request(_url, headers=_headers)
-                with urllib.request.urlopen(_req, timeout=20) as _response:
+                with urllib.request.urlopen(_req, timeout=5) as _response:
                     _html = _response.read().decode("utf-8", errors="ignore")
                 _deger, _tarih, _parsed_url = _parse_html(_html, _url)
                 if _deger is not None:
@@ -222,7 +222,7 @@ def mgm_aylik_ortalama_yagis_mm(il_adi):
     for _url in _urls:
         try:
             _req = urllib.request.Request(_url, headers=_headers)
-            with urllib.request.urlopen(_req, timeout=20) as _response:
+            with urllib.request.urlopen(_req, timeout=5) as _response:
                 _html = _response.read().decode("utf-8", errors="ignore")
 
             # 1) Önce gerçek HTML tablosunu parse et.
@@ -316,7 +316,7 @@ def mgm_81_il_yagis_tablosu():
         return il, deger, tarih, url
 
     sonuc = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=20) as executor:
         gelecekler = {executor.submit(_tek_il, il): il for il in MGM_81_IL}
         for gelecek in as_completed(gelecekler):
             il = gelecekler[gelecek]
@@ -8358,12 +8358,17 @@ _rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", Fals
 if _rapor_olustur_sidebar:
 
   _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
+  # Raporu gereksiz yere engellememek için yalnızca açıkça UYGUN DEĞİL
+  # olarak işaretlenmiş seçimler raporu durdurur. Boş/eksik poz_durumu
+  # bilgisi tek başına rapor oluşturmayı engellemez.
   gecersiz_var = any(
-      p.get("poz_durumu") != "UYGUN" for p in (psp_parametreleri or {}).values()
+      str(p.get("poz_durumu", "")).strip().upper() in {"UYGUN DEĞİL", "UYGUN DEGIL", "GEÇERSİZ", "GECERSIZ"}
+      for p in (psp_parametreleri or {}).values()
+      if isinstance(p, dict)
   ) or (
       bolum_634_aktif
-      and _re_sirk_rapor_kontrol
-      and _re_sirk_rapor_kontrol.get("poz_durumu") != "UYGUN"
+      and isinstance(_re_sirk_rapor_kontrol, dict)
+      and str(_re_sirk_rapor_kontrol.get("poz_durumu", "")).strip().upper() in {"UYGUN DEĞİL", "UYGUN DEGIL", "GEÇERSİZ", "GECERSIZ"}
   )
   if gecersiz_var:
     st.error(
