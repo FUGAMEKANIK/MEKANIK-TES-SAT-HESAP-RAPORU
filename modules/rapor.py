@@ -2443,6 +2443,31 @@ if _rapor_olustur_sidebar:
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
   
+          # Program ekranındaki bina yüksekliği / yapı yüksekliği şemasını
+          # Word raporuna da ekle. Görsel, Streamlit UI'sından değil proje kökündeki
+          # PNG dosyasından okunur.
+          _sema_kok_rapor = Path(__file__).resolve().parent.parent
+          _sema_adaylari_rapor = [
+              _sema_kok_rapor / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
+              *_sema_kok_rapor.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
+          ]
+          _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
+          if _sema_yolu_rapor is not None:
+              try:
+                  _p_sema = doc.add_paragraph()
+                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim:")
+                  _r_sema.bold = True
+                  doc.add_picture(str(_sema_yolu_rapor), width=Inches(6.2))
+                  doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  _sema_not = doc.add_paragraph(
+                      "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki "
+                      "mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
+                  )
+                  if _sema_not.runs:
+                      _sema_not.runs[0].italic = True
+              except Exception:
+                  pass
+
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
           _manuel = bool(st.session_state.get("yangin_721_manuel", False))
