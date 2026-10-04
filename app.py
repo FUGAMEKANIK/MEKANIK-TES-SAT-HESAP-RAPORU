@@ -1490,28 +1490,19 @@ _BOLUM_NAV = [
     ("7.2.3 Yangın Bölmeleri", "bolum_723", "rapor_bolum_723"),
     ("7.2.4 Tasarım Kriterleri", "bolum_724", "rapor_bolum_724"),
     ("7.2.5 Tasarım Debisi", "bolum_725", "rapor_bolum_725"),
-    ("7.3 YANGIN SUYU DEPOSU HESABI", "bolum_73", "rapor_bolum_73"),
-    ("7.3.1 Gerekli Yangın Suyu Hacmi", "bolum_731", "rapor_bolum_731"),
-    ("7.3.2 Yangın Suyu Deposu Seçimi", "bolum_732", "rapor_bolum_732"),
-    ("7.3.3 Depo Hacmi Kontrolü", "bolum_733", "rapor_bolum_733"),
-    ("7.4 YANGIN POMPA GRUBU SEÇİMİ", "bolum_74", "rapor_bolum_74"),
-    ("7.4.1 Ana Yangın Pompası", "bolum_741", "rapor_bolum_741"),
-    ("7.4.2 Yedek Yangın Pompası", "bolum_742", "rapor_bolum_742"),
-    ("7.4.3 Jokey Pompa", "bolum_743", "rapor_bolum_743"),
-    ("7.4.4 Pompa Basma Yüksekliği", "bolum_744", "rapor_bolum_744"),
-    ("7.5 YANGIN DOLABI / HİDRANT TESİSATI", "bolum_75", "rapor_bolum_75"),
-    ("7.5.1 Yangın Dolabı", "bolum_751", "rapor_bolum_751"),
-    ("7.5.2 Hidrant", "bolum_752", "rapor_bolum_752"),
-    ("7.5.3 Basınç Kontrolü", "bolum_753", "rapor_bolum_753"),
-    ("7.6 SPRİNKLER TESİSATI", "bolum_76", "rapor_bolum_76"),
-    ("7.6.1 Tehlike Sınıfı", "bolum_761", "rapor_bolum_761"),
-    ("7.6.2 Tasarım Alanı", "bolum_762", "rapor_bolum_762"),
-    ("7.6.3 Debi Hesabı", "bolum_763", "rapor_bolum_763"),
-    ("7.6.4 Basınç Hesabı", "bolum_764", "rapor_bolum_764"),
-    ("7.6.5 Hidrolik Hesap", "bolum_765", "rapor_bolum_765"),
-    ("7.7 YANGIN TESİSATI HİDROLİK HESAPLARI", "bolum_77", "rapor_bolum_77"),
-    ("7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ", "bolum_78", "rapor_bolum_78"),
-    ("7.9 YANGIN TESİSATI SONUÇ TABLOSU", "bolum_79", "rapor_bolum_79"),
+    ("7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", "bolum_73", "rapor_bolum_73"),
+    ("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", "bolum_74", "rapor_bolum_74"),
+    ("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_75", "rapor_bolum_75"),
+    ("7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_76", "rapor_bolum_76"),
+    ("7.7 KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_77", "rapor_bolum_77"),
+    ("7.8 DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_78", "rapor_bolum_78"),
+    ("7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_79", "rapor_bolum_79"),
+    ("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_710", "rapor_bolum_710"),
+    ("7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_7110", "rapor_bolum_7110"),
+    ("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_7120", "rapor_bolum_7120"),
+    ("7.13 YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI", "bolum_7130", "rapor_bolum_7130"),
+    ("7.14 YANGIN TESİSATI HİDROLİK HESAPLARI", "bolum_7140", "rapor_bolum_7140"),
+    ("7.15 YANGIN TESİSATI SONUÇ TABLOSU", "bolum_7150", "rapor_bolum_7150"),
     ("8. ISITMA TESİSATI", "bolum_8", "rapor_bolum_8"),
     ("9. SOĞUTMA TESİSATI", "bolum_9", "rapor_bolum_9"),
     ("10. HAVALANDIRMA TESİSATI", "bolum_10", "rapor_bolum_10"),
@@ -7764,32 +7755,19 @@ with _t_yangin:
             ("bolum_724", "rapor_bolum_724", "7.2.4 Tasarım Kriterleri"),
             ("bolum_725", "rapor_bolum_725", "7.2.5 Tasarım Debisi"),
         ]),
-        ("bolum_73", "rapor_bolum_73", "7.3 YANGIN SUYU DEPOSU HESABI", [
-            ("bolum_731", "rapor_bolum_731", "7.3.1 Gerekli Yangın Suyu Hacmi"),
-            ("bolum_732", "rapor_bolum_732", "7.3.2 Yangın Suyu Deposu Seçimi"),
-            ("bolum_733", "rapor_bolum_733", "7.3.3 Depo Hacmi Kontrolü"),
-        ]),
-        ("bolum_74", "rapor_bolum_74", "7.4 YANGIN POMPA GRUBU SEÇİMİ", [
-            ("bolum_741", "rapor_bolum_741", "7.4.1 Ana Yangın Pompası"),
-            ("bolum_742", "rapor_bolum_742", "7.4.2 Yedek Yangın Pompası"),
-            ("bolum_743", "rapor_bolum_743", "7.4.3 Jokey Pompa"),
-            ("bolum_744", "rapor_bolum_744", "7.4.4 Pompa Basma Yüksekliği"),
-        ]),
-        ("bolum_75", "rapor_bolum_75", "7.5 YANGIN DOLABI / HİDRANT TESİSATI", [
-            ("bolum_751", "rapor_bolum_751", "7.5.1 Yangın Dolabı"),
-            ("bolum_752", "rapor_bolum_752", "7.5.2 Hidrant"),
-            ("bolum_753", "rapor_bolum_753", "7.5.3 Basınç Kontrolü"),
-        ]),
-        ("bolum_76", "rapor_bolum_76", "7.6 SPRİNKLER TESİSATI", [
-            ("bolum_761", "rapor_bolum_761", "7.6.1 Tehlike Sınıfı"),
-            ("bolum_762", "rapor_bolum_762", "7.6.2 Tasarım Alanı"),
-            ("bolum_763", "rapor_bolum_763", "7.6.3 Debi Hesabı"),
-            ("bolum_764", "rapor_bolum_764", "7.6.4 Basınç Hesabı"),
-            ("bolum_765", "rapor_bolum_765", "7.6.5 Hidrolik Hesap"),
-        ]),
-        ("bolum_77", "rapor_bolum_77", "7.7 YANGIN TESİSATI HİDROLİK HESAPLARI", []),
-        ("bolum_78", "rapor_bolum_78", "7.8 YANGIN TESİSATI EKİPMAN SEÇİMLERİ", []),
-        ("bolum_79", "rapor_bolum_79", "7.9 YANGIN TESİSATI SONUÇ TABLOSU", []),
+        ("bolum_73", "rapor_bolum_73", "7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", []),
+        ("bolum_74", "rapor_bolum_74", "7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", []),
+        ("bolum_75", "rapor_bolum_75", "7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_76", "rapor_bolum_76", "7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_77", "rapor_bolum_77", "7.7 KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_78", "rapor_bolum_78", "7.8 DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_79", "rapor_bolum_79", "7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_710", "rapor_bolum_710", "7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_7110", "rapor_bolum_7110", "7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_7120", "rapor_bolum_7120", "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", []),
+        ("bolum_7130", "rapor_bolum_7130", "7.13 YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI", []),
+        ("bolum_7140", "rapor_bolum_7140", "7.14 YANGIN TESİSATI HİDROLİK HESAPLARI", []),
+        ("bolum_7150", "rapor_bolum_7150", "7.15 YANGIN TESİSATI SONUÇ TABLOSU", []),
     ]
 
     for _key, _rapor_key, _baslik, _altlar in _yangin_bolumleri:
@@ -7799,7 +7777,22 @@ with _t_yangin:
         if not st.session_state.get(_key, True):
             continue
 
-        st.subheader(_baslik)
+        if _baslik.startswith(("7.3 ", "7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
+            st.markdown(
+                f'<div style="font-size:23px; font-weight:800; font-style:italic; '
+                f'color:#1F4E79; margin:16px 0 10px 0; text-transform:uppercase;">'
+                f'{_baslik.upper()}</div>',
+                unsafe_allow_html=True,
+            )
+            st.checkbox(
+                "Bu bölüm rapora eklensin",
+                key=f"{_rapor_key}_ui",
+                on_change=lambda _rk=_rapor_key, _uk=f"{_rapor_key}_ui": st.session_state.__setitem__(
+                    _rk, bool(st.session_state.get(_uk, True))
+                ),
+            )
+        else:
+            st.subheader(_baslik)
 
         if _baslik.startswith("7.1"):
             # 7.1 alt maddeleri tek bir hiyerarşi içinde açılır/kapanır.
@@ -7967,41 +7960,8 @@ with _t_yangin:
                     st.session_state["yangin_722_etkin_sinif"] = _etkin
                     st.session_state["yangin_722_otomatik_sinif"] = _otomatik
                     st.session_state["yangin_722_secim_kaynagi"] = "Manuel" if _manuel else "BYKHY Ek-1/B"
-        elif _baslik.startswith("7.3"):
-            st.info(
-                "Yangın suyu ihtiyacı, gerekli depo hacmi, yangın suyu deposu seçimi ve depo hacmi "
-                "kontrolü burada hesaplanacaktır."
-            )
-        elif _baslik.startswith("7.4"):
-            st.info(
-                "Ana yangın pompası, yedek pompa, jokey pompa ve pompa basma yüksekliği seçimleri "
-                "tasarım debisi ve basınç ihtiyacına bağlı olarak burada oluşturulacaktır."
-            )
-        elif _baslik.startswith("7.5"):
-            st.info(
-                "Yangın dolabı, hidrant ve basınç kontrolü için gerekli giriş ve hesap ekranları "
-                "bu bölümde oluşturulacaktır."
-            )
-        elif _baslik.startswith("7.6"):
-            st.info(
-                "Sprinkler tehlike sınıfı, tasarım alanı, debi, basınç ve hidrolik hesap modülleri "
-                "bu bölüm altında oluşturulacaktır."
-            )
-        elif _baslik.startswith("7.7"):
-            st.info(
-                "Yangın tesisatının boru çapları, akış, basınç kayıpları ve gerekli hidrolik hesapları "
-                "bu bölümde birleştirilecektir."
-            )
-        elif _baslik.startswith("7.8"):
-            st.info(
-                "Yangın tesisatı ekipmanları, cihaz özellikleri, adetleri ve gerektiğinde poz numaraları "
-                "bu bölümde seçilecektir."
-            )
-        elif _baslik.startswith("7.9"):
-            st.info(
-                "7. bölümde yapılan hesap ve seçimlerin sonuçları burada tek bir özet tabloda "
-                "toplanacaktır."
-            )
+        elif _baslik.startswith(("7.3 ", "7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
+            st.info("Bu bölümün tasarım ve hesaplama içeriği bir sonraki aşamada ayrı olarak geliştirilecektir.")
 
         # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
         # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
@@ -10589,6 +10549,53 @@ if _rapor_olustur_sidebar:
                 "Ek-1/B ve Ek-1/C; tehlike sınıfının farklı bölümlerdeki kullanım alanlarına göre "
                 "en yüksek sınıfa göre belirlenmesi için Madde 19."
             ).italic = True
+
+    # -----------------------------------------------------------------------
+    # 7.3 - 7.15 YANGIN TESİSATI ALT BÖLÜMLERİ
+    # Her başlık ayrı bir bölüm olarak tutulur; hesap içerikleri sonraki
+    # aşamalarda bölüm bölüm geliştirilecektir.
+    # -----------------------------------------------------------------------
+    _yangin_73_715 = [
+        ("bolum_73", "rapor_bolum_73", "7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+        ("bolum_74", "rapor_bolum_74", "7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+        ("bolum_75", "rapor_bolum_75", "7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_76", "rapor_bolum_76", "7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_77", "rapor_bolum_77", "7.7 KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_78", "rapor_bolum_78", "7.8 DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_79", "rapor_bolum_79", "7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_710", "rapor_bolum_710", "7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_7110", "rapor_bolum_7110", "7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_7120", "rapor_bolum_7120", "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+        ("bolum_7130", "rapor_bolum_7130", "7.13 YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI"),
+        ("bolum_7140", "rapor_bolum_7140", "7.14 YANGIN TESİSATI HİDROLİK HESAPLARI"),
+        ("bolum_7150", "rapor_bolum_7150", "7.15 YANGIN TESİSATI SONUÇ TABLOSU"),
+    ]
+    if st.session_state.get("rapor_bolum_7", True):
+        _r73_715 = [x for x in _yangin_73_715 if st.session_state.get(x[1], True)]
+        if _r73_715:
+            _has_71_report = bool(st.session_state.get("rapor_bolum_71", True)) and (
+                any(st.session_state.get(_rrk, True) for _rb, _rm, _rk, _rrk in _yangin_71_gruplari)
+                or bool(st.session_state.get("rapor_bolum_713", True))
+            )
+            _has_72_report = bool(st.session_state.get("rapor_bolum_72", True)) and (
+                bool(st.session_state.get("rapor_bolum_721", True))
+                or bool(st.session_state.get("rapor_bolum_722", True))
+            )
+            if not (_has_71_report or _has_72_report):
+                ana_baslik_ekle("7. YANGIN TESİSATI")
+            for _bk, _rk, _bt in _r73_715:
+                _p7 = doc.add_paragraph()
+                _p7.paragraph_format.space_before = Pt(12)
+                _p7.paragraph_format.space_after = Pt(6)
+                _run7 = _p7.add_run(_bt.upper())
+                _run7.bold = True
+                _run7.italic = True
+                _run7.font.size = Pt(15)
+                _run7.font.color.rgb = RGBColor(31, 78, 121)
+                _body7 = doc.add_paragraph(
+                    "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                )
+                _body7.paragraph_format.space_after = Pt(6)
 
     # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
     rapor_word_stillerini_uygula(doc)
