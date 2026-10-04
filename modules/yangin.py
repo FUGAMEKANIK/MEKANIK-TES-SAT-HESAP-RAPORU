@@ -404,11 +404,21 @@ with _t_yangin:
                         # Eski kayıtlı projelerde widget anahtarları session_state içine
                         # taşınabildiği için explicit key kullanmıyoruz; Streamlit burada
                         # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
-                        if st.button(f"✓ TÜMÜNÜ SEÇ — {_key71}", key=f"yangin71_v2_tum_sec_{_key71}", use_container_width=True):
+                        _71_tum_sec_key = f"yangin_71_{_key71}_tum_sec_v3"
+                        _71_tum_kaldir_key = f"yangin_71_{_key71}_tum_kaldir_v3"
+                        if st.button(
+                            f"✓ TÜMÜNÜ SEÇ — {_key71}",
+                            key=_71_tum_sec_key,
+                            use_container_width=True,
+                        ):
                             _yangin_71_toplu_sec(_key71, _maddeler71, True)
                             st.rerun()
                     with c2:
-                        if st.button(f"✕ TÜMÜNÜ KALDIR — {_key71}", key=f"yangin71_v2_tum_kaldir_{_key71}", use_container_width=True):
+                        if st.button(
+                            f"✕ TÜMÜNÜ KALDIR — {_key71}",
+                            key=_71_tum_kaldir_key,
+                            use_container_width=True,
+                        ):
                             _yangin_71_toplu_sec(_key71, _maddeler71, False)
                             st.rerun()
                     with c3:
@@ -503,13 +513,7 @@ with _t_yangin:
                     _sema_kok = Path(__file__).resolve().parent.parent
                     _sema_adaylari = [
                         _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
-                        _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_op.png",
-                        _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema.png",
                         *_sema_kok.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
-                        *_sema_kok.glob("*yuksekligi*yapi*yuksekligi*.png"),
-                        Path.cwd() / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
-                        Path.cwd() / "bina_yuksekligi_yapi_yuksekligi_sema_op.png",
-                        Path.cwd() / "bina_yuksekligi_yapi_yuksekligi_sema.png",
                     ]
                     _sema_yolu = next((p for p in _sema_adaylari if p.is_file()), None)
                     _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu else None
