@@ -8252,11 +8252,13 @@ with _t_yangin:
                     "Aşağıdaki değerler 7.2 bölümünde seçilen etkin yangın tehlike sınıfına göre otomatik seçilir."
                 )
 
+                # Ek-8/C tablosundaki hidrant değerleri bu bölümde gösterilmez ve
+                # hesaplanmaz. Hidrant sistemi 7.4 bölümünde ayrıca geliştirilecektir.
                 _ek8c_verileri = [
-                    ("Düşük tehlike", 100, 400, 30),
-                    ("Orta Tehlike-1-2", 100, 400, 60),
-                    ("Orta Tehlike-3-4", 100, 1000, 60),
-                    ("Yüksek Tehlike", 200, 1500, 90),
+                    ("Düşük tehlike", 100, 30),
+                    ("Orta Tehlike-1-2", 100, 60),
+                    ("Orta Tehlike-3-4", 100, 60),
+                    ("Yüksek Tehlike", 200, 90),
                 ]
                 _etkin_73 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
                 if not _etkin_73:
@@ -8277,22 +8279,15 @@ with _t_yangin:
                 _ek8c_secili_grup = _ek8c_grup_esle(_etkin_73)
                 _ek8c_kayit = next((x for x in _ek8c_verileri if x[0] == _ek8c_secili_grup), None)
 
-                _ek8c_rows = []
-                for _grup, _q_dolap, _q_hidrant, _sure in _ek8c_verileri:
-                    _sec = _grup == _ek8c_secili_grup
-                    _ek8c_rows.append({
-                        "grup": _grup, "dolap": _q_dolap, "hidrant": _q_hidrant,
-                        "sure": _sure, "secili": _sec,
-                    })
-
-                st.markdown("**BYKHY Ek-8/C — Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları**")
-                _h = st.columns([2.3, 1.6, 1.6, 1.1])
-                for _c, _txt in zip(_h, ["Bina Tehlike Sınıfı", "İlave Yangın Dolabı Debisi (L/dak)", "İlave Hidrant Debisi (L/dak)", "Süre (dak)"]):
+                st.markdown("**BYKHY Ek-8/C — Yangın Dolapları İçin İlâve Edilecek Su İhtiyacı**")
+                _h = st.columns([2.5, 1.8, 1.1])
+                for _c, _txt in zip(_h, ["Bina Tehlike Sınıfı", "İlave Yangın Dolabı Debisi (L/dak)", "Süre (dak)"]):
                     _c.markdown(f"**{_txt}**")
-                for _row in _ek8c_rows:
-                    _bg = "#FFF2CC" if _row["secili"] else "#FFFFFF"
-                    _cols = st.columns([2.3, 1.6, 1.6, 1.1])
-                    for _c, _val in zip(_cols, [_row["grup"], f'{_row["dolap"]:,}'.replace(',', '.'), f'{_row["hidrant"]:,}'.replace(',', '.'), _row["sure"]]):
+                for _grup, _q_dolap, _sure in _ek8c_verileri:
+                    _sec = _grup == _ek8c_secili_grup
+                    _bg = "#FFF2CC" if _sec else "#FFFFFF"
+                    _cols = st.columns([2.5, 1.8, 1.1])
+                    for _c, _val in zip(_cols, [_grup, f'{_q_dolap:,}'.replace(',', '.'), _sure]):
                         _c.markdown(
                             f'<div style="background-color:{_bg}; border:1px solid #D9D9D9; padding:7px 8px; min-height:32px;">{_val}</div>',
                             unsafe_allow_html=True,
@@ -8300,34 +8295,34 @@ with _t_yangin:
 
                 if _ek8c_kayit:
                     _q_dolap = int(_ek8c_kayit[1])
-                    _q_hidrant = int(_ek8c_kayit[2])
-                    _sure = int(_ek8c_kayit[3])
-                    _v_dolap_l = _q_dolap * _sure
-                    _v_hidrant_l = _q_hidrant * _sure
-                    _v_toplam_l = (_q_dolap + _q_hidrant) * _sure
+                    _sure = int(_ek8c_kayit[2])
 
+                    # Bu değerler sonraki 7.12 yangın suyu deposu hesabının
+                    # doğrudan veri kaynağıdır. Hidrant değerleri 7.4'e bırakılır.
                     st.session_state["yangin_73_ek8c_grup"] = _ek8c_kayit[0]
                     st.session_state["yangin_73_ek8c_yangin_dolabi_debisi_ldak"] = _q_dolap
-                    st.session_state["yangin_73_ek8c_hidrant_debisi_ldak"] = _q_hidrant
-                    st.session_state["yangin_73_ek8c_sure_dak"] = _sure
-                    st.session_state["yangin_73_ek8c_yangin_dolabi_su_hacmi_l"] = _v_dolap_l
-                    st.session_state["yangin_73_ek8c_hidrant_su_hacmi_l"] = _v_hidrant_l
-                    st.session_state["yangin_73_ek8c_toplam_su_hacmi_l"] = _v_toplam_l
+                    st.session_state["yangin_73_ek8c_yangin_dolabi_suresi_dak"] = _sure
+                    st.session_state["yangin_73_secili_yangin_suyu_debisi_ldak"] = _q_dolap
 
                     st.markdown(
                         f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
-                        f'<b>7.2’den otomatik seçilen değerler:</b> {_ek8c_kayit[0]} → Yangın dolabı: <b>{_q_dolap} L/dak</b> | Hidrant: <b>{_q_hidrant} L/dak</b> | Süre: <b>{_sure} dk</b><br>'
-                        f'<b>İleride depo hesabına aktarılacak Ek-8/C su hacmi:</b> <b>{_v_toplam_l:,} L ({_v_toplam_l/1000:.2f} m³)</b>'
+                        f'<b>7.2’den otomatik seçilen değer:</b> {_ek8c_kayit[0]} → Yangın dolabı debisi: <b>{_q_dolap} L/dak</b> → Süre: <b>{_sure} dk</b>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:8px;">'
+                        f'<b>Seçilen yangın suyu debisi:</b> <b>{_q_dolap} L/dak</b>'
                         f'</div>',
                         unsafe_allow_html=True,
                     )
                     st.caption(
-                        "Not: Bu toplam, Ek-8/C tablosundaki yangın dolabı ve hidrant ilave debilerinin "
-                        "seçilen süre ile çarpımından elde edilen ön hacim bilgisidir. 7.12 yangın suyu deposu "
-                        "hesabında sistemlerin birlikte bulunup bulunmadığı ve ilgili yönetmelik hükümleri ayrıca dikkate alınacaktır."
+                        "Not: Bu bölümde yalnızca yangın dolabı için seçilen Ek-8/C değeri kullanılmaktadır. "
+                        "Hidrant sistemi ve hidrant debisi 7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde ayrıca geliştirilecektir. "
+                        "Seçilen yangın dolabı debisi ileride yangın suyu deposu kapasite hesabına aktarılacaktır."
                     )
                 else:
-                    st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için Ek-8/C değeri otomatik seçilemedi.")
+                    st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için yangın dolabı debisi otomatik seçilemedi.")
 
                 st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
 
@@ -10996,18 +10991,18 @@ if _rapor_olustur_sidebar:
                         "BYKHY Ek-8/C’ye göre 7.2’de seçilen yangın tehlike sınıfına karşılık gelen "
                         "yangın dolabı debisi, hidrant debisi ve süre değerleri aşağıda gösterilmiştir."
                     )
-                    _rtab = doc.add_table(rows=1, cols=4)
+                    _rtab = doc.add_table(rows=1, cols=3)
                     _rtab.style = "Table Grid"
-                    for _cell, _txt in zip(_rtab.rows[0].cells, ["Bina Tehlike Sınıfı", "Yangın Dolabı Debisi (L/dak)", "Hidrant Debisi (L/dak)", "Süre (dak)"]):
+                    for _cell, _txt in zip(_rtab.rows[0].cells, ["Bina Tehlike Sınıfı", "Yangın Dolabı Debisi (L/dak)", "Süre (dak)"]):
                         _cell.text = _txt
                         for _pr in _cell.paragraphs:
                             for _run in _pr.runs:
                                 _run.bold = True
-                    _ek8c_rapor = [("Düşük tehlike",100,400,30),("Orta Tehlike-1-2",100,400,60),("Orta Tehlike-3-4",100,1000,60),("Yüksek Tehlike",200,1500,90)]
+                    _ek8c_rapor = [("Düşük tehlike",100,30),("Orta Tehlike-1-2",100,60),("Orta Tehlike-3-4",100,60),("Yüksek Tehlike",200,90)]
                     _ek8c_grup_rapor = st.session_state.get("yangin_73_ek8c_grup", "")
-                    for _grup, _qd, _qh, _sure in _ek8c_rapor:
+                    for _grup, _qd, _sure in _ek8c_rapor:
                         _cc = _rtab.add_row().cells
-                        for _cell, _val in zip(_cc, [_grup, _qd, _qh, _sure]):
+                        for _cell, _val in zip(_cc, [_grup, _qd, _sure]):
                             _cell.text = str(_val)
                         if _grup == _ek8c_grup_rapor:
                             for _cell in _cc:
@@ -11018,18 +11013,18 @@ if _rapor_olustur_sidebar:
                                 for _pr in _cell.paragraphs:
                                     for _run in _pr.runs:
                                         _run.bold = True
-                    _v73 = int(st.session_state.get("yangin_73_ek8c_toplam_su_hacmi_l", 0) or 0)
-                    if _ek8c_grup_rapor and _v73:
+                    _q73 = int(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0) or 0)
+                    if _ek8c_grup_rapor and _q73:
                         _pr = doc.add_paragraph()
                         _rr = _pr.add_run(
                             f"7.2’den otomatik seçilen Ek-8/C değeri: {_ek8c_grup_rapor} — "
-                            f"Toplam ilave su hacmi: {_v73:,} L ({_v73/1000:.2f} m³)"
+                            f"Seçilen yangın suyu debisi: {_q73} L/dak"
                         )
                         _rr.bold = True
                     doc.add_paragraph(
-                        "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C. "
-                        "Ek-8/C değerleri ileride 7.12 yangın suyu depolama hesabında kullanılmak üzere saklanmıştır."
-                    ).italic = True
+                        "Not: Hidrant sistemi ve hidrant debisi 7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde ayrıca geliştirilecektir. "
+                        "Seçilen yangın dolabı debisi ileride 7.12 yangın suyu deposu kapasite hesabında kullanılacaktır."
+                    )
                 else:
                     _body7 = doc.add_paragraph(
                         "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
