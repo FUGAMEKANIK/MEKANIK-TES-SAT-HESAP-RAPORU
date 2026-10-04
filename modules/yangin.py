@@ -400,13 +400,15 @@ with _t_yangin:
                         # Eski sürümlerden kalmış aynı anahtarlar varsa Streamlit,
                         # st.button oluşturulurken StreamlitValueAssignmentNotAllowedError
                         # verebiliyor. Bu nedenle buton anahtarlarını her çalıştırmada temizliyoruz.
-                        _tum_sec_btn_key = f"{_key71}_tum_sec_v3"
-                        _tum_kaldir_btn_key = f"{_key71}_tum_kaldir_v3"
-                        if st.button("✓ TÜMÜNÜ SEÇ", key=_tum_sec_btn_key, use_container_width=True):
+                        # Bu iki toplu seçim düğmesi proje verisine ait değildir.
+                        # Eski kayıtlı projelerde widget anahtarları session_state içine
+                        # taşınabildiği için explicit key kullanmıyoruz; Streamlit burada
+                        # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
+                        if st.button(f"✓ TÜMÜNÜ SEÇ — {_key71}", use_container_width=True):
                             _yangin_71_toplu_sec(_key71, _maddeler71, True)
                             st.rerun()
                     with c2:
-                        if st.button("✕ TÜMÜNÜ KALDIR", key=_tum_kaldir_btn_key, use_container_width=True):
+                        if st.button(f"✕ TÜMÜNÜ KALDIR — {_key71}", use_container_width=True):
                             _yangin_71_toplu_sec(_key71, _maddeler71, False)
                             st.rerun()
                     with c3:
@@ -496,12 +498,19 @@ with _t_yangin:
                     st.markdown(
                         "**Yapı yüksekliği:** Bodrum katlar, asma katlar ve çatı arası piyesler dâhil olmak üzere, yapının inşa edilen bütün katlarının toplam yüksekliğidir."
                     )
-                    _sema_yolu = Path(__file__).resolve().parent.parent / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png"
-                    _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu.exists() else None
+                    # Şema dosyası GitHub/Streamlit ortamında isim veya uzantı farkı
+                    # nedeniyle bulunamazsa, aynı klasördeki uygun PNG dosyasını da ara.
+                    _sema_kok = Path(__file__).resolve().parent.parent
+                    _sema_adaylari = [
+                        _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
+                        *_sema_kok.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
+                    ]
+                    _sema_yolu = next((p for p in _sema_adaylari if p.is_file()), None)
+                    _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu else None
                     if _sema_verisi:
                         st.image(_sema_verisi, caption="Bina yüksekliği ve yapı yüksekliği — şematik gösterim", use_container_width=True)
                     else:
-                        st.warning("Bina yüksekliği / yapı yüksekliği şeması bulunamadı.")
+                        st.warning("Bina yüksekliği / yapı yüksekliği şeması bulunamadı. PNG dosyasının app.py ile aynı kökte olduğundan emin olun.")
                     st.caption(
                         "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
                     )
