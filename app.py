@@ -1405,8 +1405,8 @@ _BOLUM_63_COCUKLARI = [
     ("rapor_bolum_631", "SU DEPOSU KAPASİTE HESAPLAMALARI"),
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
-    ("rapor_bolum_634", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
-    ("rapor_bolum_635", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
 ]
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
