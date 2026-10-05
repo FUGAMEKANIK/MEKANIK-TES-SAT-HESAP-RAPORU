@@ -663,7 +663,10 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
         st.session_state["aktif_proje_adi"] = proje.proje_adi
         st.session_state["proje_kaynak"] = "yerel"
         st.session_state["proje_son_kayit_zamani"] = datetime.now().strftime("%H:%M:%S")
-        st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' kaydedildi."
+        if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SECRET_KEY"):
+            st.session_state["proje_yukleme_bildirimi"] = f"☁️ '{proje.proje_adi}' buluta kaydedildi."
+        else:
+            st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' yerel olarak kaydedildi."
         return True
     except Exception as hata:
         st.session_state["proje_yukleme_bildirimi"] = f"Proje kaydedilemedi: {hata}"
@@ -688,11 +691,7 @@ def _proje_sil(proje_id):
     try:
         if not proje_id:
             return
-        klasor = Path(_PROJE_YONETICISI.ana_dizin) / proje_id
-        if not klasor.exists():
-            st.session_state["proje_yukleme_bildirimi"] = "Silinecek proje bulunamadı."
-            return
-        shutil.rmtree(klasor)
+        _PROJE_YONETICISI.proje_sil(proje_id, onay=True)
         if st.session_state.get("aktif_proje_id") == proje_id:
             st.session_state.pop("aktif_proje_id", None)
             st.session_state.pop("aktif_proje_adi", None)
@@ -1231,12 +1230,14 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
 
     _mevcut_projeler = []
     try:
-        _mevcut_projeler = sorted([
-            p.name for p in Path(_PROJE_YONETICISI.ana_dizin).iterdir()
-            if p.is_dir() and (p / "proje.json").exists()
-        ])
-    except Exception:
+        _mevcut_projeler = [
+            str(item.get("proje_id", ""))
+            for item in _PROJE_YONETICISI.proje_listesi()
+            if item.get("proje_id")
+        ]
+    except Exception as _liste_hatasi:
         _mevcut_projeler = []
+        st.warning(f"Proje listesi alınamadı: {_liste_hatasi}")
 
     st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
 
@@ -1405,8 +1406,8 @@ _BOLUM_63_COCUKLARI = [
     ("rapor_bolum_631", "SU DEPOSU KAPASİTE HESAPLAMALARI"),
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
-    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
-    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
+    ("rapor_bolum_634", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
+    ("rapor_bolum_635", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
 ]
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
