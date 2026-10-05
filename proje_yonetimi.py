@@ -9,7 +9,10 @@ Proje oluşturma, kaydetme, açma, güncelleme ve rapor sürüm takibini sağlar
 from __future__ import annotations
 
 import json
+import os
 import re
+import urllib.parse
+import requests
 import shutil
 import tempfile
 from copy import deepcopy
@@ -84,6 +87,110 @@ def json_oku(dosya_yolu: Path, varsayilan: Optional[Dict[str, Any]] = None) -> D
         raise ValueError(f"Beklenen JSON nesnesi bulunamadı: {dosya_yolu}")
 
     return veri
+
+
+# -----------------------------------------------------------------------------
+# SUPABASE UZAK KAYIT
+# -----------------------------------------------------------------------------
+
+
+def _supabase_ayarlari() -> tuple[str, str]:
+    """Streamlit Secrets / ortam değişkenlerinden Supabase bilgilerini alır."""
+    url = str(os.getenv("SUPABASE_URL", "")).strip().rstrip("/")
+    key = str(os.getenv("SUPABASE_SECRET_KEY", "")).strip()
+    return url, key
+
+
+def _supabase_aktif_mi() -> bool:
+    url, key = _supabase_ayarlari()
+    return bool(url and key)
+
+
+def _supabase_headers() -> Dict[str, str]:
+    _, key = _supabase_ayarlari()
+    return {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation",
+    }
+
+
+def _supabase_url(path: str) -> str:
+    url, _ = _supabase_ayarlari()
+    return f"{url}/rest/v1/{path.lstrip('/')}"
+
+
+def _supabase_hata(response: requests.Response) -> str:
+    try:
+        veri = response.json()
+        if isinstance(veri, dict):
+            return str(veri.get("message") or veri.get("error") or veri)
+        return str(veri)
+    except Exception:
+        return response.text[:500] or f"HTTP {response.status_code}"
+
+
+def _supabase_listele() -> List[Dict[str, Any]]:
+    if not _supabase_aktif_mi():
+        return []
+    response = requests.get(
+        _supabase_url("projects"),
+        params={"select": "project_id,project_name,created_at,updated_at", "order": "project_name.asc"},
+        headers=_supabase_headers(),
+        timeout=15,
+    )
+    if not response.ok:
+        raise RuntimeError(f"Supabase proje listesi alınamadı: {_supabase_hata(response)}")
+    veri = response.json()
+    return veri if isinstance(veri, list) else []
+
+
+def _supabase_getir(proje_id: str) -> Optional[Dict[str, Any]]:
+    if not _supabase_aktif_mi():
+        return None
+    response = requests.get(
+        _supabase_url("projects"),
+        params={"project_id": f"eq.{proje_id}", "select": "*", "limit": "1"},
+        headers=_supabase_headers(),
+        timeout=15,
+    )
+    if not response.ok:
+        raise RuntimeError(f"Supabase proje açılamadı: {_supabase_hata(response)}")
+    veri = response.json()
+    return veri[0] if veri else None
+
+
+def _supabase_kaydet(proje: "ProjeVerisi") -> None:
+    if not _supabase_aktif_mi():
+        return
+    payload = {
+        "project_id": proje.proje_id,
+        "project_name": proje.proje_adi,
+        "data": proje.sozluk(),
+        "updated_at": proje.guncelleme_tarihi or simdi_iso(),
+    }
+    response = requests.post(
+        _supabase_url("projects"),
+        headers=_supabase_headers(),
+        json=payload,
+        timeout=20,
+    )
+    if not response.ok:
+        raise RuntimeError(f"Supabase proje kaydedilemedi: {_supabase_hata(response)}")
+
+
+def _supabase_sil(proje_id: str) -> None:
+    if not _supabase_aktif_mi():
+        return
+    response = requests.delete(
+        _supabase_url("projects"),
+        params={"project_id": f"eq.{proje_id}"},
+        headers=_supabase_headers(),
+        timeout=15,
+    )
+    if not response.ok:
+        raise RuntimeError(f"Supabase proje silinemedi: {_supabase_hata(response)}")
 
 
 # -----------------------------------------------------------------------------
@@ -225,19 +332,34 @@ class ProjeYoneticisi:
                 proje.hesap_sonuclari,
             )
 
+        # Streamlit Cloud kalıcı disk sağlamadığı için Supabase etkinse
+        # aynı projenin tamamını uzak veritabanına da kaydet.
+        if _supabase_aktif_mi():
+            _supabase_kaydet(proje)
+
         return proje
 
     def ac(self, proje_id: str) -> ProjeVerisi:
-        """Kayıtlı projeyi ve hesap sonuçlarını açar."""
+        """Projeyi önce Supabase'den, bulunamazsa yerel önbellekten açar."""
         proje_id = guvenli_dosya_adi(proje_id)
-        dosya = self.proje_dosyasi(proje_id)
 
+        if _supabase_aktif_mi():
+            uzak = _supabase_getir(proje_id)
+            if uzak and isinstance(uzak.get("data"), dict):
+                proje = ProjeVerisi.sozlukten_olustur(uzak["data"])
+                proje.proje_id = proje_id
+                proje.proje_adi = str(uzak.get("project_name") or proje.proje_adi)
+                self._klasorleri_hazirla(proje_id)
+                json_kaydet_guvenli(self.proje_dosyasi(proje_id), proje.sozluk())
+                json_kaydet_guvenli(self.hesaplar_dosyasi(proje_id), proje.hesap_sonuclari)
+                return proje
+
+        dosya = self.proje_dosyasi(proje_id)
         if not dosya.exists():
             raise FileNotFoundError(f"Proje bulunamadı: {proje_id}")
 
         proje = ProjeVerisi.sozlukten_olustur(json_oku(dosya))
         proje.proje_id = proje_id
-
         hesaplar = json_oku(self.hesaplar_dosyasi(proje_id), {})
         proje.hesap_sonuclari = hesaplar
         return proje
@@ -304,31 +426,52 @@ class ProjeYoneticisi:
         return hedef
 
     def proje_listesi(self) -> List[Dict[str, Any]]:
-        """Kayıtlı projelerin özet listesini döndürür."""
-        liste: List[Dict[str, Any]] = []
+        """Yerel önbellek ile Supabase projelerini birleştirir."""
+        birlesik: Dict[str, Dict[str, Any]] = {}
 
+        try:
+            for item in self._yerel_proje_listesi():
+                birlesik[str(item["proje_id"])] = item
+        except Exception:
+            pass
+
+        if _supabase_aktif_mi():
+            uzaklar = _supabase_listele()
+            for item in uzaklar:
+                pid = str(item.get("project_id", "")).strip()
+                if not pid:
+                    continue
+                birlesik[pid] = {
+                    "proje_id": pid,
+                    "proje_adi": str(item.get("project_name") or pid),
+                    "olusturma_tarihi": str(item.get("created_at") or ""),
+                    "guncelleme_tarihi": str(item.get("updated_at") or ""),
+                    "son_rapor_tarihi": "",
+                }
+
+        return sorted(birlesik.values(), key=lambda x: str(x.get("proje_adi", "")).lower())
+
+    def _yerel_proje_listesi(self) -> List[Dict[str, Any]]:
+        liste: List[Dict[str, Any]] = []
+        if not self.ana_dizin.exists():
+            return liste
         for proje_dizini in sorted(self.ana_dizin.iterdir()):
             if not proje_dizini.is_dir():
                 continue
-
             proje_dosyasi = proje_dizini / PROJE_DOSYASI
             if not proje_dosyasi.exists():
                 continue
-
             try:
                 veri = json_oku(proje_dosyasi)
-                liste.append(
-                    {
-                        "proje_id": veri.get("proje_id", proje_dizini.name),
-                        "proje_adi": veri.get("proje_adi", proje_dizini.name),
-                        "olusturma_tarihi": veri.get("olusturma_tarihi", ""),
-                        "guncelleme_tarihi": veri.get("guncelleme_tarihi", ""),
-                        "son_rapor_tarihi": veri.get("son_rapor_tarihi", ""),
-                    }
-                )
+                liste.append({
+                    "proje_id": veri.get("proje_id", proje_dizini.name),
+                    "proje_adi": veri.get("proje_adi", proje_dizini.name),
+                    "olusturma_tarihi": veri.get("olusturma_tarihi", ""),
+                    "guncelleme_tarihi": veri.get("guncelleme_tarihi", ""),
+                    "son_rapor_tarihi": veri.get("son_rapor_tarihi", ""),
+                })
             except (OSError, json.JSONDecodeError, ValueError):
                 continue
-
         return liste
 
     def rapor_listesi(self, proje_id: str) -> List[Path]:
@@ -344,10 +487,18 @@ class ProjeYoneticisi:
             raise PermissionError("Projeyi silmek için onay=True verilmelidir.")
 
         dizin = self.proje_dizini(proje_id)
-        if not dizin.exists():
+        yerel_var = dizin.exists()
+        uzak_var = False
+        if _supabase_aktif_mi():
+            uzak_var = _supabase_getir(guvenli_dosya_adi(proje_id)) is not None
+
+        if not yerel_var and not uzak_var:
             raise FileNotFoundError(f"Proje bulunamadı: {proje_id}")
 
-        shutil.rmtree(dizin)
+        if yerel_var:
+            shutil.rmtree(dizin)
+        if _supabase_aktif_mi():
+            _supabase_sil(guvenli_dosya_adi(proje_id))
 
 
 # -----------------------------------------------------------------------------
