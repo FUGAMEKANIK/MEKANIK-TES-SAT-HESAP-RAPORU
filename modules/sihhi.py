@@ -2418,6 +2418,7 @@ with _t_sihhi:
                 "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                 "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                 "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
+                "mgm_aylik_url": _mgm_aylik_url,
                 "yagis_yontemi": _yagis_yontemi,
                 "mgm_aylik_yagis": _mgm_aylik,
                 "mgm_aylik_periyot": _mgm_aylik_periyot,
