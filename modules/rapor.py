@@ -2870,6 +2870,17 @@ if _rapor_olustur_sidebar:
                           ("6", "Hidrant tipi ve hat kesme vanaları", "Sistemde kullanılacak hidrantların ilgili Türk Standartlarına uygun yerüstü yangın hidrantı olması gerekir. Hidrant yenilenmesi ve bakım işlemlerini kolaylaştırmak amacıyla uygun noktalarda yeraltı veya yerüstü yahut her iki tip hat kesme vanaları temin ve tesis edilir. (BYKHY Madde 95, 6)"),
                           ("7", "Yerleşim alanlarında dış hidrant sistemi", "İçerisinde her türlü kullanım alanı bulunan ve genel yerleşim alanlarından ayrı olarak planlanan yerleşim alanlarında yapılacak binaların taban alanları toplamının 5.000 m²’den büyük olması halinde dış hidrant sistemi yapılması mecburidir. Yönetmeliğin 7’nci maddesinin on ikinci fıkrası kapsamındaki alanlarda da dış hidrant sistemi yapılır. (BYKHY Madde 95, 7)"),
                           ("8", "İtfaiye araçlarının ulaşamadığı yerleşim alanları", "İtfaiye araçlarının giremediği veya manevra yapamadığı, ulaşım imkânı olmayan yerleşim mahallerinde uygun yerlere yerüstü yangın hidrantları veya pompa ile teçhiz edilmiş yeterli kapasitede yangın havuzları ve sarnıçları yapılır. (BYKHY Madde 95, 8)"),
+                          ("9", "Bina çevresinde hidrant yerleşimi", "Bina çevresinde meydana gelebilecek yangınlara müdahale edilebilmesi, dışarıdan içeriye hortum serilerek su verilebilmesi ve itfaiye geldiği zaman su alabilmesi için hidrant sistemi kurulacaktır. Bina girişlerine, köşe başlarına ve açık otopark çevresine yakın yerlere hidrant yerleşimi yapılacaktır."),
+                          ("10", "Hidrant sistemi ring hattı", "Hidrant sistemi için sulu söndürme sistemleri kollektöründen ayrı bir hat alınacak ve bina çevresinde ring sistemi oluşturulacaktır."),
+                          ("11", "Hidrantların bina girişleri ve köşe başlarındaki yerleşimi", "Hidrantlar bina girişlerine ve köşe başlarına yakın olmak üzere yerleştirilecektir."),
+                          ("12", "Hidrant sistemi boru malzemesi", "Sistemde yüksek yoğunluklu polietilen borular veya ductile borular kullanılacaktır."),
+                          ("13", "Boru hatlarının toprak altı döşeme derinliği", "Sistemde kullanılan borular hem mekanik hasarları önlemek hem de donmaya karşı tedbir almak amacı ile en az 100 cm derinlikte toprak altına yerleştirilecektir."),
+                          ("14", "Yerüstü hidrantları ve kesme vanaları", "Sistemde kullanılacak hidrantlar yer üstü yangın hidrantları olacaktır. Hidrant sisteminde, hidrant yenilenmesini ve bakım işlemlerinin yapılmasını kolaylaştıracak şekilde her hidrantın girişinde kesme vanaları yerleştirilecektir."),
+                          ("15", "Kuru tip hidrant özellikleri", "İtfaiye elemanları ve eğitilmiş personelin kullanımına olanak verebilmesi için, çıkış ağızları 2 x 2½” iki çıkış ağızlı, anma boyutu 4” olan kuru tip hidrantlar monte edilecektir. (TS 2821/1)."),
+                          ("16", "Hidrant otomatik boşaltma düzeni", "Hidrantların otomatik çalışan bir boşaltma düzeni olacak, hidrant vanası açıkken bu sistem kapalı olup, hidrant vanası kapatıldığında gövde de kalan su otomatik olarak boşalacaktır."),
+                          ("17", "Hidrant ayağı ve drenaj düzeni", "Hidrant ayakları taş veya beton düz bir zemin üzerine oturtulacak olup, hidrant gövdesindeki suyun drenajı için kullanılacak otomatik tahliye donanımının çevresi küçük çakıl taşları ile doldurulacaktır."),
+                          ("18", "Hortum bağlantı ağızlarının yüksekliği", "Hidrant üzerindeki hortum bağlantı ağızlarının yerden yüksekliği en az 45 cm olacak şekilde yerleştirilecektir."),
+                          ("19", "Boru hatlarının flushing işlemi", "Yapım esnasında, boru içerisinde kalan yabancı malzemeleri temizlemek için su ile flushing yapılacaktır. Flushing esnasında, borular içerisindeki hız en az 3 m/s olacaktır."),
                       ]
                       for _no, _baslik_h, _metin_h in _hidrant_esaslari_rapor:
                           _p = doc.add_paragraph()
@@ -2878,7 +2889,7 @@ if _rapor_olustur_sidebar:
                           _p.add_run(_metin_h)
 
                       _hidrant_ek_maddeler = st.session_state.get("yangin_741_maddeler_cap_oncesi", [])
-                      _ek_hno = 9
+                      _ek_hno = 20
                       for _madde in _hidrant_ek_maddeler:
                           _p = doc.add_paragraph()
                           _r = _p.add_run(f"{_ek_hno}. {str(_madde.get('baslik','')).strip()}: ")
