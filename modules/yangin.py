@@ -998,8 +998,75 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
 
-            elif _baslik.startswith(("7.4 ", "7.5 ", "7.6 ", "7.7 ", "7.8 ", "7.9 ", "7.10 ", "7.11 ", "7.12 ", "7.13 ", "7.14 ", "7.15 ")):
-                st.info("Bu bölümün tasarım ve hesaplama içeriği bir sonraki aşamada ayrı olarak geliştirilecektir.")
+            elif _baslik.startswith("7.4 "):
+                with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
+                    st.markdown(
+                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
+                        "HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _ui_74_rapor_key = "yangin_74_rapor_ui"
+                    st.session_state.setdefault(_ui_74_rapor_key, bool(st.session_state.get("rapor_bolum_74", True)))
+                    st.checkbox(
+                        "7.4 rapora eklensin",
+                        key=_ui_74_rapor_key,
+                        on_change=lambda: st.session_state.__setitem__(
+                            "rapor_bolum_74", bool(st.session_state.get("yangin_74_rapor_ui", True))
+                        ),
+                    )
+
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
+                        "7.4.1 HİDRANT SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _hidrant_esaslari = [
+                        ("1", "Hidrant sisteminin amacı ve yerleşimi", "Yapıların yangından korunmasında, ilk müdahalede söndürülemeyen yangınlara dışarıdan müdahale edebilmek için mümkün olduğunca yapının veya binanın bütün çevresini kapsayacak şekilde hidrant sistemi tesis edilir. Hidrantların itfaiye araçlarının kolay yanaşabileceği ve bağlantı yapabileceği şekilde düzenlenmesi gerekir. (BYKHY Madde 95, 1)"),
+                        ("2", "Hidrant sistemi tasarım debisi ve basıncı", "Hidrant sistemi dizayn debisi en az 1.900 L/dak olacak şekilde tasarlanır. Debi, binanın tehlike sınıfına göre artırılır. Hidrant çıkışında 700 kPa basınç olması gerekir. (BYKHY Madde 95, 2)"),
+                        ("3", "Hidrantlar arası uzaklık", "Hidrantlar arası uzaklık çok riskli bölgelerde 50 m, riskli bölgelerde 100 m, orta riskli bölgelerde 125 m ve az riskli bölgelerde 150 m alınır. (BYKHY Madde 95, 3)"),
+                        ("4", "Hidrantların bina çevresindeki konumu", "Normal şartlarda hidrantlar, korunan binalardan ortalama 5 ilâ 15 m kadar uzağa yerleştirilir. (BYKHY Madde 95, 4)"),
+                        ("5", "Hidrant besleme borusu çapı", "Hidrant sistemine suyu sağlayan boru donanımında ring sistemi mevcut değil ise kullanılabilecek en düşük boru çapı 100 mm olacak şekilde ve hidrolik hesaba göre belirlenir. (BYKHY Madde 95, 5)"),
+                        ("6", "Hidrant tipi ve hat kesme vanaları", "Sistemde kullanılacak hidrantların ilgili Türk Standartlarına uygun yerüstü yangın hidrantı olması gerekir. Hidrant yenilenmesi ve bakım işlemlerini kolaylaştırmak amacıyla uygun noktalarda yeraltı veya yerüstü yahut her iki tip hat kesme vanaları temin ve tesis edilir. (BYKHY Madde 95, 6)"),
+                        ("7", "Yerleşim alanlarında dış hidrant sistemi", "İçerisinde her türlü kullanım alanı bulunan ve genel yerleşim alanlarından ayrı olarak planlanan yerleşim alanlarında yapılacak binaların taban alanları toplamının 5.000 m²’den büyük olması halinde dış hidrant sistemi yapılması mecburidir. Yönetmeliğin 7’nci maddesinin on ikinci fıkrası kapsamındaki alanlarda da dış hidrant sistemi yapılır. (BYKHY Madde 95, 7)"),
+                        ("8", "İtfaiye araçlarının ulaşamadığı yerleşim alanları", "İtfaiye araçlarının giremediği veya manevra yapamadığı, ulaşım imkânı olmayan yerleşim mahallerinde uygun yerlere yerüstü yangın hidrantları veya pompa ile teçhiz edilmiş yeterli kapasitede yangın havuzları ve sarnıçları yapılır. (BYKHY Madde 95, 8)"),
+                    ]
+                    for _no, _baslik_h, _metin_h in _hidrant_esaslari:
+                        st.markdown(f"**{_no}. {_baslik_h}**")
+                        st.write(_metin_h)
+
+                    st.session_state.setdefault("yangin_741_maddeler_cap_oncesi", [])
+                    st.session_state.setdefault("yangin_741_maddeler_cap_sonrasi", [])
+
+                    def _hidrant_maddeleri_goster_ve_ekle(_liste_key, _yer_etiketi):
+                        _liste = st.session_state[_liste_key]
+                        _bas_no = 9
+                        if _liste_key.endswith("sonrasi"):
+                            _bas_no = 9 + len(st.session_state.get("yangin_741_maddeler_cap_oncesi", []))
+                        for _idx, _madde in enumerate(_liste, start=_bas_no):
+                            st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
+                            st.write(_madde.get('metin',''))
+                        with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
+                            _bkey = f"{_liste_key}_baslik"
+                            _mkey = f"{_liste_key}_metin"
+                            _b = st.text_input("Madde başlığı", key=_bkey)
+                            _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                            if st.button("Maddeyi ekle", key=f"{_liste_key}_ekle"):
+                                if _b.strip() and _m.strip():
+                                    _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
+                                    st.session_state[_liste_key] = _liste
+                                    st.session_state[_bkey] = ""
+                                    st.session_state[_mkey] = ""
+                                    st.rerun()
+                                else:
+                                    st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+
+                    st.markdown("**HİDRANT MADDELERİ — EK MADDELER (8. MADDEDEN SONRA)**")
+                    _hidrant_maddeleri_goster_ve_ekle("yangin_741_maddeler_cap_oncesi", "8. maddeden sonra")
+
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik</i></div>',
+                        unsafe_allow_html=True,
+                    )
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
