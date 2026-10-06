@@ -2538,83 +2538,91 @@ if _rapor_olustur_sidebar:
               else:
                   doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
   
-              _tbl = doc.add_table(rows=1, cols=5)
+              # RAPORDA EK-1/B TABLOSUNUN TAMAMI GÖSTERİLMEZ.
+              # Yalnızca kullanıcı tarafından seçilen (sarı) hücreler aktarılır.
+              _tbl = doc.add_table(rows=1, cols=3)
               _tbl.style = "Table Grid"
               _hdr = _tbl.rows[0].cells
-              _headers = ["KULLANIM TÜRÜ"] + _ek1b_basliklari
-              for _i, _h in enumerate(_headers):
+              for _i, _h in enumerate(["KULLANIM TÜRÜ", "SEÇİLEN KULLANIM ALANI", "TEHLİKE SINIFI"]):
                   _hdr[_i].text = _h
                   for _r in _hdr[_i].paragraphs[0].runs:
                       _r.bold = True
-  
-              _sec_hucreleri = {(x["satır"] if "satır" in x else x["satir"], int(x["kolon"])) for x in _secili_kayitlar}
-              for _satir in _ek1b_satirlari:
+
+              for _kayit in _secili_kayitlar:
+                  _tur = _kayit.get("satır", _kayit.get("satir", ""))
+                  _kolon = int(_kayit.get("kolon", 0) or 0)
+                  _satir_verisi = next((x for x in _ek1b_satirlari if x.get("tur") == _tur), None)
+                  if _satir_verisi is None:
+                      continue
+                  _hucreler = _satir_verisi.get("hücreler", [])
+                  _secili_metin = _kayit.get("etiket", "")
+                  if not _secili_metin and 0 <= _kolon < len(_hucreler):
+                      _secili_metin = _hucreler[_kolon]
+                  _sinif = _ek1b_basliklari[_kolon] if 0 <= _kolon < len(_ek1b_basliklari) else ""
                   _cells = _tbl.add_row().cells
-                  _cells[0].text = _satir["tur"]
-                  for _j, _metin in enumerate(_satir["hücreler"]):
-                      _cells[_j + 1].text = _metin
-                      if (_satir["tur"], _j) in _sec_hucreleri:
-                          _tcPr = _cells[_j + 1]._tc.get_or_add_tcPr()
-                          from docx.oxml import OxmlElement
-                          _shd = OxmlElement("w:shd")
-                          _shd.set(
-                              "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill",
-                              "FFF2CC",
-                          )
-                          _tcPr.append(_shd)
-                          for _r in _cells[_j + 1].paragraphs[0].runs:
-                              _r.bold = True
-  
+                  _cells[0].text = str(_tur)
+                  _cells[1].text = str(_secili_metin)
+                  _cells[2].text = str(_sinif)
+                  for _run in _cells[1].paragraphs[0].runs:
+                      _run.bold = True
+                  _tcPr = _cells[1]._tc.get_or_add_tcPr()
+                  _shd = OxmlElement("w:shd")
+                  _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
+                  _tcPr.append(_shd)
+
               _pnot = doc.add_paragraph()
               _rn = _pnot.add_run(
-                  "Sarı hücreler, seçilen bina/kullanım alanlarının Ek-1/B tablosundaki "
-                  "karşılıklarını göstermektedir. Birden fazla kullanım alanı seçildiğinde, "
-                  "Madde 19 esasına göre en yüksek tehlike sınıfı otomatik olarak esas alınır."
+                  "Raporda yalnızca seçilen Ek-1/B kullanım alanları gösterilmiştir."
               )
               _rn.italic = True
-  
-              # Kaynak / tablo künyesi: raporda tablonun nereden alındığı açıkça belirtilir.
+
               _pkaynak = doc.add_paragraph()
               _rs = _pkaynak.add_run(
                   "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
                   "Ek-1/B: Orta Tehlike Kullanım Alanları, s. 243."
               )
               _rs.bold = True
-  
-              # Ek-1/C — Yüksek Tehlike Kullanım Alanları
+
+              # Ek-1/C — RAPORDA YALNIZCA SEÇİLEN (SARI) HÜCRELER GÖSTERİLİR.
               _secili_c = _ek1c_secili_kayitlar()
               if _secili_c:
                   doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
-                  _tc = doc.add_table(rows=1, cols=4)
+                  _tc = doc.add_table(rows=1, cols=3)
                   _tc.style = "Table Grid"
-                  for _i, _h in enumerate(_ek1c_basliklari):
+                  for _i, _h in enumerate(["KULLANIM TÜRÜ", "SEÇİLEN KULLANIM ALANI", "TEHLİKE SINIFI"]):
                       _tc.rows[0].cells[_i].text = _h
                       for _r in _tc.rows[0].cells[_i].paragraphs[0].runs:
                           _r.bold = True
-                  _sec_c_hucreleri = {(int(x["satir"]), int(x["kolon"])) for x in _secili_c}
-                  for _i, _satir in enumerate(_ek1c_satirlari):
+                  for _kayit in _secili_c:
+                      _satir_no = int(_kayit.get("satır", _kayit.get("satir", 0)) or 0)
+                      _kolon = int(_kayit.get("kolon", 0) or 0)
+                      _satir_verisi = _ek1c_satirlari[_satir_no] if 0 <= _satir_no < len(_ek1c_satirlari) else None
+                      if _satir_verisi is None:
+                          continue
+                      _hucreler = _satir_verisi.get("hücreler", [])
+                      _secili_metin = _kayit.get("etiket", "")
+                      if not _secili_metin and 0 <= _kolon < len(_hucreler):
+                          _secili_metin = _hucreler[_kolon]
+                      _sinif = _ek1c_basliklari[_kolon] if 0 <= _kolon < len(_ek1c_basliklari) else ""
                       _cells = _tc.add_row().cells
-                      for _j, _metin in enumerate(_satir["hücreler"]):
-                          _cells[_j].text = _metin
-                          if (_i, _j) in _sec_c_hucreleri:
-                              _tcPr = _cells[_j]._tc.get_or_add_tcPr()
-                              _shd = OxmlElement("w:shd")
-                              _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
-                              _tcPr.append(_shd)
-                              for _r in _cells[_j].paragraphs[0].runs:
-                                  _r.bold = True
+                      _cells[0].text = str(_satir_verisi.get("tur", ""))
+                      _cells[1].text = str(_secili_metin)
+                      _cells[2].text = str(_sinif)
+                      for _run in _cells[1].paragraphs[0].runs:
+                          _run.bold = True
+                      _tcPr = _cells[1]._tc.get_or_add_tcPr()
+                      _shd = OxmlElement("w:shd")
+                      _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
+                      _tcPr.append(_shd)
                   _pc = doc.add_paragraph()
-                  _rc = _pc.add_run(
-                      "Sarı hücreler, seçilen Ek-1/C yüksek tehlike kullanım alanlarının tablodaki "
-                      "karşılıklarını göstermektedir."
-                  )
+                  _rc = _pc.add_run("Raporda yalnızca seçilen Ek-1/C kullanım alanları gösterilmiştir.")
                   _rc.italic = True
                   _src_c = doc.add_paragraph()
                   _src_c.add_run(
                       "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
                       "Ek-1/C: Yüksek Tehlike Kullanım Alanları, s. 245."
                   ).bold = True
-  
+
           if _r722:
               doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
   
