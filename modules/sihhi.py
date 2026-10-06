@@ -1086,7 +1086,7 @@ with _t_sihhi:
               yag_ayirici_secilenler = st.multiselect(
                   "Projede yer alacak Yağ Ayırıcıları seçin:",
                   ["YA-01", "YA-02", "YA-03", "YA-04"],
-                  default=st.session_state.get("yag_ayirici_secilenler", ["YA-01"]),
+                  default=st.session_state.get("yag_ayirici_secilenler", []),
                   key="yag_ayirici_secilenler",
               )
   
