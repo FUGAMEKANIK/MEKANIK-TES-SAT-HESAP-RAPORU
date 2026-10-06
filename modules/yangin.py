@@ -392,7 +392,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
             else:
                 st.subheader(_baslik)
 
-            if _baslik.startswith("7.1 "):
+            if _baslik.startswith("7.1"):
                 # 7.1 alt maddeleri tek bir hiyerarşi içinde açılır/kapanır.
                 # 7.1.1 ve 7.1.2 madde seçimleri; 7.1.3 ise standart kütüphanesi içerir.
                 st.caption("7.1 alt maddeleri ayrı ayrı açılıp kapatılabilir. İşaretli maddeler rapora aktarılır.")
@@ -829,6 +829,13 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
                         unsafe_allow_html=True,
                     )
+                    st.caption(
+                        "7.3 bölümü, 7.2 GENEL BİNA BİLGİLERİ ve seçilen yangın tehlike sınıfından "
+                        "otomatik olarak veri alır. Bu bölümde belirlenen Ek-8/C değerleri ileride "
+                        "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde "
+                        "yangın suyu deposu hesabının veri kaynağı olarak kullanılacaktır."
+                    )
+
                     _ui_73_rapor_key = "yangin_73_rapor_ui"
                     st.session_state.setdefault(_ui_73_rapor_key, bool(st.session_state.get("rapor_bolum_73", True)))
                     st.checkbox(
