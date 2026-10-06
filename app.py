@@ -91,7 +91,7 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
         if _pos < 0:
             return None, None, _url
 
-        _parca = _metin[_pos:_pos + 5000]
+        _parca = _metin[_pos:_pos + 1200]
         _desenler = [
             # Standart MGM görünümü: 11.06.1997 88,9 mm
             r"(\d{1,2}\.\d{1,2}\.\d{4})\s*[:|]?\s*([0-9]+(?:[.,][0-9]+)?)\s*mm\b",
@@ -109,20 +109,6 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
                 _deger = float(_eslesme.group(1).replace(",", "."))
                 _tarih = _eslesme.group(2)
             return _deger, _tarih, _url
-
-        # MGM HTML yapısı değişirse, başlıktan sonraki geniş metin içinde
-        # tarih + mm çiftini tekrar ara. Bu geri dönüş, tablo hücrelerinin
-        # satır/sütun etiketleri arasına girmesinden etkilenmez.
-        _tum_desenler = [
-            r"(\d{1,2}\.\d{1,2}\.\d{4})\s*(?:[|:]|-)??\s*([0-9]+(?:[.,][0-9]+)?)\s*mm\b",
-            r"([0-9]+(?:[.,][0-9]+)?)\s*mm\b\s*(?:[|:]|-)??\s*(\d{1,2}\.\d{1,2}\.\d{4})",
-        ]
-        for _desen in _tum_desenler:
-            _eslesme = _re.search(_desen, _metin, flags=_re.I)
-            if _eslesme:
-                if _desen == _tum_desenler[0]:
-                    return float(_eslesme.group(2).replace(",", ".")), _eslesme.group(1), _url
-                return float(_eslesme.group(1).replace(",", ".")), _eslesme.group(2), _url
         return None, None, _url
 
     _son_url = _urls[0]
@@ -276,7 +262,7 @@ def mgm_aylik_ortalama_yagis_mm(il_adi):
             _metin = _re.sub(r"\s+", " ", _metin).strip()
             _pos = _metin.lower().find(_baslik.lower())
             if _pos >= 0:
-                _parca = _metin[_pos:_pos + 5000]
+                _parca = _metin[_pos:_pos + 1200]
                 _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?", _parca)
                 _nums = [float(v.replace(",", ".")) for v in _vals]
                 if len(_nums) >= 12:
@@ -1423,8 +1409,8 @@ _BOLUM_63_COCUKLARI = [
     ("rapor_bolum_631", "SU DEPOSU KAPASİTE HESAPLAMALARI"),
     ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
     ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
-    ("rapor_bolum_634", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
-    ("rapor_bolum_635", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
 ]
 
 # Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
