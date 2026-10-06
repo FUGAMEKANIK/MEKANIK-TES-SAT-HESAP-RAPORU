@@ -1474,6 +1474,7 @@ _BOLUM_NAV = [
     ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
     ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
     ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
+    ("6.2.3 Yağ Ayırıcı Seçimleri", "bolum_623", "rapor_bolum_623"),
     ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
     ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
     ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
@@ -2403,10 +2404,3 @@ with _t_havalandirma:
 
 # RAPOR OLUŞTURMA — modüler rapor motoru
 run_fragment("rapor.py", globals())
-
-# SAYFA SONU ANKORU — sağdaki "Sona Git" bağlantısının hedefi.
-# Ana app.py'nin gerçek sonunda bulunur; modüler fragmentlerden sonra çalışır.
-st.markdown(
-    '<span id="sayfa_sonu" tabindex="-1"></span>',
-    unsafe_allow_html=True,
-)
