@@ -2687,7 +2687,7 @@ if _rapor_olustur_sidebar:
       # aşamalarda bölüm bölüm geliştirilecektir.
       # -----------------------------------------------------------------------
       _yangin_73_715 = [
-          ("bolum_73", "rapor_bolum_73", "7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+          ("bolum_73", "rapor_bolum_73", "7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI"),
           ("bolum_74", "rapor_bolum_74", "7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI"),
           ("bolum_75", "rapor_bolum_75", "7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI"),
           ("bolum_76", "rapor_bolum_76", "7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
@@ -2743,7 +2743,7 @@ if _rapor_olustur_sidebar:
                           _r.bold = True
                           _pyd.add_run(_metin_yd)
 
-                      doc.add_heading("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ", level=4)
+                      doc.add_heading("7.3.2 BİNA İÇİ HORTUM SİSTEMİ TASARIM DEBİLERİ TESPİTİ", level=4)
                       doc.add_paragraph(
                           "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C, bina tehlike sınıfına göre "
                           "yangın dolabı ve hidrant sistemi için ilâve edilecek su ihtiyaçlarını belirler. "
