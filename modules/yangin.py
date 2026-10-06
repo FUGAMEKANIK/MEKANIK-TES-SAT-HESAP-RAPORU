@@ -1220,6 +1220,22 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.markdown(f"**{_no}. {_baslik_s}**")
                         st.write(_metin_s)
 
+                    # 7.5.1 - PROJEYE ÖZEL SPRİNKLER TASARIM NOTLARI
+                    # Yönetmelik maddelerinden ayrı olarak, kullanıcı tarafından verilen
+                    # proje özel tasarım/uygulama notları bu başlığın altında gösterilir.
+                    st.markdown("**PROJEYE ÖZEL SPRİNKLER TASARIM NOTLARI**")
+                    _sprinkler_proje_notlari = [
+                        "Sprinkler sistem tipi olarak ıslak borulu sprinkler sistemi kurulacaktır. Zonlamada ıslak borulu sistem için yatayda 4831 m2 maksimum zon alanı olarak alınmıştır.",
+                        "Sprinkler sisteminde, kat girişini izole edebilmek için izlenebilir volanlı kelebek vanalar her kat girişinde kullanılmıştır.",
+                        "Yangın tesisatı TSE ve NFPA uyumlu olacaktır.",
+                        "Her zon ve katta, ayrı test ve drenaj yapabilmek için vanalar kullanılmıştır.",
+                        "En az her kat bazında sistemi izlemek amacıyla akış anahtarları kullanılmıştır.",
+                        "Her bir söndürme mahali için hidrolik hesap sonucu çıkan köpük miktarı ve ekipmanı belirlenmiştir.",
+                        "Sistemin manuel olarak devreden çıkartılarak düşük risk durumunda yangına bir seyyar söndürücü ile manuel müdahale yapılarak köpüklü söndürme sistemi boşaltılmadan yangının personel tarafından söndürülmesi sağlanabilecektir.",
+                    ]
+                    for _not in _sprinkler_proje_notlari:
+                        st.markdown(f"• {_not}")
+
                     # 7.2’de seçilen bina/kullanım alanını burada tekrar seçtirmeden göster.
                     _spr_721_secimler = st.session_state.get("yangin_721_ek1b_secimler", []) or []
                     _spr_721_secimler_c = st.session_state.get("yangin_721_ek1c_secimler", []) or []
