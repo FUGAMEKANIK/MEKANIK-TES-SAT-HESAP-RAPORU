@@ -891,7 +891,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1074,7 +1074,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1211,6 +1211,45 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
                         unsafe_allow_html=True,
                     )
+                    # 7.2 ile bağlantı: bina/kullanım seçimi ve etkin yangın tehlike sınıfı
+                    # burada yeniden seçtirilmez; 7.2'deki mevcut session-state verisi kullanılır.
+                    _secili_kullanim_75 = [
+                        str(x.get("etiket", "")).strip()
+                        for x in _yangin_721_secili_kayitlar()
+                        if str(x.get("etiket", "")).strip()
+                    ]
+                    _kullanim_metni_75 = " ".join(_secili_kullanim_75).lower()
+                    _etkin_sinif_75 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                    if not _etkin_sinif_75:
+                        _etkin_sinif_75 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                    _yapi_h_75 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+                    _otopark_alan_75 = float(st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0.0) or 0.0)
+                    _otopark_arac_75 = int(st.session_state.get("yangin_genel_otopark_arac_sayisi", 0) or 0)
+
+                    # Seçilen kullanım alanına karşılık gelen Madde 96/2 ifadesi.
+                    # Buradaki sarı vurgu “zorunluluk kesinleşti” anlamına gelmez;
+                    # 7.2'de seçilen kullanım alanının Madde 96/2'deki karşılığını gösterir.
+                    _spr_75_vurgu = []
+                    if "konut" in _kullanim_metni_75:
+                        _spr_75_vurgu.append("yapı yüksekliği 51,50 m’yi geçen konutlarda")
+                    else:
+                        _spr_75_vurgu.append("yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda")
+                    if any(k in _kullanim_metni_75 for k in ["otopark"]):
+                        _spr_75_vurgu.append("ilgili kapalı otoparklarda")
+                    if any(k in _kullanim_metni_75 for k in ["otel", "yurt", "pansiyon", "misafirhane"]):
+                        _spr_75_vurgu.append("belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde")
+                    if any(k in _kullanim_metni_75 for k in ["büyük mağaza", "alışveriş", "ticaret", "eğlence", "toplanma"]):
+                        _spr_75_vurgu.append("toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde")
+
+                    st.markdown(
+                        '<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin:8px 0 12px 0;">'
+                        f'<b>7.2’den gelen bina/kullanım alanı:</b> {", ".join(_secili_kullanim_75) if _secili_kullanim_75 else "Seçilmedi"}<br>'
+                        f'<b>7.2’den gelen etkin yangın tehlike sınıfı:</b> {_etkin_sinif_75 or "Belirlenemedi"}<br>'
+                        f'<b>Madde 96/2’de ilişkili ifade:</b> {", ".join(_spr_75_vurgu) if _spr_75_vurgu else "Belirlenemedi"}'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+
                     _sprinkler_esaslari = [
                         ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
                         ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
@@ -1225,8 +1264,20 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     ]
                     for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
                         st.markdown(f"**{_no}. {_baslik_s}**")
-                        st.write(_metin_s)
+                        if _no == "2" and _spr_75_vurgu:
+                            # Madde metninin sadece 7.2'de seçilen kullanım alanıyla
+                            # ilişkili kısmını sarı vurgula. Diğer metin aynen korunur.
+                            _html_s = _metin_s
+                            for _ifade in _spr_75_vurgu:
+                                _html_s = _html_s.replace(
+                                    _ifade,
+                                    f'<mark style="background-color:#FFF2CC; padding:2px 4px; border-radius:3px; font-weight:700;">{_ifade}</mark>'
+                                )
+                            st.markdown(_html_s, unsafe_allow_html=True)
+                        else:
+                            st.write(_metin_s)
 
+                    st.caption("Sarı vurgular, 7.2’de seçilen bina/kullanım alanının Madde 96/2’deki karşılığını gösterir. Sprinkler zorunluluğunun kesin değerlendirilmesinde bina yüksekliği, alan, otopark ve diğer yönetmelik koşulları ayrıca dikkate alınır.")
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
 
                     # ----------------------------------------------------------
