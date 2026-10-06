@@ -2723,10 +2723,108 @@ if _rapor_olustur_sidebar:
                   _run7.italic = True
                   _run7.font.size = Pt(15)
                   _run7.font.color.rgb = RGBColor(31, 78, 121)
-                  _body7 = doc.add_paragraph(
-                      "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
-                  )
-                  _body7.paragraph_format.space_after = Pt(6)
+                  # 7.3 Yangın Dolabı Sistemi — rapor içeriği
+                  if _bk == "bolum_73":
+                      doc.add_paragraph(
+                          "7.3 bölümü, 7.2 GENEL BİNA BİLGİLERİ ve seçilen etkin yangın tehlike sınıfından "
+                          "otomatik olarak veri alır. Aşağıdaki yönetmelik esasları ve Ek-8/C yangın dolabı "
+                          "su ihtiyacı bu seçime göre rapora aktarılmıştır."
+                      )
+
+                      doc.add_heading("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI", level=4)
+                      _yd_esaslari_rapor = [
+                          ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
+                          ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
+                          ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
+                          ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır."),
+                          ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır."),
+                          ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
+                          ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır."),
+                          ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
+                          ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
+                      ]
+                      for _no, _baslik_yd, _metin_yd in _yd_esaslari_rapor:
+                          _pyd = doc.add_paragraph()
+                          _r = _pyd.add_run(f"{_no}. {_baslik_yd}: ")
+                          _r.bold = True
+                          _pyd.add_run(_metin_yd)
+
+                      doc.add_heading("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ", level=4)
+                      doc.add_paragraph(
+                          "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C, bina tehlike sınıfına göre "
+                          "yangın dolabı ve hidrant sistemi için ilâve edilecek su ihtiyaçlarını belirler. "
+                          "Bu raporda yalnızca seçilen etkin yangın tehlike sınıfına karşılık gelen değer vurgulanmıştır."
+                      )
+
+                      _ek8c_verileri_rapor = [
+                          ("Düşük tehlike", 100, 30),
+                          ("Orta Tehlike-1-2", 100, 60),
+                          ("Orta Tehlike-3-4", 100, 60),
+                          ("Yüksek Tehlike", 200, 90),
+                      ]
+                      _etkin_73_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                      if not _etkin_73_rapor:
+                          _etkin_73_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                      _s73 = _etkin_73_rapor.lower().replace("–", "-").replace(" ", "")
+                      if _s73.startswith("düşük"):
+                          _ek8c_secili_rapor = "Düşük tehlike"
+                      elif _s73.startswith("ortatehlike-1") or _s73.startswith("ortatehlike-2"):
+                          _ek8c_secili_rapor = "Orta Tehlike-1-2"
+                      elif _s73.startswith("ortatehlike-3") or _s73.startswith("ortatehlike-4"):
+                          _ek8c_secili_rapor = "Orta Tehlike-3-4"
+                      elif _s73.startswith("yüksek"):
+                          _ek8c_secili_rapor = "Yüksek Tehlike"
+                      else:
+                          _ek8c_secili_rapor = ""
+
+                      _t73 = doc.add_table(rows=1, cols=3)
+                      _t73.style = "Table Grid"
+                      for _cell, _txt in zip(_t73.rows[0].cells, [
+                          "BİNA TEHLİKE SINIFI", "İLAVE YANGIN DOLABI DEBİSİ (L/dak)", "SÜRE (dak)"
+                      ]):
+                          _cell.text = _txt
+                          for _pr in _cell.paragraphs:
+                              for _run in _pr.runs:
+                                  _run.bold = True
+                      for _grup, _q_dolap, _sure in _ek8c_verileri_rapor:
+                          _cc = _t73.add_row().cells
+                          _cc[0].text = _grup
+                          _cc[1].text = f"{_q_dolap:,}".replace(",", ".")
+                          _cc[2].text = str(_sure)
+                          if _grup == _ek8c_secili_rapor:
+                              for _cell in _cc:
+                                  _tcPr = _cell._tc.get_or_add_tcPr()
+                                  _shd = OxmlElement("w:shd")
+                                  _shd.set(qn("w:fill"), "FFF2CC")
+                                  _tcPr.append(_shd)
+                                  for _pr in _cell.paragraphs:
+                                      for _run in _pr.runs:
+                                          _run.bold = True
+
+                      _ek8c_secili_kayit_rapor = next((x for x in _ek8c_verileri_rapor if x[0] == _ek8c_secili_rapor), None)
+                      if _ek8c_secili_kayit_rapor:
+                          _q73, _sure73 = _ek8c_secili_kayit_rapor[1], _ek8c_secili_kayit_rapor[2]
+                          _p73sonuc = doc.add_paragraph()
+                          _r = _p73sonuc.add_run("7.3 Tasarım Esası: ")
+                          _r.bold = True
+                          _p73sonuc.add_run(
+                              f"Seçilen yangın tehlike sınıfı: {_etkin_73_rapor} → "
+                              f"Yangın dolabı debisi: {_q73} L/dak → Süre: {_sure73} dk."
+                          )
+                          for _run in _p73sonuc.runs:
+                              if _run.text.startswith("7.3 Tasarım Esası"):
+                                  _run.bold = True
+
+                      _src73 = doc.add_paragraph()
+                      _src73.add_run(
+                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
+                          "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları."
+                      ).italic = True
+                  else:
+                      _body7 = doc.add_paragraph(
+                          "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                      )
+                      _body7.paragraph_format.space_after = Pt(6)
   
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
