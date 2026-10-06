@@ -1308,14 +1308,37 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _spr_cap_grup_oto = ""
                         _spr_cap_tablo_oto = []
 
-                    _spr_cap_mod = st.radio(
-                        "Sprinkler boru çapı seçim yöntemi",
-                        ["Otomatik Seçim", "Manuel Seçim"],
-                        horizontal=True,
-                        key="yangin_75_sprinkler_cap_secim_yontemi",
-                    )
+                    # ------------------------------------------------------------------
+                    # ÇAP TABLOLARI SEKME DÜZENİ
+                    # Her tablo ayrı sekmede gösterilir. 7.2'de belirlenen tehlike
+                    # sınıfına karşılık gelen tablo varsayılan olarak seçilidir.
+                    # Kullanıcı checkbox ile bu seçimi değiştirebilir ve birden fazla
+                    # tabloyu rapora dahil edebilir. Test-drenaj tablosu her zaman seçilidir.
+                    # ------------------------------------------------------------------
+                    _spr_cap_grup_map = {
+                        "HAFİF TEHLİKE": _spr_cap_hafif,
+                        "ORTA TEHLİKE": _spr_cap_orta,
+                        "YÜKSEK TEHLİKE": _spr_cap_yuksek,
+                    }
+                    _spr_cap_grup_key_map = {
+                        "HAFİF TEHLİKE": "yangin_75_cap_tablo_hafif_secili",
+                        "ORTA TEHLİKE": "yangin_75_cap_tablo_orta_secili",
+                        "YÜKSEK TEHLİKE": "yangin_75_cap_tablo_yuksek_secili",
+                    }
 
-                    _spr_cap_tab_oto, _spr_cap_tab_manuel = st.tabs(["OTOMATİK SEÇİM", "MANUEL SEÇİM"] )
+                    # Tehlike sınıfından gelen otomatik tablo varsayılan olarak seçilir.
+                    # Kullanıcı daha sonra checkbox'ları değiştirerek otomatik seçimi
+                    # değiştirebilir.
+                    for _grp, _key in _spr_cap_grup_key_map.items():
+                        if _key not in st.session_state:
+                            st.session_state[_key] = (_grp == _spr_cap_grup_oto)
+
+                    _spr_cap_sekme_hafif, _spr_cap_sekme_orta, _spr_cap_sekme_yuksek, _spr_cap_sekme_test = st.tabs([
+                        "HAFİF TEHLİKE",
+                        "ORTA TEHLİKE",
+                        "YÜKSEK TEHLİKE",
+                        "TEST DRENAJ",
+                    ])
 
                     def _spr_cap_aralik_esle(_liste, _adet):
                         import re as _re_cap
@@ -1327,89 +1350,92 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 return _cap, _aralik
                         return "", ""
 
-                    with _spr_cap_tab_oto:
-                        st.markdown(
-                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:9px 12px; border-radius:4px;">'
-                            f'<b>7.2’den otomatik seçilen tehlike grubu:</b> {_spr_cap_grup_oto or "Seçilmedi"}'
-                            f'<br><b>Yangın tehlike sınıfı:</b> {_spr_cap_etkin_sinif or "Seçilmedi"}'
-                            f'</div>', unsafe_allow_html=True)
-                        _spr_cap_adet_oto = st.number_input(
-                            "Çap seçimine esas sprinkler adedi", min_value=1, max_value=275,
-                            value=int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1),
-                            step=1, key="yangin_75_sprinkler_adedi"
+                    with _spr_cap_sekme_hafif:
+                        st.checkbox(
+                            "Bu tabloyu seç / rapora ekle",
+                            key="yangin_75_cap_tablo_hafif_secili",
                         )
-                        _spr_cap_sec_oto, _spr_cap_aralik_oto = _spr_cap_aralik_esle(_spr_cap_tablo_oto, _spr_cap_adet_oto)
-                        if _spr_cap_sec_oto:
-                            st.session_state["yangin_75_sprinkler_cap_oto"] = _spr_cap_sec_oto
-                            st.success(f"Otomatik seçilen boru çapı: {_spr_cap_sec_oto}  |  Adet aralığı: {_spr_cap_aralik_oto}")
-                        else:
-                            st.session_state["yangin_75_sprinkler_cap_oto"] = ""
-                            if _spr_cap_tablo_oto:
-                                st.warning("Girilen sprinkler adedi kaynak tablodaki bir aralığa karşılık gelmiyor.")
-                            else:
-                                st.warning("7.2 bölümünde geçerli bir yangın tehlike sınıfı seçilmedi.")
+                        if _spr_cap_grup_oto == "HAFİF TEHLİKE":
+                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
+                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_hafif])
 
-                        # 7.2'deki tehlike sınıfına göre yalnızca ilgili çap tablosu
-                        # otomatik olarak aktif/görünür olur. Diğer tablolar kullanıcıyı
-                        # gereksiz yere meşgul etmez. Manuel seçim ikinci sekmede devam eder.
-                        if _spr_cap_grup_oto and _spr_cap_tablo_oto:
-                            st.markdown(
-                                f"**OTOMATİK SEÇİLEN ÇAP TABLOSU — {_spr_cap_grup_oto}**"
-                            )
-                            st.table([
-                                {"Çap": c, "Sprinkler Adedi": a}
-                                for c, a in _spr_cap_tablo_oto
-                            ])
-                        else:
-                            st.info("Geçerli bir yangın tehlike sınıfı seçildiğinde ilgili çap tablosu burada otomatik seçilecektir.")
-
-                    # Test-drenaj çap tablosu tehlike sınıfından bağımsızdır ve
-                    # HER ZAMAN aktif/görünürdür. Manuel/otomatik sprinkler seçimi
-                    # bu tabloyu kapatmaz veya değiştirmez.
-                    st.markdown("**TEST DRENAJ HATTI ÇAP TABLOSU — HER ZAMAN AKTİF**")
-                    st.session_state["yangin_75_test_drenaj_tablosu_aktif"] = True
-                    st.table([
-                        {"Ana Hat": h, "Test-Drenaj Çapı": c}
-                        for h, c in _spr_cap_test_drenaj
-                    ])
-
-                    with _spr_cap_tab_manuel:
-                        _spr_cap_manuel_grup = st.selectbox(
-                            "Manuel seçim için tehlike grubu",
-                            ["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"],
-                            index=["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"].index(
-                                st.session_state.get("yangin_75_sprinkler_manuel_grup", _spr_cap_grup_oto)
-                                if st.session_state.get("yangin_75_sprinkler_manuel_grup", _spr_cap_grup_oto) in ["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"]
-                                else (_spr_cap_grup_oto if _spr_cap_grup_oto in ["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"] else "HAFİF TEHLİKE")
-                            ),
-                            key="yangin_75_sprinkler_manuel_grup",
+                    with _spr_cap_sekme_orta:
+                        st.checkbox(
+                            "Bu tabloyu seç / rapora ekle",
+                            key="yangin_75_cap_tablo_orta_secili",
                         )
-                        _spr_cap_manuel_liste = {
-                            "HAFİF TEHLİKE": _spr_cap_hafif,
-                            "ORTA TEHLİKE": _spr_cap_orta,
-                            "YÜKSEK TEHLİKE": _spr_cap_yuksek,
-                        }[_spr_cap_manuel_grup]
-                        _spr_cap_manuel_cap = st.selectbox(
-                            "Manuel boru çapı seçimi", [x[0] for x in _spr_cap_manuel_liste],
-                            key="yangin_75_sprinkler_manuel_cap",
-                        )
-                        st.session_state["yangin_75_sprinkler_cap_manuel"] = _spr_cap_manuel_cap
-                        st.info(f"Manuel seçilen çap: {_spr_cap_manuel_cap}")
+                        if _spr_cap_grup_oto == "ORTA TEHLİKE":
+                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
+                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_orta])
 
-                    # Seçim yöntemi burada belirlenir; yalnızca manuel sekmenin çizilmiş olması
-                    # seçimi kendiliğinden Manuel yapmaz.
-                    if _spr_cap_mod == "Manuel Seçim":
-                        st.session_state["yangin_75_sprinkler_cap_kaynagi"] = "Manuel"
-                        st.session_state["yangin_75_sprinkler_cap_final"] = st.session_state.get("yangin_75_sprinkler_cap_manuel", "")
+                    with _spr_cap_sekme_yuksek:
+                        st.checkbox(
+                            "Bu tabloyu seç / rapora ekle",
+                            key="yangin_75_cap_tablo_yuksek_secili",
+                        )
+                        if _spr_cap_grup_oto == "YÜKSEK TEHLİKE":
+                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
+                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_yuksek])
+
+                    with _spr_cap_sekme_test:
+                        st.checkbox(
+                            "Bu tabloyu seç / rapora ekle",
+                            value=True,
+                            disabled=True,
+                            key="yangin_75_test_drenaj_tablosu_aktif",
+                        )
+                        st.table([
+                            {"Ana Hat": h, "Test-Drenaj Çapı": c}
+                            for h, c in _spr_cap_test_drenaj
+                        ])
+
+                    # Sprinkler adedi tüm tablolar için ortaktır.
+                    _spr_cap_adet = st.number_input(
+                        "Çap seçimine esas sprinkler adedi",
+                        min_value=1,
+                        max_value=275,
+                        value=int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1),
+                        step=1,
+                        key="yangin_75_sprinkler_adedi",
+                    )
+
+                    # Seçili tablolar arasından ilk işaretli tablo çap hesabında esas alınır.
+                    # 7.2'nin otomatik tablosu işaretli kaldığı sürece otomatik seçim korunur.
+                    _spr_cap_secili_gruplar = [
+                        _grp for _grp, _key in _spr_cap_grup_key_map.items()
+                        if bool(st.session_state.get(_key, False))
+                    ]
+                    _spr_cap_aktif_grup = _spr_cap_secili_gruplar[0] if _spr_cap_secili_gruplar else ""
+                    _spr_cap_aktif_liste = _spr_cap_grup_map.get(_spr_cap_aktif_grup, [])
+                    _spr_cap_final, _spr_cap_aralik = _spr_cap_aralik_esle(_spr_cap_aktif_liste, _spr_cap_adet)
+
+                    if _spr_cap_grup_oto and _spr_cap_grup_oto in _spr_cap_secili_gruplar:
+                        _spr_cap_kaynak = "7.2 otomatik seçimi"
+                    elif _spr_cap_aktif_grup:
+                        _spr_cap_kaynak = "Kullanıcı seçimi"
                     else:
-                        st.session_state["yangin_75_sprinkler_cap_kaynagi"] = "Otomatik"
-                        st.session_state["yangin_75_sprinkler_cap_final"] = st.session_state.get("yangin_75_sprinkler_cap_oto", "")
+                        _spr_cap_kaynak = "Seçilmedi"
 
-                    st.markdown(
-                        f'<div style="background-color:#E2F0D9; border:1px solid #70AD47; padding:10px 12px; border-radius:4px; margin-top:10px;">'
-                        f'<b>Raporlara aktarılacak sprinkler boru çapı:</b> {st.session_state.get("yangin_75_sprinkler_cap_final", "") or "Seçilmedi"}'
-                        f' &nbsp; <b>Seçim yöntemi:</b> {st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Otomatik")}'
-                        f'</div>', unsafe_allow_html=True)
+                    st.session_state["yangin_75_sprinkler_cap_kaynagi"] = _spr_cap_kaynak
+                    st.session_state["yangin_75_sprinkler_cap_final"] = _spr_cap_final
+                    st.session_state["yangin_75_sprinkler_cap_oto"] = _spr_cap_final if _spr_cap_grup_oto == _spr_cap_aktif_grup else ""
+                    st.session_state["yangin_75_sprinkler_secili_cap_tablolari"] = list(_spr_cap_secili_gruplar)
+
+                    if _spr_cap_aktif_grup and _spr_cap_final:
+                        st.success(
+                            f"Çap hesabında kullanılan tablo: {_spr_cap_aktif_grup} | "
+                            f"Sprinkler adedi: {_spr_cap_adet} | Seçilen çap: {_spr_cap_final}"
+                        )
+                    elif _spr_cap_aktif_grup:
+                        st.warning("Seçilen tabloda girilen sprinkler adedine karşılık gelen bir çap bulunamadı.")
+                    else:
+                        st.warning("Hiçbir sprinkler çap tablosu seçilmedi. Çap seçimi rapora aktarılmayacaktır.")
+
+                    st.caption(
+                        "İşaretli tablolar rapora aktarılır. 7.2'deki tehlike sınıfına ait tablo varsayılan olarak işaretlidir; "
+                        "isterseniz işaretini kaldırıp başka bir tabloyu işaretleyerek otomatik seçimi değiştirebilirsiniz. "
+                        "Birden fazla tablo işaretlenirse çap hesabında ilk işaretli tablo esas alınır."
+                    )
 
                     st.caption("Kaynak: Kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx. Not: Yüksek Tehlike tablosundaki 1½\" DN40 satırı kaynak dosyada 5-4 olarak yazılmıştır; kaynak veri değiştirilmemiştir.")
 
