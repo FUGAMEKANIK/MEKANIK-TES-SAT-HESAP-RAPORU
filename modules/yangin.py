@@ -1341,7 +1341,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _spr_cap_sec_oto, _spr_cap_aralik_oto = _spr_cap_aralik_esle(_spr_cap_tablo_oto, _spr_cap_adet_oto)
                         if _spr_cap_sec_oto:
                             st.session_state["yangin_75_sprinkler_cap_oto"] = _spr_cap_sec_oto
-                            st.session_state["yangin_75_sprinkler_cap_kaynagi"] = "Otomatik"
                             st.success(f"Otomatik seçilen boru çapı: {_spr_cap_sec_oto}  |  Adet aralığı: {_spr_cap_aralik_oto}")
                         else:
                             st.session_state["yangin_75_sprinkler_cap_oto"] = ""
@@ -1350,14 +1349,29 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 st.warning("7.2 bölümünde geçerli bir yangın tehlike sınıfı seçilmedi.")
 
-                        st.markdown("**HAFİF TEHLİKE ÇAP TABLOSU**")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_hafif])
-                        st.markdown("**ORTA TEHLİKE ÇAP TABLOSU**")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_orta])
-                        st.markdown("**YÜKSEK TEHLİKE ÇAP TABLOSU**")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_yuksek])
-                        st.markdown("**TEST DRENAJ HATTI ÇAP TABLOSU**")
-                        st.table([{"Ana Hat": h, "Test-Drenaj Çapı": c} for h, c in _spr_cap_test_drenaj])
+                        # 7.2'deki tehlike sınıfına göre yalnızca ilgili çap tablosu
+                        # otomatik olarak aktif/görünür olur. Diğer tablolar kullanıcıyı
+                        # gereksiz yere meşgul etmez. Manuel seçim ikinci sekmede devam eder.
+                        if _spr_cap_grup_oto and _spr_cap_tablo_oto:
+                            st.markdown(
+                                f"**OTOMATİK SEÇİLEN ÇAP TABLOSU — {_spr_cap_grup_oto}**"
+                            )
+                            st.table([
+                                {"Çap": c, "Sprinkler Adedi": a}
+                                for c, a in _spr_cap_tablo_oto
+                            ])
+                        else:
+                            st.info("Geçerli bir yangın tehlike sınıfı seçildiğinde ilgili çap tablosu burada otomatik seçilecektir.")
+
+                    # Test-drenaj çap tablosu tehlike sınıfından bağımsızdır ve
+                    # HER ZAMAN aktif/görünürdür. Manuel/otomatik sprinkler seçimi
+                    # bu tabloyu kapatmaz veya değiştirmez.
+                    st.markdown("**TEST DRENAJ HATTI ÇAP TABLOSU — HER ZAMAN AKTİF**")
+                    st.session_state["yangin_75_test_drenaj_tablosu_aktif"] = True
+                    st.table([
+                        {"Ana Hat": h, "Test-Drenaj Çapı": c}
+                        for h, c in _spr_cap_test_drenaj
+                    ])
 
                     with _spr_cap_tab_manuel:
                         _spr_cap_manuel_grup = st.selectbox(
