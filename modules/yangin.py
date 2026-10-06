@@ -411,6 +411,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
                             if st.button(
                                 f"✓ TÜMÜNÜ SEÇ — {_key71}",
+                                key=f"yangin_71_tumunu_sec_btn_{_key71}",
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, True)
@@ -418,6 +419,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with c2:
                             if st.button(
                                 f"✕ TÜMÜNÜ KALDIR — {_key71}",
+                                key=f"yangin_71_tumunu_kaldir_btn_{_key71}",
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, False)
