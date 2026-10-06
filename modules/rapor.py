@@ -2857,6 +2857,42 @@ if _rapor_olustur_sidebar:
                       _pk = doc.add_paragraph()
                       _rk = _pk.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
                       _rk.italic = True
+
+                  # 7.4 Hidrant Sistemi
+                  elif _bk == "bolum_74":
+                      doc.add_heading("7.4.1 HİDRANT SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
+                      _hidrant_esaslari_rapor = [
+                          ("1", "Hidrant sisteminin amacı ve yerleşimi", "Yapıların yangından korunmasında, ilk müdahalede söndürülemeyen yangınlara dışarıdan müdahale edebilmek için mümkün olduğunca yapının veya binanın bütün çevresini kapsayacak şekilde hidrant sistemi tesis edilir. Hidrantların itfaiye araçlarının kolay yanaşabileceği ve bağlantı yapabileceği şekilde düzenlenmesi gerekir. (BYKHY Madde 95, 1)"),
+                          ("2", "Hidrant sistemi tasarım debisi ve basıncı", "Hidrant sistemi dizayn debisi en az 1.900 L/dak olacak şekilde tasarlanır. Debi, binanın tehlike sınıfına göre artırılır. Hidrant çıkışında 700 kPa basınç olması gerekir. (BYKHY Madde 95, 2)"),
+                          ("3", "Hidrantlar arası uzaklık", "Hidrantlar arası uzaklık çok riskli bölgelerde 50 m, riskli bölgelerde 100 m, orta riskli bölgelerde 125 m ve az riskli bölgelerde 150 m alınır. (BYKHY Madde 95, 3)"),
+                          ("4", "Hidrantların bina çevresindeki konumu", "Normal şartlarda hidrantlar, korunan binalardan ortalama 5 ilâ 15 m kadar uzağa yerleştirilir. (BYKHY Madde 95, 4)"),
+                          ("5", "Hidrant besleme borusu çapı", "Hidrant sistemine suyu sağlayan boru donanımında ring sistemi mevcut değil ise kullanılabilecek en düşük boru çapı 100 mm olacak şekilde ve hidrolik hesaba göre belirlenir. (BYKHY Madde 95, 5)"),
+                          ("6", "Hidrant tipi ve hat kesme vanaları", "Sistemde kullanılacak hidrantların ilgili Türk Standartlarına uygun yerüstü yangın hidrantı olması gerekir. Hidrant yenilenmesi ve bakım işlemlerini kolaylaştırmak amacıyla uygun noktalarda yeraltı veya yerüstü yahut her iki tip hat kesme vanaları temin ve tesis edilir. (BYKHY Madde 95, 6)"),
+                          ("7", "Yerleşim alanlarında dış hidrant sistemi", "İçerisinde her türlü kullanım alanı bulunan ve genel yerleşim alanlarından ayrı olarak planlanan yerleşim alanlarında yapılacak binaların taban alanları toplamının 5.000 m²’den büyük olması halinde dış hidrant sistemi yapılması mecburidir. Yönetmeliğin 7’nci maddesinin on ikinci fıkrası kapsamındaki alanlarda da dış hidrant sistemi yapılır. (BYKHY Madde 95, 7)"),
+                          ("8", "İtfaiye araçlarının ulaşamadığı yerleşim alanları", "İtfaiye araçlarının giremediği veya manevra yapamadığı, ulaşım imkânı olmayan yerleşim mahallerinde uygun yerlere yerüstü yangın hidrantları veya pompa ile teçhiz edilmiş yeterli kapasitede yangın havuzları ve sarnıçları yapılır. (BYKHY Madde 95, 8)"),
+                      ]
+                      for _no, _baslik_h, _metin_h in _hidrant_esaslari_rapor:
+                          _p = doc.add_paragraph()
+                          _r = _p.add_run(f"{_no}. {_baslik_h}: ")
+                          _r.bold = True
+                          _p.add_run(_metin_h)
+
+                      _hidrant_ek_maddeler = st.session_state.get("yangin_741_maddeler_cap_oncesi", [])
+                      _ek_hno = 9
+                      for _madde in _hidrant_ek_maddeler:
+                          _p = doc.add_paragraph()
+                          _r = _p.add_run(f"{_ek_hno}. {str(_madde.get('baslik','')).strip()}: ")
+                          _r.bold = True
+                          _p.add_run(str(_madde.get('metin','')).strip())
+                          _ek_hno += 1
+
+                      _src74 = doc.add_paragraph()
+                      _src74.add_run(
+                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 95: Hidrant sistemi."
+                      ).italic = True
+                      _pk74 = doc.add_paragraph()
+                      _rk74 = _pk74.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
+                      _rk74.italic = True
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
