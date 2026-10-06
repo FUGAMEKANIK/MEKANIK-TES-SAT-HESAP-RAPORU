@@ -14,7 +14,7 @@ with _t_sihhi:
       st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
       st.header("6. SIHHİ TESİSAT")
       st.caption("Rapor seçimi: " + ("Dahil" if bolum_6_aktif else "Hariç"))
-      with st.expander("6.1 SIHHİ TESİSAT ÖN BİLGİLER", expanded=False):
+      with st.expander("6.1 SIHHİ TESİSAT ÖN BİLGİLER", expanded=True):
         if bolum_61_aktif:
           st.markdown('<div id="bolum_61"></div>', unsafe_allow_html=True)
           st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
@@ -223,7 +223,7 @@ with _t_sihhi:
           )
   
       # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-      with st.expander("6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=False):
+      with st.expander("6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=True):
         st.markdown('<div id="bolum_611"></div>', unsafe_allow_html=True)
         st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
   
@@ -301,7 +301,7 @@ with _t_sihhi:
 
 
         # ---------------------------------------------------------------------------
-        with st.expander("6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=False):
+        with st.expander("6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=True):
           # 6.1.1 & 6.2.1 TABLOLAR
           # ---------------------------------------------------------------------------
           st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
@@ -349,7 +349,7 @@ with _t_sihhi:
   
   
           # ---------------------------------------------------------------------------
-        with st.expander("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ", expanded=False):
+        with st.expander("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ", expanded=True):
           # 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
           # ---------------------------------------------------------------------------
           st.markdown('<div id="bolum_622"></div>', unsafe_allow_html=True)
@@ -694,7 +694,7 @@ with _t_sihhi:
           secilen_psp_listesi = st.multiselect(
               "Projede yer alacak Pis Su Terfi Pompalarını seçin:",
               [f"PSP-{i:02d}" for i in range(1, 11)],
-              default=["PSP-01"],
+              default=[],
               key="secilen_psp_listesi",
           )
   
@@ -785,29 +785,29 @@ with _t_sihhi:
                 ac1, ac2, ac3 = st.columns(3)
                 with ac1:
                   adet_hela = st.number_input(
-                      f"{psp} Hela/Klozet (8 Y.B.)", min_value=0, value=4, key=f"{psp}_hela"
+                      f"{psp} Hela/Klozet (8 Y.B.)", min_value=0, value=0, key=f"{psp}_hela"
                   )
                   adet_lavabo = st.number_input(
                       f"{psp} Lavabo/Bide (2 Y.B.)",
                       min_value=0,
-                      value=6,
+                      value=0,
                       key=f"{psp}_lav",
                   )
                 with ac2:
                   adet_banyo = st.number_input(
-                      f"{psp} Küvet/Duş (7 Y.B.)", min_value=0, value=2, key=f"{psp}_ban"
+                      f"{psp} Küvet/Duş (7 Y.B.)", min_value=0, value=0, key=f"{psp}_ban"
                   )
                   adet_evye = st.number_input(
-                      f"{psp} Eviye (4 Y.B.)", min_value=0, value=1, key=f"{psp}_evy"
+                      f"{psp} Eviye (4 Y.B.)", min_value=0, value=0, key=f"{psp}_evy"
                   )
                 with ac3:
                   adet_suzgec = st.number_input(
-                      f"{psp} Yer Süzgeci (2 Y.B.)", min_value=0, value=4, key=f"{psp}_suz"
+                      f"{psp} Yer Süzgeci (2 Y.B.)", min_value=0, value=0, key=f"{psp}_suz"
                   )
                   adet_otopark = st.number_input(
                       f"{psp} Otopark Süzgeci (6 Y.B.)",
                       min_value=0,
-                      value=2,
+                      value=0,
                       key=f"{psp}_oto",
                   )
   
@@ -883,14 +883,14 @@ with _t_sihhi:
                 if v_key not in st.session_state or st.session_state.get(
                     f"{psp}_yb_eski"
                 ) != toplam_yb or st.session_state.get(f"{psp}_k_eski") != k_katsayisi or st.session_state.get(f"{psp}_emniyet_eski") != emniyet_katsayisi:
-                  st.session_state[v_key] = max(1.0, emniyetli_q_m3h)
+                  st.session_state[v_key] = max(0.0, emniyetli_q_m3h)
                   st.session_state[f"{psp}_yb_eski"] = toplam_yb
                   st.session_state[f"{psp}_k_eski"] = k_katsayisi
                   st.session_state[f"{psp}_emniyet_eski"] = emniyet_katsayisi
   
                 toplam_v_val = st.number_input(
                     f"{psp} Toplam Debi (Q_toplam) [m³/h] (Emniyetli)",
-                    min_value=1.0,
+                    min_value=0.0,
                     max_value=100.0,
                     value=st.session_state[v_key],
                     step=0.5,
@@ -899,9 +899,9 @@ with _t_sihhi:
   
                 h_val = st.number_input(
                     f"{psp} Basma Yüksekliği (H) [mSS]",
-                    min_value=1.0,
+                    min_value=0.0,
                     max_value=30.0,
-                    value=12.0,
+                    value=0.0,
                     step=0.5,
                     key=f"{psp}_h_num",
                 )
@@ -1040,7 +1040,7 @@ with _t_sihhi:
           )
   
           # ---------------------------------------------------------------------------
-        with st.expander("6.2.3 YAĞ AYIRICI SEÇİMLERİ", expanded=False):
+        with st.expander("6.2.3 YAĞ AYIRICI SEÇİMLERİ", expanded=True):
           # 6.2.3 YAĞ AYIRICI SEÇİMLERİ — EXCEL HESAP MODELİ
           # ---------------------------------------------------------------------------
           if bolum_623_aktif:
@@ -1211,7 +1211,7 @@ with _t_sihhi:
   
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-        with st.expander("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", expanded=False):
+        with st.expander("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", expanded=True):
           if bolum_631_aktif:
               st.markdown('<div id="bolum_63"></div>', unsafe_allow_html=True)
               st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
@@ -1710,30 +1710,6 @@ with _t_sihhi:
                       )
                   if _mgm_yagis_mm is not None:
                       st.caption(f"Kaynak: MGM Resmi İklim İstatistikleri — {_mgm_yagis_url}")
-
-                  # MGM METEOROLOJİK VERİ TABLOSU — yalnızca projede seçilen il.
-                  # 81 ilin tamamı burada gösterilmez.
-                  st.markdown(f"**MGM Meteorolojik Veriler — {secilen_il}**")
-                  _mgm_satirlar = [{
-                      "İl": secilen_il,
-                      "Günlük En Yüksek Yağış (mm)": (
-                          f"{_mgm_yagis_mm:.1f}" if _mgm_yagis_mm is not None else "Veri alınamadı"
-                      ),
-                      "Gerçekleşme Tarihi": _mgm_yagis_tarih or "-",
-                  }]
-                  st.dataframe(_mgm_satirlar, use_container_width=True, hide_index=True)
-                  if _mgm_aylik:
-                      _mgm_aylik_tablo = [
-                          {
-                              "İl": secilen_il,
-                              "Ay": _ay,
-                              "Aylık Ortalama Yağış (mm)": round(float(_deger), 1),
-                          }
-                          for _ay, _deger in _mgm_aylik.items()
-                      ]
-                      st.dataframe(_mgm_aylik_tablo, use_container_width=True, hide_index=True)
-                      if _mgm_aylik_periyot:
-                          st.caption(f"MGM ölçüm periyodu: {_mgm_aylik_periyot}")
               with c3:
                   yagmur_akis_katsayisi = st.number_input(
                       "Akış katsayısı C", min_value=0.0, max_value=1.0,
@@ -2289,20 +2265,17 @@ with _t_sihhi:
                           f"= **{_secili_kayit['q_hiz_lps']:.2f} L/s**"
                       )
   
-              # SABİT REFERANS TABLOSU — kullanıcı tarafından onaylanan değerlerdir.
-              # Bu tablo gelecekteki hesap/arayüz değişikliklerinde değiştirilmemelidir.
-              TASMA_HIDROLIK_SABIT_TABLO = [
-                  {"DN": "DN 50", "Tasarım Kapasitesi (L/s)": 0.96, "Manning Kapasitesi (L/s)": 0.96, "Manning Hızı (m/s)": 0.49, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 65", "Tasarım Kapasitesi (L/s)": 1.94, "Manning Kapasitesi (L/s)": 1.94, "Manning Hızı (m/s)": 0.58, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 80", "Tasarım Kapasitesi (L/s)": 3.37, "Manning Kapasitesi (L/s)": 3.37, "Manning Hızı (m/s)": 0.67, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 100", "Tasarım Kapasitesi (L/s)": 6.10, "Manning Kapasitesi (L/s)": 6.10, "Manning Hızı (m/s)": 0.78, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 125", "Tasarım Kapasitesi (L/s)": 11.07, "Manning Kapasitesi (L/s)": 11.07, "Manning Hızı (m/s)": 0.90, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 150", "Tasarım Kapasitesi (L/s)": 18.00, "Manning Kapasitesi (L/s)": 18.00, "Manning Hızı (m/s)": 1.02, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 200", "Tasarım Kapasitesi (L/s)": 94.25, "Manning Kapasitesi (L/s)": 38.76, "Manning Hızı (m/s)": 1.23, "Sonuç": "YETERSİZ"},
-                  {"DN": "DN 250", "Tasarım Kapasitesi (L/s)": 147.26, "Manning Kapasitesi (L/s)": 70.28, "Manning Hızı (m/s)": 1.43, "Sonuç": "YETERSİZ"},
-              ]
-              st.dataframe(TASMA_HIDROLIK_SABIT_TABLO, use_container_width=True, hide_index=True)
-              st.session_state["tasma_hidrolik_sabit_tablo"] = TASMA_HIDROLIK_SABIT_TABLO
+              _tablo_satirlari = []
+              for _x in tasma_hidrolik_tablo:
+                  _tablo_satirlari.append({
+                      "DN": f"DN {_x['dn']}",
+                      "Tasarım Kapasitesi (L/s)": f"{_x['q_kapasite_lps']:.2f}",
+                      "Manning Kapasitesi (L/s)": f"{_x.get('q_manning_lps', _x['q_kapasite_lps']):.2f}",
+                      "Manning Hızı (m/s)": f"{_x['hiz_ms']:.2f}",
+                      "3 m/s Kapasitesi (L/s)": (f"{_x['q_hiz_lps']:.2f}" if _x.get('q_hiz_lps') is not None else "-"),
+                      "Durum": "UYGUN" if _x["uygun"] else "YETERSİZ"
+                  })
+              st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
               if tasma_hidrolik_uygun:
                   st.success(
                       f"Hidrolik kontrol: {tasma_hat_adedi} hat × DN {tasma_cap}; "
@@ -2459,7 +2432,6 @@ with _t_sihhi:
                   "cati_alani": yagmur_cati_alani, "yagis": yagmur_yagis, "akis_katsayisi": yagmur_akis_katsayisi,
                   "mgm_il": secilen_il, "mgm_yagis_mm": _mgm_yagis_mm,
                   "mgm_yagis_tarih": _mgm_yagis_tarih, "mgm_url": _mgm_yagis_url,
-                  "mgm_aylik_url": _mgm_aylik_url,
                   "yagis_yontemi": _yagis_yontemi,
                   "mgm_aylik_yagis": _mgm_aylik,
                   "mgm_aylik_periyot": _mgm_aylik_periyot,
@@ -2534,7 +2506,7 @@ with _t_sihhi:
           # SAYFA ORTA ANKORU: sağdaki "Ortaya Git" butonu buraya gelir.
           st.markdown('<div id="sayfa_orta"></div>', unsafe_allow_html=True)
   
-        with st.expander("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", expanded=False):
+        with st.expander("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", expanded=True):
           if bolum_632_aktif:
               st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
               st.subheader(_63_dinamik_baslik("rapor_bolum_632"))
@@ -3684,7 +3656,7 @@ with _t_sihhi:
     sicak_su_gunluk_toplam_litre = 0.0
     sicak_su_yapi_tipi = "Bağımsız Ev"
 
-    with st.expander("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", expanded=False):
+    with st.expander("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", expanded=True):
       if bolum_633_aktif:
           st.markdown('<div id="bolum_633"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_633")}")
@@ -4751,7 +4723,7 @@ with _t_sihhi:
                     return _v
         return 0.0
 
-    with st.expander("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", expanded=False):
+    with st.expander("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", expanded=True):
       if bolum_635_aktif:
           st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
@@ -4912,7 +4884,7 @@ with _t_sihhi:
   
           # ---------------------------------------------------------------------------
     re_sirkulasyon_pompa_sonucu = {}
-    with st.expander("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", expanded=False):
+    with st.expander("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", expanded=True):
       if bolum_634_aktif:
           st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
