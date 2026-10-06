@@ -2482,6 +2482,40 @@ if _rapor_olustur_sidebar:
               ana_baslik_ekle("7. YANGIN TESİSATI")
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
+
+          # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
+          # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
+          _gbi_rapor_verileri = [
+              ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
+              ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
+              ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
+              ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
+              ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
+              ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
+          ]
+          _gbi_baslik = doc.add_paragraph()
+          _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
+          _gbi_run.bold = True
+          _gbi_run.italic = True
+          _gbi_run.font.size = Pt(13)
+          _gbi_tbl = doc.add_table(rows=1, cols=2)
+          _gbi_tbl.style = "Table Grid"
+          _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
+          _gbi_tbl.rows[0].cells[1].text = "DEĞER"
+          for _cell in _gbi_tbl.rows[0].cells:
+              for _run in _cell.paragraphs[0].runs:
+                  _run.bold = True
+          for _etiket, _deger in _gbi_rapor_verileri:
+              _gc = _gbi_tbl.add_row().cells
+              _gc[0].text = _etiket
+              _gc[1].text = _deger
+  
   
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
