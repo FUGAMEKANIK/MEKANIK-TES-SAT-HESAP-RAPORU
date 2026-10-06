@@ -1207,13 +1207,37 @@ if _rapor_olustur_sidebar:
                                   f"en yüksek aylık ortalama: {_en_ay} = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm."
                               )
   
-            # Günlük maksimum yağış yönteminde yalnızca seçilen il gösterilir.
+            # 81 il günlük maksimum yağış tablosu yalnızca 1. yöntem seçildiğinde rapora eklenir.
             if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
-                          _mgm_deger = _yr.get("mgm_yagis_mm")
-                          _mgm_tarih = _yr.get("mgm_yagis_tarih", "")
-                          _mgm_url = _yr.get("mgm_url", "")
-                          doc.add_heading("MGM GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARI", level=5)
+                          # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
+                          # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
+                          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
+                          doc.add_paragraph(
+                              "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
+                              "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
+                              "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
+                              "satırda gösterilmektedir."
+                          )
+                          # RAPOR OLUŞTURMA SIRASINDA 81 İL İÇİN CANLI WEB İSTEĞİ YAPILMAZ.
+                          # Bu tablo önceki sürümde rapor üretimini dakikalarca bekletebiliyor
+                          # ve Streamlit Cloud'da rapor indirme düğmesine ulaşılmasını engelleyebiliyordu.
+                          # Eğer veri daha önce oturumda hazırlandıysa onu kullan; yoksa seçilen ili
+                          # mevcut proje verisinden göster ve diğer illeri "Veri alınmadı" bırak.
+                          _mgm_81 = st.session_state.get("mgm_81_il_yagis_tablosu", None)
+                          if not isinstance(_mgm_81, list) or not _mgm_81:
+                              _mgm_81 = []
+                              _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
+                              for _il_rapor in MGM_81_IL:
+                                  if _il_rapor == _secili_il_rapor:
+                                      _mgm_81.append((
+                                          _il_rapor,
+                                          _yr.get("mgm_yagis_mm"),
+                                          _yr.get("mgm_yagis_tarih", ""),
+                                          None,
+                                      ))
+                                  else:
+                                      _mgm_81.append((_il_rapor, None, None, None))
+  
                           _mgm_tbl = doc.add_table(rows=1, cols=3)
                           _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
                           _mgm_tbl.autofit = True
@@ -1221,6 +1245,8 @@ if _rapor_olustur_sidebar:
                           _hdr[0].text = "İL"
                           _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
                           _hdr[2].text = "TARİH"
+  
+                          # Başlık satırı biçimi.
                           for _cell in _hdr:
                               _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                               _tcPr = _cell._tc.get_or_add_tcPr()
@@ -1232,50 +1258,61 @@ if _rapor_olustur_sidebar:
                                   for _r in _p.runs:
                                       _r.bold = True
                                       _r.font.size = Pt(8.5)
-                          _cells = _mgm_tbl.add_row().cells
-                          _cells[0].text = _secili_mgm_il or "-"
-                          _cells[1].text = f"{float(_mgm_deger):.1f}" if _mgm_deger is not None else "Veri alınamadı"
-                          _cells[2].text = _mgm_tarih or "-"
-                          for _cell in _cells:
-                              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                              for _p in _cell.paragraphs:
-                                  _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                  for _r in _p.runs:
-                                      _r.font.size = Pt(8.5)
-                                      _r.bold = True
-                          if _mgm_url:
-                              _p = doc.add_paragraph()
-                              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                              _r = _p.add_run("MGM kaynağı: ")
-                              _r.font.size = Pt(8.5)
-                              _r2 = _p.add_run("Değeri görmek için tıklayın")
-                              _r2.font.size = Pt(8.5)
-                              _r2.font.color.rgb = RGBColor(0, 0, 255)
-                              _r2.underline = True
-                              _hyperlink = OxmlElement("w:hyperlink")
-                              _hyperlink.set(qn("r:id"), doc.part.relate_to(_mgm_url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True))
-                              _r2._r.getparent().remove(_r2._r)
-                              _hyperlink.append(_r2._r)
-                              _p._p.append(_hyperlink)
-
-            # Aylık yöntemlerde MGM kaynak bağlantısı tablonun altında gösterilir.
-            if _yr_yontem in ("Ortalama Aylık Yağış Miktarı", "En Yüksek Aylık Ortalama Yağış Miktarı"):
-                          _mgm_aylik_url_rapor = _yr.get("mgm_aylik_url", "")
-                          if _mgm_aylik_url_rapor:
-                              _p = doc.add_paragraph()
-                              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                              _r = _p.add_run("MGM kaynağı: ")
-                              _r.font.size = Pt(8.5)
-                              _r2 = _p.add_run("Aylık yağış değerlerini görmek için tıklayın")
-                              _r2.font.size = Pt(8.5)
-                              _r2.font.color.rgb = RGBColor(0, 0, 255)
-                              _r2.underline = True
-                              _hyperlink = OxmlElement("w:hyperlink")
-                              _hyperlink.set(qn("r:id"), doc.part.relate_to(_mgm_aylik_url_rapor, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True))
-                              _r2._r.getparent().remove(_r2._r)
-                              _hyperlink.append(_r2._r)
-                              _p._p.append(_hyperlink)
-
+  
+                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+  
+                          # Seçilen ili güvenilir biçimde eşleştir:
+                          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
+                          def _il_karsilastirma_adi(_metin):
+                              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
+                              return _x.casefold()
+  
+                          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
+  
+                          for _il, _deger, _tarih, _url in _mgm_81:
+                              _cells = _mgm_tbl.add_row().cells
+                              _is_secili_il = (
+                                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
+                                  and bool(_secili_mgm_il_karsilastirma)
+                              )
+  
+                              _cells[0].text = _il
+                              _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
+                              _cells[2].text = _tarih or "-"
+  
+                              for _cell in _cells:
+                                  _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                                  for _p in _cell.paragraphs:
+                                      _p.alignment = (
+                                          WD_ALIGN_PARAGRAPH.CENTER
+                                          if _cell is not _cells[0]
+                                          else WD_ALIGN_PARAGRAPH.LEFT
+                                      )
+                                      for _r in _p.runs:
+                                          _r.font.size = Pt(8.5)
+  
+                                  # Projede seçilen il satırı sarı renkle vurgulanır.
+                                  if _is_secili_il:
+                                      _tcPr = _cell._tc.get_or_add_tcPr()
+                                      _shd = _tcPr.find(qn("w:shd"))
+                                      if _shd is None:
+                                          _shd = OxmlElement("w:shd")
+                                          _tcPr.append(_shd)
+                                      _shd.set(qn("w:fill"), "FFF2CC")
+  
+                                      # Seçilen ilin okunabilirliği için satır yazıları kalın.
+                                      for _p in _cell.paragraphs:
+                                          for _r in _p.runs:
+                                              _r.bold = True
+  
+                              # Seçilen ilin yanına raporda açık bir işaret de koy.
+                              if _is_secili_il:
+                                  _cells[0].text = f"{_il}  ← SEÇİLEN İL"
+                                  for _p in _cells[0].paragraphs:
+                                      _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                                      for _r in _p.runs:
+                                          _r.bold = True
+  
             doc.add_paragraph(
                 "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
                 "İllerimize Ait Genel İstatistiki Veriler. "
@@ -1508,14 +1545,57 @@ if _rapor_olustur_sidebar:
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
             if _hidrolik_tablo:
+                # Hidrolik kontrol sonuçlarını raporda paragraf yerine düzenli bir tablo olarak göster.
+                # Böylece DN, kapasite, hız ve uygunluk bilgileri karşılaştırmalı ve okunabilir olur.
+                from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
+                from docx.enum.table import WD_TABLE_ALIGNMENT as _WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT as _WD_CELL_VERTICAL_ALIGNMENT
+                from docx.oxml import OxmlElement as _OxmlElement
+                from docx.oxml.ns import qn as _qn
+
                 doc.add_paragraph("Kontrol edilen çaplar:")
+                _hidro_tablo = doc.add_table(rows=1, cols=5)
+                _hidro_tablo.alignment = _WD_TABLE_ALIGNMENT.CENTER
+                _hidro_tablo.style = "Table Grid"
+                _hdr = _hidro_tablo.rows[0].cells
+                _basliklar = [
+                    "Boru Çapı",
+                    "Tasarım Kapasitesi (L/s)",
+                    "Manning Kapasitesi (L/s)",
+                    "Manning Hızı (m/s)",
+                    "Durum",
+                ]
+                for _i, _baslik in enumerate(_basliklar):
+                    _hdr[_i].text = _baslik
+                    _hdr[_i].vertical_alignment = _WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    for _par in _hdr[_i].paragraphs:
+                        _par.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+                        for _run in _par.runs:
+                            _run.bold = True
+
                 for _x in _hidrolik_tablo:
-                    doc.add_paragraph(
-                        f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
-                        f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
-                        f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
-                        f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
-                    )
+                    _row = _hidro_tablo.add_row().cells
+                    _durum = "UYGUN" if _x.get("uygun") else "YETERSİZ"
+                    _degerler = [
+                        f"DN {_x.get('dn', 0)}",
+                        f"{_x.get('q_kapasite_lps', 0):.2f}",
+                        f"{_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f}",
+                        f"{_x.get('hiz_ms', 0):.2f}",
+                        _durum,
+                    ]
+                    for _i, _deger in enumerate(_degerler):
+                        _row[_i].text = _deger
+                        _row[_i].vertical_alignment = _WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                        for _par in _row[_i].paragraphs:
+                            _par.alignment = _WD_ALIGN_PARAGRAPH.CENTER
+
+                # Durum sütunundaki sonucu vurgula; tablo çizgileri korunur.
+                for _row in _hidro_tablo.rows[1:]:
+                    _durum = _row.cells[4].text.strip()
+                    for _run in _row.cells[4].paragraphs[0].runs:
+                        _run.bold = True
+
+                # Tablo genişliğinin sayfa içinde dengeli kalması için autofit kullan.
+                _hidro_tablo.autofit = True
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
@@ -2985,3 +3065,4 @@ if st.session_state.get("_rapor_hazir_docx_v134"):
 
 
 # SAYFA SONU ANKORU
+st.markdown('<div id="sayfa_sonu"></div>', unsafe_allow_html=True)
