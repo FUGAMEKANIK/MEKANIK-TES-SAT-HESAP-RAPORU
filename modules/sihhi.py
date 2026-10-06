@@ -2585,6 +2585,10 @@ with _t_sihhi:
   
               hidrofor_sekme_bilgileri = []
               hidrofor_hesap_kayitlari = []
+              # Hiç hidrofor seçilmediğinde aşağıdaki ortak hesap döngüsünün
+              # NameError vermemesi için sekme listelerini boş başlat.
+              hidrofor_tabs = []
+              hidrofor_sekme_etiketleri = []
               if hidrofor_tanimlari:
                   # Program ekranındaki sekmeler kısa kodlarla gösterilir.
                   # Rapor başlıkları ise aşağıdaki hidrofor_tanimlari üzerinden tam açılımıyla yazılır.
