@@ -2855,7 +2855,10 @@ if _rapor_olustur_sidebar:
                       ).italic = True
 
                       _pk = doc.add_paragraph()
-                      _rk = _pk.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
+                      _rk = _pk.add_run(
+                          "Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; "
+                          "L/dak – litre/dakika; kPa – kilopaskal"
+                      )
                       _rk.italic = True
 
                   # 7.4 Hidrant Sistemi
@@ -2901,9 +2904,6 @@ if _rapor_olustur_sidebar:
                       _src74.add_run(
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 95: Hidrant sistemi."
                       ).italic = True
-                      _pk74 = doc.add_paragraph()
-                      _rk74 = _pk74.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
-                      _rk74.italic = True
 
                       # 7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
                       doc.add_heading("7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ", level=4)
