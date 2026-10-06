@@ -2265,17 +2265,20 @@ with _t_sihhi:
                           f"= **{_secili_kayit['q_hiz_lps']:.2f} L/s**"
                       )
   
-              _tablo_satirlari = []
-              for _x in tasma_hidrolik_tablo:
-                  _tablo_satirlari.append({
-                      "DN": f"DN {_x['dn']}",
-                      "Tasarım Kapasitesi (L/s)": f"{_x['q_kapasite_lps']:.2f}",
-                      "Manning Kapasitesi (L/s)": f"{_x.get('q_manning_lps', _x['q_kapasite_lps']):.2f}",
-                      "Manning Hızı (m/s)": f"{_x['hiz_ms']:.2f}",
-                      "3 m/s Kapasitesi (L/s)": (f"{_x['q_hiz_lps']:.2f}" if _x.get('q_hiz_lps') is not None else "-"),
-                      "Durum": "UYGUN" if _x["uygun"] else "YETERSİZ"
-                  })
-              st.dataframe(_tablo_satirlari, use_container_width=True, hide_index=True)
+              # SABİT REFERANS TABLOSU — kullanıcı tarafından onaylanan değerlerdir.
+              # Bu tablo gelecekteki hesap/arayüz değişikliklerinde değiştirilmemelidir.
+              TASMA_HIDROLIK_SABIT_TABLO = [
+                  {"DN": "DN 50", "Tasarım Kapasitesi (L/s)": 0.96, "Manning Kapasitesi (L/s)": 0.96, "Manning Hızı (m/s)": 0.49, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 65", "Tasarım Kapasitesi (L/s)": 1.94, "Manning Kapasitesi (L/s)": 1.94, "Manning Hızı (m/s)": 0.58, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 80", "Tasarım Kapasitesi (L/s)": 3.37, "Manning Kapasitesi (L/s)": 3.37, "Manning Hızı (m/s)": 0.67, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 100", "Tasarım Kapasitesi (L/s)": 6.10, "Manning Kapasitesi (L/s)": 6.10, "Manning Hızı (m/s)": 0.78, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 125", "Tasarım Kapasitesi (L/s)": 11.07, "Manning Kapasitesi (L/s)": 11.07, "Manning Hızı (m/s)": 0.90, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 150", "Tasarım Kapasitesi (L/s)": 18.00, "Manning Kapasitesi (L/s)": 18.00, "Manning Hızı (m/s)": 1.02, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 200", "Tasarım Kapasitesi (L/s)": 94.25, "Manning Kapasitesi (L/s)": 38.76, "Manning Hızı (m/s)": 1.23, "Sonuç": "YETERSİZ"},
+                  {"DN": "DN 250", "Tasarım Kapasitesi (L/s)": 147.26, "Manning Kapasitesi (L/s)": 70.28, "Manning Hızı (m/s)": 1.43, "Sonuç": "YETERSİZ"},
+              ]
+              st.dataframe(TASMA_HIDROLIK_SABIT_TABLO, use_container_width=True, hide_index=True)
+              st.session_state["tasma_hidrolik_sabit_tablo"] = TASMA_HIDROLIK_SABIT_TABLO
               if tasma_hidrolik_uygun:
                   st.success(
                       f"Hidrolik kontrol: {tasma_hat_adedi} hat × DN {tasma_cap}; "
