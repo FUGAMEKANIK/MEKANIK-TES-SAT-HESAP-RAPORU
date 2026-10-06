@@ -1710,6 +1710,30 @@ with _t_sihhi:
                       )
                   if _mgm_yagis_mm is not None:
                       st.caption(f"Kaynak: MGM Resmi İklim İstatistikleri — {_mgm_yagis_url}")
+
+                  # MGM METEOROLOJİK VERİ TABLOSU — yalnızca projede seçilen il.
+                  # 81 ilin tamamı burada gösterilmez.
+                  st.markdown(f"**MGM Meteorolojik Veriler — {secilen_il}**")
+                  _mgm_satirlar = [{
+                      "İl": secilen_il,
+                      "Günlük En Yüksek Yağış (mm)": (
+                          f"{_mgm_yagis_mm:.1f}" if _mgm_yagis_mm is not None else "Veri alınamadı"
+                      ),
+                      "Gerçekleşme Tarihi": _mgm_yagis_tarih or "-",
+                  }]
+                  st.dataframe(_mgm_satirlar, use_container_width=True, hide_index=True)
+                  if _mgm_aylik:
+                      _mgm_aylik_tablo = [
+                          {
+                              "İl": secilen_il,
+                              "Ay": _ay,
+                              "Aylık Ortalama Yağış (mm)": round(float(_deger), 1),
+                          }
+                          for _ay, _deger in _mgm_aylik.items()
+                      ]
+                      st.dataframe(_mgm_aylik_tablo, use_container_width=True, hide_index=True)
+                      if _mgm_aylik_periyot:
+                          st.caption(f"MGM ölçüm periyodu: {_mgm_aylik_periyot}")
               with c3:
                   yagmur_akis_katsayisi = st.number_input(
                       "Akış katsayısı C", min_value=0.0, max_value=1.0,
