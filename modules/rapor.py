@@ -3081,30 +3081,42 @@ if _rapor_olustur_sidebar:
                           _r_grup = ""; _r_liste = []
 
                       _r_adet = int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1)
-                      _r_oto_cap, _r_oto_aralik = _r_cap_esle(_r_liste, _r_adet)
-                      _r_kaynak = str(st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Otomatik"))
+
+                      _r_grup_map = {
+                          "HAFİF TEHLİKE": _r_cap_hafif,
+                          "ORTA TEHLİKE": _r_cap_orta,
+                          "YÜKSEK TEHLİKE": _r_cap_yuksek,
+                      }
+                      _r_secili_gruplar = list(st.session_state.get("yangin_75_sprinkler_secili_cap_tablolari", []) or [])
+                      if not _r_secili_gruplar and _r_grup:
+                          _r_secili_gruplar = [_r_grup]
+
+                      # Kullanıcı hangi tabloları işaretlediyse yalnızca onlar rapora alınır.
+                      # Çap hesabında ilk işaretli sprinkler tablosu esas alınır.
+                      _r_aktif_grup = _r_secili_gruplar[0] if _r_secili_gruplar else ""
+                      _r_aktif_liste = _r_grup_map.get(_r_aktif_grup, [])
+                      _r_oto_cap, _r_oto_aralik = _r_cap_esle(_r_aktif_liste, _r_adet)
                       _r_final_cap = str(st.session_state.get("yangin_75_sprinkler_cap_final", "") or "")
                       if not _r_final_cap:
                           _r_final_cap = _r_oto_cap
-                      _r_manual_group = str(st.session_state.get("yangin_75_sprinkler_manuel_grup", "") or "")
+                      _r_kaynak = str(st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Seçilmedi"))
 
                       _p_sel = doc.add_paragraph()
                       _r = _p_sel.add_run("Seçilen sprinkler boru çapı: ")
                       _r.bold = True
                       _p_sel.add_run(
-                          f"{_r_final_cap or 'Seçilmedi'} — Tehlike grubu: {_r_grup or 'Seçilmedi'}; "
+                          f"{_r_final_cap or 'Seçilmedi'} — Çap hesabında kullanılan tablo: {_r_aktif_grup or 'Seçilmedi'}; "
                           f"Yangın tehlike sınıfı: {_r_sinif or 'Seçilmedi'}; Sprinkler adedi: {_r_adet}; "
-                          f"Seçim yöntemi: {_r_kaynak}."
+                          f"Seçim kaynağı: {_r_kaynak}."
                       )
 
-                      # 7.2'deki etkin tehlike sınıfına karşılık gelen çap tablosu
-                      # raporda otomatik olarak seçilir ve yalnızca bu tablo aktarılır.
-                      _r_cap_tables = [(
-                          _r_grup, _r_liste
-                      )] if _r_grup and _r_liste else []
-                      for _r_title, _r_rows in _r_cap_tables:
+                      # Kullanıcı tarafından işaretlenen tüm sprinkler çap tablolarını rapora aktar.
+                      for _r_title in _r_secili_gruplar:
+                          _r_rows = _r_grup_map.get(_r_title, [])
+                          if not _r_rows:
+                              continue
                           _pt = doc.add_paragraph()
-                          _pt.add_run(f"OTOMATİK SEÇİLEN {_r_title} ÇAP TABLOSU").bold = True
+                          _pt.add_run(f"{_r_title} ÇAP TABLOSU").bold = True
                           _tt = doc.add_table(rows=1, cols=2)
                           _tt.style = "Table Grid"
                           _tt.rows[0].cells[0].text = "BORU ÇAPI"
@@ -3117,18 +3129,15 @@ if _rapor_olustur_sidebar:
                               _cc = _tt.add_row().cells
                               _cc[0].text = _cap
                               _cc[1].text = _aralik
-                              if _cap == _r_final_cap:
+                              if _cap == _r_final_cap and _r_title == _r_aktif_grup:
                                   for _cell in _cc:
                                       _tcPr = _cell._tc.get_or_add_tcPr()
                                       _shd = OxmlElement("w:shd")
                                       _shd.set(qn("w:fill"), "E2F0D9")
                                       _tcPr.append(_shd)
-                                      for _pr in _cell.paragraphs:
-                                          for _rr in _pr.runs:
-                                              _rr.bold = True
 
                       _ptd = doc.add_paragraph()
-                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU — HER ZAMAN AKTİF").bold = True
+                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU").bold = True
                       _td = doc.add_table(rows=1, cols=2)
                       _td.style = "Table Grid"
                       _td.rows[0].cells[0].text = "ANA HAT"
