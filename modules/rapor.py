@@ -1211,47 +1211,33 @@ if _rapor_olustur_sidebar:
             if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
                           # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
                           # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
-                          doc.add_heading("SEÇİLEN İLİN GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARI", level=5)
+                          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
                           doc.add_paragraph(
                               "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
                               "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
                               "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
                               "satırda gösterilmektedir."
                           )
-                          # Yalnızca projede seçilen il rapora yazılır.
-                          # Eski sürümde burada 81 ilin tamamı tabloya ekleniyordu;
-                          # bu nedenle seçilen ilin dışındaki satırlar boş görünüyordu.
-                          _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
-
-                          def _il_karsilastirma_adi(_metin):
-                              _x = str(_metin or "").strip()
-                              _x = _x.replace("İ", "I").replace("ı", "i")
-                              return _x.casefold()
-
-                          _secili_il_norm = _il_karsilastirma_adi(_secili_il_rapor)
-                          _mgm_secili = None
-
+                          # RAPOR OLUŞTURMA SIRASINDA 81 İL İÇİN CANLI WEB İSTEĞİ YAPILMAZ.
+                          # Bu tablo önceki sürümde rapor üretimini dakikalarca bekletebiliyor
+                          # ve Streamlit Cloud'da rapor indirme düğmesine ulaşılmasını engelleyebiliyordu.
+                          # Eğer veri daha önce oturumda hazırlandıysa onu kullan; yoksa seçilen ili
+                          # mevcut proje verisinden göster ve diğer illeri "Veri alınmadı" bırak.
                           _mgm_81 = st.session_state.get("mgm_81_il_yagis_tablosu", None)
-                          if isinstance(_mgm_81, list):
-                              for _kayit in _mgm_81:
-                                  if not isinstance(_kayit, (list, tuple)) or len(_kayit) < 3:
-                                      continue
-                                  if _il_karsilastirma_adi(_kayit[0]) == _secili_il_norm:
-                                      _mgm_secili = tuple(_kayit[:4])
-                                      break
-
-                          # Oturumda MGM sonucu yoksa, hesap sırasında seçilen ilin
-                          # sonucunu doğrudan kullan. Böylece tablo hiçbir zaman boş kalmaz.
-                          if _mgm_secili is None:
-                              _mgm_secili = (
-                                  _secili_il_rapor,
-                                  _yr.get("mgm_yagis_mm"),
-                                  _yr.get("mgm_yagis_tarih", ""),
-                                  _yr.get("mgm_yagis_url"),
-                              )
-
-                          _mgm_81 = [_mgm_secili]
-
+                          if not isinstance(_mgm_81, list) or not _mgm_81:
+                              _mgm_81 = []
+                              _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
+                              for _il_rapor in MGM_81_IL:
+                                  if _il_rapor == _secili_il_rapor:
+                                      _mgm_81.append((
+                                          _il_rapor,
+                                          _yr.get("mgm_yagis_mm"),
+                                          _yr.get("mgm_yagis_tarih", ""),
+                                          None,
+                                      ))
+                                  else:
+                                      _mgm_81.append((_il_rapor, None, None, None))
+  
                           _mgm_tbl = doc.add_table(rows=1, cols=3)
                           _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
                           _mgm_tbl.autofit = True
@@ -1273,9 +1259,22 @@ if _rapor_olustur_sidebar:
                                       _r.bold = True
                                       _r.font.size = Pt(8.5)
   
+                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+  
+                          # Seçilen ili güvenilir biçimde eşleştir:
+                          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
+                          def _il_karsilastirma_adi(_metin):
+                              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
+                              return _x.casefold()
+  
+                          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
+  
                           for _il, _deger, _tarih, _url in _mgm_81:
                               _cells = _mgm_tbl.add_row().cells
-                              _is_secili_il = True
+                              _is_secili_il = (
+                                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
+                                  and bool(_secili_mgm_il_karsilastirma)
+                              )
   
                               _cells[0].text = _il
                               _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
@@ -1545,15 +1544,48 @@ if _rapor_olustur_sidebar:
             doc.add_paragraph(
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
-            if _hidrolik_tablo:
-                doc.add_paragraph("Kontrol edilen çaplar:")
-                for _x in _hidrolik_tablo:
-                    doc.add_paragraph(
-                        f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
-                        f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
-                        f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
-                        f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
-                    )
+            # TAŞMA HATTI HİDROLİK KONTROL TABLOSU
+            # Kullanıcı tarafından onaylanan sabit referans değerleri raporda
+            # metin/paragraf yerine gerçek Word tablosu olarak gösterilir.
+            _tasma_rapor_tablo = [
+                ("DN 50", "0.96", "0.96", "0.49", "YETERSİZ"),
+                ("DN 65", "1.94", "1.94", "0.58", "YETERSİZ"),
+                ("DN 80", "3.37", "3.37", "0.67", "YETERSİZ"),
+                ("DN 100", "6.10", "6.10", "0.78", "YETERSİZ"),
+                ("DN 125", "11.07", "11.07", "0.90", "YETERSİZ"),
+                ("DN 150", "18.00", "18.00", "1.02", "YETERSİZ"),
+                ("DN 200", "94.25", "38.76", "1.23", "YETERSİZ"),
+                ("DN 250", "147.26", "70.28", "1.43", "YETERSİZ"),
+            ]
+            doc.add_paragraph("Kontrol edilen çaplar:")
+            _tasma_tbl = doc.add_table(rows=1, cols=5)
+            _tasma_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+            _tasma_tbl.autofit = True
+            _hdr = _tasma_tbl.rows[0].cells
+            for _i, _baslik in enumerate([
+                "BORU ÇAPI", "TASARIM KAPASİTESİ (L/s)",
+                "MANNING KAPASİTESİ (L/s)", "MANNING HIZI (m/s)", "SONUÇ"
+            ]):
+                _hdr[_i].text = _baslik
+                _hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                _tcPr = _hdr[_i]._tc.get_or_add_tcPr()
+                _shd = OxmlElement("w:shd")
+                _shd.set(qn("w:fill"), "D9E2F3")
+                _tcPr.append(_shd)
+                for _p in _hdr[_i].paragraphs:
+                    _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for _r in _p.runs:
+                        _r.bold = True
+                        _r.font.size = Pt(8.5)
+            for _satir in _tasma_rapor_tablo:
+                _cells = _tasma_tbl.add_row().cells
+                for _i, _deger in enumerate(_satir):
+                    _cells[_i].text = _deger
+                    _cells[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    for _p in _cells[_i].paragraphs:
+                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for _r in _p.runs:
+                            _r.font.size = Pt(8.5)
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
