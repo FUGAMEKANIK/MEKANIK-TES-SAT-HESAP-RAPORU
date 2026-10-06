@@ -353,7 +353,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 ("bolum_724", "rapor_bolum_724", "7.2.4 Tasarım Kriterleri"),
                 ("bolum_725", "rapor_bolum_725", "7.2.5 Tasarım Debisi"),
             ]),
-            ("bolum_73", "rapor_bolum_73", "7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", []),
+            ("bolum_73", "rapor_bolum_73", "7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI", []),
             ("bolum_74", "rapor_bolum_74", "7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", []),
             ("bolum_75", "rapor_bolum_75", "7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", []),
             ("bolum_76", "rapor_bolum_76", "7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", []),
@@ -392,12 +392,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
             else:
                 st.subheader(_baslik)
 
-            if _key == "bolum_71":
+            if _baslik.startswith("7.1 "):
                 # 7.1 alt maddeleri tek bir hiyerarşi içinde açılır/kapanır.
                 # 7.1.1 ve 7.1.2 madde seçimleri; 7.1.3 ise standart kütüphanesi içerir.
                 st.caption("7.1 alt maddeleri ayrı ayrı açılıp kapatılabilir. İşaretli maddeler rapora aktarılır.")
 
-                for _idx71, (_baslik71, _maddeler71, _key71, _rrk71) in enumerate(_yangin_71_gruplari, start=1):
+                for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
                     with st.expander(_baslik71, expanded=False):
                         c1, c2, c3 = st.columns([1, 1, 2])
                         with c1:
@@ -409,9 +409,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Eski kayıtlı projelerde widget anahtarları session_state içine
                             # taşınabildiği için explicit key kullanmıyoruz; Streamlit burada
                             # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
+                            _71_tum_sec_key = f"yangin_71_{_key71}_tum_sec_v3"
+                            _71_tum_kaldir_key = f"yangin_71_{_key71}_tum_kaldir_v3"
                             if st.button(
                                 f"✓ TÜMÜNÜ SEÇ — {_key71}",
-                                key=f"yangin_71_tumunu_sec_btn_{_idx71}",
+                                key=_71_tum_sec_key,
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, True)
@@ -419,7 +421,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with c2:
                             if st.button(
                                 f"✕ TÜMÜNÜ KALDIR — {_key71}",
-                                key=f"yangin_71_tumunu_kaldir_btn_{_idx71}",
+                                key=_71_tum_kaldir_key,
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, False)
@@ -821,19 +823,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.2 GENEL BİNA BİLGİLERİ ve seçilen etkin yangın tehlike sınıfı
                 # bu bölümün ortak veri kaynağıdır.
                 # ------------------------------------------------------------------
-                with st.expander("7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
+                with st.expander("7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
                     st.markdown(
                         '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
-                        "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
+                        "BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
                         unsafe_allow_html=True,
                     )
-                    st.caption(
-                        "7.3 bölümü, 7.2 GENEL BİNA BİLGİLERİ ve seçilen yangın tehlike sınıfından "
-                        "otomatik olarak veri alır. Bu bölümde belirlenen Ek-8/C değerleri ileride "
-                        "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIMI VE HESAPLAMALARI bölümünde "
-                        "yangın suyu deposu hesabının veri kaynağı olarak kullanılacaktır."
-                    )
-
                     _ui_73_rapor_key = "yangin_73_rapor_ui"
                     st.session_state.setdefault(_ui_73_rapor_key, bool(st.session_state.get("rapor_bolum_73", True)))
                     st.checkbox(
@@ -846,7 +841,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                     st.markdown(
                         '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
-                        "7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI</div>",
+                        "7.3.1 BİNA İÇİ HORTUM SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
                         unsafe_allow_html=True,
                     )
                     _yd_esaslari = [
@@ -869,7 +864,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     # --------------------------------------------------------------
                     st.markdown(
                         '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:14px;">'
-                        "7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ</div>",
+                        "7.3.2 BİNA İÇİ HORTUM SİSTEMİ TASARIM DEBİLERİ TESPİTİ</div>",
                         unsafe_allow_html=True,
                     )
                     st.write(
