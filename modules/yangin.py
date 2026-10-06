@@ -409,11 +409,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Eski kayıtlı projelerde widget anahtarları session_state içine
                             # taşınabildiği için explicit key kullanmıyoruz; Streamlit burada
                             # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
-                            _71_tum_sec_key = f"yangin_71_{_key71}_tum_sec_v3"
-                            _71_tum_kaldir_key = f"yangin_71_{_key71}_tum_kaldir_v3"
                             if st.button(
                                 f"✓ TÜMÜNÜ SEÇ — {_key71}",
-                                key=_71_tum_sec_key,
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, True)
@@ -421,7 +418,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with c2:
                             if st.button(
                                 f"✕ TÜMÜNÜ KALDIR — {_key71}",
-                                key=_71_tum_kaldir_key,
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, False)
