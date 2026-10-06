@@ -14,7 +14,7 @@ with _t_sihhi:
       st.markdown('<div id="bolum_6"></div>', unsafe_allow_html=True)
       st.header("6. SIHHİ TESİSAT")
       st.caption("Rapor seçimi: " + ("Dahil" if bolum_6_aktif else "Hariç"))
-      with st.expander("6.1 SIHHİ TESİSAT ÖN BİLGİLER", expanded=True):
+      with st.expander("6.1 SIHHİ TESİSAT ÖN BİLGİLER", expanded=False):
         if bolum_61_aktif:
           st.markdown('<div id="bolum_61"></div>', unsafe_allow_html=True)
           st.subheader("6.1 SIHHİ TESİSAT ÖN BİLGİLER")
@@ -223,7 +223,7 @@ with _t_sihhi:
           )
   
       # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-      with st.expander("6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=True):
+      with st.expander("6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=False):
         st.markdown('<div id="bolum_611"></div>', unsafe_allow_html=True)
         st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini Girdileri")
   
@@ -301,7 +301,7 @@ with _t_sihhi:
 
 
         # ---------------------------------------------------------------------------
-        with st.expander("6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=True):
+        with st.expander("6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ", expanded=False):
           # 6.1.1 & 6.2.1 TABLOLAR
           # ---------------------------------------------------------------------------
           st.subheader("6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini")
@@ -349,7 +349,7 @@ with _t_sihhi:
   
   
           # ---------------------------------------------------------------------------
-        with st.expander("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ", expanded=True):
+        with st.expander("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ", expanded=False):
           # 6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ VE ÖZEL HESAP MODÜLÜ
           # ---------------------------------------------------------------------------
           st.markdown('<div id="bolum_622"></div>', unsafe_allow_html=True)
@@ -1040,7 +1040,7 @@ with _t_sihhi:
           )
   
           # ---------------------------------------------------------------------------
-        with st.expander("6.2.3 YAĞ AYIRICI SEÇİMLERİ", expanded=True):
+        with st.expander("6.2.3 YAĞ AYIRICI SEÇİMLERİ", expanded=False):
           # 6.2.3 YAĞ AYIRICI SEÇİMLERİ — EXCEL HESAP MODELİ
           # ---------------------------------------------------------------------------
           if bolum_623_aktif:
@@ -1211,7 +1211,7 @@ with _t_sihhi:
   
       if bolum_63_aktif:
         # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-        with st.expander("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", expanded=True):
+        with st.expander("6.3.1 KULLANMA SOĞUK SUYU DEPOSU SEÇİMİ", expanded=False):
           if bolum_631_aktif:
               st.markdown('<div id="bolum_63"></div>', unsafe_allow_html=True)
               st.header("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ")
@@ -2509,7 +2509,7 @@ with _t_sihhi:
           # SAYFA ORTA ANKORU: sağdaki "Ortaya Git" butonu buraya gelir.
           st.markdown('<div id="sayfa_orta"></div>', unsafe_allow_html=True)
   
-        with st.expander("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", expanded=True):
+        with st.expander("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", expanded=False):
           if bolum_632_aktif:
               st.markdown('<div id="bolum_632"></div>', unsafe_allow_html=True)
               st.subheader(_63_dinamik_baslik("rapor_bolum_632"))
@@ -3659,7 +3659,7 @@ with _t_sihhi:
     sicak_su_gunluk_toplam_litre = 0.0
     sicak_su_yapi_tipi = "Bağımsız Ev"
 
-    with st.expander("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", expanded=True):
+    with st.expander("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", expanded=False):
       if bolum_633_aktif:
           st.markdown('<div id="bolum_633"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_633")}")
@@ -4726,7 +4726,7 @@ with _t_sihhi:
                     return _v
         return 0.0
 
-    with st.expander("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", expanded=True):
+    with st.expander("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", expanded=False):
       if bolum_635_aktif:
           st.markdown('<div id="bolum_635"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik('rapor_bolum_635')}")
@@ -4887,7 +4887,7 @@ with _t_sihhi:
   
           # ---------------------------------------------------------------------------
     re_sirkulasyon_pompa_sonucu = {}
-    with st.expander("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", expanded=True):
+    with st.expander("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", expanded=False):
       if bolum_634_aktif:
           st.markdown('<div id="bolum_634"></div>', unsafe_allow_html=True)
           st.markdown(f"### • {_63_dinamik_baslik("rapor_bolum_634")}")
