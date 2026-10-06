@@ -1182,6 +1182,131 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
                     )
+
+            elif _baslik.startswith("7.5 "):
+                # --------------------------------------------------------------
+                # 7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ
+                # --------------------------------------------------------------
+                with st.expander("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                    st.markdown(
+                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
+                        "SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _ui_75_rapor_key = "yangin_75_rapor_ui"
+                    st.session_state.setdefault(_ui_75_rapor_key, bool(st.session_state.get("rapor_bolum_75", True)))
+                    st.checkbox(
+                        "7.5 rapora eklensin",
+                        key=_ui_75_rapor_key,
+                        on_change=lambda: st.session_state.__setitem__(
+                            "rapor_bolum_75", bool(st.session_state.get(_ui_75_rapor_key, True))
+                        ),
+                    )
+
+                    # ----------------------------------------------------------
+                    # 7.5.1 - BYKHY MADDE 96
+                    # ----------------------------------------------------------
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
+                        "7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _sprinkler_esaslari = [
+                        ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
+                        ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
+                        ("3", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su sprey ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
+                        ("4", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
+                        ("5", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
+                        ("6", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
+                        ("7", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
+                        ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
+                        ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
+                        ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
+                    ]
+                    for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
+                        st.markdown(f"**{_no}. {_baslik_s}**")
+                        st.write(_metin_s)
+
+                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
+
+                    # ----------------------------------------------------------
+                    # 7.5.2 - BYKHY EK-8/B
+                    # ----------------------------------------------------------
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
+                        "7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(
+                        "BYKHY Ek-8/B'ye göre yağmurlama sistemi tasarım yoğunluğu ve tasarım alanı, bina tehlike sınıfına göre aşağıdaki tablodan belirlenir. "
+                        "Depolama alanları ve farklı özellikteki kullanım alanları için TS EN 12845 esas alınır."
+                    )
+
+                    _ek8b_sprinkler_verileri = [
+                        ("Düşük Tehlike", "2,25", "84", "—"),
+                        ("Orta Tehlike-1", "5,0", "72", "90"),
+                        ("Orta Tehlike-2", "5,0", "144", "180"),
+                        ("Orta Tehlike-3", "5,0", "216", "270"),
+                        ("Orta Tehlike-4", "5,0", "360", "—"),
+                        ("Yüksek Tehlike-1", "7,7", "260", "325"),
+                        ("Yüksek Tehlike-2", "10,0", "260", "325"),
+                        ("Yüksek Tehlike-3", "12,5", "260", "325"),
+                        ("Yüksek Tehlike-4", "Yoğun su", "—", "—"),
+                    ]
+                    _etkin_75 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                    if not _etkin_75:
+                        _etkin_75 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                    _s75 = _etkin_75.lower().replace("–", "-").replace(" ", "")
+
+                    def _ek8b_sprinkler_esle(_sinif):
+                        _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
+                        for _kayit in _ek8b_sprinkler_verileri:
+                            _etiket = _kayit[0].lower().replace("–", "-").replace(" ", "")
+                            if _s == _etiket:
+                                return _kayit[0]
+                        return ""
+
+                    _ek8b_sprinkler_secili = _ek8b_sprinkler_esle(_etkin_75)
+                    _t75h = st.columns([2.0, 1.6, 1.55, 1.55])
+                    for _c, _txt in zip(_t75h, [
+                        "Tehlike Sınıfı", "Tasarım Yoğunluğu (mm/dak)",
+                        "Koruma Alanı — Islak veya Ön Etkili (m²)",
+                        "Koruma Alanı — Kuru veya Değişken (m²)"
+                    ]):
+                        _c.markdown(f"**{_txt}**")
+                    for _grup, _yog, _islak, _kuru in _ek8b_sprinkler_verileri:
+                        _sec = _grup == _ek8b_sprinkler_secili
+                        _bg = "#FFF2CC" if _sec else "#FFFFFF"
+                        _cols = st.columns([2.0, 1.6, 1.55, 1.55])
+                        for _c, _val in zip(_cols, [_grup, _yog, _islak, _kuru]):
+                            _c.markdown(
+                                f'<div style="background-color:{_bg}; border:1px solid #D9D9D9; padding:7px 8px; min-height:32px;">{_val}</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                    if _ek8b_sprinkler_secili:
+                        _sec75 = next(x for x in _ek8b_sprinkler_verileri if x[0] == _ek8b_sprinkler_secili)
+                        st.session_state["yangin_75_ek8b_tehlike_sinifi"] = _sec75[0]
+                        st.session_state["yangin_75_ek8b_tasarim_yogunlugu"] = _sec75[1]
+                        st.session_state["yangin_75_ek8b_islak_on_etkili_alan"] = _sec75[2]
+                        st.session_state["yangin_75_ek8b_kuru_degisken_alan"] = _sec75[3]
+                        st.markdown(
+                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
+                            f'<b>7.2’den otomatik seçilen değer:</b> {_sec75[0]} → Tasarım yoğunluğu: <b>{_sec75[1]} mm/dak</b> → Islak/ön etkili alan: <b>{_sec75[2]} m²</b> → Kuru/değişken alan: <b>{_sec75[3]} m²</b>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için Ek-8/B tasarım değeri otomatik seçilemedi.")
+
+                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — Ek-8/B: Yağmurlama Sisteminde Tasarım Yoğunlukları.")
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
+                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
+                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
+                        unsafe_allow_html=True,
+                    )
+
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
             if not _baslik.startswith("7.1") and not _baslik.startswith("7.2"):
