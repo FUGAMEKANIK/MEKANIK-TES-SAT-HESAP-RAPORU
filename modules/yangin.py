@@ -891,10 +891,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button(
-                                    "Maddeyi ekle",
-                                    key=f"{_liste_key}_submit"
-                                )
+                                _submit_madde = st.form_submit_button("Maddeyi ekle")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1071,10 +1068,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button(
-                                    "Maddeyi ekle",
-                                    key=f"{_liste_key}_submit"
-                                )
+                                _submit_madde = st.form_submit_button("Maddeyi ekle")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1088,6 +1082,104 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                     st.markdown(
                         '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik</i></div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    # --------------------------------------------------------------
+                    # 7.4.2 - HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
+                    # BYKHY Ek-8/C
+                    # --------------------------------------------------------------
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
+                        "7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(
+                        "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C'de, bina tehlike sınıfına göre "
+                        "hidrant sistemi için ilave edilecek su ihtiyaçları belirlenmiştir. Aşağıdaki tablo, 7.2 bölümünde "
+                        "seçilen etkin yangın tehlike sınıfına göre otomatik olarak seçim yapar. Ayrıca Madde 95/2 gereği "
+                        "hidrant sistemi dizayn debisinin en az 1.900 L/dak olması ve hidrant çıkışında 700 kPa basınç "
+                        "sağlanması gerektiği dikkate alınır."
+                    )
+
+                    _ek8c_hidrant_verileri = [
+                        ("Düşük tehlike", 400, 30),
+                        ("Orta Tehlike-1-2", 400, 60),
+                        ("Orta Tehlike-3-4", 1000, 60),
+                        ("Yüksek Tehlike", 1500, 90),
+                    ]
+                    _etkin_74 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                    if not _etkin_74:
+                        _etkin_74 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+
+                    def _ek8c_hidrant_grup_esle(_sinif):
+                        _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
+                        if _s.startswith("düşük"):
+                            return "Düşük tehlike"
+                        if _s.startswith("ortatehlike-1") or _s.startswith("ortatehlike-2"):
+                            return "Orta Tehlike-1-2"
+                        if _s.startswith("ortatehlike-3") or _s.startswith("ortatehlike-4"):
+                            return "Orta Tehlike-3-4"
+                        if _s.startswith("yüksek"):
+                            return "Yüksek Tehlike"
+                        return ""
+
+                    _ek8c_hidrant_secili_grup = _ek8c_hidrant_grup_esle(_etkin_74)
+                    _ek8c_hidrant_kayit = next(
+                        (x for x in _ek8c_hidrant_verileri if x[0] == _ek8c_hidrant_secili_grup),
+                        None,
+                    )
+
+                    st.markdown("**BYKHY Ek-8/C — Hidrant Sistemi İçin İlâve Edilecek Su İhtiyacı**")
+                    _hh = st.columns([2.5, 1.8, 1.1])
+                    for _c, _txt in zip(_hh, [
+                        "Bina Tehlike Sınıfı", "İlave Hidrant Debisi (L/dak)", "Süre (dak)"
+                    ]):
+                        _c.markdown(f"**{_txt}**")
+                    for _grup, _q_hidrant, _sure in _ek8c_hidrant_verileri:
+                        _sec = _grup == _ek8c_hidrant_secili_grup
+                        _bg = "#FFF2CC" if _sec else "#FFFFFF"
+                        _cols = st.columns([2.5, 1.8, 1.1])
+                        for _c, _val in zip(
+                            _cols,
+                            [_grup, f'{_q_hidrant:,}'.replace(',', '.'), _sure],
+                        ):
+                            _c.markdown(
+                                f'<div style="background-color:{_bg}; border:1px solid #D9D9D9; padding:7px 8px; min-height:32px;">{_val}</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                    if _ek8c_hidrant_kayit:
+                        _q_hidrant = int(_ek8c_hidrant_kayit[1])
+                        _sure_hidrant = int(_ek8c_hidrant_kayit[2])
+                        st.session_state["yangin_74_ek8c_grup"] = _ek8c_hidrant_kayit[0]
+                        st.session_state["yangin_74_ek8c_hidrant_debisi_ldak"] = _q_hidrant
+                        st.session_state["yangin_74_ek8c_hidrant_suresi_dak"] = _sure_hidrant
+
+                        st.markdown(
+                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
+                            f'<b>7.2’den otomatik seçilen değer:</b> {_ek8c_hidrant_kayit[0]} → Hidrant ilave debisi: <b>{_q_hidrant} L/dak</b> → Süre: <b>{_sure_hidrant} dk</b>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                        st.markdown(
+                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:8px;">'
+                            f'<b>Seçilen hidrant ilave debisi:</b> <b>{_q_hidrant} L/dak</b>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için hidrant ilave debisi otomatik seçilemedi.")
+
+                    st.caption(
+                        "Not: Ek-8/C değerleri hidrant sistemi için ilave edilecek su ihtiyacını gösterir. "
+                        "Hidrant sisteminin genel tasarımında BYKHY Madde 95/2'de belirtilen en az 1.900 L/dak dizayn debisi "
+                        "ve 700 kPa hidrant çıkış basıncı ayrıca dikkate alınacaktır."
+                    )
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:10px; padding:8px 0;"><i>'
+                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
+                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
                     )
 
