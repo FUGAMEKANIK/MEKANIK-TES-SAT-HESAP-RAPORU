@@ -3097,14 +3097,14 @@ if _rapor_olustur_sidebar:
                           f"Seçim yöntemi: {_r_kaynak}."
                       )
 
-                      _r_cap_tables = [
-                          ("HAFİF TEHLİKE", _r_cap_hafif),
-                          ("ORTA TEHLİKE", _r_cap_orta),
-                          ("YÜKSEK TEHLİKE", _r_cap_yuksek),
-                      ]
+                      # 7.2'deki etkin tehlike sınıfına karşılık gelen çap tablosu
+                      # raporda otomatik olarak seçilir ve yalnızca bu tablo aktarılır.
+                      _r_cap_tables = [(
+                          _r_grup, _r_liste
+                      )] if _r_grup and _r_liste else []
                       for _r_title, _r_rows in _r_cap_tables:
                           _pt = doc.add_paragraph()
-                          _pt.add_run(f"{_r_title} ÇAP TABLOSU").bold = True
+                          _pt.add_run(f"OTOMATİK SEÇİLEN {_r_title} ÇAP TABLOSU").bold = True
                           _tt = doc.add_table(rows=1, cols=2)
                           _tt.style = "Table Grid"
                           _tt.rows[0].cells[0].text = "BORU ÇAPI"
@@ -3117,7 +3117,7 @@ if _rapor_olustur_sidebar:
                               _cc = _tt.add_row().cells
                               _cc[0].text = _cap
                               _cc[1].text = _aralik
-                              if _cap == _r_final_cap and _r_title == _r_grup:
+                              if _cap == _r_final_cap:
                                   for _cell in _cc:
                                       _tcPr = _cell._tc.get_or_add_tcPr()
                                       _shd = OxmlElement("w:shd")
@@ -3128,7 +3128,7 @@ if _rapor_olustur_sidebar:
                                               _rr.bold = True
 
                       _ptd = doc.add_paragraph()
-                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU").bold = True
+                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU — HER ZAMAN AKTİF").bold = True
                       _td = doc.add_table(rows=1, cols=2)
                       _td.style = "Table Grid"
                       _td.rows[0].cells[0].text = "ANA HAT"
