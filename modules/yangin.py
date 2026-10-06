@@ -891,7 +891,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"{_liste_key}_submit")
+                                _submit_madde = st.form_submit_button(
+                                    "Maddeyi ekle",
+                                    key=f"{_liste_key}_submit"
+                                )
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1068,7 +1071,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                                _submit_madde = st.form_submit_button(
+                                    "Maddeyi ekle",
+                                    key=f"{_liste_key}_submit"
+                                )
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
