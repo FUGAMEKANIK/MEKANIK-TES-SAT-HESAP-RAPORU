@@ -39,6 +39,43 @@ if _rapor_olustur_sidebar:
       aktif_is = is_adi if is_adi else ""
   
       doc = Document()
+
+      # Sıhhi tesisat başlıklarının "Rapora eklensin" seçimleri.
+      # Eksik eski projelerde anahtar yoksa geriye dönük uyumluluk için True kabul edilir.
+      _r6 = bool(st.session_state.get("rapora_ekle_6", True))
+      _r61 = _r6 and bool(st.session_state.get("rapora_ekle_61", True))
+      _r611 = _r61 and bool(st.session_state.get("rapora_ekle_611", True))
+      _r62 = _r6 and bool(st.session_state.get("rapora_ekle_62", True))
+      _r621 = _r62 and bool(st.session_state.get("rapora_ekle_621", True))
+      _r622 = _r62 and bool(st.session_state.get("rapora_ekle_622", True))
+      _r623 = _r62 and bool(st.session_state.get("rapora_ekle_623", True))
+      _r63 = _r6 and bool(st.session_state.get("rapora_ekle_63", True))
+      _r631 = _r63 and bool(st.session_state.get("rapora_ekle_631", True))
+      _r632 = _r63 and bool(st.session_state.get("rapora_ekle_632", True))
+      _r633 = _r63 and bool(st.session_state.get("rapora_ekle_633", True))
+      _r634 = _r63 and bool(st.session_state.get("rapora_ekle_634", True))
+      _r635 = _r63 and bool(st.session_state.get("rapora_ekle_635", True))
+
+      def _62_dinamik_no(_anahtar):
+          _aktif = [k for k, ok in (("rapor_bolum_621", _r621), ("rapor_bolum_622", _r622), ("rapor_bolum_623", _r623)) if ok]
+          return _aktif.index(_anahtar) + 1 if _anahtar in _aktif else 1
+
+      def _63_dinamik_no(_anahtar):
+          _aktif = [k for k, ok in (("rapor_bolum_631", _r631), ("rapor_bolum_632", _r632), ("rapor_bolum_633", _r633), ("rapor_bolum_634", _r634), ("rapor_bolum_635", _r635)) if ok]
+          return _aktif.index(_anahtar) + 1 if _anahtar in _aktif else 1
+
+      def _63_dinamik_baslik(_anahtar):
+          try:
+              _ad = dict(_BOLUM_63_COCUKLARI)[_anahtar]
+          except Exception:
+              _ad = {
+                  "rapor_bolum_631": "SU DEPOSU KAPASİTE HESAPLAMALARI",
+                  "rapor_bolum_632": "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ",
+                  "rapor_bolum_633": "KULLANMA SICAK SUYU İHTİYACI HESAPLARI",
+                  "rapor_bolum_634": "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ",
+                  "rapor_bolum_635": "SU YUMUŞATMA CİHAZI SEÇİMİ",
+              }.get(_anahtar, _anahtar)
+          return f"6.3.{_63_dinamik_no(_anahtar)} {_ad.upper()}"
   
       def ana_baslik_ekle(metin):
           """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
@@ -388,10 +425,10 @@ if _rapor_olustur_sidebar:
               )
               doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
   
-      if bolum_6_aktif:
+      if bolum_6_aktif and _r6:
         # --- 6. SIHHİ TESİSAT ---
         ana_baslik_ekle("6. SIHHİ TESİSAT")
-        if bolum_61_aktif:
+        if _r61:
           doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
   
           sihhi_maddeler = []
@@ -561,43 +598,44 @@ if _rapor_olustur_sidebar:
           for sm in sihhi_maddeler:
             doc.add_paragraph(sm, style="List Bullet")
   
-          # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-          doc.add_heading(
-              "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
-          )
-          doc.add_paragraph(
-              "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
-              " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
-              " alınmıştır."
-          )
+          if _r611:
+            # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+            doc.add_heading(
+                "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
+            )
+            doc.add_paragraph(
+                "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
+                " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
+                " alınmıştır."
+            )
   
-          t1_data = [
-              ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-              ("15", "Ø20", '1/2"', "(0-3.0)"),
-              ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-              ("25", "Ø32", '1"', "(8.0-20.0)"),
-              ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-              ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-              ("50", "Ø63", '2"', "(50.0-144.0)"),
-              ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-              ("80", "Ø90", '3"', "(368.0-1156.0)"),
-              ("100", "Ø125", '4"', "(1156-4900)"),
-              ("125", "-", '5"', "(4.900-14.400)"),
-              ("150", "-", '6"', "(14.400-40.000)"),
-              ("200", "-", '8"', "(40.000-484.000)"),
-              ("250", "-", '10"', "(484.000-518.400)"),
-              ("300", "-", '12"', "(518.400-1.440.000)"),
-          ]
-          t1 = doc.add_table(rows=len(t1_data), cols=4)
-          t1.style = "Table Grid"
-          for r_idx, row in enumerate(t1_data):
-            for c_idx, val in enumerate(row):
-              t1.cell(r_idx, c_idx).text = val
+            t1_data = [
+                ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+                ("15", "Ø20", '1/2"', "(0-3.0)"),
+                ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+                ("25", "Ø32", '1"', "(8.0-20.0)"),
+                ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+                ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+                ("50", "Ø63", '2"', "(50.0-144.0)"),
+                ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+                ("80", "Ø90", '3"', "(368.0-1156.0)"),
+                ("100", "Ø125", '4"', "(1156-4900)"),
+                ("125", "-", '5"', "(4.900-14.400)"),
+                ("150", "-", '6"', "(14.400-40.000)"),
+                ("200", "-", '8"', "(40.000-484.000)"),
+                ("250", "-", '10"', "(484.000-518.400)"),
+                ("300", "-", '12"', "(518.400-1.440.000)"),
+            ]
+            t1 = doc.add_table(rows=len(t1_data), cols=4)
+            t1.style = "Table Grid"
+            for r_idx, row in enumerate(t1_data):
+              for c_idx, val in enumerate(row):
+                t1.cell(r_idx, c_idx).text = val
   
-          doc.add_paragraph()
+            doc.add_paragraph()
   
           # --- 6.2 PİS SU TESİSATI ---
-        if bolum_62_aktif:
+        if _r62:
           doc.add_heading("6.2 PİS SU TESİSATI", level=2)
   
           pis_su_maddeleri = []
@@ -667,39 +705,40 @@ if _rapor_olustur_sidebar:
           for psm in pis_su_maddeleri:
             doc.add_paragraph(psm, style="List Bullet")
   
-          # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-          doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri", level=2)
-          doc.add_paragraph(
-              "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-              " tayinlerinde aşağıdaki tablolar esas alınmıştır."
-          )
+          if _r621:
+            # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_621')} Pis Su Sarfiyat Yükleme Birimleri", level=2)
+            doc.add_paragraph(
+                "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+                " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+            )
   
-          doc.add_paragraph(
-              "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-          )
-          t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
-          t_pissu1.style = "Table Grid"
-          for r_idx, row in enumerate(pissu_t1_data):
-            for c_idx, val in enumerate(row):
-              t_pissu1.cell(r_idx, c_idx).text = val
+            doc.add_paragraph(
+                "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+            )
+            t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+            t_pissu1.style = "Table Grid"
+            for r_idx, row in enumerate(pissu_t1_data):
+              for c_idx, val in enumerate(row):
+                t_pissu1.cell(r_idx, c_idx).text = val
   
-          doc.add_paragraph()
-          doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
-          t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
-          t_pissu2.style = "Table Grid"
-          for r_idx, row in enumerate(pissu_t2_data):
-            for c_idx, val in enumerate(row):
-              t_pissu2.cell(r_idx, c_idx).text = val
+            doc.add_paragraph()
+            doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
+            t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+            t_pissu2.style = "Table Grid"
+            for r_idx, row in enumerate(pissu_t2_data):
+              for c_idx, val in enumerate(row):
+                t_pissu2.cell(r_idx, c_idx).text = val
   
-          doc.add_paragraph()
-          doc.add_paragraph(
-              "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
-              " 50,her tuvalet çıkışı Ø100 olacaktır."
-          )
+            doc.add_paragraph()
+            doc.add_paragraph(
+                "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+                " 50,her tuvalet çıkışı Ø100 olacaktır."
+            )
   
           # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
-          if psp_parametreleri:
-            doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+          if _r622 and psp_parametreleri:
+            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_622')} PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
   
             doc.add_paragraph(
                 "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
@@ -741,7 +780,7 @@ if _rapor_olustur_sidebar:
             )
   
             for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-              doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
+              doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_622')}.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
   
               doc.add_paragraph(f"• Bina Kullanım Türü: {pp['bina_tipi']}")
               doc.add_paragraph(
@@ -833,8 +872,8 @@ if _rapor_olustur_sidebar:
               )
   
           # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
-          if bolum_623_aktif:
-            doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
+          if _r623:
+            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_623')} YAĞ AYIRICI SEÇİMLERİ", level=2)
             yag_rapor_maddeleri = []
             for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
               if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
@@ -857,7 +896,7 @@ if _rapor_olustur_sidebar:
   
             # Excel'deki her YA sayfası için bağımsız hesap raporu.
             for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=1):
-              doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
+              doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_623')}.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
               doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
   
               # Eşzamanlılık faktörlerini Excel şablonundaki gibi ayrı ayrı göster.
@@ -965,9 +1004,9 @@ if _rapor_olustur_sidebar:
                 doc.add_paragraph(f"Yağ Ayırıcı Özelliği: {_hesap['secilen_poz']['tanim']}")
   
           # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-        if bolum_63_aktif:
+        if _r63:
           doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
-          if bolum_631_aktif:
+          if _r631:
             doc.add_heading(_63_dinamik_baslik("rapor_bolum_631"), level=2)
             doc.add_heading("6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:", level=3)
             doc.add_heading("Genel Bilgiler", level=4)
@@ -1663,7 +1702,7 @@ if _rapor_olustur_sidebar:
           # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
   
           # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
-          if bolum_632_aktif:
+          if _r632:
             doc.add_heading(_63_dinamik_baslik("rapor_bolum_632"), level=2)
   
             genel_bilgiler_basligi = doc.add_paragraph()
@@ -1804,7 +1843,7 @@ if _rapor_olustur_sidebar:
                       doc.add_picture(grafik_buf, width=Inches(6.2))
                       doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
       # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
-      if bolum_633_aktif:
+      if _r633:
           doc.add_heading(_63_dinamik_baslik("rapor_bolum_633"), level=2)
           if sicak_su_hesap_detaylari:
               yapi_tip_par = doc.add_paragraph()
@@ -2191,7 +2230,7 @@ if _rapor_olustur_sidebar:
               doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
   
       # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
-      if bolum_634_aktif:
+      if _r634:
           _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
           if _rs_rapor:
               doc.add_heading(_63_dinamik_baslik("rapor_bolum_634"), level=2)
@@ -2369,7 +2408,7 @@ if _rapor_olustur_sidebar:
   
   
       # --- 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ ---
-      if bolum_635_aktif:
+      if _r635:
           doc.add_heading(_63_dinamik_baslik("rapor_bolum_635"), level=2)
           _yum_rapor_maddeleri = [m for i, m in enumerate(yumusatma_maddeleri) if i < len(yumusatma_secimler) and yumusatma_secimler[i]]
           if ek_yumusatma_notu.strip():
