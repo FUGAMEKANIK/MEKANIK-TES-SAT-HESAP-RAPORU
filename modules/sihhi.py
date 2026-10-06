@@ -2561,7 +2561,7 @@ with _t_sihhi:
                           tur,
                           min_value=0,
                           max_value=10,
-                          value=1 if tur == "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ" else 0,
+                          value=0,
                           step=1,
                           key=anahtar,
                       )
