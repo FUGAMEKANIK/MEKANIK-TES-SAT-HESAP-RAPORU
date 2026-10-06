@@ -39,43 +39,6 @@ if _rapor_olustur_sidebar:
       aktif_is = is_adi if is_adi else ""
   
       doc = Document()
-
-      # Sıhhi tesisat başlıklarının "Rapora eklensin" seçimleri.
-      # Eksik eski projelerde anahtar yoksa geriye dönük uyumluluk için True kabul edilir.
-      _r6 = bool(st.session_state.get("rapora_ekle_6", True))
-      _r61 = _r6 and bool(st.session_state.get("rapora_ekle_61", True))
-      _r611 = _r61 and bool(st.session_state.get("rapora_ekle_611", True))
-      _r62 = _r6 and bool(st.session_state.get("rapora_ekle_62", True))
-      _r621 = _r62 and bool(st.session_state.get("rapora_ekle_621", True))
-      _r622 = _r62 and bool(st.session_state.get("rapora_ekle_622", True))
-      _r623 = _r62 and bool(st.session_state.get("rapora_ekle_623", True))
-      _r63 = _r6 and bool(st.session_state.get("rapora_ekle_63", True))
-      _r631 = _r63 and bool(st.session_state.get("rapora_ekle_631", True))
-      _r632 = _r63 and bool(st.session_state.get("rapora_ekle_632", True))
-      _r633 = _r63 and bool(st.session_state.get("rapora_ekle_633", True))
-      _r634 = _r63 and bool(st.session_state.get("rapora_ekle_634", True))
-      _r635 = _r63 and bool(st.session_state.get("rapora_ekle_635", True))
-
-      def _62_dinamik_no(_anahtar):
-          _aktif = [k for k, ok in (("rapor_bolum_621", _r621), ("rapor_bolum_622", _r622), ("rapor_bolum_623", _r623)) if ok]
-          return _aktif.index(_anahtar) + 1 if _anahtar in _aktif else 1
-
-      def _63_dinamik_no(_anahtar):
-          _aktif = [k for k, ok in (("rapor_bolum_631", _r631), ("rapor_bolum_632", _r632), ("rapor_bolum_633", _r633), ("rapor_bolum_634", _r634), ("rapor_bolum_635", _r635)) if ok]
-          return _aktif.index(_anahtar) + 1 if _anahtar in _aktif else 1
-
-      def _63_dinamik_baslik(_anahtar):
-          try:
-              _ad = dict(_BOLUM_63_COCUKLARI)[_anahtar]
-          except Exception:
-              _ad = {
-                  "rapor_bolum_631": "SU DEPOSU KAPASİTE HESAPLAMALARI",
-                  "rapor_bolum_632": "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ",
-                  "rapor_bolum_633": "KULLANMA SICAK SUYU İHTİYACI HESAPLARI",
-                  "rapor_bolum_634": "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ",
-                  "rapor_bolum_635": "SU YUMUŞATMA CİHAZI SEÇİMİ",
-              }.get(_anahtar, _anahtar)
-          return f"6.3.{_63_dinamik_no(_anahtar)} {_ad.upper()}"
   
       def ana_baslik_ekle(metin):
           """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
@@ -425,10 +388,10 @@ if _rapor_olustur_sidebar:
               )
               doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
   
-      if bolum_6_aktif and _r6:
+      if bolum_6_aktif:
         # --- 6. SIHHİ TESİSAT ---
         ana_baslik_ekle("6. SIHHİ TESİSAT")
-        if _r61:
+        if bolum_61_aktif:
           doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
   
           sihhi_maddeler = []
@@ -598,44 +561,43 @@ if _rapor_olustur_sidebar:
           for sm in sihhi_maddeler:
             doc.add_paragraph(sm, style="List Bullet")
   
-          if _r611:
-            # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-            doc.add_heading(
-                "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
-            )
-            doc.add_paragraph(
-                "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
-                " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
-                " alınmıştır."
-            )
+          # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+          doc.add_heading(
+              "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
+          )
+          doc.add_paragraph(
+              "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
+              " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
+              " alınmıştır."
+          )
   
-            t1_data = [
-                ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-                ("15", "Ø20", '1/2"', "(0-3.0)"),
-                ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-                ("25", "Ø32", '1"', "(8.0-20.0)"),
-                ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-                ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-                ("50", "Ø63", '2"', "(50.0-144.0)"),
-                ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-                ("80", "Ø90", '3"', "(368.0-1156.0)"),
-                ("100", "Ø125", '4"', "(1156-4900)"),
-                ("125", "-", '5"', "(4.900-14.400)"),
-                ("150", "-", '6"', "(14.400-40.000)"),
-                ("200", "-", '8"', "(40.000-484.000)"),
-                ("250", "-", '10"', "(484.000-518.400)"),
-                ("300", "-", '12"', "(518.400-1.440.000)"),
-            ]
-            t1 = doc.add_table(rows=len(t1_data), cols=4)
-            t1.style = "Table Grid"
-            for r_idx, row in enumerate(t1_data):
-              for c_idx, val in enumerate(row):
-                t1.cell(r_idx, c_idx).text = val
+          t1_data = [
+              ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
+              ("15", "Ø20", '1/2"', "(0-3.0)"),
+              ("20", "Ø25", '3/4"', "(3.0-8.0)"),
+              ("25", "Ø32", '1"', "(8.0-20.0)"),
+              ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
+              ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
+              ("50", "Ø63", '2"', "(50.0-144.0)"),
+              ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
+              ("80", "Ø90", '3"', "(368.0-1156.0)"),
+              ("100", "Ø125", '4"', "(1156-4900)"),
+              ("125", "-", '5"', "(4.900-14.400)"),
+              ("150", "-", '6"', "(14.400-40.000)"),
+              ("200", "-", '8"', "(40.000-484.000)"),
+              ("250", "-", '10"', "(484.000-518.400)"),
+              ("300", "-", '12"', "(518.400-1.440.000)"),
+          ]
+          t1 = doc.add_table(rows=len(t1_data), cols=4)
+          t1.style = "Table Grid"
+          for r_idx, row in enumerate(t1_data):
+            for c_idx, val in enumerate(row):
+              t1.cell(r_idx, c_idx).text = val
   
-            doc.add_paragraph()
+          doc.add_paragraph()
   
           # --- 6.2 PİS SU TESİSATI ---
-        if _r62:
+        if bolum_62_aktif:
           doc.add_heading("6.2 PİS SU TESİSATI", level=2)
   
           pis_su_maddeleri = []
@@ -705,40 +667,39 @@ if _rapor_olustur_sidebar:
           for psm in pis_su_maddeleri:
             doc.add_paragraph(psm, style="List Bullet")
   
-          if _r621:
-            # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_621')} Pis Su Sarfiyat Yükleme Birimleri", level=2)
-            doc.add_paragraph(
-                "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-                " tayinlerinde aşağıdaki tablolar esas alınmıştır."
-            )
+          # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
+          doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri", level=2)
+          doc.add_paragraph(
+              "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
+              " tayinlerinde aşağıdaki tablolar esas alınmıştır."
+          )
   
-            doc.add_paragraph(
-                "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-            )
-            t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
-            t_pissu1.style = "Table Grid"
-            for r_idx, row in enumerate(pissu_t1_data):
-              for c_idx, val in enumerate(row):
-                t_pissu1.cell(r_idx, c_idx).text = val
+          doc.add_paragraph(
+              "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
+          )
+          t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
+          t_pissu1.style = "Table Grid"
+          for r_idx, row in enumerate(pissu_t1_data):
+            for c_idx, val in enumerate(row):
+              t_pissu1.cell(r_idx, c_idx).text = val
   
-            doc.add_paragraph()
-            doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
-            t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
-            t_pissu2.style = "Table Grid"
-            for r_idx, row in enumerate(pissu_t2_data):
-              for c_idx, val in enumerate(row):
-                t_pissu2.cell(r_idx, c_idx).text = val
+          doc.add_paragraph()
+          doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
+          t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
+          t_pissu2.style = "Table Grid"
+          for r_idx, row in enumerate(pissu_t2_data):
+            for c_idx, val in enumerate(row):
+              t_pissu2.cell(r_idx, c_idx).text = val
   
-            doc.add_paragraph()
-            doc.add_paragraph(
-                "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
-                " 50,her tuvalet çıkışı Ø100 olacaktır."
-            )
+          doc.add_paragraph()
+          doc.add_paragraph(
+              "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
+              " 50,her tuvalet çıkışı Ø100 olacaktır."
+          )
   
           # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
-          if _r622 and psp_parametreleri:
-            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_622')} PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
+          if psp_parametreleri:
+            doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
   
             doc.add_paragraph(
                 "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
@@ -780,7 +741,7 @@ if _rapor_olustur_sidebar:
             )
   
             for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-              doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_622')}.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
+              doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
   
               doc.add_paragraph(f"• Bina Kullanım Türü: {pp['bina_tipi']}")
               doc.add_paragraph(
@@ -872,8 +833,8 @@ if _rapor_olustur_sidebar:
               )
   
           # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
-          if _r623:
-            doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_623')} YAĞ AYIRICI SEÇİMLERİ", level=2)
+          if bolum_623_aktif:
+            doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
             yag_rapor_maddeleri = []
             for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
               if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
@@ -896,7 +857,7 @@ if _rapor_olustur_sidebar:
   
             # Excel'deki her YA sayfası için bağımsız hesap raporu.
             for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=1):
-              doc.add_heading(f"6.2.{_62_dinamik_no('rapor_bolum_623')}.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
+              doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
               doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
   
               # Eşzamanlılık faktörlerini Excel şablonundaki gibi ayrı ayrı göster.
@@ -1004,9 +965,9 @@ if _rapor_olustur_sidebar:
                 doc.add_paragraph(f"Yağ Ayırıcı Özelliği: {_hesap['secilen_poz']['tanim']}")
   
           # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-        if _r63:
+        if bolum_63_aktif:
           doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
-          if _r631:
+          if bolum_631_aktif:
             doc.add_heading(_63_dinamik_baslik("rapor_bolum_631"), level=2)
             doc.add_heading("6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:", level=3)
             doc.add_heading("Genel Bilgiler", level=4)
@@ -1209,162 +1170,155 @@ if _rapor_olustur_sidebar:
                     f"P = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm alınmıştır."
                 )
   
-            # MGM meteorolojik verileri: RAPORDA YALNIZCA SEÇİLEN HESAP YÖNTEMİ GÖSTERİLİR.
-            # Günlük seçildiyse yalnız günlük tablo; aylık yöntemlerden biri seçildiyse
-            # yalnız seçilen aylık yöntem tablosu rapora eklenir.
-            _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
-            _mgm_gunluk = _yr.get("mgm_yagis_mm")
-            _mgm_tarih = _yr.get("mgm_yagis_tarih", "")
-            _mgm_aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
-            _mgm_periyot = _yr.get("mgm_aylik_periyot", "") or ""
-            _mgm_kaynak_url = (
-                _yr.get("mgm_url", "")
-                if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı"
-                else _yr.get("mgm_aylik_url", "")
-            )
-
-            doc.add_heading("SEÇİLEN İL METEOROLOJİK VERİLERİ", level=5)
-
+            # Aylık MGM tablosu yalnızca 2. veya 3. tasarım yağış yöntemi seçildiğinde rapora eklenir.
+            if _yr_yontem in ("Ortalama Aylık Yağış Miktarı", "En Yüksek Aylık Ortalama Yağış Miktarı"):
+                          # Seçilen ilin 12 aylık ortalama yağış tablosu rapora eklenir.
+                          _aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
+                          if _aylik_rapor:
+                              doc.add_heading("SEÇİLEN İLİN AYLIK ORTALAMA YAĞIŞ DEĞERLERİ", level=5)
+                              _ay_tbl = doc.add_table(rows=1, cols=3)
+                              _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+                              _ay_tbl.autofit = True
+                              _ay_hdr = _ay_tbl.rows[0].cells
+                              _ay_hdr[0].text = "AY"
+                              _ay_hdr[1].text = "ORTALAMA YAĞIŞ (mm)"
+                              _ay_hdr[2].text = "DURUM"
+                              _en_ay = _yr.get("mgm_en_yuksek_ay", "")
+                              for _ay in ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]:
+                                  if _ay not in _aylik_rapor: continue
+                                  _c = _ay_tbl.add_row().cells
+                                  _c[0].text = _ay
+                                  _c[1].text = f"{_aylik_rapor[_ay]:.1f}"
+                                  _c[2].text = "EN YÜKSEK AY" if _ay == _en_ay else ""
+                                  for _cell in _c:
+                                      _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                                      for _p in _cell.paragraphs:
+                                          _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                                          for _r in _p.runs: _r.font.size = Pt(8.5)
+                                  if _ay == _en_ay:
+                                      for _cell in _c:
+                                          _tcPr = _cell._tc.get_or_add_tcPr()
+                                          _shd = OxmlElement("w:shd"); _shd.set(qn("w:fill"), "FFF2CC"); _tcPr.append(_shd)
+                                          for _p in _cell.paragraphs:
+                                              for _r in _p.runs: _r.bold = True
+                              doc.add_paragraph(
+                                  f"12 aylık ortalama değerlerin aritmetik ortalaması: "
+                                  f"{float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm; "
+                                  f"en yüksek aylık ortalama: {_en_ay} = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm."
+                              )
+  
+            # 81 il günlük maksimum yağış tablosu yalnızca 1. yöntem seçildiğinde rapora eklenir.
             if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                _met_tbl = doc.add_table(rows=1, cols=3)
-                _met_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _met_tbl.autofit = True
-                _mh = _met_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)", "GERÇEKLEŞME TARİHİ"]):
-                    _mh[_i].text = _baslik
-                    _mh[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _mh[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _mh[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _mc = _met_tbl.add_row().cells
-                _mc[0].text = _secili_il_rapor or "-"
-                _mc[1].text = f"{float(_mgm_gunluk):.1f}" if _mgm_gunluk is not None else "Veri alınamadı"
-                _mc[2].text = _mgm_tarih or "-"
-                for _cell in _mc:
-                    _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    for _p in _cell.paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.font.size = Pt(8.5)
-
-            elif _yr_yontem == "Ortalama Aylık Yağış Miktarı":
-                _ay_tbl = doc.add_table(rows=1, cols=3)
-                _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _ay_tbl.autofit = True
-                _ay_hdr = _ay_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "AY", "AYLIK TOPLAM YAĞIŞ ORTALAMASI (mm)"]):
-                    _ay_hdr[_i].text = _baslik
-                    _ay_hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _ay_hdr[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _ay_hdr[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _aylar_sirali = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-                for _ay in _aylar_sirali:
-                    if _ay not in _mgm_aylik_rapor:
-                        continue
-                    _c = _ay_tbl.add_row().cells
-                    _c[0].text = _secili_il_rapor or "-"
-                    _c[1].text = _ay
-                    _c[2].text = f"{float(_mgm_aylik_rapor[_ay]):.1f}"
-                    for _cell in _c:
-                        _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                        for _p in _cell.paragraphs:
-                            _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                            for _r in _p.runs:
-                                _r.font.size = Pt(8.5)
-                doc.add_paragraph(
-                    f"Ölçüm periyodu: {_mgm_periyot or 'MGM verisinde belirtilmemiş'}. "
-                    f"12 aylık değerlerin aritmetik ortalaması: "
-                    f"{float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm."
-                )
-
-            else:  # En Yüksek Aylık Ortalama Yağış Miktarı
-                _ay_tbl = doc.add_table(rows=1, cols=4)
-                _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _ay_tbl.autofit = True
-                _ay_hdr = _ay_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "AY", "AYLIK ORTALAMA YAĞIŞ (mm)", "DURUM"]):
-                    _ay_hdr[_i].text = _baslik
-                    _ay_hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _ay_hdr[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _ay_hdr[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _aylar_sirali = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-                _en_ay = _yr.get("mgm_en_yuksek_ay", "")
-                for _ay in _aylar_sirali:
-                    if _ay not in _mgm_aylik_rapor:
-                        continue
-                    _c = _ay_tbl.add_row().cells
-                    _c[0].text = _secili_il_rapor or "-"
-                    _c[1].text = _ay
-                    _c[2].text = f"{float(_mgm_aylik_rapor[_ay]):.1f}"
-                    _c[3].text = "SEÇİLEN / EN YÜKSEK AY" if _ay == _en_ay else ""
-                    for _cell in _c:
-                        _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                        for _p in _cell.paragraphs:
-                            _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                            for _r in _p.runs:
-                                _r.font.size = Pt(8.5)
-                    if _ay == _en_ay:
-                        for _cell in _c:
-                            _tcPr = _cell._tc.get_or_add_tcPr()
-                            _shd = OxmlElement("w:shd")
-                            _shd.set(qn("w:fill"), "FFF2CC")
-                            _tcPr.append(_shd)
-                            for _p in _cell.paragraphs:
-                                for _r in _p.runs:
-                                    _r.bold = True
-                doc.add_paragraph(
-                    f"Ölçüm periyodu: {_mgm_periyot or 'MGM verisinde belirtilmemiş'}. "
-                    f"Seçilen en yüksek aylık ortalama yağış: {_en_ay or '-'} = "
-                    f"{float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm."
-                )
-
-            # Kaynak linki: raporu inceleyen kişi doğrudan kullanılan MGM sayfasına gidebilir.
-            if _mgm_kaynak_url:
-                _p_kaynak = doc.add_paragraph()
-                _p_kaynak.add_run("Veri kaynağı: ")
-                _part = _p_kaynak.part
-                _rid = _part.relate_to(_mgm_kaynak_url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
-                _hyperlink = OxmlElement("w:hyperlink")
-                _hyperlink.set(qn("r:id"), _rid)
-                _run = OxmlElement("w:r")
-                _rPr = OxmlElement("w:rPr")
-                _color = OxmlElement("w:color")
-                _color.set(qn("w:val"), "0563C1")
-                _rPr.append(_color)
-                _u = OxmlElement("w:u")
-                _u.set(qn("w:val"), "single")
-                _rPr.append(_u)
-                _run.append(_rPr)
-                _text = OxmlElement("w:t")
-                _text.text = "Meteoroloji Genel Müdürlüğü (MGM) – Resmi İklim İstatistikleri"
-                _run.append(_text)
-                _hyperlink.append(_run)
-                _p_kaynak._p.append(_hyperlink)
-            else:
-                doc.add_paragraph(
-                    "Veri kaynağı: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri."
-                )
-
+                          # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
+                          # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
+                          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
+                          doc.add_paragraph(
+                              "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
+                              "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
+                              "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
+                              "satırda gösterilmektedir."
+                          )
+                          # RAPOR OLUŞTURMA SIRASINDA 81 İL İÇİN CANLI WEB İSTEĞİ YAPILMAZ.
+                          # Bu tablo önceki sürümde rapor üretimini dakikalarca bekletebiliyor
+                          # ve Streamlit Cloud'da rapor indirme düğmesine ulaşılmasını engelleyebiliyordu.
+                          # Eğer veri daha önce oturumda hazırlandıysa onu kullan; yoksa seçilen ili
+                          # mevcut proje verisinden göster ve diğer illeri "Veri alınmadı" bırak.
+                          _mgm_81 = st.session_state.get("mgm_81_il_yagis_tablosu", None)
+                          if not isinstance(_mgm_81, list) or not _mgm_81:
+                              _mgm_81 = []
+                              _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
+                              for _il_rapor in MGM_81_IL:
+                                  if _il_rapor == _secili_il_rapor:
+                                      _mgm_81.append((
+                                          _il_rapor,
+                                          _yr.get("mgm_yagis_mm"),
+                                          _yr.get("mgm_yagis_tarih", ""),
+                                          None,
+                                      ))
+                                  else:
+                                      _mgm_81.append((_il_rapor, None, None, None))
+  
+                          _mgm_tbl = doc.add_table(rows=1, cols=3)
+                          _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+                          _mgm_tbl.autofit = True
+                          _hdr = _mgm_tbl.rows[0].cells
+                          _hdr[0].text = "İL"
+                          _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
+                          _hdr[2].text = "TARİH"
+  
+                          # Başlık satırı biçimi.
+                          for _cell in _hdr:
+                              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                              _tcPr = _cell._tc.get_or_add_tcPr()
+                              _shd = OxmlElement("w:shd")
+                              _shd.set(qn("w:fill"), "D9E2F3")
+                              _tcPr.append(_shd)
+                              for _p in _cell.paragraphs:
+                                  _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                                  for _r in _p.runs:
+                                      _r.bold = True
+                                      _r.font.size = Pt(8.5)
+  
+                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
+  
+                          # Seçilen ili güvenilir biçimde eşleştir:
+                          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
+                          def _il_karsilastirma_adi(_metin):
+                              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
+                              return _x.casefold()
+  
+                          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
+  
+                          for _il, _deger, _tarih, _url in _mgm_81:
+                              _cells = _mgm_tbl.add_row().cells
+                              _is_secili_il = (
+                                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
+                                  and bool(_secili_mgm_il_karsilastirma)
+                              )
+  
+                              _cells[0].text = _il
+                              _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
+                              _cells[2].text = _tarih or "-"
+  
+                              for _cell in _cells:
+                                  _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                                  for _p in _cell.paragraphs:
+                                      _p.alignment = (
+                                          WD_ALIGN_PARAGRAPH.CENTER
+                                          if _cell is not _cells[0]
+                                          else WD_ALIGN_PARAGRAPH.LEFT
+                                      )
+                                      for _r in _p.runs:
+                                          _r.font.size = Pt(8.5)
+  
+                                  # Projede seçilen il satırı sarı renkle vurgulanır.
+                                  if _is_secili_il:
+                                      _tcPr = _cell._tc.get_or_add_tcPr()
+                                      _shd = _tcPr.find(qn("w:shd"))
+                                      if _shd is None:
+                                          _shd = OxmlElement("w:shd")
+                                          _tcPr.append(_shd)
+                                      _shd.set(qn("w:fill"), "FFF2CC")
+  
+                                      # Seçilen ilin okunabilirliği için satır yazıları kalın.
+                                      for _p in _cell.paragraphs:
+                                          for _r in _p.runs:
+                                              _r.bold = True
+  
+                              # Seçilen ilin yanına raporda açık bir işaret de koy.
+                              if _is_secili_il:
+                                  _cells[0].text = f"{_il}  ← SEÇİLEN İL"
+                                  for _p in _cells[0].paragraphs:
+                                      _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                                      for _r in _p.runs:
+                                          _r.bold = True
+  
+            doc.add_paragraph(
+                "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
+                "İllerimize Ait Genel İstatistiki Veriler. "
+                "MGM verilerinin ölçüm periyotları illere göre farklılık gösterebilir."
+            )
+  
             # Hesap girdileri ve yüzde parametreleri.
             _yr_A = float(_yr.get('cati_alani', 0) or 0)
             _yr_P = float(_yr.get('yagis', 0) or 0)
@@ -1590,48 +1544,15 @@ if _rapor_olustur_sidebar:
             doc.add_paragraph(
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
-            # TAŞMA HATTI HİDROLİK KONTROL TABLOSU
-            # Kullanıcı tarafından onaylanan sabit referans değerleri raporda
-            # metin/paragraf yerine gerçek Word tablosu olarak gösterilir.
-            _tasma_rapor_tablo = [
-                ("DN 50", "0.96", "0.96", "0.49", "YETERSİZ"),
-                ("DN 65", "1.94", "1.94", "0.58", "YETERSİZ"),
-                ("DN 80", "3.37", "3.37", "0.67", "YETERSİZ"),
-                ("DN 100", "6.10", "6.10", "0.78", "YETERSİZ"),
-                ("DN 125", "11.07", "11.07", "0.90", "YETERSİZ"),
-                ("DN 150", "18.00", "18.00", "1.02", "YETERSİZ"),
-                ("DN 200", "94.25", "38.76", "1.23", "YETERSİZ"),
-                ("DN 250", "147.26", "70.28", "1.43", "YETERSİZ"),
-            ]
-            doc.add_paragraph("Kontrol edilen çaplar:")
-            _tasma_tbl = doc.add_table(rows=1, cols=5)
-            _tasma_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-            _tasma_tbl.autofit = True
-            _hdr = _tasma_tbl.rows[0].cells
-            for _i, _baslik in enumerate([
-                "BORU ÇAPI", "TASARIM KAPASİTESİ (L/s)",
-                "MANNING KAPASİTESİ (L/s)", "MANNING HIZI (m/s)", "SONUÇ"
-            ]):
-                _hdr[_i].text = _baslik
-                _hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                _tcPr = _hdr[_i]._tc.get_or_add_tcPr()
-                _shd = OxmlElement("w:shd")
-                _shd.set(qn("w:fill"), "D9E2F3")
-                _tcPr.append(_shd)
-                for _p in _hdr[_i].paragraphs:
-                    _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    for _r in _p.runs:
-                        _r.bold = True
-                        _r.font.size = Pt(8.5)
-            for _satir in _tasma_rapor_tablo:
-                _cells = _tasma_tbl.add_row().cells
-                for _i, _deger in enumerate(_satir):
-                    _cells[_i].text = _deger
-                    _cells[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    for _p in _cells[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.font.size = Pt(8.5)
+            if _hidrolik_tablo:
+                doc.add_paragraph("Kontrol edilen çaplar:")
+                for _x in _hidrolik_tablo:
+                    doc.add_paragraph(
+                        f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
+                        f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
+                        f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
+                        f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
+                    )
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
@@ -1702,7 +1623,7 @@ if _rapor_olustur_sidebar:
           # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
   
           # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
-          if _r632:
+          if bolum_632_aktif:
             doc.add_heading(_63_dinamik_baslik("rapor_bolum_632"), level=2)
   
             genel_bilgiler_basligi = doc.add_paragraph()
@@ -1843,7 +1764,7 @@ if _rapor_olustur_sidebar:
                       doc.add_picture(grafik_buf, width=Inches(6.2))
                       doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
       # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
-      if _r633:
+      if bolum_633_aktif:
           doc.add_heading(_63_dinamik_baslik("rapor_bolum_633"), level=2)
           if sicak_su_hesap_detaylari:
               yapi_tip_par = doc.add_paragraph()
@@ -2230,7 +2151,7 @@ if _rapor_olustur_sidebar:
               doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
   
       # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
-      if _r634:
+      if bolum_634_aktif:
           _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
           if _rs_rapor:
               doc.add_heading(_63_dinamik_baslik("rapor_bolum_634"), level=2)
@@ -2408,7 +2329,7 @@ if _rapor_olustur_sidebar:
   
   
       # --- 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ ---
-      if _r635:
+      if bolum_635_aktif:
           doc.add_heading(_63_dinamik_baslik("rapor_bolum_635"), level=2)
           _yum_rapor_maddeleri = [m for i, m in enumerate(yumusatma_maddeleri) if i < len(yumusatma_secimler) and yumusatma_secimler[i]]
           if ek_yumusatma_notu.strip():
@@ -2521,6 +2442,39 @@ if _rapor_olustur_sidebar:
               ana_baslik_ekle("7. YANGIN TESİSATI")
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
+  
+          # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
+          # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
+          _gbi_rapor_verileri = [
+              ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
+              ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
+              ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
+              ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
+              ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
+              ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
+          ]
+          _gbi_baslik = doc.add_paragraph()
+          _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
+          _gbi_run.bold = True
+          _gbi_run.italic = True
+          _gbi_run.font.size = Pt(13)
+          _gbi_tbl = doc.add_table(rows=1, cols=2)
+          _gbi_tbl.style = "Table Grid"
+          _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
+          _gbi_tbl.rows[0].cells[1].text = "DEĞER"
+          for _cell in _gbi_tbl.rows[0].cells:
+              for _run in _cell.paragraphs[0].runs:
+                  _run.bold = True
+          for _etiket, _deger in _gbi_rapor_verileri:
+              _gc = _gbi_tbl.add_row().cells
+              _gc[0].text = _etiket
+              _gc[1].text = _deger
   
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
