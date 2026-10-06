@@ -1432,13 +1432,8 @@ BOLUM_SECIM_ANAHTARLARI = [
     "rapor_bolum_77", "rapor_bolum_78", "rapor_bolum_79",
 ]
 def _63_dinamik_no(anahtar):
-    """Aktif 6.3 alt bölümleri içindeki sıralı numarayı döndürür."""
-    aktifler = [k for k, _ in _BOLUM_63_COCUKLARI if bool(st.session_state.get(k, False))]
-    try:
-        return aktifler.index(anahtar) + 1
-    except ValueError:
-        # Bölüm kapalıysa, açıldığı anda doğal sırasını korusun.
-        return [k for k, _ in _BOLUM_63_COCUKLARI].index(anahtar) + 1
+    """6.3 alt bölüm numarasını sabit tutar; seçim durumuna göre yeniden numaralandırmaz."""
+    return [k for k, _ in _BOLUM_63_COCUKLARI].index(anahtar) + 1
 
 def _63_dinamik_baslik(anahtar):
     ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
