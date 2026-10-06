@@ -886,12 +886,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
                             # güvenli şekilde temizler. Widget oluşturulduktan sonra
                             # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            _bkey = f"{_liste_key}_baslik"
-                            _mkey = f"{_liste_key}_metin"
-                            with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
+                            _bkey = f"yangin_v3_{_liste_key}_baslik"
+                            _mkey = f"yangin_v3_{_liste_key}_metin"
+                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"{_liste_key}_submit")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1069,12 +1069,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
                             # güvenli şekilde temizler. Widget oluşturulduktan sonra
                             # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            _bkey = f"{_liste_key}_baslik"
-                            _mkey = f"{_liste_key}_metin"
-                            with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
+                            _bkey = f"yangin_v3_{_liste_key}_baslik"
+                            _mkey = f"yangin_v3_{_liste_key}_metin"
+                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"{_liste_key}_submit")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
