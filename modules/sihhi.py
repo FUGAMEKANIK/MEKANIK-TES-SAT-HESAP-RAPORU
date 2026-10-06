@@ -2571,6 +2571,11 @@ with _t_sihhi:
 
             hidrofor_sekme_bilgileri = []
             hidrofor_hesap_kayitlari = []
+            # Hidrofor adedi varsayılan olarak 0 olabilir. Bu durumda aşağıdaki
+            # ortak hesap döngüsünde kullanılan sekme listeleri de mutlaka tanımlı
+            # olmalıdır; aksi halde seçim yapılmamışken NameError oluşur.
+            hidrofor_tabs = []
+            hidrofor_sekme_etiketleri = []
             if hidrofor_tanimlari:
                 # Program ekranındaki sekmeler kısa kodlarla gösterilir.
                 # Rapor başlıkları ise aşağıdaki hidrofor_tanimlari üzerinden tam açılımıyla yazılır.
@@ -2850,13 +2855,13 @@ with _t_sihhi:
                                     f"{sekme_kodu} Toplam pompa adedi",
                                     [0, 1, 2, 3, 4, 5, 6],
                                     index=max(0, min(6, int(st.session_state.get(f"hidrofor_{i}_toplam_pompa", 0)))),
-                                    format_func=lambda x: f"{x} pompa ({0 if x <= 1 else 1} yedek)",
+                                    format_func=lambda x: f"{x} pompa ({0 if x == 1 else 1} yedek)",
                                     key=f"hidrofor_{i}_toplam_pompa",
                                     on_change=_pompa_adedi_degisti,
                                     args=(poz_final_key, poz_final_manual_key_for_callback, poz_final_last_auto_key_for_callback),
                                 )
-                            asil_pompa = 0 if toplam_pompa == 0 else (1 if toplam_pompa <= 2 else toplam_pompa - 1)
-                            yedek_pompa = 0 if toplam_pompa <= 1 else 1
+                            asil_pompa = 1 if toplam_pompa <= 2 else toplam_pompa - 1
+                            yedek_pompa = 0 if toplam_pompa == 1 else 1
 
                             st.markdown("**1. Gerekli debi hesabı**")
                             vm_lph = 3600.0 * (0.25 * math.sqrt(yukleme_birimi)) if yukleme_birimi > 0 else 0.0
