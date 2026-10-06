@@ -1170,149 +1170,95 @@ if _rapor_olustur_sidebar:
                     f"P = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm alınmıştır."
                 )
   
-            # Aylık MGM tablosu yalnızca 2. veya 3. tasarım yağış yöntemi seçildiğinde rapora eklenir.
-            if _yr_yontem in ("Ortalama Aylık Yağış Miktarı", "En Yüksek Aylık Ortalama Yağış Miktarı"):
-                          # Seçilen ilin 12 aylık ortalama yağış tablosu rapora eklenir.
-                          _aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
-                          if _aylik_rapor:
-                              doc.add_heading("SEÇİLEN İLİN AYLIK ORTALAMA YAĞIŞ DEĞERLERİ", level=5)
-                              _ay_tbl = doc.add_table(rows=1, cols=3)
-                              _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                              _ay_tbl.autofit = True
-                              _ay_hdr = _ay_tbl.rows[0].cells
-                              _ay_hdr[0].text = "AY"
-                              _ay_hdr[1].text = "ORTALAMA YAĞIŞ (mm)"
-                              _ay_hdr[2].text = "DURUM"
-                              _en_ay = _yr.get("mgm_en_yuksek_ay", "")
-                              for _ay in ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]:
-                                  if _ay not in _aylik_rapor: continue
-                                  _c = _ay_tbl.add_row().cells
-                                  _c[0].text = _ay
-                                  _c[1].text = f"{_aylik_rapor[_ay]:.1f}"
-                                  _c[2].text = "EN YÜKSEK AY" if _ay == _en_ay else ""
-                                  for _cell in _c:
-                                      _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                      for _p in _cell.paragraphs:
-                                          _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                          for _r in _p.runs: _r.font.size = Pt(8.5)
-                                  if _ay == _en_ay:
-                                      for _cell in _c:
-                                          _tcPr = _cell._tc.get_or_add_tcPr()
-                                          _shd = OxmlElement("w:shd"); _shd.set(qn("w:fill"), "FFF2CC"); _tcPr.append(_shd)
-                                          for _p in _cell.paragraphs:
-                                              for _r in _p.runs: _r.bold = True
-                              doc.add_paragraph(
-                                  f"12 aylık ortalama değerlerin aritmetik ortalaması: "
-                                  f"{float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm; "
-                                  f"en yüksek aylık ortalama: {_en_ay} = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm."
-                              )
-  
-            # 81 il günlük maksimum yağış tablosu yalnızca 1. yöntem seçildiğinde rapora eklenir.
-            if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                          # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
-                          # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
-                          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
-                          doc.add_paragraph(
-                              "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
-                              "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
-                              "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
-                              "satırda gösterilmektedir."
-                          )
-                          # RAPOR OLUŞTURMA SIRASINDA 81 İL İÇİN CANLI WEB İSTEĞİ YAPILMAZ.
-                          # Bu tablo önceki sürümde rapor üretimini dakikalarca bekletebiliyor
-                          # ve Streamlit Cloud'da rapor indirme düğmesine ulaşılmasını engelleyebiliyordu.
-                          # Eğer veri daha önce oturumda hazırlandıysa onu kullan; yoksa seçilen ili
-                          # mevcut proje verisinden göster ve diğer illeri "Veri alınmadı" bırak.
-                          _mgm_81 = st.session_state.get("mgm_81_il_yagis_tablosu", None)
-                          if not isinstance(_mgm_81, list) or not _mgm_81:
-                              _mgm_81 = []
-                              _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
-                              for _il_rapor in MGM_81_IL:
-                                  if _il_rapor == _secili_il_rapor:
-                                      _mgm_81.append((
-                                          _il_rapor,
-                                          _yr.get("mgm_yagis_mm"),
-                                          _yr.get("mgm_yagis_tarih", ""),
-                                          None,
-                                      ))
-                                  else:
-                                      _mgm_81.append((_il_rapor, None, None, None))
-  
-                          _mgm_tbl = doc.add_table(rows=1, cols=3)
-                          _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                          _mgm_tbl.autofit = True
-                          _hdr = _mgm_tbl.rows[0].cells
-                          _hdr[0].text = "İL"
-                          _hdr[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
-                          _hdr[2].text = "TARİH"
-  
-                          # Başlık satırı biçimi.
-                          for _cell in _hdr:
-                              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                              _tcPr = _cell._tc.get_or_add_tcPr()
-                              _shd = OxmlElement("w:shd")
-                              _shd.set(qn("w:fill"), "D9E2F3")
-                              _tcPr.append(_shd)
-                              for _p in _cell.paragraphs:
-                                  _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                                  for _r in _p.runs:
-                                      _r.bold = True
-                                      _r.font.size = Pt(8.5)
-  
-                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
-  
-                          # Seçilen ili güvenilir biçimde eşleştir:
-                          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
-                          def _il_karsilastirma_adi(_metin):
-                              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
-                              return _x.casefold()
-  
-                          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
-  
-                          for _il, _deger, _tarih, _url in _mgm_81:
-                              _cells = _mgm_tbl.add_row().cells
-                              _is_secili_il = (
-                                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
-                                  and bool(_secili_mgm_il_karsilastirma)
-                              )
-  
-                              _cells[0].text = _il
-                              _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
-                              _cells[2].text = _tarih or "-"
-  
-                              for _cell in _cells:
-                                  _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                  for _p in _cell.paragraphs:
-                                      _p.alignment = (
-                                          WD_ALIGN_PARAGRAPH.CENTER
-                                          if _cell is not _cells[0]
-                                          else WD_ALIGN_PARAGRAPH.LEFT
-                                      )
-                                      for _r in _p.runs:
-                                          _r.font.size = Pt(8.5)
-  
-                                  # Projede seçilen il satırı sarı renkle vurgulanır.
-                                  if _is_secili_il:
-                                      _tcPr = _cell._tc.get_or_add_tcPr()
-                                      _shd = _tcPr.find(qn("w:shd"))
-                                      if _shd is None:
-                                          _shd = OxmlElement("w:shd")
-                                          _tcPr.append(_shd)
-                                      _shd.set(qn("w:fill"), "FFF2CC")
-  
-                                      # Seçilen ilin okunabilirliği için satır yazıları kalın.
-                                      for _p in _cell.paragraphs:
-                                          for _r in _p.runs:
-                                              _r.bold = True
-  
-                              # Seçilen ilin yanına raporda açık bir işaret de koy.
-                              if _is_secili_il:
-                                  _cells[0].text = f"{_il}  ← SEÇİLEN İL"
-                                  for _p in _cells[0].paragraphs:
-                                      _p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                                      for _r in _p.runs:
-                                          _r.bold = True
-  
+            # MGM meteorolojik verileri: RAPORDA YALNIZCA PROJEDE SEÇİLEN İL GÖSTERİLİR.
+            # 81 ilin tamamını yazdıran eski tablo kaldırıldı.
+            _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
+            _mgm_gunluk = _yr.get("mgm_yagis_mm")
+            _mgm_tarih = _yr.get("mgm_yagis_tarih", "")
+            _mgm_aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
+            _mgm_periyot = _yr.get("mgm_aylik_periyot", "") or ""
+
+            doc.add_heading("SEÇİLEN İL METEOROLOJİK VERİLERİ", level=5)
+            _met_tbl = doc.add_table(rows=1, cols=3)
+            _met_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+            _met_tbl.autofit = True
+            _mh = _met_tbl.rows[0].cells
+            _mh[0].text = "İL"
+            _mh[1].text = "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)"
+            _mh[2].text = "GERÇEKLEŞME TARİHİ"
+            for _cell in _mh:
+                _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                _tcPr = _cell._tc.get_or_add_tcPr()
+                _shd = OxmlElement("w:shd")
+                _shd.set(qn("w:fill"), "D9E2F3")
+                _tcPr.append(_shd)
+                for _p in _cell.paragraphs:
+                    _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for _r in _p.runs:
+                        _r.bold = True
+                        _r.font.size = Pt(8.5)
+            _mc = _met_tbl.add_row().cells
+            _mc[0].text = _secili_il_rapor or "-"
+            _mc[1].text = f"{float(_mgm_gunluk):.1f}" if _mgm_gunluk is not None else "Veri alınamadı"
+            _mc[2].text = _mgm_tarih or "-"
+            for _cell in _mc:
+                _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                for _p in _cell.paragraphs:
+                    _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for _r in _p.runs:
+                        _r.font.size = Pt(8.5)
+            for _cell in _mc:
+                _tcPr = _cell._tc.get_or_add_tcPr()
+                _shd = OxmlElement("w:shd")
+                _shd.set(qn("w:fill"), "FFF2CC")
+                _tcPr.append(_shd)
+                for _p in _cell.paragraphs:
+                    for _r in _p.runs:
+                        _r.bold = True
+
+            # Seçilen ilin 12 aylık ortalama yağışları ayrıca gösterilir.
+            if isinstance(_mgm_aylik_rapor, dict) and _mgm_aylik_rapor:
+                doc.add_heading("SEÇİLEN İLİN AYLIK ORTALAMA YAĞIŞ DEĞERLERİ", level=5)
+                _ay_tbl = doc.add_table(rows=1, cols=3)
+                _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+                _ay_tbl.autofit = True
+                _ay_hdr = _ay_tbl.rows[0].cells
+                _ay_hdr[0].text = "AY"
+                _ay_hdr[1].text = "ORTALAMA YAĞIŞ (mm)"
+                _ay_hdr[2].text = "DURUM"
+                _aylar_sirali = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+                _en_ay = _yr.get("mgm_en_yuksek_ay", "")
+                for _ay in _aylar_sirali:
+                    if _ay not in _mgm_aylik_rapor:
+                        continue
+                    _c = _ay_tbl.add_row().cells
+                    _c[0].text = _ay
+                    _c[1].text = f"{float(_mgm_aylik_rapor[_ay]):.1f}"
+                    _c[2].text = "EN YÜKSEK AY" if _ay == _en_ay else ""
+                    for _cell in _c:
+                        _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                        for _p in _cell.paragraphs:
+                            _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            for _r in _p.runs:
+                                _r.font.size = Pt(8.5)
+                    if _ay == _en_ay:
+                        for _cell in _c:
+                            _tcPr = _cell._tc.get_or_add_tcPr()
+                            _shd = OxmlElement("w:shd")
+                            _shd.set(qn("w:fill"), "FFF2CC")
+                            _tcPr.append(_shd)
+                            for _p in _cell.paragraphs:
+                                for _r in _p.runs:
+                                    _r.bold = True
+                _aylik_toplam = sum(float(v) for v in _mgm_aylik_rapor.values())
+                doc.add_paragraph(
+                    f"Ölçüm periyodu: {_mgm_periyot or 'MGM verisinde belirtilmemiş'}. "
+                    f"12 aylık ortalama yağış toplamı: {_aylik_toplam:.1f} mm; "
+                    f"aritmetik aylık ortalama: {float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm."
+                )
+            elif _mgm_periyot:
+                doc.add_paragraph(f"Ölçüm periyodu: {_mgm_periyot}.")
+
             doc.add_paragraph(
                 "Kaynak: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri – "
                 "İllerimize Ait Genel İstatistiki Veriler. "
