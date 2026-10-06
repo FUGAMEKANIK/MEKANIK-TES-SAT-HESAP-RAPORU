@@ -1211,33 +1211,47 @@ if _rapor_olustur_sidebar:
             if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
                           # MGM'nin 81 il için yayımladığı günlük toplam en yüksek yağış
                           # değerleri rapora eklenir. Bu tablo Streamlit arayüzünde gösterilmez.
-                          doc.add_heading("MGM İLLER BAZINDA GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARLARI", level=5)
+                          doc.add_heading("SEÇİLEN İLİN GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ MİKTARI", level=5)
                           doc.add_paragraph(
                               "Aşağıdaki değerler Meteoroloji Genel Müdürlüğü (MGM) Resmi İklim "
                               "İstatistikleri sayfalarında yayımlanan 'Günlük Toplam En Yüksek Yağış "
                               "Miktarı' verileridir. Proje ili için hesapta kullanılan değer, ilgili "
                               "satırda gösterilmektedir."
                           )
-                          # RAPOR OLUŞTURMA SIRASINDA 81 İL İÇİN CANLI WEB İSTEĞİ YAPILMAZ.
-                          # Bu tablo önceki sürümde rapor üretimini dakikalarca bekletebiliyor
-                          # ve Streamlit Cloud'da rapor indirme düğmesine ulaşılmasını engelleyebiliyordu.
-                          # Eğer veri daha önce oturumda hazırlandıysa onu kullan; yoksa seçilen ili
-                          # mevcut proje verisinden göster ve diğer illeri "Veri alınmadı" bırak.
+                          # Yalnızca projede seçilen il rapora yazılır.
+                          # Eski sürümde burada 81 ilin tamamı tabloya ekleniyordu;
+                          # bu nedenle seçilen ilin dışındaki satırlar boş görünüyordu.
+                          _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
+
+                          def _il_karsilastirma_adi(_metin):
+                              _x = str(_metin or "").strip()
+                              _x = _x.replace("İ", "I").replace("ı", "i")
+                              return _x.casefold()
+
+                          _secili_il_norm = _il_karsilastirma_adi(_secili_il_rapor)
+                          _mgm_secili = None
+
                           _mgm_81 = st.session_state.get("mgm_81_il_yagis_tablosu", None)
-                          if not isinstance(_mgm_81, list) or not _mgm_81:
-                              _mgm_81 = []
-                              _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
-                              for _il_rapor in MGM_81_IL:
-                                  if _il_rapor == _secili_il_rapor:
-                                      _mgm_81.append((
-                                          _il_rapor,
-                                          _yr.get("mgm_yagis_mm"),
-                                          _yr.get("mgm_yagis_tarih", ""),
-                                          None,
-                                      ))
-                                  else:
-                                      _mgm_81.append((_il_rapor, None, None, None))
-  
+                          if isinstance(_mgm_81, list):
+                              for _kayit in _mgm_81:
+                                  if not isinstance(_kayit, (list, tuple)) or len(_kayit) < 3:
+                                      continue
+                                  if _il_karsilastirma_adi(_kayit[0]) == _secili_il_norm:
+                                      _mgm_secili = tuple(_kayit[:4])
+                                      break
+
+                          # Oturumda MGM sonucu yoksa, hesap sırasında seçilen ilin
+                          # sonucunu doğrudan kullan. Böylece tablo hiçbir zaman boş kalmaz.
+                          if _mgm_secili is None:
+                              _mgm_secili = (
+                                  _secili_il_rapor,
+                                  _yr.get("mgm_yagis_mm"),
+                                  _yr.get("mgm_yagis_tarih", ""),
+                                  _yr.get("mgm_yagis_url"),
+                              )
+
+                          _mgm_81 = [_mgm_secili]
+
                           _mgm_tbl = doc.add_table(rows=1, cols=3)
                           _mgm_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
                           _mgm_tbl.autofit = True
@@ -1259,22 +1273,9 @@ if _rapor_olustur_sidebar:
                                       _r.bold = True
                                       _r.font.size = Pt(8.5)
   
-                          _secili_mgm_il = str(_yr.get("mgm_il", "")).strip()
-  
-                          # Seçilen ili güvenilir biçimde eşleştir:
-                          # Türkçe büyük/küçük harf ve olası boşluk farklarından etkilenmesin.
-                          def _il_karsilastirma_adi(_metin):
-                              _x = str(_metin or "").strip().replace("İ", "I").replace("ı", "i")
-                              return _x.casefold()
-  
-                          _secili_mgm_il_karsilastirma = _il_karsilastirma_adi(_secili_mgm_il)
-  
                           for _il, _deger, _tarih, _url in _mgm_81:
                               _cells = _mgm_tbl.add_row().cells
-                              _is_secili_il = (
-                                  _il_karsilastirma_adi(_il) == _secili_mgm_il_karsilastirma
-                                  and bool(_secili_mgm_il_karsilastirma)
-                              )
+                              _is_secili_il = True
   
                               _cells[0].text = _il
                               _cells[1].text = f"{_deger:.1f}" if _deger is not None else "Veri alınamadı"
@@ -1545,57 +1546,14 @@ if _rapor_olustur_sidebar:
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
             if _hidrolik_tablo:
-                # Hidrolik kontrol sonuçlarını raporda paragraf yerine düzenli bir tablo olarak göster.
-                # Böylece DN, kapasite, hız ve uygunluk bilgileri karşılaştırmalı ve okunabilir olur.
-                from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
-                from docx.enum.table import WD_TABLE_ALIGNMENT as _WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT as _WD_CELL_VERTICAL_ALIGNMENT
-                from docx.oxml import OxmlElement as _OxmlElement
-                from docx.oxml.ns import qn as _qn
-
                 doc.add_paragraph("Kontrol edilen çaplar:")
-                _hidro_tablo = doc.add_table(rows=1, cols=5)
-                _hidro_tablo.alignment = _WD_TABLE_ALIGNMENT.CENTER
-                _hidro_tablo.style = "Table Grid"
-                _hdr = _hidro_tablo.rows[0].cells
-                _basliklar = [
-                    "Boru Çapı",
-                    "Tasarım Kapasitesi (L/s)",
-                    "Manning Kapasitesi (L/s)",
-                    "Manning Hızı (m/s)",
-                    "Durum",
-                ]
-                for _i, _baslik in enumerate(_basliklar):
-                    _hdr[_i].text = _baslik
-                    _hdr[_i].vertical_alignment = _WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    for _par in _hdr[_i].paragraphs:
-                        _par.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                        for _run in _par.runs:
-                            _run.bold = True
-
                 for _x in _hidrolik_tablo:
-                    _row = _hidro_tablo.add_row().cells
-                    _durum = "UYGUN" if _x.get("uygun") else "YETERSİZ"
-                    _degerler = [
-                        f"DN {_x.get('dn', 0)}",
-                        f"{_x.get('q_kapasite_lps', 0):.2f}",
-                        f"{_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f}",
-                        f"{_x.get('hiz_ms', 0):.2f}",
-                        _durum,
-                    ]
-                    for _i, _deger in enumerate(_degerler):
-                        _row[_i].text = _deger
-                        _row[_i].vertical_alignment = _WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                        for _par in _row[_i].paragraphs:
-                            _par.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-
-                # Durum sütunundaki sonucu vurgula; tablo çizgileri korunur.
-                for _row in _hidro_tablo.rows[1:]:
-                    _durum = _row.cells[4].text.strip()
-                    for _run in _row.cells[4].paragraphs[0].runs:
-                        _run.bold = True
-
-                # Tablo genişliğinin sayfa içinde dengeli kalması için autofit kullan.
-                _hidro_tablo.autofit = True
+                    doc.add_paragraph(
+                        f"DN {_x.get('dn', 0)} → tasarım kapasitesi {_x.get('q_kapasite_lps', 0):.2f} L/s; "
+                        f"Manning kapasitesi {_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)):.2f} L/s; "
+                        f"Manning hızı {_x.get('hiz_ms', 0):.2f} m/s; "
+                        f"{'UYGUN' if _x.get('uygun') else 'YETERSİZ'}"
+                    )
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
@@ -2628,194 +2586,6 @@ if _rapor_olustur_sidebar:
                   "en yüksek sınıfa göre belirlenmesi için Madde 19."
               ).italic = True
   
-          # ---------------------------------------------------------------
-          # BİNA / YAPI YÜKSEKLİĞİ ŞEMASI
-          # ---------------------------------------------------------------
-          # ÖNEMLİ: yangin.py ve rapor.py fragment_runner ile exec edildiği için
-          # __file__ her zaman modules/rapor.py'yi göstermeyebilir. Bu nedenle
-          # yalnızca __file__ üzerinden yol üretmek yerine çalışma dizini,
-          # app.py'nin bulunduğu dizin ve olası proje köklerini tarıyoruz.
-          _sema_adi = "bina_yuksekligi_yapi_yuksekligi_sema_opt.png"
-          _sema_adaylari_rapor = []
-          try:
-              _sema_adaylari_rapor.append(Path.cwd() / _sema_adi)
-          except Exception:
-              pass
-          try:
-              _f = Path(__file__).resolve()
-              _sema_adaylari_rapor.extend([
-                  _f.parent / _sema_adi,
-                  _f.parent.parent / _sema_adi,
-              ])
-          except Exception:
-              pass
-          # Streamlit Cloud / GitHub çalışma yolu için yaygın proje köklerini ekle.
-          for _kok in (
-              Path("/mount/src"),
-              Path("/app"),
-              Path("/workspace"),
-              Path("/mnt/data"),
-              Path("/mount/src/mekanik-tes-sat-hesap-raporu"),
-              Path("/mount/src/MEKANIK-TES-SAT-HESAP-RAPORU"),
-          ):
-              _sema_adaylari_rapor.append(_kok / _sema_adi)
-
-          # Önce doğrudan adayları dene. Bulunamazsa yalnızca PNG adıyla
-          # proje ağacında sınırlı bir recursive arama yap.
-          _sema_yolu_rapor = next((x for x in _sema_adaylari_rapor if x.is_file()), None)
-          if _sema_yolu_rapor is None:
-              for _kok in (
-                  Path.cwd(),
-                  Path("/mount/src"),
-                  Path("/app"),
-                  Path("/workspace"),
-                  Path("/mount/src/mekanik-tes-sat-hesap-raporu"),
-                  Path("/mount/src/MEKANIK-TES-SAT-HESAP-RAPORU"),
-              ):
-                  try:
-                      _bulunan = next(_kok.rglob(_sema_adi), None)
-                      if _bulunan is not None and _bulunan.is_file():
-                          _sema_yolu_rapor = _bulunan
-                          break
-                  except Exception:
-                      continue
-
-          if _sema_yolu_rapor is not None:
-              try:
-                  from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN_PARAGRAPH
-                  from docx.shared import Inches as _Inches
-                  _p_sema = doc.add_paragraph()
-                  _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
-                  _r_sema.bold = True
-                  _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  _pic_p = doc.add_paragraph()
-                  _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
-                  _sema_not = doc.add_paragraph(
-                      "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki "
-                      "mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
-                  )
-                  _sema_not.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                  if _sema_not.runs:
-                      _sema_not.runs[0].italic = True
-              except Exception as _sema_hata:
-                  # Resim bulunmuş ancak Word'e eklenememişse raporun tamamını
-                  # bozma; kullanıcıya Streamlit tarafında açık bilgi ver.
-                  try:
-                      st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_sema_hata}")
-                  except Exception:
-                      pass
-          else:
-              # Streamlit Cloud'da depo adı/çalışma dizini farklı olabildiği için
-              # bilinen proje kökünü bir kez daha doğrudan kontrol et.
-              _det_s = Path("/mount/src/mekanik-tes-sat-hesap-raporu") / _sema_adi
-              if _det_s.is_file():
-                  _sema_yolu_rapor = _det_s
-                  try:
-                      _p_sema = doc.add_paragraph()
-                      _p_sema.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                      _r_sema = _p_sema.add_run("Bina yüksekliği ve yapı yüksekliği — şematik gösterim")
-                      _r_sema.bold = True
-                      _pic_p = doc.add_paragraph()
-                      _pic_p.alignment = _WD_ALIGN_PARAGRAPH.CENTER
-                      _pic_p.add_run().add_picture(str(_sema_yolu_rapor), width=_Inches(6.2))
-                  except Exception as _e2:
-                      try: st.warning(f"Bina/yapı yüksekliği şeması rapora eklenemedi: {_e2}")
-                      except Exception: pass
-              else:
-                  try:
-                      st.warning(
-                          "Bina/yapı yüksekliği şeması bulunamadı. "
-                          f"Aranan dosya: {_sema_adi}"
-                      )
-                  except Exception:
-                      pass
-
-          if st.session_state.get("rapor_bolum_73", True):
-              # ------------------------------------------------------------
-              # YAPI / BİNA BİLGİLERİ — 7.3 başlığından önce
-              # ------------------------------------------------------------
-              doc.add_heading("YAPI / BİNA BİLGİLERİ", level=4)
-
-              def _r_sayi(_v, _birim=""):
-                  if _v is None or _v == "":
-                      return "-"
-                  try:
-                      _fv = float(_v)
-                      if abs(_fv) < 1e-12:
-                          return "0" + (f" {_birim}" if _birim else "")
-                      _txt = f"{_fv:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                      return _txt + (f" {_birim}" if _birim else "")
-                  except Exception:
-                      return str(_v) + (f" {_birim}" if _birim else "")
-
-              _gb = [
-                  ("Toplam yapı / kapalı kullanım alanı", st.session_state.get("yangin_genel_toplam_alan_m2", 0), "m²"),
-                  ("Kat sayısı", st.session_state.get("yangin_genel_kat_sayisi", 0), "adet"),
-                  ("Bodrum kat sayısı", st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0), "adet"),
-                  ("Bina yüksekliği", st.session_state.get("yangin_genel_bina_yuksekligi_m", 0), "m"),
-                  ("Yapı yüksekliği", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0), "m"),
-                  ("Merdiven kovası yüksekliği", st.session_state.get("yangin_genel_merdiven_kovasi_yuksekligi_m", 0), "m"),
-                  ("Toplam kişi sayısı", st.session_state.get("yangin_genel_kisi_sayisi", 0), "kişi"),
-                  ("Otopark sayısı / araç kapasitesi", st.session_state.get("yangin_genel_otopark_arac_sayisi", 0), "araç"),
-                  ("Kapalı otopark alanı", st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0), "m²"),
-                  ("Yatak sayısı", st.session_state.get("yangin_genel_yatak_sayisi", 0), "adet"),
-                  ("İmar planlama / yerleşim alanı", st.session_state.get("yangin_genel_imar_alani_m2", 0), "m²"),
-                  ("Acil durum asansörü", "Var" if st.session_state.get("yangin_genel_acil_durum_asansoru", False) else "Yok", ""),
-              ]
-              _tgb = doc.add_table(rows=0, cols=2)
-              _tgb.style = "Table Grid"
-              for _etiket, _val, _birim in _gb:
-                  _cc = _tgb.add_row().cells
-                  _cc[0].text = str(_etiket)
-                  _cc[1].text = str(_val) if isinstance(_val, str) else _r_sayi(_val, _birim)
-                  for _run in _cc[0].paragraphs[0].runs:
-                      _run.bold = True
-
-              # Seçilen kullanım alanları ve etkin yangın tehlike sınıfı
-              # 7.2'deki session-state verisinden yeniden oluşturulur.
-              try:
-                  _secili_kayitlar_73 = _yangin_721_secili_kayitlar()
-              except Exception:
-                  _secili_kayitlar_73 = []
-
-              _otomatik_73 = st.session_state.get("yangin_722_otomatik_sinif", "")
-              _etkin_73_rapor = st.session_state.get("yangin_722_etkin_sinif", "")
-              if not _etkin_73_rapor:
-                  _etkin_73_rapor = st.session_state.get("yangin_721_manuel_sinif", "") if st.session_state.get("yangin_721_manuel", False) else _otomatik_73
-              if not _otomatik_73 and _secili_kayitlar_73:
-                  try:
-                      _otomatik_73 = _ek1b_otomatik_sinif(_secili_kayitlar_73)
-                  except Exception:
-                      _otomatik_73 = "Belirlenemedi"
-              if not _etkin_73_rapor:
-                  _etkin_73_rapor = _otomatik_73 or "Belirlenemedi"
-
-              _tsec73 = doc.add_table(rows=0, cols=2)
-              _tsec73.style = "Table Grid"
-              _sec_satirlari_73 = [
-                  ("Seçilen bina / kullanım alanları", ", ".join(str(x.get("etiket", "")) for x in _secili_kayitlar_73) if _secili_kayitlar_73 else "Seçilmedi"),
-                  ("Ek-1/B + Ek-1/C otomatik tehlike sınıfı", _otomatik_73 or "Belirlenemedi"),
-                  ("Uygulanacak yangın tehlike sınıfı", _etkin_73_rapor),
-                  ("Tehlike sınıfı seçim kaynağı", st.session_state.get("yangin_722_secim_kaynagi", "BYKHY Ek-1/B")),
-              ]
-              for _etiket, _deger in _sec_satirlari_73:
-                  _cc = _tsec73.add_row().cells
-                  _cc[0].text = _etiket
-                  _cc[1].text = str(_deger)
-                  for _run in _cc[0].paragraphs[0].runs:
-                      _run.bold = True
-                  if _etiket == "Uygulanacak yangın tehlike sınıfı":
-                      for _cell in _cc:
-                          _tcPr = _cell._tc.get_or_add_tcPr()
-                          _shd = OxmlElement("w:shd")
-                          _shd.set(qn("w:fill"), "FFF2CC")
-                          _tcPr.append(_shd)
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-
-
       # -----------------------------------------------------------------------
       # 7.3 - 7.15 YANGIN TESİSATI ALT BÖLÜMLERİ
       # Her başlık ayrı bir bölüm olarak tutulur; hesap içerikleri sonraki
@@ -2858,145 +2628,10 @@ if _rapor_olustur_sidebar:
                   _run7.italic = True
                   _run7.font.size = Pt(15)
                   _run7.font.color.rgb = RGBColor(31, 78, 121)
-                  # 7.3 bölümü: program ekranındaki içerik, seçilen tehlike sınıfı ve
-                  # Genel Bina Bilgileri doğrudan rapora aktarılır.
-                  if _bk == "bolum_73":
-                      # ------------------------------------------------------------
-                      # 7.3.1 - Ekrandaki görünümle aynı mantıkta: numaralı konu + açıklama
-                      # ------------------------------------------------------------
-                      doc.add_heading("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI", level=4)
-                      _yd_esaslari_rapor = [
-                          ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur."),
-                          ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir."),
-                          ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır."),
-                          ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır."),
-                          ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır."),
-                          ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır."),
-                          ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır."),
-                          ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır."),
-                          ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır."),
-                      ]
-                      for _no, _konu, _metin in _yd_esaslari_rapor:
-                          _pyd = doc.add_paragraph()
-                          _pyd.paragraph_format.space_before = Pt(5)
-                          _pyd.paragraph_format.space_after = Pt(2)
-                          _ryd = _pyd.add_run(f"{_no}. {_konu}")
-                          _ryd.bold = True
-                          _ryd.font.size = Pt(11)
-                          _pyd2 = doc.add_paragraph(_metin)
-                          _pyd2.paragraph_format.space_after = Pt(6)
-
-                      doc.add_heading("7.3.2 YANGIN SUYU DEPOSU VE YANGIN DOLABI SİSTEMİ İLİŞKİSİ", level=4)
-                      doc.add_paragraph(
-                          "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C, bina tehlike sınıfına "
-                          "göre yangın dolabı sistemi için ilâve edilecek su ihtiyacını belirler. Programda 7.2.2’de "
-                          "seçilen etkin yangın tehlike sınıfına göre aşağıdaki değer otomatik seçilmiştir."
-                      )
-
-                      _ek8c_rapor = [
-                          ("Düşük tehlike", 100, 30),
-                          ("Orta Tehlike-1-2", 100, 60),
-                          ("Orta Tehlike-3-4", 100, 60),
-                          ("Yüksek Tehlike", 200, 90),
-                      ]
-                      # 7.3.2 değerlerini yalnızca 7.3 ekranında daha önce oluşmuş
-                      # session-state değerine bağlama. Rapor butonuna basıldığı anda
-                      # 7.2'de seçilmiş etkin tehlike sınıfından yeniden üret.
-                      _etkin_73_rapor_732 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                      if not _etkin_73_rapor_732:
-                          _otomatik_732 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                          if st.session_state.get("yangin_721_manuel", False):
-                              _etkin_73_rapor_732 = str(st.session_state.get("yangin_721_manuel_sinif", "")).strip()
-                          else:
-                              _etkin_73_rapor_732 = _otomatik_732
-
-                      def _ek8c_grup_esle_rapor(_sinif):
-                          _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
-                          if _s.startswith("düşük"):
-                              return "Düşük tehlike"
-                          if _s.startswith("ortatehlike-1") or _s.startswith("ortatehlike-2"):
-                              return "Orta Tehlike-1-2"
-                          if _s.startswith("ortatehlike-3") or _s.startswith("ortatehlike-4"):
-                              return "Orta Tehlike-3-4"
-                          if _s.startswith("yüksek"):
-                              return "Yüksek Tehlike"
-                          return ""
-
-                      _secili_grup_73 = str(st.session_state.get("yangin_73_ek8c_grup", "")).strip()
-                      if not _secili_grup_73:
-                          _secili_grup_73 = _ek8c_grup_esle_rapor(_etkin_73_rapor_732)
-
-                      _q_dolap_73 = st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak")
-                      _sure_73 = st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak")
-                      _ek8c_fallback = {
-                          "Düşük tehlike": (100, 30),
-                          "Orta Tehlike-1-2": (100, 60),
-                          "Orta Tehlike-3-4": (100, 60),
-                          "Yüksek Tehlike": (200, 90),
-                      }
-                      if _secili_grup_73 in _ek8c_fallback:
-                          _fb_q, _fb_sure = _ek8c_fallback[_secili_grup_73]
-                          if _q_dolap_73 is None:
-                              _q_dolap_73 = _fb_q
-                          if _sure_73 is None:
-                              _sure_73 = _fb_sure
-                      if _q_dolap_73 is None:
-                          _q_dolap_73 = st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak")
-
-                      _t732 = doc.add_table(rows=1, cols=3)
-                      _t732.style = "Table Grid"
-                      for _i, _h in enumerate(["Bina Tehlike Sınıfı", "İlave Yangın Dolabı Debisi (L/dak)", "Süre (dak)"]):
-                          _t732.rows[0].cells[_i].text = _h
-                          for _r in _t732.rows[0].cells[_i].paragraphs[0].runs:
-                              _r.bold = True
-                      for _grup, _q, _sure in _ek8c_rapor:
-                          _cc = _t732.add_row().cells
-                          _cc[0].text = _grup
-                          _cc[1].text = f"{_q:,}".replace(",", ".")
-                          _cc[2].text = str(_sure)
-                          if _grup == _secili_grup_73:
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-                                  for _pr in _cell.paragraphs:
-                                      for _run in _pr.runs:
-                                          _run.bold = True
-
-                      _tsec = doc.add_table(rows=0, cols=2)
-                      _tsec.style = "Table Grid"
-                      for _etiket, _deger in [
-                          ("7.2’den otomatik seçilen tehlike sınıfı", _secili_grup_73 or "Belirlenmedi"),
-                          ("Seçilen yangın dolabı debisi", f"{_q_dolap_73} L/dak" if _q_dolap_73 is not None else "Belirlenmedi"),
-                          ("Seçilen yangın dolabı süresi", f"{_sure_73} dk" if _sure_73 is not None else "Belirlenmedi"),
-                      ]:
-                          _cc = _tsec.add_row().cells
-                          _cc[0].text = _etiket
-                          _cc[1].text = str(_deger)
-                          if _etiket != "7.2’den otomatik seçilen tehlike sınıfı" or _secili_grup_73:
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-
-                      _p73not = doc.add_paragraph()
-                      _p73not.add_run(
-                          "Not: Bu bölümde yalnızca yangın dolabı için seçilen Ek-8/C değeri kullanılmaktadır. "
-                          "Hidrant sistemi ve hidrant debisi 7.4 bölümünde ayrıca değerlendirilecektir. "
-                          "Seçilen yangın dolabı debisi ileride yangın suyu deposu kapasite hesabına aktarılacaktır."
-                      ).italic = True
-                      _src73 = doc.add_paragraph()
-                      _src73.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
-                          "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları."
-                      ).bold = True
-                  else:
-                      _body7 = doc.add_paragraph(
-                          "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
-                      )
-                      _body7.paragraph_format.space_after = Pt(6)
+                  _body7 = doc.add_paragraph(
+                      "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                  )
+                  _body7.paragraph_format.space_after = Pt(6)
   
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
