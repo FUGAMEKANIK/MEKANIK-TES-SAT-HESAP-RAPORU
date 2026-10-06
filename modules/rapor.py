@@ -3029,6 +3029,121 @@ if _rapor_olustur_sidebar:
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi."
                       ).italic = True
 
+                      # ----------------------------------------------------------
+                      # SPRİNKLER BORU ÇAPI TABLOLARI VE SEÇİLEN DEĞER
+                      # ----------------------------------------------------------
+                      doc.add_heading("7.5.1.1 SPRİNKLER BORU ÇAPI TESPİTİ", level=5)
+                      doc.add_paragraph(
+                          "Sprinkler boru çapı seçiminde yüklenen SPRİNKLER ÇAP TABLOSU esas alınmıştır. "
+                          "Tehlike grubu 7.2 bölümündeki etkin yangın tehlike sınıfından otomatik belirlenir. "
+                          "Programda manuel seçim yapılması hâlinde manuel seçilen değer rapora aktarılır."
+                      )
+
+                      _r_cap_hafif = [
+                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
+                          ('2" DN50', '6-10'), ('2½" DN65', '11-30'), ('3" DN80', '31-60'),
+                          ('4" DN100', '61-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
+                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                      ]
+                      _r_cap_orta = [
+                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
+                          ('2" DN50', '6-10'), ('2½" DN65', '11-20'), ('3" DN80', '21-40'),
+                          ('4" DN100', '41-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
+                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                      ]
+                      _r_cap_yuksek = [
+                          ('1" DN25', '1'), ('1¼" DN32', '2-4'), ('1½" DN40', '5-4'),
+                          ('2" DN50', '8-14'), ('2½" DN65', '15-26'), ('3" DN80', '27-54'),
+                          ('4" DN100', '55-89'), ('5" DN125', '90-149'), ('6" DN150', '150-275'),
+                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                      ]
+                      _r_cap_test = [('2" hatta kadar', '¾"'), ('3" hatta kadar', '1¼"'), ('4" ve üzeri', '2"')]
+
+                      def _r_cap_esle(_liste, _adet):
+                          import re as _re_r_cap
+                          for _cap, _aralik in _liste:
+                              _m = _re_r_cap.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", str(_aralik))
+                              if _m and int(_m.group(1)) <= int(_adet) <= int(_m.group(2)):
+                                  return _cap, _aralik
+                              if str(_aralik).strip().isdigit() and int(_aralik) == int(_adet):
+                                  return _cap, _aralik
+                          return "", ""
+
+                      _r_sinif = str(st.session_state.get("yangin_722_etkin_sinif", "") or st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                      _r_snorm = _r_sinif.lower().replace("–", "-").replace(" ", "")
+                      if _r_snorm.startswith("düşük"):
+                          _r_grup = "HAFİF TEHLİKE"; _r_liste = _r_cap_hafif
+                      elif _r_snorm.startswith("orta"):
+                          _r_grup = "ORTA TEHLİKE"; _r_liste = _r_cap_orta
+                      elif _r_snorm.startswith("yüksek"):
+                          _r_grup = "YÜKSEK TEHLİKE"; _r_liste = _r_cap_yuksek
+                      else:
+                          _r_grup = ""; _r_liste = []
+
+                      _r_adet = int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1)
+                      _r_oto_cap, _r_oto_aralik = _r_cap_esle(_r_liste, _r_adet)
+                      _r_kaynak = str(st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Otomatik"))
+                      _r_final_cap = str(st.session_state.get("yangin_75_sprinkler_cap_final", "") or "")
+                      if not _r_final_cap:
+                          _r_final_cap = _r_oto_cap
+                      _r_manual_group = str(st.session_state.get("yangin_75_sprinkler_manuel_grup", "") or "")
+
+                      _p_sel = doc.add_paragraph()
+                      _r = _p_sel.add_run("Seçilen sprinkler boru çapı: ")
+                      _r.bold = True
+                      _p_sel.add_run(
+                          f"{_r_final_cap or 'Seçilmedi'} — Tehlike grubu: {_r_grup or 'Seçilmedi'}; "
+                          f"Yangın tehlike sınıfı: {_r_sinif or 'Seçilmedi'}; Sprinkler adedi: {_r_adet}; "
+                          f"Seçim yöntemi: {_r_kaynak}."
+                      )
+
+                      _r_cap_tables = [
+                          ("HAFİF TEHLİKE", _r_cap_hafif),
+                          ("ORTA TEHLİKE", _r_cap_orta),
+                          ("YÜKSEK TEHLİKE", _r_cap_yuksek),
+                      ]
+                      for _r_title, _r_rows in _r_cap_tables:
+                          _pt = doc.add_paragraph()
+                          _pt.add_run(f"{_r_title} ÇAP TABLOSU").bold = True
+                          _tt = doc.add_table(rows=1, cols=2)
+                          _tt.style = "Table Grid"
+                          _tt.rows[0].cells[0].text = "BORU ÇAPI"
+                          _tt.rows[0].cells[1].text = "SPRİNKLER ADEDİ"
+                          for _cc in _tt.rows[0].cells:
+                              for _pr in _cc.paragraphs:
+                                  for _rr in _pr.runs:
+                                      _rr.bold = True
+                          for _cap, _aralik in _r_rows:
+                              _cc = _tt.add_row().cells
+                              _cc[0].text = _cap
+                              _cc[1].text = _aralik
+                              if _cap == _r_final_cap and _r_title == _r_grup:
+                                  for _cell in _cc:
+                                      _tcPr = _cell._tc.get_or_add_tcPr()
+                                      _shd = OxmlElement("w:shd")
+                                      _shd.set(qn("w:fill"), "E2F0D9")
+                                      _tcPr.append(_shd)
+                                      for _pr in _cell.paragraphs:
+                                          for _rr in _pr.runs:
+                                              _rr.bold = True
+
+                      _ptd = doc.add_paragraph()
+                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU").bold = True
+                      _td = doc.add_table(rows=1, cols=2)
+                      _td.style = "Table Grid"
+                      _td.rows[0].cells[0].text = "ANA HAT"
+                      _td.rows[0].cells[1].text = "TEST-DRENAJ ÇAPI"
+                      for _h, _c in _r_cap_test:
+                          _cc = _td.add_row().cells
+                          _cc[0].text = _h
+                          _cc[1].text = _c
+
+                      _src_cap = doc.add_paragraph()
+                      _src_cap.add_run(
+                          "Kaynak: Kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx. "
+                          "Not: Yüksek Tehlike tablosundaki 1½\" DN40 satırı kaynak dosyada 5-4 olarak yazılmıştır; kaynak veri değiştirilmemiştir."
+                      ).italic = True
+
                       doc.add_heading("7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ", level=4)
                       doc.add_paragraph(
                           "BYKHY Ek-8/B'ye göre yağmurlama sistemi tasarım yoğunluğu ve tasarım alanı, bina tehlike sınıfına göre aşağıdaki tablodan belirlenir. "
