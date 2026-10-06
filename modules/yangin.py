@@ -882,16 +882,13 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=19):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
+                        # Fragment içinde eski form/widget anahtarlarının session_state
+                        # ile çakışmasını önlemek için bu ekleme alanında form kullanmıyoruz.
+                        # İki alanın etiketleri konuma göre benzersizdir.
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
-                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
-                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            _bkey = f"yangin_v3_{_liste_key}_baslik"
-                            _mkey = f"yangin_v3_{_liste_key}_metin"
-                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
-                                _b = st.text_input("Madde başlığı", key=_bkey)
-                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                            _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
+                            _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
+                            _submit_madde = st.button(f"Maddeyi ekle — {_yer_etiketi}")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1000,12 +997,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için yangın dolabı debisi otomatik seçilemedi.")
 
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
-                    st.markdown(
-                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
-                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
-                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
-                        unsafe_allow_html=True,
-                    )
 
             elif _baslik.startswith("7.4 "):
                 with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
@@ -1065,16 +1056,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=_bas_no):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
+                        # 7.3.1 ile aynı güvenli yaklaşım: form_submit_button ve
+                        # sabit widget key'leri kullanılmıyor.
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
-                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
-                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            _bkey = f"yangin_v3_{_liste_key}_baslik"
-                            _mkey = f"yangin_v3_{_liste_key}_metin"
-                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
-                                _b = st.text_input("Madde başlığı", key=_bkey)
-                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                            _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
+                            _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
+                            _submit_madde = st.button(f"Maddeyi ekle — {_yer_etiketi}")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1086,6 +1073,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.markdown("**HİDRANT MADDELERİ — EK MADDELER (8. MADDEDEN SONRA)**")
                     _hidrant_maddeleri_goster_ve_ekle("yangin_741_maddeler_cap_oncesi", "8. maddeden sonra")
 
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik</i></div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    # --------------------------------------------------------------
                     # 7.4.2 - HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
                     # BYKHY Ek-8/C
                     # --------------------------------------------------------------
@@ -1177,182 +1170,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "ve 700 kPa hidrant çıkış basıncı ayrıca dikkate alınacaktır."
                     )
                     st.markdown(
-                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
-                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
-                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
-                        unsafe_allow_html=True,
-                    )
-
-            elif _baslik.startswith("7.5 "):
-                # --------------------------------------------------------------
-                # 7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ
-                # --------------------------------------------------------------
-                with st.expander("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
-                    st.markdown(
-                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
-                        "SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
-                        unsafe_allow_html=True,
-                    )
-                    _ui_75_rapor_key = "yangin_75_rapor_ui"
-                    st.session_state.setdefault(_ui_75_rapor_key, bool(st.session_state.get("rapor_bolum_75", True)))
-                    st.checkbox(
-                        "7.5 rapora eklensin",
-                        key=_ui_75_rapor_key,
-                        on_change=lambda: st.session_state.__setitem__(
-                            "rapor_bolum_75", bool(st.session_state.get(_ui_75_rapor_key, True))
-                        ),
-                    )
-
-                    # ----------------------------------------------------------
-                    # 7.5.1 - BYKHY MADDE 96
-                    # ----------------------------------------------------------
-                    st.markdown(
-                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
-                        "7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
-                        unsafe_allow_html=True,
-                    )
-                    # 7.2 ile bağlantı: bina/kullanım seçimi ve etkin yangın tehlike sınıfı
-                    # burada yeniden seçtirilmez; 7.2'deki mevcut session-state verisi kullanılır.
-                    _secili_kullanim_75 = [
-                        str(x.get("etiket", "")).strip()
-                        for x in _yangin_721_secili_kayitlar()
-                        if str(x.get("etiket", "")).strip()
-                    ]
-                    _kullanim_metni_75 = " ".join(_secili_kullanim_75).lower()
-                    _etkin_sinif_75 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                    if not _etkin_sinif_75:
-                        _etkin_sinif_75 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                    _yapi_h_75 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
-                    _otopark_alan_75 = float(st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0.0) or 0.0)
-                    _otopark_arac_75 = int(st.session_state.get("yangin_genel_otopark_arac_sayisi", 0) or 0)
-
-                    # Seçilen kullanım alanına karşılık gelen Madde 96/2 ifadesi.
-                    # Buradaki sarı vurgu “zorunluluk kesinleşti” anlamına gelmez;
-                    # 7.2'de seçilen kullanım alanının Madde 96/2'deki karşılığını gösterir.
-                    _spr_75_vurgu = []
-                    if "konut" in _kullanim_metni_75:
-                        _spr_75_vurgu.append("yapı yüksekliği 51,50 m’yi geçen konutlarda")
-                    else:
-                        _spr_75_vurgu.append("yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda")
-                    if any(k in _kullanim_metni_75 for k in ["otopark"]):
-                        _spr_75_vurgu.append("ilgili kapalı otoparklarda")
-                    if any(k in _kullanim_metni_75 for k in ["otel", "yurt", "pansiyon", "misafirhane"]):
-                        _spr_75_vurgu.append("belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde")
-                    if any(k in _kullanim_metni_75 for k in ["büyük mağaza", "alışveriş", "ticaret", "eğlence", "toplanma"]):
-                        _spr_75_vurgu.append("toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde")
-
-                    st.markdown(
-                        '<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin:8px 0 12px 0;">'
-                        f'<b>7.2’den gelen bina/kullanım alanı:</b> {", ".join(_secili_kullanim_75) if _secili_kullanim_75 else "Seçilmedi"}<br>'
-                        f'<b>7.2’den gelen etkin yangın tehlike sınıfı:</b> {_etkin_sinif_75 or "Belirlenemedi"}<br>'
-                        f'<b>Madde 96/2’de ilişkili ifade:</b> {", ".join(_spr_75_vurgu) if _spr_75_vurgu else "Belirlenemedi"}'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    _sprinkler_esaslari = [
-                        ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
-                        ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
-                        ("3", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su sprey ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
-                        ("4", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
-                        ("5", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
-                        ("6", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
-                        ("7", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
-                        ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
-                        ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
-                        ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
-                    ]
-                    for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
-                        st.markdown(f"**{_no}. {_baslik_s}**")
-                        if _no == "2" and _spr_75_vurgu:
-                            # Madde metninin sadece 7.2'de seçilen kullanım alanıyla
-                            # ilişkili kısmını sarı vurgula. Diğer metin aynen korunur.
-                            _html_s = _metin_s
-                            for _ifade in _spr_75_vurgu:
-                                _html_s = _html_s.replace(
-                                    _ifade,
-                                    f'<mark style="background-color:#FFF2CC; padding:2px 4px; border-radius:3px; font-weight:700;">{_ifade}</mark>'
-                                )
-                            st.markdown(_html_s, unsafe_allow_html=True)
-                        else:
-                            st.write(_metin_s)
-
-                    st.caption("Sarı vurgular, 7.2’de seçilen bina/kullanım alanının Madde 96/2’deki karşılığını gösterir. Sprinkler zorunluluğunun kesin değerlendirilmesinde bina yüksekliği, alan, otopark ve diğer yönetmelik koşulları ayrıca dikkate alınır.")
-                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
-
-                    # ----------------------------------------------------------
-                    # 7.5.2 - BYKHY EK-8/B
-                    # ----------------------------------------------------------
-                    st.markdown(
-                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
-                        "7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ</div>",
-                        unsafe_allow_html=True,
-                    )
-                    st.write(
-                        "BYKHY Ek-8/B'ye göre yağmurlama sistemi tasarım yoğunluğu ve tasarım alanı, bina tehlike sınıfına göre aşağıdaki tablodan belirlenir. "
-                        "Depolama alanları ve farklı özellikteki kullanım alanları için TS EN 12845 esas alınır."
-                    )
-
-                    _ek8b_sprinkler_verileri = [
-                        ("Düşük Tehlike", "2,25", "84", "—"),
-                        ("Orta Tehlike-1", "5,0", "72", "90"),
-                        ("Orta Tehlike-2", "5,0", "144", "180"),
-                        ("Orta Tehlike-3", "5,0", "216", "270"),
-                        ("Orta Tehlike-4", "5,0", "360", "—"),
-                        ("Yüksek Tehlike-1", "7,7", "260", "325"),
-                        ("Yüksek Tehlike-2", "10,0", "260", "325"),
-                        ("Yüksek Tehlike-3", "12,5", "260", "325"),
-                        ("Yüksek Tehlike-4", "Yoğun su", "—", "—"),
-                    ]
-                    _etkin_75 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                    if not _etkin_75:
-                        _etkin_75 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                    _s75 = _etkin_75.lower().replace("–", "-").replace(" ", "")
-
-                    def _ek8b_sprinkler_esle(_sinif):
-                        _s = str(_sinif or "").lower().replace("–", "-").replace(" ", "")
-                        for _kayit in _ek8b_sprinkler_verileri:
-                            _etiket = _kayit[0].lower().replace("–", "-").replace(" ", "")
-                            if _s == _etiket:
-                                return _kayit[0]
-                        return ""
-
-                    _ek8b_sprinkler_secili = _ek8b_sprinkler_esle(_etkin_75)
-                    _t75h = st.columns([2.0, 1.6, 1.55, 1.55])
-                    for _c, _txt in zip(_t75h, [
-                        "Tehlike Sınıfı", "Tasarım Yoğunluğu (mm/dak)",
-                        "Koruma Alanı — Islak veya Ön Etkili (m²)",
-                        "Koruma Alanı — Kuru veya Değişken (m²)"
-                    ]):
-                        _c.markdown(f"**{_txt}**")
-                    for _grup, _yog, _islak, _kuru in _ek8b_sprinkler_verileri:
-                        _sec = _grup == _ek8b_sprinkler_secili
-                        _bg = "#FFF2CC" if _sec else "#FFFFFF"
-                        _cols = st.columns([2.0, 1.6, 1.55, 1.55])
-                        for _c, _val in zip(_cols, [_grup, _yog, _islak, _kuru]):
-                            _c.markdown(
-                                f'<div style="background-color:{_bg}; border:1px solid #D9D9D9; padding:7px 8px; min-height:32px;">{_val}</div>',
-                                unsafe_allow_html=True,
-                            )
-
-                    if _ek8b_sprinkler_secili:
-                        _sec75 = next(x for x in _ek8b_sprinkler_verileri if x[0] == _ek8b_sprinkler_secili)
-                        st.session_state["yangin_75_ek8b_tehlike_sinifi"] = _sec75[0]
-                        st.session_state["yangin_75_ek8b_tasarim_yogunlugu"] = _sec75[1]
-                        st.session_state["yangin_75_ek8b_islak_on_etkili_alan"] = _sec75[2]
-                        st.session_state["yangin_75_ek8b_kuru_degisken_alan"] = _sec75[3]
-                        st.markdown(
-                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
-                            f'<b>7.2’den otomatik seçilen değer:</b> {_sec75[0]} → Tasarım yoğunluğu: <b>{_sec75[1]} mm/dak</b> → Islak/ön etkili alan: <b>{_sec75[2]} m²</b> → Kuru/değişken alan: <b>{_sec75[3]} m²</b>'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için Ek-8/B tasarım değeri otomatik seçilemedi.")
-
-                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — Ek-8/B: Yağmurlama Sisteminde Tasarım Yoğunlukları.")
-                    st.markdown(
-                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
+                        '<div style="font-size:15px; margin-top:10px; padding:8px 0;"><i>'
                         'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
                         'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
