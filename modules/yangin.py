@@ -891,7 +891,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button(f"Maddeyi ekle — {_liste_key}")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1000,6 +1000,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için yangın dolabı debisi otomatik seçilemedi.")
 
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
+                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
+                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
+                        unsafe_allow_html=True,
+                    )
 
             elif _baslik.startswith("7.4 "):
                 with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
@@ -1068,7 +1074,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
                                 _b = st.text_input("Madde başlığı", key=_bkey)
                                 _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                                _submit_madde = st.form_submit_button(f"Maddeyi ekle — {_liste_key}")
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1080,12 +1086,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.markdown("**HİDRANT MADDELERİ — EK MADDELER (8. MADDEDEN SONRA)**")
                     _hidrant_maddeleri_goster_ve_ekle("yangin_741_maddeler_cap_oncesi", "8. maddeden sonra")
 
-                    st.markdown(
-                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik</i></div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    # --------------------------------------------------------------
                     # 7.4.2 - HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
                     # BYKHY Ek-8/C
                     # --------------------------------------------------------------
@@ -1177,12 +1177,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "ve 700 kPa hidrant çıkış basıncı ayrıca dikkate alınacaktır."
                     )
                     st.markdown(
-                        '<div style="font-size:15px; margin-top:10px; padding:8px 0;"><i>'
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
                         'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
                         'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
                     )
-
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
             if not _baslik.startswith("7.1") and not _baslik.startswith("7.2"):
