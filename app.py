@@ -663,10 +663,7 @@ def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
         st.session_state["aktif_proje_adi"] = proje.proje_adi
         st.session_state["proje_kaynak"] = "yerel"
         st.session_state["proje_son_kayit_zamani"] = datetime.now().strftime("%H:%M:%S")
-        if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SECRET_KEY"):
-            st.session_state["proje_yukleme_bildirimi"] = f"☁️ '{proje.proje_adi}' buluta kaydedildi."
-        else:
-            st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' yerel olarak kaydedildi."
+        st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' kaydedildi."
         return True
     except Exception as hata:
         st.session_state["proje_yukleme_bildirimi"] = f"Proje kaydedilemedi: {hata}"
@@ -691,7 +688,11 @@ def _proje_sil(proje_id):
     try:
         if not proje_id:
             return
-        _PROJE_YONETICISI.proje_sil(proje_id, onay=True)
+        klasor = Path(_PROJE_YONETICISI.ana_dizin) / proje_id
+        if not klasor.exists():
+            st.session_state["proje_yukleme_bildirimi"] = "Silinecek proje bulunamadı."
+            return
+        shutil.rmtree(klasor)
         if st.session_state.get("aktif_proje_id") == proje_id:
             st.session_state.pop("aktif_proje_id", None)
             st.session_state.pop("aktif_proje_adi", None)
@@ -1230,14 +1231,12 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
 
     _mevcut_projeler = []
     try:
-        _mevcut_projeler = [
-            str(item.get("proje_id", ""))
-            for item in _PROJE_YONETICISI.proje_listesi()
-            if item.get("proje_id")
-        ]
-    except Exception as _liste_hatasi:
+        _mevcut_projeler = sorted([
+            p.name for p in Path(_PROJE_YONETICISI.ana_dizin).iterdir()
+            if p.is_dir() and (p / "proje.json").exists()
+        ])
+    except Exception:
         _mevcut_projeler = []
-        st.warning(f"Proje listesi alınamadı: {_liste_hatasi}")
 
     st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
 
@@ -1475,7 +1474,6 @@ _BOLUM_NAV = [
     ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
     ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
     ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
-    ("6.2.3 YAĞ AYIRICI SEÇİMLERİ", "bolum_623", "rapor_bolum_623"),
     ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
     ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
     ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
@@ -2405,3 +2403,10 @@ with _t_havalandirma:
 
 # RAPOR OLUŞTURMA — modüler rapor motoru
 run_fragment("rapor.py", globals())
+
+# SAYFA SONU ANKORU — sağdaki "Sona Git" bağlantısının hedefi.
+# Ana app.py'nin gerçek sonunda bulunur; modüler fragmentlerden sonra çalışır.
+st.markdown(
+    '<span id="sayfa_sonu" tabindex="-1"></span>',
+    unsafe_allow_html=True,
+)
