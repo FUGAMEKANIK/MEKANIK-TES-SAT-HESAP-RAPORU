@@ -2904,6 +2904,86 @@ if _rapor_olustur_sidebar:
                       _pk74 = doc.add_paragraph()
                       _rk74 = _pk74.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
                       _rk74.italic = True
+
+                      # 7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
+                      doc.add_heading("7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ", level=4)
+                      doc.add_paragraph(
+                          "BYKHY Ek-8/C'ye göre bina tehlike sınıfına bağlı olarak hidrant sistemi için ilave edilecek "
+                          "su ihtiyacı aşağıdaki tablodan otomatik olarak seçilir. BYKHY Madde 95/2 gereği hidrant "
+                          "sistemi dizayn debisi en az 1.900 L/dak olmalı ve hidrant çıkışında 700 kPa basınç sağlanmalıdır."
+                      )
+
+                      _ek8c_hidrant_verileri_rapor = [
+                          ("Düşük tehlike", 400, 30),
+                          ("Orta Tehlike-1-2", 400, 60),
+                          ("Orta Tehlike-3-4", 1000, 60),
+                          ("Yüksek Tehlike", 1500, 90),
+                      ]
+                      _etkin_74_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                      if not _etkin_74_rapor:
+                          _etkin_74_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                      _s74 = _etkin_74_rapor.lower().replace("–", "-").replace(" ", "")
+                      if _s74.startswith("düşük"):
+                          _ek8c_hidrant_secili_rapor = "Düşük tehlike"
+                      elif _s74.startswith("ortatehlike-1") or _s74.startswith("ortatehlike-2"):
+                          _ek8c_hidrant_secili_rapor = "Orta Tehlike-1-2"
+                      elif _s74.startswith("ortatehlike-3") or _s74.startswith("ortatehlike-4"):
+                          _ek8c_hidrant_secili_rapor = "Orta Tehlike-3-4"
+                      elif _s74.startswith("yüksek"):
+                          _ek8c_hidrant_secili_rapor = "Yüksek Tehlike"
+                      else:
+                          _ek8c_hidrant_secili_rapor = ""
+
+                      _t74 = doc.add_table(rows=1, cols=3)
+                      _t74.style = "Table Grid"
+                      for _cell, _txt in zip(_t74.rows[0].cells, [
+                          "BİNA TEHLİKE SINIFI", "İLAVE HİDRANT DEBİSİ (L/dak)", "SÜRE (dak)"
+                      ]):
+                          _cell.text = _txt
+                          for _pr in _cell.paragraphs:
+                              for _run in _pr.runs:
+                                  _run.bold = True
+                      for _grup, _q_hidrant, _sure in _ek8c_hidrant_verileri_rapor:
+                          _cc = _t74.add_row().cells
+                          _cc[0].text = _grup
+                          _cc[1].text = f"{_q_hidrant:,}".replace(",", ".")
+                          _cc[2].text = str(_sure)
+                          if _grup == _ek8c_hidrant_secili_rapor:
+                              for _cell in _cc:
+                                  _tcPr = _cell._tc.get_or_add_tcPr()
+                                  _shd = OxmlElement("w:shd")
+                                  _shd.set(qn("w:fill"), "FFF2CC")
+                                  _tcPr.append(_shd)
+                                  for _pr in _cell.paragraphs:
+                                      for _run in _pr.runs:
+                                          _run.bold = True
+
+                      _ek8c_hidrant_kayit_rapor = next(
+                          (x for x in _ek8c_hidrant_verileri_rapor if x[0] == _ek8c_hidrant_secili_rapor),
+                          None,
+                      )
+                      if _ek8c_hidrant_kayit_rapor:
+                          _qh74, _sureh74 = _ek8c_hidrant_kayit_rapor[1], _ek8c_hidrant_kayit_rapor[2]
+                          _p74sonuc = doc.add_paragraph()
+                          _r = _p74sonuc.add_run("7.4.2 Tasarım Esası: ")
+                          _r.bold = True
+                          _p74sonuc.add_run(
+                              f"Seçilen yangın tehlike sınıfı: {_etkin_74_rapor} → "
+                              f"Hidrant ilave debisi: {_qh74} L/dak → Süre: {_sureh74} dk."
+                          )
+
+                      _src742 = doc.add_paragraph()
+                      _src742.add_run(
+                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
+                          "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları; "
+                          "Madde 95/2: Hidrant sistemi dizayn debisi ve çıkış basıncı."
+                      ).italic = True
+                      _pk742 = doc.add_paragraph()
+                      _rk742 = _pk742.add_run(
+                          "Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; "
+                          "L/dak – litre/dakika; kPa – kilopaskal"
+                      )
+                      _rk742.italic = True
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
