@@ -2988,6 +2988,38 @@ if _rapor_olustur_sidebar:
                   # 7.5 Sprinkler (Yağmurlama) Sistemi
                   elif _bk == "bolum_75":
                       doc.add_heading("7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
+                      # 7.2 -> 7.5 veri bağlantısı: bina/kullanım alanı ve etkin
+                      # yangın tehlike sınıfı raporda da doğrudan 7.2'den alınır.
+                      _secili_kullanim_75_rapor = [
+                          str(x.get("etiket", "")).strip()
+                          for x in _yangin_721_secili_kayitlar()
+                          if str(x.get("etiket", "")).strip()
+                      ]
+                      _kullanim_metni_75_rapor = " ".join(_secili_kullanim_75_rapor).lower()
+                      _etkin_sinif_75_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                      if not _etkin_sinif_75_rapor:
+                          _etkin_sinif_75_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                      _spr_75_vurgu_rapor = []
+                      if "konut" in _kullanim_metni_75_rapor:
+                          _spr_75_vurgu_rapor.append("yapı yüksekliği 51,50 m’yi geçen konutlarda")
+                      else:
+                          _spr_75_vurgu_rapor.append("yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda")
+                      if "otopark" in _kullanim_metni_75_rapor:
+                          _spr_75_vurgu_rapor.append("ilgili kapalı otoparklarda")
+                      if any(k in _kullanim_metni_75_rapor for k in ["otel", "yurt", "pansiyon", "misafirhane"]):
+                          _spr_75_vurgu_rapor.append("belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde")
+                      if any(k in _kullanim_metni_75_rapor for k in ["büyük mağaza", "alışveriş", "ticaret", "eğlence", "toplanma"]):
+                          _spr_75_vurgu_rapor.append("toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde")
+
+                      _p75bag = doc.add_paragraph()
+                      _r75bag = _p75bag.add_run("7.2 → 7.5 BAĞLANTISI: ")
+                      _r75bag.bold = True
+                      _r75bag2 = _p75bag.add_run(
+                          f"Seçilen bina/kullanım alanı: {', '.join(_secili_kullanim_75_rapor) if _secili_kullanim_75_rapor else 'Seçilmedi'} | "
+                          f"Uygulanacak yangın tehlike sınıfı: {_etkin_sinif_75_rapor or 'Belirlenemedi'}"
+                      )
+                      _r75bag2.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
                       _sprinkler_esaslari_rapor = [
                           ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
                           ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
@@ -3004,7 +3036,34 @@ if _rapor_olustur_sidebar:
                           _p = doc.add_paragraph()
                           _r = _p.add_run(f"{_no}. {_baslik_s}: ")
                           _r.bold = True
-                          _p.add_run(_metin_s)
+                          if _no == "2" and _spr_75_vurgu_rapor:
+                              _cursor = 0
+                              # Seçilen kullanım alanıyla ilişkili ifadeyi sarı vurgula;
+                              # maddenin diğer kısmı aynen korunur.
+                              _vurgu = [x for x in _spr_75_vurgu_rapor if x in _metin_s]
+                              if _vurgu:
+                                  import re as _re75
+                                  _pat75 = _re75.compile("|".join(_re75.escape(x) for x in _vurgu))
+                                  for _m75 in _pat75.finditer(_metin_s):
+                                      if _m75.start() > _cursor:
+                                          _p.add_run(_metin_s[_cursor:_m75.start()])
+                                      _rr75 = _p.add_run(_metin_s[_m75.start():_m75.end()])
+                                      _rr75.bold = True
+                                      _rr75.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                      _cursor = _m75.end()
+                                  if _cursor < len(_metin_s):
+                                      _p.add_run(_metin_s[_cursor:])
+                              else:
+                                  _p.add_run(_metin_s)
+                          else:
+                              _p.add_run(_metin_s)
+
+                      _p75not = doc.add_paragraph(
+                          "Sarı vurgular, 7.2 bölümünde seçilen bina/kullanım alanının Madde 96/2’deki "
+                          "karşılığını gösterir; sprinkler zorunluluğunun kesin değerlendirilmesinde ilgili "
+                          "yükseklik, alan, otopark ve diğer yönetmelik koşulları ayrıca dikkate alınır."
+                      )
+                      _p75not.runs[0].italic = True
 
                       _src75 = doc.add_paragraph()
                       _src75.add_run(
