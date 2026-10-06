@@ -60,9 +60,10 @@ def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
     _base1 = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
     _base2 = "https://www.mgm.gov.tr/Veridegerlendirme/Il-Ve-Ilceler-Istatistik.Aspx"
     _urls = [
-        f"{_base1}?k=undefined&m={_il_url}",
+        f"{_base1}?k=&m={_il_url}",
+        f"{_base2}?k=&m={_il_url}",
         f"{_base1}?m={_il_url}",
-        f"{_base2}?m={_il_url}",
+        f"{_base1}?k=undefined&m={_il_url}",
     ]
 
     _baslik = "Günlük Toplam En Yüksek Yağış Miktarı"
@@ -158,9 +159,10 @@ def mgm_aylik_ortalama_yagis_mm(il_adi):
     # MGM'de kullanılan farklı çalışan URL biçimleri. k=H özellikle
     # Resmi İklim İstatistikleri tablosunu doğrudan döndürmektedir.
     _urls = [
+        f"{_base}?k=&m={_il_url}",
         f"{_base}?k=H&m={_il_url}",
-        f"{_base}?k=undefined&m={_il_url}",
         f"{_base}?m={_il_url}",
+        f"{_base}?k=undefined&m={_il_url}",
     ]
     _headers = {
         "User-Agent": (
@@ -1331,8 +1333,10 @@ bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
 # İklim verilerini JSON dosyasından yükleme fonksiyonu
 def iklim_verisini_yukle():
-  dosya_adi = "iklim_verileri.json"
-  if os.path.exists(dosya_adi):
+  # Streamlit Cloud / yerel çalışmada çalışma dizini değişse bile
+  # iklim_verileri.json dosyasını app.py'nin bulunduğu klasörden bul.
+  dosya_adi = Path(__file__).resolve().parent / "iklim_verileri.json"
+  if dosya_adi.exists():
     with open(dosya_adi, "r", encoding="utf-8") as f:
       return json.load(f)
   else:
