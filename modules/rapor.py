@@ -2726,9 +2726,6 @@ if _rapor_olustur_sidebar:
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
                       doc.add_heading("7.3.1 YANGIN DOLAPLARI İÇİN YÖNETMELİK ESASLARI", level=4)
-                      _p = doc.add_paragraph()
-                      _r = _p.add_run("BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
-                      _r.bold = True
                       _yd_esaslari_rapor = [
                           ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur. (BYKHY Madde 94, 1/b/1)"),
                           ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir. (BYKHY Madde 94, 1/b/2)"),
@@ -2817,6 +2814,10 @@ if _rapor_olustur_sidebar:
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
                           "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları."
                       ).italic = True
+
+                      _pk = doc.add_paragraph()
+                      _rk = _pk.add_run("Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik")
+                      _rk.italic = True
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
