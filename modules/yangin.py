@@ -882,17 +882,20 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=19):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
-                        with st.expander(f"➕ { _yer_etiketi } yeni madde ekle", expanded=False):
+                        with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
+                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
+                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
+                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
                             _bkey = f"{_liste_key}_baslik"
                             _mkey = f"{_liste_key}_metin"
-                            _b = st.text_input("Madde başlığı", key=_bkey)
-                            _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                            if st.button("Maddeyi ekle", key=f"{_liste_key}_ekle"):
+                            with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
+                                _b = st.text_input("Madde başlığı", key=_bkey)
+                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                            if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
                                     st.session_state[_liste_key] = _liste
-                                    st.session_state[_bkey] = ""
-                                    st.session_state[_mkey] = ""
                                     st.rerun()
                                 else:
                                     st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
@@ -1046,16 +1049,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
+                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
+                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
+                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
                             _bkey = f"{_liste_key}_baslik"
                             _mkey = f"{_liste_key}_metin"
-                            _b = st.text_input("Madde başlığı", key=_bkey)
-                            _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
-                            if st.button("Maddeyi ekle", key=f"{_liste_key}_ekle"):
+                            with st.form(key=f"{_liste_key}_form", clear_on_submit=True):
+                                _b = st.text_input("Madde başlığı", key=_bkey)
+                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                                _submit_madde = st.form_submit_button("Maddeyi ekle")
+                            if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
                                     st.session_state[_liste_key] = _liste
-                                    st.session_state[_bkey] = ""
-                                    st.session_state[_mkey] = ""
                                     st.rerun()
                                 else:
                                     st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
