@@ -857,12 +857,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("10", "Kat bağlantı vanaları ve itfaiye su alma ağızları", "İtfaiye su alma hattı kapsamında, yüksek binalar ile kat alanı 1.000 m²’den fazla olan alışveriş merkezleri, otoparklar ve benzeri yerlerde ıslak veya kuru sabit boru sistemi üzerinde itfaiye personeli ve eğitilmiş personelin kullanımına imkân sağlayan bağlantı ağızları bırakılır. Bu bağlantı ağızları kaçış merdiveni veya yangın güvenlik holü gibi korunmuş mekânlarda düzenlenir. Bir boyutu 60 m’yi geçen katlarda yangın dolabı ve itfaiye su alma ağzı yapılması gerekir. (BYKHY Madde 94, 1/a/1)"),
                         ("11", "İtfaiye su alma ağzına erişim mesafesi", "Herhangi bir noktadan itfaiye su alma ağzına olan mesafe 60 m’den fazla olamaz. Sabit boru tesisatı üzerindeki bütün hortum bağlantıları itfaiyenin kullandığı normlarda Storz tip 50 mm veya 65 mm çapında olur. (BYKHY Madde 94, 1/a/2-3)"),
                         ("12", "İtfaiye su verme ağzı", "Yüksek binalarda veya bina oturma alanı 1.000 m²’den büyük binalarda veya cephe genişliği 75 m’yi aşan binalarda, itfaiyenin sisteme dışarıdan su basabilmesi için sulu yangın söndürme sistemlerine en az 100 mm nominal çapında itfaiye su verme bağlantısı yapılır. İtfaiye su verme bağlantısında iki adet 65 mm Storz tip rakor ve çek valf bulunur. İtfaiye araçlarının bağlantı ağzına ulaşma mesafesi 18 m’den fazla olamaz. (BYKHY Madde 97, 1)"),
-                        ("•", "Yangın dolapları ve hortum bağlantı muslukları", "Yangın dolapları ve hortum bağlantı muslukları TS 2217’e uygun olacaktır."),
-                        ("•", "Yangın dolaplarında kullanılacak hortum ve yerleşim yüksekliği", "Yangın dolapları içerisinde hortum olarak; kirlenme, çürüme ve küflenme göz önüne alınarak kurutmaya da gerek olmayan, basınca dayanıklı 1” çapında kauçuk hortumlar kullanılacaktır. Yangın dolapları yerden 80 cm ila 120 cm yükseklikte olacak şekilde yerleştirilecektir."),
-                        ("•", "Yangın dolabı gövde ve su giriş tipi", "Yangın dolapları 1.5 mm DKP saçtan mamul, makaradan gövde içerisine su girişi yapabilecek tipte olacaktır."),
-                        ("•", "Yangın dolabı boru sistemi", "Yangın dolapları sprinkler sistemi kolonlarından hat alınarak değil bağımsız boru sistemi olarak tasarlanmıştır."),
-                        ("•", "İtfaiye su alma ağızlarının tesis edilmesi ve özellikleri", "Binada yangının büyümesi durumunda itfaiyenin ve eğitilmiş personelin yangına müdahale edebilmesi için kaçış merdiven yuvaları içerisinde, ayrıca itfaiye su alma ağızları da tesis edilecektir. İtfaiye su alma ağızları DIN normlarına uygun vanalı, 2½” çapında olacak ve her bağlantı ağzında 2½” x 2” ara rakor ve zincirli kapakları takılı halde bulunacaktır. İtfaiye su alma ağızlarına, gerektiğinde B tipi (110’luk) veya C tipi (85’lik) yassı hortum takılarak yangına müdahale edilebilecektir."),
-                        ("•", "İtfaiye su alma ağızlarının bağlantısı ve basıncı", "İtfaiye su alma ağızlarının bağlantısı doğrudan yangın kollektöründen yapılacaktır. Yangın merdiven yuvaları içinde yer alacak olan riser kolonlarına yerden yaklaşık 1.0-1.2 m yükseklikte olacak şekilde itfaiye su alma ağızları bağlantısı yapılacaktır. İtfaiye su alma ağızlarında yassı hortum ucundaki lans girişinde, akış halinde basınç 6 bar olacaktır. Ve 9 barı geçmemelidir."),
+                        ("13", "Yangın dolapları ve hortum bağlantı muslukları", "Yangın dolapları ve hortum bağlantı muslukları TS 2217’e uygun olacaktır."),
+                        ("14", "Yangın dolaplarında kullanılacak hortum ve yerleşim yüksekliği", "Yangın dolapları içerisinde hortum olarak; kirlenme, çürüme ve küflenme göz önüne alınarak kurutmaya da gerek olmayan, basınca dayanıklı 1” çapında kauçuk hortumlar kullanılacaktır. Yangın dolapları yerden 80 cm ila 120 cm yükseklikte olacak şekilde yerleştirilecektir."),
+                        ("15", "Yangın dolabı gövde ve su giriş tipi", "Yangın dolapları 1.5 mm DKP saçtan mamul, makaradan gövde içerisine su girişi yapabilecek tipte olacaktır."),
+                        ("16", "Yangın dolabı boru sistemi", "Yangın dolapları sprinkler sistemi kolonlarından hat alınarak değil bağımsız boru sistemi olarak tasarlanmıştır."),
+                        ("17", "İtfaiye su alma ağızlarının tesis edilmesi ve özellikleri", "Binada yangının büyümesi durumunda itfaiyenin ve eğitilmiş personelin yangına müdahale edebilmesi için kaçış merdiven yuvaları içerisinde, ayrıca itfaiye su alma ağızları da tesis edilecektir. İtfaiye su alma ağızları DIN normlarına uygun vanalı, 2½” çapında olacak ve her bağlantı ağzında 2½” x 2” ara rakor ve zincirli kapakları takılı halde bulunacaktır. İtfaiye su alma ağızlarına, gerektiğinde B tipi (110’luk) veya C tipi (85’lik) yassı hortum takılarak yangına müdahale edilebilecektir."),
+                        ("18", "İtfaiye su alma ağızlarının bağlantısı ve basıncı", "İtfaiye su alma ağızlarının bağlantısı doğrudan yangın kollektöründen yapılacaktır. Yangın merdiven yuvaları içinde yer alacak olan riser kolonlarına yerden yaklaşık 1.0-1.2 m yükseklikte olacak şekilde itfaiye su alma ağızları bağlantısı yapılacaktır. İtfaiye su alma ağızlarında yassı hortum ucundaki lans girişinde, akış halinde basınç 6 bar olacaktır. Ve 9 barı geçmemelidir."),
                     ]
                     for _no, _baslik_yd, _metin_yd in _yd_esaslari:
                         if _no == "•":
@@ -872,12 +872,43 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.markdown(f"**{_no}. {_baslik_yd}**")
                             st.write(_metin_yd)
 
+                    # Kullanıcının çap tablosundan ÖNCE/Sonra kendi maddelerini ekleyebilmesi
+                    # için kalıcı oturum listeleri. Rapor aynı session-state verisini kullanır.
+                    st.session_state.setdefault("yangin_731_maddeler_cap_oncesi", [])
+                    st.session_state.setdefault("yangin_731_maddeler_cap_sonrasi", [])
+
+                    def _maddeleri_goster_ve_ekle(_liste_key, _yer_etiketi):
+                        _liste = st.session_state[_liste_key]
+                        for _idx, _madde in enumerate(_liste, start=19):
+                            st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
+                            st.write(_madde.get('metin',''))
+                        with st.expander(f"➕ { _yer_etiketi } yeni madde ekle", expanded=False):
+                            _bkey = f"{_liste_key}_baslik"
+                            _mkey = f"{_liste_key}_metin"
+                            _b = st.text_input("Madde başlığı", key=_bkey)
+                            _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                            if st.button("Maddeyi ekle", key=f"{_liste_key}_ekle"):
+                                if _b.strip() and _m.strip():
+                                    _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
+                                    st.session_state[_liste_key] = _liste
+                                    st.session_state[_bkey] = ""
+                                    st.session_state[_mkey] = ""
+                                    st.rerun()
+                                else:
+                                    st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+
+                    st.markdown("**ÇAP TABLOSUNDAN ÖNCE EK MADDELER**")
+                    _maddeleri_goster_ve_ekle("yangin_731_maddeler_cap_oncesi", "Çap tablosundan önce")
+
                     st.markdown("**YANGIN DOLAP SİSTEMİ İÇİN KULLANILAN ÇAP TABLOSU**")
                     st.table([
                         {"Dolap Sayısı": "(1) Dolap", "Boru Çapı": '2”'},
                         {"Dolap Sayısı": "2 ve daha fazla dolap", "Boru Çapı": '2½”'},
                     ])
-                    st.markdown("<br><br><br>", unsafe_allow_html=True)
+
+                    st.markdown("**ÇAP TABLOSUNDAN SONRA EK MADDELER**")
+                    _maddeleri_goster_ve_ekle("yangin_731_maddeler_cap_sonrasi", "Çap tablosundan sonra")
+
 
                     # --------------------------------------------------------------
                     # 7.3.2 - BYKHY EK-8/C
