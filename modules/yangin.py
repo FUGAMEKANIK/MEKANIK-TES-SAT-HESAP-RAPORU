@@ -397,7 +397,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.1.1 ve 7.1.2 madde seçimleri; 7.1.3 ise standart kütüphanesi içerir.
                 st.caption("7.1 alt maddeleri ayrı ayrı açılıp kapatılabilir. İşaretli maddeler rapora aktarılır.")
 
-                for _baslik71, _maddeler71, _key71, _rrk71 in _yangin_71_gruplari:
+                for _idx71, (_baslik71, _maddeler71, _key71, _rrk71) in enumerate(_yangin_71_gruplari, start=1):
                     with st.expander(_baslik71, expanded=False):
                         c1, c2, c3 = st.columns([1, 1, 2])
                         with c1:
@@ -411,7 +411,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # düğmeleri delta konumlarına göre benzersiz olarak tanımlar.
                             if st.button(
                                 f"✓ TÜMÜNÜ SEÇ — {_key71}",
-                                key=f"yangin_71_tumunu_sec_btn_{_key71}",
+                                key=f"yangin_71_tumunu_sec_btn_{_idx71}",
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, True)
@@ -419,7 +419,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with c2:
                             if st.button(
                                 f"✕ TÜMÜNÜ KALDIR — {_key71}",
-                                key=f"yangin_71_tumunu_kaldir_btn_{_key71}",
+                                key=f"yangin_71_tumunu_kaldir_btn_{_idx71}",
                                 use_container_width=True,
                             ):
                                 _yangin_71_toplu_sec(_key71, _maddeler71, False)
