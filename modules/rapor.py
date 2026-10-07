@@ -63,150 +63,140 @@ if _rapor_olustur_sidebar:
       ).strip()
 
       if _kapak_sablon_kullanildi:
-          # KAPAK: Şablondaki çok sayıdaki boş paragrafı kullanmak yerine,
-          # yalnızca gerekli alanları yeniden oluşturuyoruz. Bu, Word'ün
-          # görünmeyen boş satırları ikinci sayfaya taşıması problemini ortadan
-          # kaldırır. Yerleşim içerik uzunluğuna göre otomatik sıkıştırılır.
-          _kapak_paragraflari = list(doc.paragraphs)
+          # KAPAK — TEK SAYFALIK SABİT YERLEŞİM
+          # Şablondaki 34 boş paragraf yerine kontrollü bir tablo kullanılır.
+          # Böylece Word boş satırları ikinci sayfaya itemez. Satır yükseklikleri
+          # toplamı A4 kullanılabilir alanının altında tutulur; uzun metinlerde
+          # punto ve satır yüksekliği otomatik küçülür.
+          from docx.enum.table import WD_ROW_HEIGHT_RULE, WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 
-          def _kapak_otomatik_punto(metin, temel=18, alt=10):
-              _uzunluk = len(str(metin or '').strip())
-              if _uzunluk <= 35:
-                  return temel
-              if _uzunluk <= 50:
-                  return 16
-              if _uzunluk <= 70:
-                  return 14
-              if _uzunluk <= 95:
-                  return 12
-              return alt
+          _kurum_metni = (_kurum_adi or 'KURUM ADI').upper().strip()
+          _is_metni = (aktif_is or 'İŞİN ADI').upper().strip()
 
-          def _kapak_run_ayarla(_p, _metin, _punto, _font='Times New Roman', _bold=True):
-              _p.clear()
-              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _p.paragraph_format.space_before = Pt(0)
-              _p.paragraph_format.space_after = Pt(0)
-              _p.paragraph_format.keep_together = True
-              _p.paragraph_format.keep_with_next = False
-              _p.paragraph_format.widow_control = True
-              _r = _p.add_run(str(_metin or ''))
-              _r.font.name = _font
-              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), _font)
-              _r.font.size = Pt(_punto)
-              _r.font.bold = _bold
-              _r.font.italic = False
-              return _r
+          def _kapak_punto(metin, normal=18, minimum=9, limitler=((35,18),(50,16),(70,14),(95,12))):
+              n = len(str(metin or '').strip())
+              for limit, pt in limitler:
+                  if n <= limit:
+                      return pt
+              return minimum
 
-          def _kapak_paragraf_ekle(_metin='', _punto=12, _font='Times New Roman', _bold=True):
-              _p = doc.add_paragraph()
-              _kapak_run_ayarla(_p, _metin, _punto, _font, _bold)
-              return _p
+          _kurum_pt = _kapak_punto(_kurum_metni)
+          _is_pt = _kapak_punto(_is_metni)
 
-          # Şablonun 34 adet boş/dummy paragrafını tamamen kaldır.
-          # Section (sayfa özellikleri) korunur.
+          # Çok uzun başlıklarda tablo satırları da otomatik küçülür.
+          _uzunluk = len(_kurum_metni) + len(_is_metni)
+          _sikistir = min(1.0, max(0.72, 1.0 - max(0, _uzunluk - 100) / 500.0))
+
+          # Şablonun tüm eski paragraflarını kaldır.
           for _old_p in list(doc.paragraphs):
               _parent = _old_p._element.getparent()
               if _parent is not None:
                   _parent.remove(_old_p._element)
 
-          _kurum_metni = (_kurum_adi or 'KURUM ADI').upper()
-          _is_metni = (aktif_is or 'İŞİN ADI').upper()
-          _kurum_punto = _kapak_otomatik_punto(_kurum_metni, 18, 10)
-          _is_punto = _kapak_otomatik_punto(_is_metni, 18, 10)
+          _section = doc.sections[0]
+          _section.page_width = Inches(8.267716535)
+          _section.page_height = Inches(11.692913386)
+          _section.top_margin = Inches(0.55)
+          _section.bottom_margin = Inches(0.45)
+          _section.left_margin = Inches(0.75)
+          _section.right_margin = Inches(0.75)
+          _section.header_distance = Inches(0.15)
+          _section.footer_distance = Inches(0.15)
 
-          _toplam_uzunluk = (
-              len(_kurum_metni) + len(_is_metni) + len(str(hazirlayan or ''))
-              + len(str(tarih or ''))
-          )
+          # 9 satırlı tek kapak tablosu. Toplam yükseklik yaklaşık 680 pt;
+          # A4 kullanılabilir yüksekliğinin altında kalır.
+          _satir_yukseklikleri = [
+              58, 24, 24, 86, 82, 30, 30, 82, 112
+          ]
+          _satir_yukseklikleri = [max(18, int(v * _sikistir)) for v in _satir_yukseklikleri]
 
-          # Sayfa yüksekliğine göre otomatik dikey sıkıştırma.
-          # Kısa metinde örnek kapağın ferah görünümü korunur; uzun metinde
-          # boşluklar kademeli olarak azalır.
-          if _toplam_uzunluk <= 120:
-              _ust_bosluk = 18
-              _kurum_sonrasi = 105
-              _is_sonrasi = 22
-              _baslik_sonrasi = 0
-          elif _toplam_uzunluk <= 180:
-              _ust_bosluk = 14
-              _kurum_sonrasi = 70
-              _is_sonrasi = 16
-              _baslik_sonrasi = 0
-          elif _toplam_uzunluk <= 250:
-              _ust_bosluk = 10
-              _kurum_sonrasi = 45
-              _is_sonrasi = 12
-              _baslik_sonrasi = 0
-          else:
-              _ust_bosluk = 6
-              _kurum_sonrasi = 28
-              _is_sonrasi = 8
-              _baslik_sonrasi = 0
+          _tablo = doc.add_table(rows=len(_satir_yukseklikleri), cols=1)
+          _tablo.alignment = WD_TABLE_ALIGNMENT.CENTER
+          _tablo.autofit = False
+          _tablo.allow_autofit = False
 
-          # 1) FUGA — gönderdiğiniz logodaki yazı karakterine yakın,
-          # geometrik ve sade sans-serif görünüm.
-          _p = _kapak_paragraf_ekle('FUGA', 25, 'Arial', False)
-          _p.paragraph_format.space_after = Pt(1)
+          # Tablo genişliği: sayfa iç genişliğini aşmasın.
+          _tablo_genislik = int(Inches(6.77))
+          for _row, _h in zip(_tablo.rows, _satir_yukseklikleri):
+              _row.height = Pt(_h)
+              _row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+              _row.allow_break_across_pages = False
+              _cell = _row.cells[0]
+              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+              _cell.width = _tablo_genislik
+              _tcpr = _cell._tc.get_or_add_tcPr()
+              _tcw = _tcpr.find(qn('w:tcW'))
+              if _tcw is None:
+                  _tcw = OxmlElement('w:tcW')
+                  _tcpr.append(_tcw)
+              _tcw.set(qn('w:w'), str(_tablo_genislik))
+              _tcw.set(qn('w:type'), 'dxa')
+              _tcMar = _tcpr.find(qn('w:tcMar'))
+              if _tcMar is None:
+                  _tcMar = OxmlElement('w:tcMar')
+                  _tcpr.append(_tcMar)
+              for _side in ('top','start','bottom','end'):
+                  _node = _tcMar.find(qn(f'w:{_side}'))
+                  if _node is None:
+                      _node = OxmlElement(f'w:{_side}')
+                      _tcMar.append(_node)
+                  _node.set(qn('w:w'), '0')
+                  _node.set(qn('w:type'), 'dxa')
 
-          # 2-3) Şirket adı
-          _p = _kapak_paragraf_ekle('MEKANİK MÜŞAVİRLİK MÜHENDİSLİK', 11, 'Times New Roman', True)
-          _p.paragraph_format.space_after = Pt(0)
-          _p = _kapak_paragraf_ekle('TİCARET LİMİTED ŞİRKETİ', 11, 'Times New Roman', True)
-          _p.paragraph_format.space_after = Pt(_ust_bosluk)
+              # Kenarlıkları kaldır.
+              _borders = _tcpr.find(qn('w:tcBorders'))
+              if _borders is None:
+                  _borders = OxmlElement('w:tcBorders')
+                  _tcpr.append(_borders)
+              for _side in ('top','left','bottom','right','insideH','insideV'):
+                  _b = _borders.find(qn(f'w:{_side}'))
+                  if _b is None:
+                      _b = OxmlElement(f'w:{_side}')
+                      _borders.append(_b)
+                  _b.set(qn('w:val'), 'nil')
 
-          # Kurum adı
-          _p = _kapak_paragraf_ekle(_kurum_metni, _kurum_punto, 'Times New Roman', True)
-          _p.paragraph_format.space_after = Pt(_kurum_sonrasi)
+          def _hucre_yaz(_cell, _metin, _pt, _font='Times New Roman', _bold=True, _space_after=0):
+              _cell.text = ''
+              _p = _cell.paragraphs[0]
+              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _p.paragraph_format.space_before = Pt(0)
+              _p.paragraph_format.space_after = Pt(_space_after)
+              _p.paragraph_format.line_spacing = 1.0
+              _p.paragraph_format.keep_together = True
+              _p.paragraph_format.widow_control = True
+              _r = _p.add_run(str(_metin or ''))
+              _r.font.name = _font
+              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), _font)
+              _r.font.size = Pt(_pt)
+              _r.font.bold = _bold
+              _r.font.italic = False
+              return _p
 
-          # İşin adı
-          _p = _kapak_paragraf_ekle(_is_metni, _is_punto, 'Times New Roman', True)
-          _p.paragraph_format.space_after = Pt(_is_sonrasi)
+          # FUGA: gönderdiğiniz logodaki ince, sade sans-serif karakter yapısı.
+          _hucre_yaz(_tablo.cell(0,0), 'FUGA', 24, 'Arial', False)
+          _hucre_yaz(_tablo.cell(1,0), 'MEKANİK MÜŞAVİRLİK MÜHENDİSLİK', 11, 'Arial', False)
+          _hucre_yaz(_tablo.cell(2,0), 'TİCARET LİMİTED ŞİRKETİ', 10, 'Times New Roman', True)
+          _hucre_yaz(_tablo.cell(3,0), _kurum_metni, _kurum_pt, 'Times New Roman', True)
+          _hucre_yaz(_tablo.cell(4,0), _is_metni, _is_pt, 'Times New Roman', True)
+          _hucre_yaz(_tablo.cell(5,0), 'MEKANİK TESİSAT UYGULAMA PROJESİ', 16, 'Times New Roman', True)
+          _hucre_yaz(_tablo.cell(6,0), 'HESAP RAPORU', 16, 'Times New Roman', True)
 
-          # Rapor başlığı. Tek blok halinde tutulur; böylece ikinci sayfaya
-          # parçalanamaz.
-          _p = _kapak_paragraf_ekle('MEKANİK TESİSAT UYGULAMA PROJESİ', 17, 'Times New Roman', True)
-          _p.paragraph_format.keep_with_next = True
-          _p.paragraph_format.space_after = Pt(0)
-          _ppr = _p._p.get_or_add_pPr()
-          _pbdr = OxmlElement('w:pBdr')
-          _ptop = OxmlElement('w:top')
-          _ptop.set(qn('w:val'), 'single')
-          _ptop.set(qn('w:sz'), '6')
-          _ptop.set(qn('w:space'), '13')
-          _ptop.set(qn('w:color'), '808080')
-          _pbdr.append(_ptop)
-          _ppr.append(_pbdr)
-          _p = _kapak_paragraf_ekle('HESAP RAPORU', 17, 'Times New Roman', True)
-          _p.paragraph_format.space_after = Pt(_baslik_sonrasi)
-
-          # Alt bilgi: boşluklar uzun içerikte otomatik küçültülür.
-          _p = _kapak_paragraf_ekle('', 10, 'Times New Roman', False)
-          _p.paragraph_format.space_after = Pt(max(18, 55 - int(_toplam_uzunluk / 6)))
-
+          # Hazırlayan bloğu tek hücrede; uzun isimlerde otomatik küçülür.
           _hazirlayan_metni = (
               f'Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n'
               f'MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}'
           )
-          _haz_punto = 10 if _toplam_uzunluk > 180 else 11
-          _p = _kapak_paragraf_ekle(_hazirlayan_metni, _haz_punto, 'Times New Roman', False)
-          _p.paragraph_format.space_after = Pt(0)
+          _haz_pt = 10 if len(_hazirlayan_metni) > 120 or _uzunluk > 180 else 11
+          _hucre_yaz(_tablo.cell(8,0), _hazirlayan_metni, _haz_pt, 'Times New Roman', False)
 
-          # A4. Marjlar korunur; içerik artık 34 boş paragraf yerine yalnızca
-          # gerçek alanlardan oluştuğu için tek sayfaya otomatik sığar.
-          _cover_section = doc.sections[0]
-          _cover_section.page_width = Inches(8.267716535)
-          _cover_section.page_height = Inches(11.692913386)
-          _cover_section.top_margin = Inches(0.70)
-          _cover_section.bottom_margin = Inches(0.55)
-          _cover_section.left_margin = Inches(0.9847222222)
-          _cover_section.right_margin = Inches(0.6881944444)
-          _cover_section.header_distance = Inches(0.20)
-          _cover_section.footer_distance = Inches(0.20)
+          # 7. satır bilinçli boşluk; ancak yüksekliği sabit ve küçüktür.
+          _tablo.cell(7,0).text = ''
 
-          # Kapak bölümündeki tüm paragrafların bölünmesini engelle.
-          for _kp in doc.paragraphs:
-              _kp.paragraph_format.keep_together = True
-              _kp.paragraph_format.widow_control = True
+          # Tablo satırlarının sayfa bölünmesini XML seviyesinde de engelle.
+          for _row in _tablo.rows:
+              _trPr = _row._tr.get_or_add_trPr()
+              _cant = OxmlElement('w:cantSplit')
+              _trPr.append(_cant)
 
       if not _kapak_sablon_kullanildi:
           # Şablon dosyası taşınmamışsa rapor yine üretilebilsin. Bu bölüm
