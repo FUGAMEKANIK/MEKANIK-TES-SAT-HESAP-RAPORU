@@ -119,16 +119,61 @@ if _rapor_olustur_sidebar:
                   _kp.paragraph_format.keep_with_next = False
                   _kp.paragraph_format.widow_control = True
 
+              # Rapor başlığı ve hazırlayan bloğu da dinamik sıkıştırılır.
+              # Amaç: içerik uzadığında kapak hiçbir zaman 2. sayfaya
+              # taşmasın; normal uzunlukta ise şablon yerleşimi korunur.
+              _rapor_baslik_uzunlugu = len("MEKANİK TESİSAT UYGULAMA PROJESİ") + len("HESAP RAPORU")
+              _kapak_toplam_uzunluk = (
+                  len(_kurum_metni) + len(_is_metni) + _rapor_baslik_uzunlugu
+                  + len(str(hazirlayan or "")) + len(str(tarih or ""))
+              )
+
+              if _kapak_toplam_uzunluk <= 130:
+                  _baslik_punto = 18
+                  _bosluk_punto = 10
+                  _ust_bosluk_punto = 9
+              elif _kapak_toplam_uzunluk <= 180:
+                  _baslik_punto = 16
+                  _bosluk_punto = 7
+                  _ust_bosluk_punto = 7
+              elif _kapak_toplam_uzunluk <= 240:
+                  _baslik_punto = 14
+                  _bosluk_punto = 5
+                  _ust_bosluk_punto = 5
+              else:
+                  _baslik_punto = 12
+                  _bosluk_punto = 3
+                  _ust_bosluk_punto = 3
+
+              # Kapak başlığı: 2 satırlı başlık tek blok olarak küçültülür.
+              _kapak_run_ayarla(_kapak_paragraflari[17], "MEKANİK TESİSAT UYGULAMA PROJESİ", _baslik_punto)
+              _kapak_run_ayarla(_kapak_paragraflari[18], "HESAP RAPORU", _baslik_punto)
+
+              # Boş paragraflar kapaktaki dikey konumu oluşturuyor. Uzun
+              # metinlerde bunları otomatik sıkıştırarak alt bloğun 2. sayfaya
+              # itilmesini engelliyoruz. Metin kısa ise şablona daha yakın
+              # boşluk bırakıyoruz.
+              for _i, _kp in enumerate(_kapak_paragraflari[:34]):
+                  _kp.paragraph_format.keep_together = True
+                  _kp.paragraph_format.keep_with_next = False
+                  _kp.paragraph_format.widow_control = True
+                  if not str(_kp.text or "").strip():
+                      _punto_bos = _ust_bosluk_punto if _i <= 10 else _bosluk_punto
+                      _kp.paragraph_format.space_before = Pt(0)
+                      _kp.paragraph_format.space_after = Pt(0)
+                      _kp.paragraph_format.line_spacing = Pt(_punto_bos)
+
               # 33: Hazırlayan / MMO / Tarih
               _hazirlayan_metni = (
                   f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
                   f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
               )
-              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, 11)
+              _hazirlayan_punto = 11 if _kapak_toplam_uzunluk <= 180 else 10
+              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, _hazirlayan_punto)
 
-              # Kapak A4 olarak sabitlenir. İçerik sığdığı sürece Word tek
-              # sayfada tutar; uzun dinamik metinlerde yalnızca ilgili
-              # başlığın puntosu küçülür, raporun geri kalanına dokunulmaz.
+              # Kapak A4 olarak sabitlenir. Dikey boşluklar ve dinamik
+              # başlık puntoları yukarıdaki kuralla otomatik ayarlanır.
+              # Böylece kapak içeriği tek sayfada kalacak şekilde sıkıştırılır.
               _cover_section = doc.sections[0]
               _cover_section.page_width = Inches(8.267716535)
               _cover_section.page_height = Inches(11.692913386)
