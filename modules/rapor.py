@@ -63,127 +63,150 @@ if _rapor_olustur_sidebar:
       ).strip()
 
       if _kapak_sablon_kullanildi:
-          # KAPAK: Şablondaki çok sayıdaki boş paragraf Word tarafından gerçek
-          # satırlar olarak hesaplandığı için uzun kurum/iş adlarında kapak
-          # ikinci sayfaya taşınabiliyordu. Burada şablonun görsel elemanlarını
-          # koruyup yalnızca gerekli kapak paragraflarını bırakıyoruz. Böylece
-          # kapak yüksekliği kontrol edilebilir ve HER ZAMAN tek sayfada kalır.
-          _tum_kapak_paragraflari = list(doc.paragraphs)
+          # KAPAK: Şablondaki çok sayıdaki boş paragrafı kullanmak yerine,
+          # yalnızca gerekli alanları yeniden oluşturuyoruz. Bu, Word'ün
+          # görünmeyen boş satırları ikinci sayfaya taşıması problemini ortadan
+          # kaldırır. Yerleşim içerik uzunluğuna göre otomatik sıkıştırılır.
+          _kapak_paragraflari = list(doc.paragraphs)
 
-          def _kapak_run_ayarla(_p, _metin, _punto, _bold=True):
+          def _kapak_otomatik_punto(metin, temel=18, alt=10):
+              _uzunluk = len(str(metin or '').strip())
+              if _uzunluk <= 35:
+                  return temel
+              if _uzunluk <= 50:
+                  return 16
+              if _uzunluk <= 70:
+                  return 14
+              if _uzunluk <= 95:
+                  return 12
+              return alt
+
+          def _kapak_run_ayarla(_p, _metin, _punto, _font='Times New Roman', _bold=True):
               _p.clear()
-              _r = _p.add_run(str(_metin or ""))
-              _r.font.name = "Times New Roman"
-              _r._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), "Times New Roman")
+              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _p.paragraph_format.space_before = Pt(0)
+              _p.paragraph_format.space_after = Pt(0)
+              _p.paragraph_format.keep_together = True
+              _p.paragraph_format.keep_with_next = False
+              _p.paragraph_format.widow_control = True
+              _r = _p.add_run(str(_metin or ''))
+              _r.font.name = _font
+              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), _font)
               _r.font.size = Pt(_punto)
               _r.font.bold = _bold
               _r.font.italic = False
               return _r
 
-          def _kapak_punto(_metin, temel=18):
-              _n = len(str(_metin or "").strip())
-              if _n <= 35:
-                  return temel
-              if _n <= 55:
-                  return max(15, temel - 2)
-              if _n <= 80:
-                  return max(13, temel - 4)
-              if _n <= 110:
-                  return 11
-              if _n <= 145:
-                  return 10
-              return 9
+          def _kapak_paragraf_ekle(_metin='', _punto=12, _font='Times New Roman', _bold=True):
+              _p = doc.add_paragraph()
+              _kapak_run_ayarla(_p, _metin, _punto, _font, _bold)
+              return _p
 
-          if len(_tum_kapak_paragraflari) >= 34:
-              # Şablondan sadece görsel yerleşimde kullandığımız 8 paragrafı
-              # koru: logo/şirket (0,1,2), kurum (11), iş (15), rapor başlığı
-              # (17,18), hazırlayan (33).
-              _korunacak = [
-                  _tum_kapak_paragraflari[0], _tum_kapak_paragraflari[1],
-                  _tum_kapak_paragraflari[2], _tum_kapak_paragraflari[11],
-                  _tum_kapak_paragraflari[15], _tum_kapak_paragraflari[17],
-                  _tum_kapak_paragraflari[18], _tum_kapak_paragraflari[33],
-              ]
-              _korunacak_ids = {id(x._element) for x in _korunacak}
-              for _p in list(doc.paragraphs):
-                  if id(_p._element) not in _korunacak_ids:
-                      _p._element.getparent().remove(_p._element)
+          # Şablonun 34 adet boş/dummy paragrafını tamamen kaldır.
+          # Section (sayfa özellikleri) korunur.
+          for _old_p in list(doc.paragraphs):
+              _parent = _old_p._element.getparent()
+              if _parent is not None:
+                  _parent.remove(_old_p._element)
 
-              _kapak_paragraflari = doc.paragraphs
-              _kurum_metni = (_kurum_adi or "KURUM ADI").upper()
-              _is_metni = (aktif_is or "İŞİN ADI").upper()
+          _kurum_metni = (_kurum_adi or 'KURUM ADI').upper()
+          _is_metni = (aktif_is or 'İŞİN ADI').upper()
+          _kurum_punto = _kapak_otomatik_punto(_kurum_metni, 18, 10)
+          _is_punto = _kapak_otomatik_punto(_is_metni, 18, 10)
 
-              # Dinamik punto: metin uzadıkça küçülür.
-              _kurum_punto = _kapak_punto(_kurum_metni, 18)
-              _is_punto = _kapak_punto(_is_metni, 18)
-              _toplam_uzunluk = len(_kurum_metni) + len(_is_metni)
-              _baslik_punto = 18 if _toplam_uzunluk <= 140 else (16 if _toplam_uzunluk <= 220 else 14)
-              if _toplam_uzunluk > 300:
-                  _baslik_punto = 12
+          _toplam_uzunluk = (
+              len(_kurum_metni) + len(_is_metni) + len(str(hazirlayan or ''))
+              + len(str(tarih or ''))
+          )
 
-              _kapak_run_ayarla(_kapak_paragraflari[0], "FUGA", 24)
-              _kapak_run_ayarla(_kapak_paragraflari[1], "MEKANİK MÜŞAVİRLİK MÜHENDİSLİK", 11)
-              _kapak_run_ayarla(_kapak_paragraflari[2], "TİCARET LİMİTED ŞİRKETİ", 11)
-              _kapak_run_ayarla(_kapak_paragraflari[3], _kurum_metni, _kurum_punto)
-              _kapak_run_ayarla(_kapak_paragraflari[4], _is_metni, _is_punto)
-              _kapak_run_ayarla(_kapak_paragraflari[5], "MEKANİK TESİSAT UYGULAMA PROJESİ", _baslik_punto)
-              _kapak_run_ayarla(_kapak_paragraflari[6], "HESAP RAPORU", _baslik_punto)
-
-              _hazirlayan_metni = (
-                  f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
-                  f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
-              )
-              _haz_punto = 10 if _toplam_uzunluk > 240 else 11
-              _kapak_run_ayarla(_kapak_paragraflari[7], _hazirlayan_metni, _haz_punto, False)
-
-              # Bütün kapak paragraflarını tam kontrollü yap. Özellikle stil
-              # kaynaklı space/line değerlerini sıfırlıyoruz.
-              for _kp in _kapak_paragraflari:
-                  _kp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                  _kp.paragraph_format.keep_together = True
-                  _kp.paragraph_format.keep_with_next = False
-                  _kp.paragraph_format.widow_control = False
-                  _kp.paragraph_format.space_after = Pt(0)
-                  _kp.paragraph_format.space_before = Pt(0)
-                  _kp.paragraph_format.line_spacing = 1.0
-
-              # Şablondaki görsel yerleşimi, artık boş satırlarla değil
-              # kontrollü paragraph spacing ile oluşturuluyor.
-              _kapak_paragraflari[3].paragraph_format.space_before = Pt(70 if _toplam_uzunluk < 240 else 55)
-              _kapak_paragraflari[4].paragraph_format.space_before = Pt(20)
-              _kapak_paragraflari[5].paragraph_format.space_before = Pt(18)
-              _kapak_paragraflari[6].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[7].paragraph_format.space_before = Pt(65 if _toplam_uzunluk < 240 else 45)
-
-              # Rapor başlığının üst çizgisini koru; tek çizgi olsun.
-              for _idx in (5, 6):
-                  _pPr = _kapak_paragraflari[_idx]._p.get_or_add_pPr()
-                  _pBdr = _pPr.find(qn("w:pBdr"))
-                  if _pBdr is None:
-                      _pBdr = OxmlElement("w:pBdr")
-                      _pPr.append(_pBdr)
-                  for _edge in list(_pBdr):
-                      _pBdr.remove(_edge)
-                  _top = OxmlElement("w:top")
-                  _top.set(qn("w:val"), "single")
-                  _top.set(qn("w:sz"), "6")
-                  _top.set(qn("w:space"), "6")
-                  _top.set(qn("w:color"), "808080")
-                  _pBdr.append(_top)
-
-              # A4 + güvenli kenar boşlukları. Bu kapak artık yalnızca 8
-              # kontrollü paragraftan oluştuğu için 2. sayfaya taşamaz.
-              _cover_section = doc.sections[0]
-              _cover_section.page_width = Inches(8.267716535)
-              _cover_section.page_height = Inches(11.692913386)
-              _cover_section.top_margin = Inches(0.8861111111)
-              _cover_section.bottom_margin = Inches(0.7875)
-              _cover_section.left_margin = Inches(0.9847222222)
-              _cover_section.right_margin = Inches(0.6881944444)
-              _cover_section.header_distance = Inches(0.25)
-              _cover_section.footer_distance = Inches(0.25)
+          # Sayfa yüksekliğine göre otomatik dikey sıkıştırma.
+          # Kısa metinde örnek kapağın ferah görünümü korunur; uzun metinde
+          # boşluklar kademeli olarak azalır.
+          if _toplam_uzunluk <= 120:
+              _ust_bosluk = 18
+              _kurum_sonrasi = 105
+              _is_sonrasi = 22
+              _baslik_sonrasi = 0
+          elif _toplam_uzunluk <= 180:
+              _ust_bosluk = 14
+              _kurum_sonrasi = 70
+              _is_sonrasi = 16
+              _baslik_sonrasi = 0
+          elif _toplam_uzunluk <= 250:
+              _ust_bosluk = 10
+              _kurum_sonrasi = 45
+              _is_sonrasi = 12
+              _baslik_sonrasi = 0
           else:
-              _kapak_sablon_kullanildi = False
+              _ust_bosluk = 6
+              _kurum_sonrasi = 28
+              _is_sonrasi = 8
+              _baslik_sonrasi = 0
+
+          # 1) FUGA — gönderdiğiniz logodaki yazı karakterine yakın,
+          # geometrik ve sade sans-serif görünüm.
+          _p = _kapak_paragraf_ekle('FUGA', 25, 'Arial', False)
+          _p.paragraph_format.space_after = Pt(1)
+
+          # 2-3) Şirket adı
+          _p = _kapak_paragraf_ekle('MEKANİK MÜŞAVİRLİK MÜHENDİSLİK', 11, 'Times New Roman', True)
+          _p.paragraph_format.space_after = Pt(0)
+          _p = _kapak_paragraf_ekle('TİCARET LİMİTED ŞİRKETİ', 11, 'Times New Roman', True)
+          _p.paragraph_format.space_after = Pt(_ust_bosluk)
+
+          # Kurum adı
+          _p = _kapak_paragraf_ekle(_kurum_metni, _kurum_punto, 'Times New Roman', True)
+          _p.paragraph_format.space_after = Pt(_kurum_sonrasi)
+
+          # İşin adı
+          _p = _kapak_paragraf_ekle(_is_metni, _is_punto, 'Times New Roman', True)
+          _p.paragraph_format.space_after = Pt(_is_sonrasi)
+
+          # Rapor başlığı. Tek blok halinde tutulur; böylece ikinci sayfaya
+          # parçalanamaz.
+          _p = _kapak_paragraf_ekle('MEKANİK TESİSAT UYGULAMA PROJESİ', 17, 'Times New Roman', True)
+          _p.paragraph_format.keep_with_next = True
+          _p.paragraph_format.space_after = Pt(0)
+          _ppr = _p._p.get_or_add_pPr()
+          _pbdr = OxmlElement('w:pBdr')
+          _ptop = OxmlElement('w:top')
+          _ptop.set(qn('w:val'), 'single')
+          _ptop.set(qn('w:sz'), '6')
+          _ptop.set(qn('w:space'), '13')
+          _ptop.set(qn('w:color'), '808080')
+          _pbdr.append(_ptop)
+          _ppr.append(_pbdr)
+          _p = _kapak_paragraf_ekle('HESAP RAPORU', 17, 'Times New Roman', True)
+          _p.paragraph_format.space_after = Pt(_baslik_sonrasi)
+
+          # Alt bilgi: boşluklar uzun içerikte otomatik küçültülür.
+          _p = _kapak_paragraf_ekle('', 10, 'Times New Roman', False)
+          _p.paragraph_format.space_after = Pt(max(18, 55 - int(_toplam_uzunluk / 6)))
+
+          _hazirlayan_metni = (
+              f'Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n'
+              f'MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}'
+          )
+          _haz_punto = 10 if _toplam_uzunluk > 180 else 11
+          _p = _kapak_paragraf_ekle(_hazirlayan_metni, _haz_punto, 'Times New Roman', False)
+          _p.paragraph_format.space_after = Pt(0)
+
+          # A4. Marjlar korunur; içerik artık 34 boş paragraf yerine yalnızca
+          # gerçek alanlardan oluştuğu için tek sayfaya otomatik sığar.
+          _cover_section = doc.sections[0]
+          _cover_section.page_width = Inches(8.267716535)
+          _cover_section.page_height = Inches(11.692913386)
+          _cover_section.top_margin = Inches(0.70)
+          _cover_section.bottom_margin = Inches(0.55)
+          _cover_section.left_margin = Inches(0.9847222222)
+          _cover_section.right_margin = Inches(0.6881944444)
+          _cover_section.header_distance = Inches(0.20)
+          _cover_section.footer_distance = Inches(0.20)
+
+          # Kapak bölümündeki tüm paragrafların bölünmesini engelle.
+          for _kp in doc.paragraphs:
+              _kp.paragraph_format.keep_together = True
+              _kp.paragraph_format.widow_control = True
 
       if not _kapak_sablon_kullanildi:
           # Şablon dosyası taşınmamışsa rapor yine üretilebilsin. Bu bölüm
