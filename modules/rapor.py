@@ -63,144 +63,116 @@ if _rapor_olustur_sidebar:
       ).strip()
 
       if _kapak_sablon_kullanildi:
-          # KAPAK.doc örneğinin yerleşimi korunur; yalnızca dinamik alanlar
-          # değiştirilir. Kurum adı ve iş adı artık daha küçük puntoyla
-          # yazılır ve metin uzadıkça punto otomatik küçülür. Böylece kapak
-          # tek A4 sayfasında kalır ve uzun proje/kurum adlarında taşma önlenir.
-          _kapak_paragraflari = doc.paragraphs
+          # KAPAK: Şablondaki çok sayıdaki boş paragraf Word tarafından gerçek
+          # satırlar olarak hesaplandığı için uzun kurum/iş adlarında kapak
+          # ikinci sayfaya taşınabiliyordu. Burada şablonun görsel elemanlarını
+          # koruyup yalnızca gerekli kapak paragraflarını bırakıyoruz. Böylece
+          # kapak yüksekliği kontrol edilebilir ve HER ZAMAN tek sayfada kalır.
+          _tum_kapak_paragraflari = list(doc.paragraphs)
 
-          def _kapak_otomatik_punto(metin, temel=18, alt=11):
-              _uzunluk = len(str(metin or "").strip())
-              if _uzunluk <= 35:
-                  return temel
-              if _uzunluk <= 50:
-                  return 16
-              if _uzunluk <= 65:
-                  return 14
-              if _uzunluk <= 85:
-                  return 12
-              return alt
-
-          def _kapak_run_ayarla(_p, _metin, _punto):
-              # Şablondaki eski run'ların tamamını temizle. Sadece ilk run'ı
-              # değiştirmek, özellikle "HESAP RAPORU" gibi alanlarda eski
-              # metnin ikinci kez görünmesine ve satırın gereksiz uzamasına
-              # neden olabiliyordu.
+          def _kapak_run_ayarla(_p, _metin, _punto, _bold=True):
               _p.clear()
               _r = _p.add_run(str(_metin or ""))
-              _r.font.size = Pt(_punto)
               _r.font.name = "Times New Roman"
               _r._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), "Times New Roman")
-              _r.font.bold = True
+              _r.font.size = Pt(_punto)
+              _r.font.bold = _bold
               _r.font.italic = False
               return _r
 
-          if len(_kapak_paragraflari) >= 34:
+          def _kapak_punto(_metin, temel=18):
+              _n = len(str(_metin or "").strip())
+              if _n <= 35:
+                  return temel
+              if _n <= 55:
+                  return max(15, temel - 2)
+              if _n <= 80:
+                  return max(13, temel - 4)
+              if _n <= 110:
+                  return 11
+              if _n <= 145:
+                  return 10
+              return 9
+
+          if len(_tum_kapak_paragraflari) >= 34:
+              # Şablondan sadece görsel yerleşimde kullandığımız 8 paragrafı
+              # koru: logo/şirket (0,1,2), kurum (11), iş (15), rapor başlığı
+              # (17,18), hazırlayan (33).
+              _korunacak = [
+                  _tum_kapak_paragraflari[0], _tum_kapak_paragraflari[1],
+                  _tum_kapak_paragraflari[2], _tum_kapak_paragraflari[11],
+                  _tum_kapak_paragraflari[15], _tum_kapak_paragraflari[17],
+                  _tum_kapak_paragraflari[18], _tum_kapak_paragraflari[33],
+              ]
+              _korunacak_ids = {id(x._element) for x in _korunacak}
+              for _p in list(doc.paragraphs):
+                  if id(_p._element) not in _korunacak_ids:
+                      _p._element.getparent().remove(_p._element)
+
+              _kapak_paragraflari = doc.paragraphs
               _kurum_metni = (_kurum_adi or "KURUM ADI").upper()
               _is_metni = (aktif_is or "İŞİN ADI").upper()
 
-              # KURUM ADI: 25 pt olan örnek alan 18 pt taban değere indirildi.
-              _kapak_run_ayarla(
-                  _kapak_paragraflari[11],
-                  _kurum_metni,
-                  _kapak_otomatik_punto(_kurum_metni, temel=18, alt=11),
-              )
-
-              # İŞİN ADI: 25 pt olan örnek alan 18 pt taban değere indirildi.
-              _kapak_run_ayarlar = _kapak_run_ayarla(
-                  _kapak_paragraflari[15],
-                  _is_metni,
-                  _kapak_otomatik_punto(_is_metni, temel=18, alt=11),
-              )
-
-              # Kapağın 2. sayfaya taşmasının ana sebebi, şablondaki çok
-              # sayıdaki boş paragrafın Word tarafından gerçek satır yüksekliği
-              # ile hesaplanmasıydı. Boşlukları burada piksel gibi sabit bir
-              # yüksekliğe indiriyoruz. Metin paragraflarını da bölünmez tutuyoruz.
-              for _kp in _kapak_paragraflari[:34]:
-                  _kp.paragraph_format.keep_together = False
-                  _kp.paragraph_format.keep_with_next = False
-                  _kp.paragraph_format.widow_control = False
-                  _kp.paragraph_format.space_before = Pt(0)
-                  _kp.paragraph_format.space_after = Pt(0)
-
-              # Rapor başlığı ve hazırlayan bloğu da dinamik sıkıştırılır.
-              # Amaç: içerik uzadığında kapak hiçbir zaman 2. sayfaya
-              # taşmasın; normal uzunlukta ise şablon yerleşimi korunur.
-              _rapor_baslik_uzunlugu = len("MEKANİK TESİSAT UYGULAMA PROJESİ") + len("HESAP RAPORU")
-              _kapak_toplam_uzunluk = (
-                  len(_kurum_metni) + len(_is_metni) + _rapor_baslik_uzunlugu
-                  + len(str(hazirlayan or "")) + len(str(tarih or ""))
-              )
-
-              if _kapak_toplam_uzunluk <= 130:
-                  _baslik_punto = 18
-                  _bosluk_punto = 10
-                  _ust_bosluk_punto = 9
-              elif _kapak_toplam_uzunluk <= 180:
-                  _baslik_punto = 16
-                  _bosluk_punto = 7
-                  _ust_bosluk_punto = 7
-              elif _kapak_toplam_uzunluk <= 240:
-                  _baslik_punto = 14
-                  _bosluk_punto = 5
-                  _ust_bosluk_punto = 5
-              else:
+              # Dinamik punto: metin uzadıkça küçülür.
+              _kurum_punto = _kapak_punto(_kurum_metni, 18)
+              _is_punto = _kapak_punto(_is_metni, 18)
+              _toplam_uzunluk = len(_kurum_metni) + len(_is_metni)
+              _baslik_punto = 18 if _toplam_uzunluk <= 140 else (16 if _toplam_uzunluk <= 220 else 14)
+              if _toplam_uzunluk > 300:
                   _baslik_punto = 12
-                  _bosluk_punto = 3
-                  _ust_bosluk_punto = 3
 
-              # Kapak başlığı: 2 satırlı başlık tek blok olarak küçültülür.
-              _kapak_run_ayarla(_kapak_paragraflari[17], "MEKANİK TESİSAT UYGULAMA PROJESİ", _baslik_punto)
-              _kapak_run_ayarla(_kapak_paragraflari[18], "HESAP RAPORU", _baslik_punto)
-              _kapak_paragraflari[17].paragraph_format.keep_together = True
-              _kapak_paragraflari[18].paragraph_format.keep_together = True
-              _kapak_paragraflari[17].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[17].paragraph_format.space_after = Pt(0)
-              _kapak_paragraflari[18].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[18].paragraph_format.space_after = Pt(0)
+              _kapak_run_ayarla(_kapak_paragraflari[0], "FUGA", 24)
+              _kapak_run_ayarla(_kapak_paragraflari[1], "MEKANİK MÜŞAVİRLİK MÜHENDİSLİK", 11)
+              _kapak_run_ayarla(_kapak_paragraflari[2], "TİCARET LİMİTED ŞİRKETİ", 11)
+              _kapak_run_ayarla(_kapak_paragraflari[3], _kurum_metni, _kurum_punto)
+              _kapak_run_ayarla(_kapak_paragraflari[4], _is_metni, _is_punto)
+              _kapak_run_ayarla(_kapak_paragraflari[5], "MEKANİK TESİSAT UYGULAMA PROJESİ", _baslik_punto)
+              _kapak_run_ayarla(_kapak_paragraflari[6], "HESAP RAPORU", _baslik_punto)
 
-              # Boş paragraflar kapaktaki dikey konumu oluşturuyor. Uzun
-              # metinlerde bunları otomatik sıkıştırarak alt bloğun 2. sayfaya
-              # itilmesini engelliyoruz. Metin kısa ise şablona daha yakın
-              # boşluk bırakıyoruz.
-              for _i, _kp in enumerate(_kapak_paragraflari[:34]):
-                  _kp.paragraph_format.keep_together = True
-                  _kp.paragraph_format.keep_with_next = False
-                  _kp.paragraph_format.widow_control = True
-                  if not str(_kp.text or "").strip():
-                      # Boş satırlar yalnızca kapak yerleşimini oluşturur;
-                      # bunların her biri minimum ve kontrollü yükseklikte olsun.
-                      if _i <= 10:
-                          _punto_bos = min(_ust_bosluk_punto, 7)
-                      elif _i <= 18:
-                          _punto_bos = min(_bosluk_punto, 5)
-                      else:
-                          _punto_bos = min(_bosluk_punto, 4)
-                      _kp.paragraph_format.line_spacing = Pt(_punto_bos)
-                  else:
-                      _kp.paragraph_format.keep_together = True
-                      # Başlık satırları 18/16/14/12 pt olduğundan sabit 11 pt
-                      # satır aralığı kullanmak iki satırın üst üste binmesine
-                      # neden olabilir. Başlığın kendi puntosuna göre ayarla.
-                      if _i in (17, 18):
-                          _kp.paragraph_format.line_spacing = Pt(_baslik_punto + 2)
-                      elif _i == 33:
-                          _kp.paragraph_format.line_spacing = Pt(10 if _kapak_toplam_uzunluk > 180 else 11)
-                      else:
-                          _kp.paragraph_format.line_spacing = Pt(11)
-
-              # 33: Hazırlayan / MMO / Tarih
               _hazirlayan_metni = (
                   f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
                   f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
               )
-              _hazirlayan_punto = 11 if _kapak_toplam_uzunluk <= 180 else 10
-              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, _hazirlayan_punto)
+              _haz_punto = 10 if _toplam_uzunluk > 240 else 11
+              _kapak_run_ayarla(_kapak_paragraflari[7], _hazirlayan_metni, _haz_punto, False)
 
-              # Kapak A4 olarak sabitlenir. Dikey boşluklar ve dinamik
-              # başlık puntoları yukarıdaki kuralla otomatik ayarlanır.
-              # Böylece kapak içeriği tek sayfada kalacak şekilde sıkıştırılır.
+              # Bütün kapak paragraflarını tam kontrollü yap. Özellikle stil
+              # kaynaklı space/line değerlerini sıfırlıyoruz.
+              for _kp in _kapak_paragraflari:
+                  _kp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  _kp.paragraph_format.keep_together = True
+                  _kp.paragraph_format.keep_with_next = False
+                  _kp.paragraph_format.widow_control = False
+                  _kp.paragraph_format.space_after = Pt(0)
+                  _kp.paragraph_format.space_before = Pt(0)
+                  _kp.paragraph_format.line_spacing = 1.0
+
+              # Şablondaki görsel yerleşimi, artık boş satırlarla değil
+              # kontrollü paragraph spacing ile oluşturuluyor.
+              _kapak_paragraflari[3].paragraph_format.space_before = Pt(70 if _toplam_uzunluk < 240 else 55)
+              _kapak_paragraflari[4].paragraph_format.space_before = Pt(20)
+              _kapak_paragraflari[5].paragraph_format.space_before = Pt(18)
+              _kapak_paragraflari[6].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[7].paragraph_format.space_before = Pt(65 if _toplam_uzunluk < 240 else 45)
+
+              # Rapor başlığının üst çizgisini koru; tek çizgi olsun.
+              for _idx in (5, 6):
+                  _pPr = _kapak_paragraflari[_idx]._p.get_or_add_pPr()
+                  _pBdr = _pPr.find(qn("w:pBdr"))
+                  if _pBdr is None:
+                      _pBdr = OxmlElement("w:pBdr")
+                      _pPr.append(_pBdr)
+                  for _edge in list(_pBdr):
+                      _pBdr.remove(_edge)
+                  _top = OxmlElement("w:top")
+                  _top.set(qn("w:val"), "single")
+                  _top.set(qn("w:sz"), "6")
+                  _top.set(qn("w:space"), "6")
+                  _top.set(qn("w:color"), "808080")
+                  _pBdr.append(_top)
+
+              # A4 + güvenli kenar boşlukları. Bu kapak artık yalnızca 8
+              # kontrollü paragraftan oluştuğu için 2. sayfaya taşamaz.
               _cover_section = doc.sections[0]
               _cover_section.page_width = Inches(8.267716535)
               _cover_section.page_height = Inches(11.692913386)
