@@ -38,8 +38,14 @@ if _rapor_olustur_sidebar:
       )
       aktif_is = is_adi if is_adi else ""
   
-      doc = Document()
-  
+      # Rapor belgesi: KAPAK.doc örneği doğrudan şablon olarak kullanılır.
+      # Böylece punto, karakter aralığı, çizgi, boşluklar ve sayfa yerleşimi
+      # örnek dosyayla aynı kalır. Şablon bulunamazsa program bozulmasın diye
+      # güvenli bir Word belgesi oluşturulur.
+      _kapak_sablon_yolu = Path(__file__).resolve().parent / "KAPAK_SABLON.docx"
+      _kapak_sablon_kullanildi = _kapak_sablon_yolu.exists()
+      doc = Document(str(_kapak_sablon_yolu)) if _kapak_sablon_kullanildi else Document()
+
       def ana_baslik_ekle(metin):
           """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
           p = doc.add_heading(metin, level=1)
@@ -48,61 +54,89 @@ if _rapor_olustur_sidebar:
           p.paragraph_format.keep_together = True
           p.paragraph_format.widow_control = True
           return p
-  
-      cover_section = doc.sections[0]
-      cover_section.top_margin = Inches(1.15)
-      cover_section.bottom_margin = Inches(1.0)
-      cover_section.left_margin = Inches(1.0)
-      cover_section.right_margin = Inches(1.0)
-      cover_section.header_distance = Inches(0.25)
-      cover_section.footer_distance = Inches(0.25)
-  
-      # 1. SAYFA: KAPAK SAYFASI
-      p_sirket = doc.add_paragraph()
-      p_sirket.alignment = WD_ALIGN_PARAGRAPH.CENTER
-      run_sirket = p_sirket.add_run(aktif_sirket.upper())
-      run_sirket.font.size = Pt(13)
-      run_sirket.font.bold = True
-      run_sirket.font.name = "Arial"
-  
-      doc.add_paragraph()
-      doc.add_paragraph()
-  
-      if aktif_is:
-        p_is = doc.add_paragraph()
-        p_is.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_is_baslik = p_is.add_run("PROJE ADI:\n")
-        run_is_baslik.font.size = Pt(11)
-        run_is_baslik.font.name = "Arial"
-  
-        run_is = p_is.add_run(aktif_is)
-        run_is.font.size = Pt(16)
-        run_is.font.bold = True
-        run_is.font.italic = False
-        run_is.font.name = "Arial"
-        run_is.font.color.rgb = RGBColor(0, 0, 0)
-  
-        doc.add_paragraph()
-  
-      p_tur = doc.add_paragraph()
-      p_tur.alignment = WD_ALIGN_PARAGRAPH.CENTER
-      run_tur = p_tur.add_run(rapor_turu.upper())
-      run_tur.font.size = Pt(14)
-      run_tur.font.bold = True
-      run_tur.font.name = "Arial"
-  
-      for _ in range(4):
-        doc.add_paragraph()
-  
-      p_alt = doc.add_paragraph()
-      p_alt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-      run_hazirlayan = p_alt.add_run(
-          f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No:"
-          f" {mmo_no}\n\nTarih:\n{tarih}"
-      )
-      run_hazirlayan.font.size = Pt(11)
-      run_hazirlayan.font.name = "Arial"
-  
+
+      _kurum_adi = str(
+          st.session_state.get("isveren_adi", "")
+          or st.session_state.get("isveren", "")
+          or aktif_sirket
+          or "KURUM ADI"
+      ).strip()
+
+      if _kapak_sablon_kullanildi:
+          # KAPAK.doc içindeki özgün biçimlendirilmiş paragraflar korunur;
+          # yalnızca programdan gelen değişken bilgiler değiştirilir.
+          _kapak_paragraflari = doc.paragraphs
+          if len(_kapak_paragraflari) >= 34:
+              # 11: KURUM ADI
+              if _kapak_paragraflari[11].runs:
+                  _kapak_paragraflari[11].runs[0].text = _kurum_adi.upper()
+              else:
+                  _kapak_paragraflari[11].add_run(_kurum_adi.upper())
+
+              # 15: İŞİN ADI
+              if _kapak_paragraflari[15].runs:
+                  _kapak_paragraflari[15].runs[0].text = (aktif_is or "İŞİN ADI").upper()
+              else:
+                  _kapak_paragraflari[15].add_run((aktif_is or "İŞİN ADI").upper())
+
+              # 33: Hazırlayan / MMO / Tarih
+              _kapak_paragraflari[33].runs[0].text = (
+                  f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
+                  f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
+              ) if _kapak_paragraflari[33].runs else _kapak_paragraflari[33].add_run(
+                  f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
+                  f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
+              )
+
+              # Template içindeki dinamik alanlara uygulamanın metinlerini
+              # yazdıktan sonra örneğin biçimini bozmamak için run'ları
+              # Word'ün mevcut stilinde bırakıyoruz.
+          else:
+              _kapak_sablon_kullanildi = False
+
+      if not _kapak_sablon_kullanildi:
+          # Şablon dosyası taşınmamışsa rapor yine üretilebilsin. Bu bölüm
+          # yalnızca güvenli geri dönüş yoludur; normal kullanımda çalışmaz.
+          cover_section = doc.sections[0]
+          cover_section.top_margin = Inches(0.8861111111)
+          cover_section.bottom_margin = Inches(0.7875)
+          cover_section.left_margin = Inches(0.9847222222)
+          cover_section.right_margin = Inches(0.6881944444)
+          cover_section.header_distance = Inches(0.25)
+          cover_section.footer_distance = Inches(0.25)
+
+          def _kapak_fallback_paragraf(metin='', boyut=12, bold=True, hizalama=WD_ALIGN_PARAGRAPH.CENTER):
+              _p = doc.add_paragraph()
+              _p.alignment = hizalama
+              _r = _p.add_run(str(metin))
+              _r.font.name = "Times New Roman"
+              _r._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+              _r.font.size = Pt(boyut)
+              _r.bold = bold
+              return _p
+
+          _kapak_fallback_paragraf("FUGA", 24, True, WD_ALIGN_PARAGRAPH.CENTER)
+          _kapak_fallback_paragraf("MEKANİK MÜŞAVİRLİK MÜHENDİSLİK", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
+          _kapak_fallback_paragraf("TİCARET LİMİTED ŞİRKETİ", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
+          for _ in range(5): _kapak_fallback_paragraf("", 11)
+          for _ in range(3): _kapak_fallback_paragraf("", 25)
+          _kapak_fallback_paragraf(_kurum_adi.upper(), 25)
+          for _ in range(3): _kapak_fallback_paragraf("", 25)
+          _kapak_fallback_paragraf((aktif_is or "İŞİN ADI").upper(), 25)
+          for _ in range(1): _kapak_fallback_paragraf("", 11)
+          _p_rapor = _kapak_fallback_paragraf("MEKANİK TESİSAT UYGULAMA PROJESİ", 18, True)
+          _tcpr = _p_rapor._p.get_or_add_pPr()
+          _pbdr = OxmlElement("w:pBdr")
+          _ptop = OxmlElement("w:top")
+          _ptop.set(qn("w:val"), "single"); _ptop.set(qn("w:sz"), "6"); _ptop.set(qn("w:space"), "13"); _ptop.set(qn("w:color"), "808080")
+          _pbdr.append(_ptop); _tcpr.append(_pbdr)
+          _kapak_fallback_paragraf("HESAP RAPORU", 18, True)
+          for _ in range(9): _kapak_fallback_paragraf("", 13, True, WD_ALIGN_PARAGRAPH.LEFT)
+          _kapak_fallback_paragraf(
+              f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No: {mmo_no}\n\nTarih:\n{tarih}",
+              11, False
+          )
+
       # Word açılışında başlık alanları ve içindekiler otomatik güncellensin
       enable_update_fields_on_open(doc)
   
@@ -3027,130 +3061,6 @@ if _rapor_olustur_sidebar:
                       _src75 = doc.add_paragraph()
                       _src75.add_run(
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi."
-                      ).italic = True
-
-                      # ----------------------------------------------------------
-                      # SPRİNKLER BORU ÇAPI TABLOLARI VE SEÇİLEN DEĞER
-                      # ----------------------------------------------------------
-                      doc.add_heading("7.5.1.1 SPRİNKLER BORU ÇAPI TESPİTİ", level=5)
-                      doc.add_paragraph(
-                          "Sprinkler boru çapı seçiminde yüklenen SPRİNKLER ÇAP TABLOSU esas alınmıştır. "
-                          "Tehlike grubu 7.2 bölümündeki etkin yangın tehlike sınıfından otomatik belirlenir. "
-                          "Programda manuel seçim yapılması hâlinde manuel seçilen değer rapora aktarılır."
-                      )
-
-                      _r_cap_hafif = [
-                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                          ('2" DN50', '6-10'), ('2½" DN65', '11-30'), ('3" DN80', '31-60'),
-                          ('4" DN100', '61-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _r_cap_orta = [
-                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                          ('2" DN50', '6-10'), ('2½" DN65', '11-20'), ('3" DN80', '21-40'),
-                          ('4" DN100', '41-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _r_cap_yuksek = [
-                          ('1" DN25', '1'), ('1¼" DN32', '2-4'), ('1½" DN40', '5-4'),
-                          ('2" DN50', '8-14'), ('2½" DN65', '15-26'), ('3" DN80', '27-54'),
-                          ('4" DN100', '55-89'), ('5" DN125', '90-149'), ('6" DN150', '150-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _r_cap_test = [('2" hatta kadar', '¾"'), ('3" hatta kadar', '1¼"'), ('4" ve üzeri', '2"')]
-
-                      def _r_cap_esle(_liste, _adet):
-                          import re as _re_r_cap
-                          for _cap, _aralik in _liste:
-                              _m = _re_r_cap.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", str(_aralik))
-                              if _m and int(_m.group(1)) <= int(_adet) <= int(_m.group(2)):
-                                  return _cap, _aralik
-                              if str(_aralik).strip().isdigit() and int(_aralik) == int(_adet):
-                                  return _cap, _aralik
-                          return "", ""
-
-                      _r_sinif = str(st.session_state.get("yangin_722_etkin_sinif", "") or st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                      _r_snorm = _r_sinif.lower().replace("–", "-").replace(" ", "")
-                      if _r_snorm.startswith("düşük"):
-                          _r_grup = "HAFİF TEHLİKE"; _r_liste = _r_cap_hafif
-                      elif _r_snorm.startswith("orta"):
-                          _r_grup = "ORTA TEHLİKE"; _r_liste = _r_cap_orta
-                      elif _r_snorm.startswith("yüksek"):
-                          _r_grup = "YÜKSEK TEHLİKE"; _r_liste = _r_cap_yuksek
-                      else:
-                          _r_grup = ""; _r_liste = []
-
-                      _r_adet = int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1)
-
-                      _r_grup_map = {
-                          "HAFİF TEHLİKE": _r_cap_hafif,
-                          "ORTA TEHLİKE": _r_cap_orta,
-                          "YÜKSEK TEHLİKE": _r_cap_yuksek,
-                      }
-                      _r_secili_gruplar = list(st.session_state.get("yangin_75_sprinkler_secili_cap_tablolari", []) or [])
-                      if not _r_secili_gruplar and _r_grup:
-                          _r_secili_gruplar = [_r_grup]
-
-                      # Kullanıcı hangi tabloları işaretlediyse yalnızca onlar rapora alınır.
-                      # Çap hesabında ilk işaretli sprinkler tablosu esas alınır.
-                      _r_aktif_grup = _r_secili_gruplar[0] if _r_secili_gruplar else ""
-                      _r_aktif_liste = _r_grup_map.get(_r_aktif_grup, [])
-                      _r_oto_cap, _r_oto_aralik = _r_cap_esle(_r_aktif_liste, _r_adet)
-                      _r_final_cap = str(st.session_state.get("yangin_75_sprinkler_cap_final", "") or "")
-                      if not _r_final_cap:
-                          _r_final_cap = _r_oto_cap
-                      _r_kaynak = str(st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Seçilmedi"))
-
-                      _p_sel = doc.add_paragraph()
-                      _r = _p_sel.add_run("Seçilen sprinkler boru çapı: ")
-                      _r.bold = True
-                      _p_sel.add_run(
-                          f"{_r_final_cap or 'Seçilmedi'} — Çap hesabında kullanılan tablo: {_r_aktif_grup or 'Seçilmedi'}; "
-                          f"Yangın tehlike sınıfı: {_r_sinif or 'Seçilmedi'}; Sprinkler adedi: {_r_adet}; "
-                          f"Seçim kaynağı: {_r_kaynak}."
-                      )
-
-                      # Kullanıcı tarafından işaretlenen tüm sprinkler çap tablolarını rapora aktar.
-                      for _r_title in _r_secili_gruplar:
-                          _r_rows = _r_grup_map.get(_r_title, [])
-                          if not _r_rows:
-                              continue
-                          _pt = doc.add_paragraph()
-                          _pt.add_run(f"{_r_title} ÇAP TABLOSU").bold = True
-                          _tt = doc.add_table(rows=1, cols=2)
-                          _tt.style = "Table Grid"
-                          _tt.rows[0].cells[0].text = "BORU ÇAPI"
-                          _tt.rows[0].cells[1].text = "SPRİNKLER ADEDİ"
-                          for _cc in _tt.rows[0].cells:
-                              for _pr in _cc.paragraphs:
-                                  for _rr in _pr.runs:
-                                      _rr.bold = True
-                          for _cap, _aralik in _r_rows:
-                              _cc = _tt.add_row().cells
-                              _cc[0].text = _cap
-                              _cc[1].text = _aralik
-                              if _cap == _r_final_cap and _r_title == _r_aktif_grup:
-                                  for _cell in _cc:
-                                      _tcPr = _cell._tc.get_or_add_tcPr()
-                                      _shd = OxmlElement("w:shd")
-                                      _shd.set(qn("w:fill"), "E2F0D9")
-                                      _tcPr.append(_shd)
-
-                      _ptd = doc.add_paragraph()
-                      _ptd.add_run("TEST DRENAJ HATTI ÇAP TABLOSU").bold = True
-                      _td = doc.add_table(rows=1, cols=2)
-                      _td.style = "Table Grid"
-                      _td.rows[0].cells[0].text = "ANA HAT"
-                      _td.rows[0].cells[1].text = "TEST-DRENAJ ÇAPI"
-                      for _h, _c in _r_cap_test:
-                          _cc = _td.add_row().cells
-                          _cc[0].text = _h
-                          _cc[1].text = _c
-
-                      _src_cap = doc.add_paragraph()
-                      _src_cap.add_run(
-                          "Kaynak: Kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx. "
-                          "Not: Yüksek Tehlike tablosundaki 1½\" DN40 satırı kaynak dosyada 5-4 olarak yazılmıştır; kaynak veri değiştirilmemiştir."
                       ).italic = True
 
                       doc.add_heading("7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ", level=4)
