@@ -63,34 +63,81 @@ if _rapor_olustur_sidebar:
       ).strip()
 
       if _kapak_sablon_kullanildi:
-          # KAPAK.doc içindeki özgün biçimlendirilmiş paragraflar korunur;
-          # yalnızca programdan gelen değişken bilgiler değiştirilir.
+          # KAPAK.doc örneğinin yerleşimi korunur; yalnızca dinamik alanlar
+          # değiştirilir. Kurum adı ve iş adı artık daha küçük puntoyla
+          # yazılır ve metin uzadıkça punto otomatik küçülür. Böylece kapak
+          # tek A4 sayfasında kalır ve uzun proje/kurum adlarında taşma önlenir.
           _kapak_paragraflari = doc.paragraphs
-          if len(_kapak_paragraflari) >= 34:
-              # 11: KURUM ADI
-              if _kapak_paragraflari[11].runs:
-                  _kapak_paragraflari[11].runs[0].text = _kurum_adi.upper()
-              else:
-                  _kapak_paragraflari[11].add_run(_kurum_adi.upper())
 
-              # 15: İŞİN ADI
-              if _kapak_paragraflari[15].runs:
-                  _kapak_paragraflari[15].runs[0].text = (aktif_is or "İŞİN ADI").upper()
+          def _kapak_otomatik_punto(metin, temel=18, alt=11):
+              _uzunluk = len(str(metin or "").strip())
+              if _uzunluk <= 35:
+                  return temel
+              if _uzunluk <= 50:
+                  return 16
+              if _uzunluk <= 65:
+                  return 14
+              if _uzunluk <= 85:
+                  return 12
+              return alt
+
+          def _kapak_run_ayarla(_p, _metin, _punto):
+              if _p.runs:
+                  _r = _p.runs[0]
+                  _r.text = _metin
               else:
-                  _kapak_paragraflari[15].add_run((aktif_is or "İŞİN ADI").upper())
+                  _r = _p.add_run(_metin)
+              _r.font.size = Pt(_punto)
+              _r.font.name = "Times New Roman"
+              _r._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+              _r.font.bold = True
+              _r.font.italic = False
+              return _r
+
+          if len(_kapak_paragraflari) >= 34:
+              _kurum_metni = (_kurum_adi or "KURUM ADI").upper()
+              _is_metni = (aktif_is or "İŞİN ADI").upper()
+
+              # KURUM ADI: 25 pt olan örnek alan 18 pt taban değere indirildi.
+              _kapak_run_ayarla(
+                  _kapak_paragraflari[11],
+                  _kurum_metni,
+                  _kapak_otomatik_punto(_kurum_metni, temel=18, alt=11),
+              )
+
+              # İŞİN ADI: 25 pt olan örnek alan 18 pt taban değere indirildi.
+              _kapak_run_ayarlar = _kapak_run_ayarla(
+                  _kapak_paragraflari[15],
+                  _is_metni,
+                  _kapak_otomatik_punto(_is_metni, temel=18, alt=11),
+              )
+
+              # Kapak üzerindeki tüm paragrafları bölünmez tut; boşlukları
+              # Word'ün sayfa yüksekliğine göre hesaplamasına izin ver.
+              for _kp in _kapak_paragraflari[:34]:
+                  _kp.paragraph_format.keep_together = True
+                  _kp.paragraph_format.keep_with_next = False
+                  _kp.paragraph_format.widow_control = True
 
               # 33: Hazırlayan / MMO / Tarih
-              _kapak_paragraflari[33].runs[0].text = (
-                  f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
-                  f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
-              ) if _kapak_paragraflari[33].runs else _kapak_paragraflari[33].add_run(
+              _hazirlayan_metni = (
                   f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n"
                   f"MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}"
               )
+              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, 11)
 
-              # Template içindeki dinamik alanlara uygulamanın metinlerini
-              # yazdıktan sonra örneğin biçimini bozmamak için run'ları
-              # Word'ün mevcut stilinde bırakıyoruz.
+              # Kapak A4 olarak sabitlenir. İçerik sığdığı sürece Word tek
+              # sayfada tutar; uzun dinamik metinlerde yalnızca ilgili
+              # başlığın puntosu küçülür, raporun geri kalanına dokunulmaz.
+              _cover_section = doc.sections[0]
+              _cover_section.page_width = Inches(8.267716535)
+              _cover_section.page_height = Inches(11.692913386)
+              _cover_section.top_margin = Inches(0.8861111111)
+              _cover_section.bottom_margin = Inches(0.7875)
+              _cover_section.left_margin = Inches(0.9847222222)
+              _cover_section.right_margin = Inches(0.6881944444)
+              _cover_section.header_distance = Inches(0.25)
+              _cover_section.footer_distance = Inches(0.25)
           else:
               _kapak_sablon_kullanildi = False
 
@@ -120,9 +167,9 @@ if _rapor_olustur_sidebar:
           _kapak_fallback_paragraf("TİCARET LİMİTED ŞİRKETİ", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
           for _ in range(5): _kapak_fallback_paragraf("", 11)
           for _ in range(3): _kapak_fallback_paragraf("", 25)
-          _kapak_fallback_paragraf(_kurum_adi.upper(), 25)
+          _kapak_fallback_paragraf(_kurum_adi.upper(), 18)
           for _ in range(3): _kapak_fallback_paragraf("", 25)
-          _kapak_fallback_paragraf((aktif_is or "İŞİN ADI").upper(), 25)
+          _kapak_fallback_paragraf((aktif_is or "İŞİN ADI").upper(), 18)
           for _ in range(1): _kapak_fallback_paragraf("", 11)
           _p_rapor = _kapak_fallback_paragraf("MEKANİK TESİSAT UYGULAMA PROJESİ", 18, True)
           _tcpr = _p_rapor._p.get_or_add_pPr()
