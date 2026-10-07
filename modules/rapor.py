@@ -82,14 +82,15 @@ if _rapor_olustur_sidebar:
               return alt
 
           def _kapak_run_ayarla(_p, _metin, _punto):
-              if _p.runs:
-                  _r = _p.runs[0]
-                  _r.text = _metin
-              else:
-                  _r = _p.add_run(_metin)
+              # Şablondaki eski run'ların tamamını temizle. Sadece ilk run'ı
+              # değiştirmek, özellikle "HESAP RAPORU" gibi alanlarda eski
+              # metnin ikinci kez görünmesine ve satırın gereksiz uzamasına
+              # neden olabiliyordu.
+              _p.clear()
+              _r = _p.add_run(str(_metin or ""))
               _r.font.size = Pt(_punto)
               _r.font.name = "Times New Roman"
-              _r._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+              _r._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), "Times New Roman")
               _r.font.bold = True
               _r.font.italic = False
               return _r
@@ -112,12 +113,16 @@ if _rapor_olustur_sidebar:
                   _kapak_otomatik_punto(_is_metni, temel=18, alt=11),
               )
 
-              # Kapak üzerindeki tüm paragrafları bölünmez tut; boşlukları
-              # Word'ün sayfa yüksekliğine göre hesaplamasına izin ver.
+              # Kapağın 2. sayfaya taşmasının ana sebebi, şablondaki çok
+              # sayıdaki boş paragrafın Word tarafından gerçek satır yüksekliği
+              # ile hesaplanmasıydı. Boşlukları burada piksel gibi sabit bir
+              # yüksekliğe indiriyoruz. Metin paragraflarını da bölünmez tutuyoruz.
               for _kp in _kapak_paragraflari[:34]:
-                  _kp.paragraph_format.keep_together = True
+                  _kp.paragraph_format.keep_together = False
                   _kp.paragraph_format.keep_with_next = False
-                  _kp.paragraph_format.widow_control = True
+                  _kp.paragraph_format.widow_control = False
+                  _kp.paragraph_format.space_before = Pt(0)
+                  _kp.paragraph_format.space_after = Pt(0)
 
               # Rapor başlığı ve hazırlayan bloğu da dinamik sıkıştırılır.
               # Amaç: içerik uzadığında kapak hiçbir zaman 2. sayfaya
@@ -148,6 +153,12 @@ if _rapor_olustur_sidebar:
               # Kapak başlığı: 2 satırlı başlık tek blok olarak küçültülür.
               _kapak_run_ayarla(_kapak_paragraflari[17], "MEKANİK TESİSAT UYGULAMA PROJESİ", _baslik_punto)
               _kapak_run_ayarla(_kapak_paragraflari[18], "HESAP RAPORU", _baslik_punto)
+              _kapak_paragraflari[17].paragraph_format.keep_together = True
+              _kapak_paragraflari[18].paragraph_format.keep_together = True
+              _kapak_paragraflari[17].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[17].paragraph_format.space_after = Pt(0)
+              _kapak_paragraflari[18].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[18].paragraph_format.space_after = Pt(0)
 
               # Boş paragraflar kapaktaki dikey konumu oluşturuyor. Uzun
               # metinlerde bunları otomatik sıkıştırarak alt bloğun 2. sayfaya
@@ -158,10 +169,26 @@ if _rapor_olustur_sidebar:
                   _kp.paragraph_format.keep_with_next = False
                   _kp.paragraph_format.widow_control = True
                   if not str(_kp.text or "").strip():
-                      _punto_bos = _ust_bosluk_punto if _i <= 10 else _bosluk_punto
-                      _kp.paragraph_format.space_before = Pt(0)
-                      _kp.paragraph_format.space_after = Pt(0)
+                      # Boş satırlar yalnızca kapak yerleşimini oluşturur;
+                      # bunların her biri minimum ve kontrollü yükseklikte olsun.
+                      if _i <= 10:
+                          _punto_bos = min(_ust_bosluk_punto, 7)
+                      elif _i <= 18:
+                          _punto_bos = min(_bosluk_punto, 5)
+                      else:
+                          _punto_bos = min(_bosluk_punto, 4)
                       _kp.paragraph_format.line_spacing = Pt(_punto_bos)
+                  else:
+                      _kp.paragraph_format.keep_together = True
+                      # Başlık satırları 18/16/14/12 pt olduğundan sabit 11 pt
+                      # satır aralığı kullanmak iki satırın üst üste binmesine
+                      # neden olabilir. Başlığın kendi puntosuna göre ayarla.
+                      if _i in (17, 18):
+                          _kp.paragraph_format.line_spacing = Pt(_baslik_punto + 2)
+                      elif _i == 33:
+                          _kp.paragraph_format.line_spacing = Pt(10 if _kapak_toplam_uzunluk > 180 else 11)
+                      else:
+                          _kp.paragraph_format.line_spacing = Pt(11)
 
               # 33: Hazırlayan / MMO / Tarih
               _hazirlayan_metni = (
