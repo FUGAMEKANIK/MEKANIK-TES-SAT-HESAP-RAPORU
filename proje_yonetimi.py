@@ -95,9 +95,29 @@ def json_oku(dosya_yolu: Path, varsayilan: Optional[Dict[str, Any]] = None) -> D
 
 
 def _supabase_ayarlari() -> tuple[str, str]:
-    """Streamlit Secrets / ortam değişkenlerinden Supabase bilgilerini alır."""
+    """Supabase bilgilerini önce ortam değişkenlerinden, sonra Streamlit Secrets'tan alır.
+
+    Streamlit Cloud'da Secrets çoğu kurulumda os.environ'a otomatik aktarılmadığı
+    için yalnızca os.getenv kullanmak kalıcı proje kayıtlarının devre dışı kalmasına
+    ve uygulama yeniden başladığında projelerin kaybolmuş gibi görünmesine neden olur.
+    """
     url = str(os.getenv("SUPABASE_URL", "")).strip().rstrip("/")
     key = str(os.getenv("SUPABASE_SECRET_KEY", "")).strip()
+
+    if not url or not key:
+        try:
+            import streamlit as st
+            _secrets = st.secrets
+            if not url:
+                url = str(_secrets.get("SUPABASE_URL", "")).strip().rstrip("/")
+            if not key:
+                key = str(
+                    _secrets.get("SUPABASE_SECRET_KEY", "")
+                    or _secrets.get("SUPABASE_KEY", "")
+                ).strip()
+        except Exception:
+            pass
+
     return url, key
 
 
