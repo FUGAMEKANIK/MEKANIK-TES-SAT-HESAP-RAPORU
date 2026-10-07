@@ -690,11 +690,10 @@ def _proje_sil(proje_id):
     try:
         if not proje_id:
             return
-        klasor = Path(_PROJE_YONETICISI.ana_dizin) / proje_id
-        if not klasor.exists():
-            st.session_state["proje_yukleme_bildirimi"] = "Silinecek proje bulunamadı."
-            return
-        shutil.rmtree(klasor)
+
+        # Hem yerel hem de Supabase kaydını proje yöneticisine bırakarak sil.
+        _PROJE_YONETICISI.proje_sil(proje_id, onay=True)
+
         if st.session_state.get("aktif_proje_id") == proje_id:
             st.session_state.pop("aktif_proje_id", None)
             st.session_state.pop("aktif_proje_adi", None)
@@ -1231,12 +1230,20 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
                 use_container_width=True,
             )
 
+    # Yerel + Supabase kayıtlarını birlikte getir.
+    # Böylece Streamlit Cloud yeniden başlasa bile uzak kaydedilmiş projeler
+    # "Uygulama İçindeki Kayıtlı Proje" listesinde görünür.
     _mevcut_projeler = []
     try:
-        _mevcut_projeler = sorted([
-            p.name for p in Path(_PROJE_YONETICISI.ana_dizin).iterdir()
-            if p.is_dir() and (p / "proje.json").exists()
-        ])
+        _proje_kayitlari = _PROJE_YONETICISI.proje_listesi()
+        _mevcut_projeler = [
+            {
+                "proje_id": str(x.get("proje_id", "")),
+                "proje_adi": str(x.get("proje_adi", x.get("proje_id", ""))),
+            }
+            for x in _proje_kayitlari
+            if str(x.get("proje_id", "")).strip()
+        ]
     except Exception:
         _mevcut_projeler = []
 
@@ -1271,24 +1278,38 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
         )
 
     if _mevcut_projeler:
-        _secili_proje = st.selectbox(
+        _proje_secim_ids = [x["proje_id"] for x in _mevcut_projeler]
+        _proje_secim_labels = [
+            f"{x['proje_adi']}  [{x['proje_id']}]"
+            for x in _mevcut_projeler
+        ]
+        _aktif_id = str(st.session_state.get("aktif_proje_id", ""))
+        _aktif_index = (
+            _proje_secim_ids.index(_aktif_id)
+            if _aktif_id in _proje_secim_ids else 0
+        )
+        _secili_proje_label = st.selectbox(
             "Uygulama İçindeki Kayıtlı Proje",
-            _mevcut_projeler,
-            index=(_mevcut_projeler.index(st.session_state.get("aktif_proje_id"))
-                   if st.session_state.get("aktif_proje_id") in _mevcut_projeler else 0),
+            _proje_secim_labels,
+            index=_aktif_index,
             key="proje_ac_sec_v116",
         )
+        _secili_proje_index = _proje_secim_labels.index(_secili_proje_label)
+        _secili_proje_id = _proje_secim_ids[_secili_proje_index]
+        _secili_proje_adi = _mevcut_projeler[_secili_proje_index]["proje_adi"]
+
         _pc3, _pc4 = st.columns(2)
         with _pc3:
             st.button(
                 "📂 Aç", key="proje_ac_btn_v116", use_container_width=True,
-                on_click=lambda: _proje_ac(st.session_state.get("proje_ac_sec_v116", "")),
+                on_click=lambda: _proje_ac(_secili_proje_id),
             )
         with _pc4:
             st.button(
                 "🗑️ Sil", key="proje_sil_btn_v116", use_container_width=True,
-                on_click=lambda: _proje_sil(st.session_state.get("proje_ac_sec_v116", "")),
+                on_click=lambda: _proje_sil(_secili_proje_id),
             )
+        st.caption(f"Kayıtlı proje: **{_secili_proje_adi}**")
     else:
         st.caption("Henüz uygulama içinde kayıtlı proje yok.")
 
