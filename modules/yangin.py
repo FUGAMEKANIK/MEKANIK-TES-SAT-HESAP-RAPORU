@@ -1414,21 +1414,43 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _yog75_num = float(str(_sec75_debi[1]).replace(',', '.'))
                                 _alan75_islak = float(str(_sec75_debi[2]).replace(',', '.')) if str(_sec75_debi[2]).strip() not in {'—','-',''} else 0.0
                                 _alan75_kuru = float(str(_sec75_debi[3]).replace(',', '.')) if str(_sec75_debi[3]).strip() not in {'—','-',''} else 0.0
-                                _alan75 = max(_alan75_islak, _alan75_kuru)
-                                _q75_spr = _yog75_num * _alan75
-                                st.session_state["yangin_75_sprinkler_debisi_ldak"] = float(_q75_spr)
-                                st.session_state["yangin_75_sprinkler_debisi_kaynagi"] = "7.5.2 Ek-8/B tasarım yoğunluğu × seçilen koruma alanı"
-                                st.markdown(
-                                    f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:8px;">'
-                                    f'<b>7.5.2’den otomatik hesaplanan sprinkler tasarım debisi:</b> <b>{_q75_spr:.2f} L/dak</b> '&
-                                    f'( {_yog75_num:g} mm/dak × {_alan75:g} m² )'
-                                    f'</div>',
-                                    unsafe_allow_html=True,
-                                )
+
+                                # Sprinkler tasarım debisinde koruma alanı, seçilen sistem tipine
+                                # göre alınır. Islak/ön etkili sistemde ıslak alan; kuru/alternatif
+                                # sistemde kuru alan kullanılır. Artık iki alanın maksimumu alınmaz.
+                                _spr_tip_norm = str(_spr_sistem_tipi_75 or '').lower()
+                                if 'kuru' in _spr_tip_norm or 'alternatif' in _spr_tip_norm:
+                                    _alan75 = _alan75_kuru
+                                    _alan75_etiket = 'Kuru / Alternatif koruma alanı'
+                                else:
+                                    _alan75 = _alan75_islak
+                                    _alan75_etiket = 'Islak / Ön etkili koruma alanı'
+
+                                if _alan75 > 0 and _yog75_num > 0:
+                                    _q75_spr = _yog75_num * _alan75
+                                    st.session_state["yangin_75_sprinkler_debisi_ldak"] = float(_q75_spr)
+                                    st.session_state["yangin_75_sprinkler_debisi_kaynagi"] = (
+                                        "7.5.2 Ek-8/B tasarım yoğunluğu × " + _alan75_etiket
+                                    )
+                                    st.markdown(
+                                        f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:8px;">'
+                                        f'<b>7.5.2 SPRİNKLER TASARIM DEBİSİ:</b> <b>{_q75_spr:.2f} L/dak</b><br>'
+                                        f'{_yog75_num:g} mm/dak × {_alan75:g} m² = <b>{_q75_spr:.2f} L/dak</b><br>'
+                                        f'<span style="font-size:13px;">{_alan75_etiket}</span>'
+                                        f'</div>',
+                                        unsafe_allow_html=True,
+                                    )
+                                else:
+                                    st.session_state["yangin_75_sprinkler_debisi_ldak"] = 0.0
+                                    st.warning(
+                                        f"{_ek8b_sprinkler_secili} için {_spr_sistem_tipi_75} sistemine ait geçerli bir koruma alanı bulunmadığından sprinkler debisi hesaplanamadı."
+                                    )
                             except (TypeError, ValueError):
                                 st.session_state["yangin_75_sprinkler_debisi_ldak"] = 0.0
+                                st.warning("Sprinkler tasarım yoğunluğu veya koruma alanı sayısal olarak okunamadı.")
                     else:
                         st.session_state["yangin_75_sprinkler_debisi_ldak"] = 0.0
+                        st.warning("7.2'den geçerli bir yangın tehlike sınıfı gelmediği için sprinkler tasarım debisi hesaplanamadı.")
 
                     # ----------------------------------------------------------
                     # EK-8/A - Yağmurlama Sistemi, Yangın Dolabı ve Hidrant
@@ -1460,12 +1482,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "Orta Tehlike-3 kuru": [160.0, 185.0, 200.0],
                     }
 
-                    # 45 m üzerindeki yapılarda Ek-8/A tablosunun izin verdiği en büyük
-                    # hacim otomatik olarak seçilir (30 < h <= 45 m sütunundaki değer).
-                    # Böylece 45 m üzeri değerlerde otomatik depo hacmi boş kalmaz.
-                    _ek8a_idx = (-1 if _ek8a_yapi_h <= 0 else (0 if _ek8a_yapi_h <= 15 else (1 if _ek8a_yapi_h <= 30 else 2)))
+                    # Ek-8/A seçim sütunu: yapı yüksekliğine göre otomatik belirlenir.
+                    # 45 m'den büyük yapılarda ilgili satırın en yüksek hacmi, yani
+                    # 30 < h <= 45 m sütunundaki değer seçilir.
+                    if _ek8a_yapi_h <= 0:
+                        _ek8a_idx = -1
+                    elif _ek8a_yapi_h <= 15:
+                        _ek8a_idx = 0
+                    elif _ek8a_yapi_h <= 30:
+                        _ek8a_idx = 1
+                    else:
+                        _ek8a_idx = 2
                     if _ek8a_yapi_h > 45:
-                        _ek8a_h_araligi = "h > 45 m — Ek-8/A tablosundaki en büyük hacim"
+                        _ek8a_h_araligi = "h > 45 m — ilgili satırdaki en yüksek Ek-8/A hacmi"
                     _ek8a_anahtar = ""
                     if _ek8a_sinif.startswith("düşük tehlike"):
                         _ek8a_anahtar = "Düşük Tehlike"
@@ -1591,7 +1620,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     if _ek8a_secili_satir is not None and _ek8a_depo_m3 is not None:
                         st.caption(
                             f"Sarı hücre: 7.2'den otomatik alınan tehlike sınıfı ({_etkin_sinif_75}) + "
-                            f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre otomatik seçilen Ek-8/A hacmidir."
+                            f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre otomatik seçilen Ek-8/A hacmidir. "
+                            f"45 m üzerindeki yapılarda ilgili satırın en yüksek hacmi seçilir."
                         )
 
                     _e8c = st.columns(4)
