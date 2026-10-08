@@ -882,13 +882,16 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=19):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
-                        # Fragment içinde eski form/widget anahtarlarının session_state
-                        # ile çakışmasını önlemek için bu ekleme alanında form kullanmıyoruz.
-                        # İki alanın etiketleri konuma göre benzersizdir.
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
-                            _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
-                            _submit_madde = st.button(f"Maddeyi ekle — {_yer_etiketi}")
+                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
+                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
+                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
+                            _bkey = f"yangin_v3_{_liste_key}_baslik"
+                            _mkey = f"yangin_v3_{_liste_key}_metin"
+                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
+                                _b = st.text_input("Madde başlığı", key=_bkey)
+                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -997,6 +1000,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için yangın dolabı debisi otomatik seçilemedi.")
 
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları.")
+                    st.markdown(
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
+                        'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
+                        'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
+                        unsafe_allow_html=True,
+                    )
 
             elif _baslik.startswith("7.4 "):
                 with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
@@ -1056,12 +1065,16 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=_bas_no):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
-                        # 7.3.1 ile aynı güvenli yaklaşım: form_submit_button ve
-                        # sabit widget key'leri kullanılmıyor.
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
-                            _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
-                            _submit_madde = st.button(f"Maddeyi ekle — {_yer_etiketi}")
+                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
+                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
+                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
+                            _bkey = f"yangin_v3_{_liste_key}_baslik"
+                            _mkey = f"yangin_v3_{_liste_key}_metin"
+                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
+                                _b = st.text_input("Madde başlığı", key=_bkey)
+                                _m = st.text_area("Madde açıklaması", key=_mkey, height=90)
+                                _submit_madde = st.form_submit_button("Maddeyi ekle", key=f"yangin_v3_{_liste_key}_submit")
                             if _submit_madde:
                                 if _b.strip() and _m.strip():
                                     _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
@@ -1073,12 +1086,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.markdown("**HİDRANT MADDELERİ — EK MADDELER (8. MADDEDEN SONRA)**")
                     _hidrant_maddeleri_goster_ve_ekle("yangin_741_maddeler_cap_oncesi", "8. maddeden sonra")
 
-                    st.markdown(
-                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik</i></div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    # --------------------------------------------------------------
                     # 7.4.2 - HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
                     # BYKHY Ek-8/C
                     # --------------------------------------------------------------
@@ -1170,7 +1177,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "ve 700 kPa hidrant çıkış basıncı ayrıca dikkate alınacaktır."
                     )
                     st.markdown(
-                        '<div style="font-size:15px; margin-top:10px; padding:8px 0;"><i>'
+                        '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
                         'Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; '
                         'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
@@ -1204,6 +1211,45 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>",
                         unsafe_allow_html=True,
                     )
+                    # 7.2 ile bağlantı: bina/kullanım seçimi ve etkin yangın tehlike sınıfı
+                    # burada yeniden seçtirilmez; 7.2'deki mevcut session-state verisi kullanılır.
+                    _secili_kullanim_75 = [
+                        str(x.get("etiket", "")).strip()
+                        for x in _yangin_721_secili_kayitlar()
+                        if str(x.get("etiket", "")).strip()
+                    ]
+                    _kullanim_metni_75 = " ".join(_secili_kullanim_75).lower()
+                    _etkin_sinif_75 = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
+                    if not _etkin_sinif_75:
+                        _etkin_sinif_75 = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
+                    _yapi_h_75 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+                    _otopark_alan_75 = float(st.session_state.get("yangin_genel_kapali_otopark_alan_m2", 0.0) or 0.0)
+                    _otopark_arac_75 = int(st.session_state.get("yangin_genel_otopark_arac_sayisi", 0) or 0)
+
+                    # Seçilen kullanım alanına karşılık gelen Madde 96/2 ifadesi.
+                    # Buradaki sarı vurgu “zorunluluk kesinleşti” anlamına gelmez;
+                    # 7.2'de seçilen kullanım alanının Madde 96/2'deki karşılığını gösterir.
+                    _spr_75_vurgu = []
+                    if "konut" in _kullanim_metni_75:
+                        _spr_75_vurgu.append("yapı yüksekliği 51,50 m’yi geçen konutlarda")
+                    else:
+                        _spr_75_vurgu.append("yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda")
+                    if any(k in _kullanim_metni_75 for k in ["otopark"]):
+                        _spr_75_vurgu.append("ilgili kapalı otoparklarda")
+                    if any(k in _kullanim_metni_75 for k in ["otel", "yurt", "pansiyon", "misafirhane"]):
+                        _spr_75_vurgu.append("belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde")
+                    if any(k in _kullanim_metni_75 for k in ["büyük mağaza", "alışveriş", "ticaret", "eğlence", "toplanma"]):
+                        _spr_75_vurgu.append("toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde")
+
+                    st.markdown(
+                        '<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin:8px 0 12px 0;">'
+                        f'<b>7.2’den gelen bina/kullanım alanı:</b> {", ".join(_secili_kullanim_75) if _secili_kullanim_75 else "Seçilmedi"}<br>'
+                        f'<b>7.2’den gelen etkin yangın tehlike sınıfı:</b> {_etkin_sinif_75 or "Belirlenemedi"}<br>'
+                        f'<b>Madde 96/2’de ilişkili ifade:</b> {", ".join(_spr_75_vurgu) if _spr_75_vurgu else "Belirlenemedi"}'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+
                     _sprinkler_esaslari = [
                         ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
                         ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
@@ -1218,226 +1264,21 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     ]
                     for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
                         st.markdown(f"**{_no}. {_baslik_s}**")
-                        st.write(_metin_s)
+                        if _no == "2" and _spr_75_vurgu:
+                            # Madde metninin sadece 7.2'de seçilen kullanım alanıyla
+                            # ilişkili kısmını sarı vurgula. Diğer metin aynen korunur.
+                            _html_s = _metin_s
+                            for _ifade in _spr_75_vurgu:
+                                _html_s = _html_s.replace(
+                                    _ifade,
+                                    f'<mark style="background-color:#FFF2CC; padding:2px 4px; border-radius:3px; font-weight:700;">{_ifade}</mark>'
+                                )
+                            st.markdown(_html_s, unsafe_allow_html=True)
+                        else:
+                            st.write(_metin_s)
 
-                    # Yönetmelik maddelerinin devamı niteliğinde proje özel sprinkler
-                    # tasarım/uygulama maddeleri 11. maddeden itibaren numaralandırılır.
-                    _sprinkler_proje_notlari = [
-                        "Sprinkler sistem tipi olarak ıslak borulu sprinkler sistemi kurulacaktır. Zonlamada ıslak borulu sistem için yatayda 4831 m2 maksimum zon alanı olarak alınmıştır.",
-                        "Sprinkler sisteminde, kat girişini izole edebilmek için izlenebilir volanlı kelebek vanalar her kat girişinde kullanılmıştır.",
-                        "Yangın tesisatı TSE ve NFPA uyumlu olacaktır.",
-                        "Her zon ve katta, ayrı test ve drenaj yapabilmek için vanalar kullanılmıştır.",
-                        "En az her kat bazında sistemi izlemek amacıyla akış anahtarları kullanılmıştır.",
-                        "Her bir söndürme mahali için hidrolik hesap sonucu çıkan köpük miktarı ve ekipmanı belirlenmiştir.",
-                        "Sistemin manuel olarak devreden çıkartılarak düşük risk durumunda yangına bir seyyar söndürücü ile manuel müdahale yapılarak köpüklü söndürme sistemi boşaltılmadan yangının personel tarafından söndürülmesi sağlanabilecektir.",
-                    ]
-                    for _i_not, _not in enumerate(_sprinkler_proje_notlari, start=11):
-                        st.markdown(f"**{_i_not}.** {_not}")
-
-                    # 7.2’de seçilen bina/kullanım alanını burada tekrar seçtirmeden göster.
-                    _spr_721_secimler = st.session_state.get("yangin_721_ek1b_secimler", []) or []
-                    _spr_721_secimler_c = st.session_state.get("yangin_721_ek1c_secimler", []) or []
-                    _spr_721_tum_secimler = list(_spr_721_secimler) + list(_spr_721_secimler_c)
-                    if _spr_721_tum_secimler:
-                        _spr_721_goster = "<br>".join(str(x) for x in _spr_721_tum_secimler)
-                        st.markdown(
-                            '<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:10px;">'
-                            '<b>7.2 bölümünde seçilen bina / kullanım alanı:</b><br>'
-                            f'{_spr_721_goster}'
-                            '</div>',
-                            unsafe_allow_html=True,
-                        )
-
+                    st.caption("Sarı vurgular, 7.2’de seçilen bina/kullanım alanının Madde 96/2’deki karşılığını gösterir. Sprinkler zorunluluğunun kesin değerlendirilmesinde bina yüksekliği, alan, otopark ve diğer yönetmelik koşulları ayrıca dikkate alınır.")
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
-
-                    # ----------------------------------------------------------
-                    # SPRİNKLER BORU ÇAPI TABLOLARI
-                    # Kaynak: kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx
-                    # Tehlike sınıfı 7.2'den otomatik alınır; manuel seçim ayrıca mümkündür.
-                    # ----------------------------------------------------------
-                    st.markdown(
-                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
-                        "SPRİNKLER BORU ÇAPI TESPİTİ</div>",
-                        unsafe_allow_html=True,
-                    )
-                    st.write(
-                        "Aşağıdaki boru çapı tabloları yüklenen SPRİNKLER ÇAP TABLOSU esas alınarak gösterilir. "
-                        "Tehlike sınıfı 7.2 bölümünden otomatik alınır. Sprinkler adedine göre uygun çap otomatik seçilir; "
-                        "istenirse manuel seçim yapılabilir."
-                    )
-
-                    _spr_cap_hafif = [
-                        ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                        ('2" DN50', '6-10'), ('2½" DN65', '11-30'), ('3" DN80', '31-60'),
-                        ('4" DN100', '61-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                    ]
-                    _spr_cap_orta = [
-                        ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                        ('2" DN50', '6-10'), ('2½" DN65', '11-20'), ('3" DN80', '21-40'),
-                        ('4" DN100', '41-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                    ]
-                    # Kaynak Excel'de 1½" satırı "5-4" olarak yazılmıştır; kaynak değer
-                    # aynen korunur ve otomatik seçimde bu satır eşleştirmeye dahil edilmez.
-                    _spr_cap_yuksek = [
-                        ('1" DN25', '1'), ('1¼" DN32', '2-4'), ('1½" DN40', '5-4'),
-                        ('2" DN50', '8-14'), ('2½" DN65', '15-26'), ('3" DN80', '27-54'),
-                        ('4" DN100', '55-89'), ('5" DN125', '90-149'), ('6" DN150', '150-275'),
-                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                    ]
-                    _spr_cap_test_drenaj = [
-                        ('2" hatta kadar', '¾"'), ('3" hatta kadar', '1¼"'), ('4" ve üzeri', '2"'),
-                    ]
-
-                    _spr_cap_etkin_sinif = str(
-                        st.session_state.get("yangin_722_etkin_sinif", "")
-                        or st.session_state.get("yangin_722_otomatik_sinif", "")
-                    ).strip()
-                    _spr_cap_s_norm = _spr_cap_etkin_sinif.lower().replace("–", "-").replace(" ", "")
-                    if _spr_cap_s_norm.startswith("düşük"):
-                        _spr_cap_grup_oto = "HAFİF TEHLİKE"
-                        _spr_cap_tablo_oto = _spr_cap_hafif
-                    elif _spr_cap_s_norm.startswith("orta"):
-                        _spr_cap_grup_oto = "ORTA TEHLİKE"
-                        _spr_cap_tablo_oto = _spr_cap_orta
-                    elif _spr_cap_s_norm.startswith("yüksek"):
-                        _spr_cap_grup_oto = "YÜKSEK TEHLİKE"
-                        _spr_cap_tablo_oto = _spr_cap_yuksek
-                    else:
-                        _spr_cap_grup_oto = ""
-                        _spr_cap_tablo_oto = []
-
-                    # ------------------------------------------------------------------
-                    # ÇAP TABLOLARI SEKME DÜZENİ
-                    # Her tablo ayrı sekmede gösterilir. 7.2'de belirlenen tehlike
-                    # sınıfına karşılık gelen tablo varsayılan olarak seçilidir.
-                    # Kullanıcı checkbox ile bu seçimi değiştirebilir ve birden fazla
-                    # tabloyu rapora dahil edebilir. Test-drenaj tablosu her zaman seçilidir.
-                    # ------------------------------------------------------------------
-                    _spr_cap_grup_map = {
-                        "HAFİF TEHLİKE": _spr_cap_hafif,
-                        "ORTA TEHLİKE": _spr_cap_orta,
-                        "YÜKSEK TEHLİKE": _spr_cap_yuksek,
-                    }
-                    _spr_cap_grup_key_map = {
-                        "HAFİF TEHLİKE": "yangin_75_cap_tablo_hafif_secili",
-                        "ORTA TEHLİKE": "yangin_75_cap_tablo_orta_secili",
-                        "YÜKSEK TEHLİKE": "yangin_75_cap_tablo_yuksek_secili",
-                    }
-
-                    # Tehlike sınıfından gelen otomatik tablo varsayılan olarak seçilir.
-                    # Kullanıcı daha sonra checkbox'ları değiştirerek otomatik seçimi
-                    # değiştirebilir.
-                    for _grp, _key in _spr_cap_grup_key_map.items():
-                        if _key not in st.session_state:
-                            st.session_state[_key] = (_grp == _spr_cap_grup_oto)
-
-                    _spr_cap_sekme_hafif, _spr_cap_sekme_orta, _spr_cap_sekme_yuksek, _spr_cap_sekme_test = st.tabs([
-                        "HAFİF TEHLİKE",
-                        "ORTA TEHLİKE",
-                        "YÜKSEK TEHLİKE",
-                        "TEST DRENAJ",
-                    ])
-
-                    def _spr_cap_aralik_esle(_liste, _adet):
-                        import re as _re_cap
-                        for _cap, _aralik in _liste:
-                            _m = _re_cap.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", str(_aralik))
-                            if _m and int(_m.group(1)) <= int(_adet) <= int(_m.group(2)):
-                                return _cap, _aralik
-                            if str(_aralik).strip().isdigit() and int(_aralik) == int(_adet):
-                                return _cap, _aralik
-                        return "", ""
-
-                    with _spr_cap_sekme_hafif:
-                        st.checkbox(
-                            "Bu tabloyu seç / rapora ekle",
-                            key="yangin_75_cap_tablo_hafif_secili",
-                        )
-                        if _spr_cap_grup_oto == "HAFİF TEHLİKE":
-                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_hafif])
-
-                    with _spr_cap_sekme_orta:
-                        st.checkbox(
-                            "Bu tabloyu seç / rapora ekle",
-                            key="yangin_75_cap_tablo_orta_secili",
-                        )
-                        if _spr_cap_grup_oto == "ORTA TEHLİKE":
-                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_orta])
-
-                    with _spr_cap_sekme_yuksek:
-                        st.checkbox(
-                            "Bu tabloyu seç / rapora ekle",
-                            key="yangin_75_cap_tablo_yuksek_secili",
-                        )
-                        if _spr_cap_grup_oto == "YÜKSEK TEHLİKE":
-                            st.success("7.2'deki tehlike sınıfına göre otomatik seçilen tablo")
-                        st.table([{"Çap": c, "Sprinkler Adedi": a} for c, a in _spr_cap_yuksek])
-
-                    with _spr_cap_sekme_test:
-                        st.checkbox(
-                            "Bu tabloyu seç / rapora ekle",
-                            value=True,
-                            disabled=True,
-                            key="yangin_75_test_drenaj_tablosu_aktif",
-                        )
-                        st.table([
-                            {"Ana Hat": h, "Test-Drenaj Çapı": c}
-                            for h, c in _spr_cap_test_drenaj
-                        ])
-
-                    # Sprinkler adedi tüm tablolar için ortaktır.
-                    _spr_cap_adet = st.number_input(
-                        "Çap seçimine esas sprinkler adedi",
-                        min_value=1,
-                        max_value=275,
-                        value=int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1),
-                        step=1,
-                        key="yangin_75_sprinkler_adedi",
-                    )
-
-                    # Seçili tablolar arasından ilk işaretli tablo çap hesabında esas alınır.
-                    # 7.2'nin otomatik tablosu işaretli kaldığı sürece otomatik seçim korunur.
-                    _spr_cap_secili_gruplar = [
-                        _grp for _grp, _key in _spr_cap_grup_key_map.items()
-                        if bool(st.session_state.get(_key, False))
-                    ]
-                    _spr_cap_aktif_grup = _spr_cap_secili_gruplar[0] if _spr_cap_secili_gruplar else ""
-                    _spr_cap_aktif_liste = _spr_cap_grup_map.get(_spr_cap_aktif_grup, [])
-                    _spr_cap_final, _spr_cap_aralik = _spr_cap_aralik_esle(_spr_cap_aktif_liste, _spr_cap_adet)
-
-                    if _spr_cap_grup_oto and _spr_cap_grup_oto in _spr_cap_secili_gruplar:
-                        _spr_cap_kaynak = "7.2 otomatik seçimi"
-                    elif _spr_cap_aktif_grup:
-                        _spr_cap_kaynak = "Kullanıcı seçimi"
-                    else:
-                        _spr_cap_kaynak = "Seçilmedi"
-
-                    st.session_state["yangin_75_sprinkler_cap_kaynagi"] = _spr_cap_kaynak
-                    st.session_state["yangin_75_sprinkler_cap_final"] = _spr_cap_final
-                    st.session_state["yangin_75_sprinkler_cap_oto"] = _spr_cap_final if _spr_cap_grup_oto == _spr_cap_aktif_grup else ""
-                    st.session_state["yangin_75_sprinkler_secili_cap_tablolari"] = list(_spr_cap_secili_gruplar)
-
-                    if _spr_cap_aktif_grup and _spr_cap_final:
-                        st.success(
-                            f"Çap hesabında kullanılan tablo: {_spr_cap_aktif_grup} | "
-                            f"Sprinkler adedi: {_spr_cap_adet} | Seçilen çap: {_spr_cap_final}"
-                        )
-                    elif _spr_cap_aktif_grup:
-                        st.warning("Seçilen tabloda girilen sprinkler adedine karşılık gelen bir çap bulunamadı.")
-                    else:
-                        st.warning("Hiçbir sprinkler çap tablosu seçilmedi. Çap seçimi rapora aktarılmayacaktır.")
-
-                    st.caption(
-                        "İşaretli tablolar rapora aktarılır. 7.2'deki tehlike sınıfına ait tablo varsayılan olarak işaretlidir; "
-                        "isterseniz işaretini kaldırıp başka bir tabloyu işaretleyerek otomatik seçimi değiştirebilirsiniz. "
-                        "Birden fazla tablo işaretlenirse çap hesabında ilk işaretli tablo esas alınır."
-                    )
-
-                    st.caption("Kaynak: Kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx. Not: Yüksek Tehlike tablosundaki 1½\" DN40 satırı kaynak dosyada 5-4 olarak yazılmıştır; kaynak veri değiştirilmemiştir.")
 
                     # ----------------------------------------------------------
                     # 7.5.2 - BYKHY EK-8/B
@@ -1509,6 +1350,192 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     else:
                         st.warning("7.2.2’de henüz geçerli bir yangın tehlike sınıfı seçilmediği için Ek-8/B tasarım değeri otomatik seçilemedi.")
 
+                    # ----------------------------------------------------------
+                    # 7.5.2 - SPRİNKLER TASARIM DEBİSİ + EK-8/A SU DEPOSU ÖN HESABI
+                    # Q = tasarım yoğunluğu × seçilen koruma alanı.
+                    # Sprinkler debisi için süre kullanılmaz. Su deposu ön hacmi,
+                    # BYKHY Ek-8/A tablosundan yapı yüksekliği / h aralığına göre
+                    # otomatik seçilir.
+                    # ----------------------------------------------------------
+                    _spr_sistem_tipi_75 = st.selectbox(
+                        "Sprinkler sistemi tipi (Ek-8/A)",
+                        ["Islak / Ön etkili", "Kuru / Alternatif"],
+                        index=0 if st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") == "Islak / Ön etkili" else 1,
+                        key="yangin_75_sistem_tipi",
+                        help="Ek-8/A su deposu ön hesabında kullanılacak sistem tipidir. Yönetmelik tablosundaki grup eşleştirmesine göre otomatik depo hacmi belirlenir.",
+                    )
+
+                    if _ek8b_sprinkler_secili:
+                        _sec75_debi = next((x for x in _ek8b_sprinkler_verileri if x[0] == _ek8b_sprinkler_secili), None)
+                        if _sec75_debi:
+                            try:
+                                _yog75_num = float(str(_sec75_debi[1]).replace(',', '.'))
+                                _alan75_islak = float(str(_sec75_debi[2]).replace(',', '.')) if str(_sec75_debi[2]).strip() not in {'—','-',''} else 0.0
+                                _alan75_kuru = float(str(_sec75_debi[3]).replace(',', '.')) if str(_sec75_debi[3]).strip() not in {'—','-',''} else 0.0
+                                _alan75 = max(_alan75_islak, _alan75_kuru)
+                                _q75_spr = _yog75_num * _alan75
+                                st.session_state["yangin_75_sprinkler_debisi_ldak"] = float(_q75_spr)
+                                st.session_state["yangin_75_sprinkler_debisi_kaynagi"] = "7.5.2 Ek-8/B tasarım yoğunluğu × seçilen koruma alanı"
+                                st.markdown(
+                                    f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:10px 12px; border-radius:4px; margin-top:8px;">'
+                                    f'<b>7.5.2’den otomatik hesaplanan sprinkler tasarım debisi:</b> <b>{_q75_spr:.2f} L/dak</b> '&
+                                    f'( {_yog75_num:g} mm/dak × {_alan75:g} m² )'
+                                    f'</div>',
+                                    unsafe_allow_html=True,
+                                )
+                            except (TypeError, ValueError):
+                                st.session_state["yangin_75_sprinkler_debisi_ldak"] = 0.0
+                    else:
+                        st.session_state["yangin_75_sprinkler_debisi_ldak"] = 0.0
+
+                    # ----------------------------------------------------------
+                    # EK-8/A - Yağmurlama Sistemi, Yangın Dolabı ve Hidrant
+                    # Tasarımı Ön Hesabı İçin Su Deposu En Az Hacmi
+                    # ----------------------------------------------------------
+                    _ek8a_yapi_h = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+                    _ek8a_h_araligi = ""
+                    if _ek8a_yapi_h <= 15:
+                        _ek8a_h_araligi = "h ≤ 15 m"
+                    elif _ek8a_yapi_h <= 30:
+                        _ek8a_h_araligi = "15 < h ≤ 30 m"
+                    elif _ek8a_yapi_h <= 45:
+                        _ek8a_h_araligi = "30 < h ≤ 45 m"
+                    else:
+                        _ek8a_h_araligi = "h > 45 m"
+
+                    _ek8a_sinif = str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    _ek8a_tip = str(_spr_sistem_tipi_75 or "Islak / Ön etkili").strip()
+
+                    # Ek-8/A tablosunun mevzuattaki gruplanmış satırları aynen korunur.
+                    _ek8a_hacimler = {
+                        "Düşük Tehlike": [9.0, 10.0, 11.0],
+                        "Orta Tehlike-1 ıslak": [55.0, 70.0, 80.0],
+                        "Orta Tehlike-2 ıslak": [105.0, 125.0, 140.0],
+                        "Orta Tehlike-3 ıslak": [135.0, 160.0, 185.0],
+                        "Orta Tehlike-4 ıslak": [160.0, 185.0, 200.0],
+                        "Orta Tehlike-1 kuru": [105.0, 125.0, 140.0],
+                        "Orta Tehlike-2 kuru": [135.0, 160.0, 185.0],
+                        "Orta Tehlike-3 kuru": [160.0, 185.0, 200.0],
+                    }
+
+                    _ek8a_idx = (-1 if _ek8a_yapi_h <= 0 else (0 if _ek8a_yapi_h <= 15 else (1 if _ek8a_yapi_h <= 30 else (2 if _ek8a_yapi_h <= 45 else -1))))
+                    _ek8a_anahtar = ""
+                    if _ek8a_sinif.startswith("düşük tehlike"):
+                        _ek8a_anahtar = "Düşük Tehlike"
+                    elif _ek8a_sinif.startswith("orta tehlike-1"):
+                        _ek8a_anahtar = "Orta Tehlike-1 ıslak" if "Islak" in _ek8a_tip else "Orta Tehlike-1 kuru"
+                    elif _ek8a_sinif.startswith("orta tehlike-2"):
+                        _ek8a_anahtar = "Orta Tehlike-2 ıslak" if "Islak" in _ek8a_tip else "Orta Tehlike-2 kuru"
+                    elif _ek8a_sinif.startswith("orta tehlike-3"):
+                        _ek8a_anahtar = "Orta Tehlike-3 ıslak" if "Islak" in _ek8a_tip else "Orta Tehlike-3 kuru"
+                    elif _ek8a_sinif.startswith("orta tehlike-4"):
+                        _ek8a_anahtar = "Orta Tehlike-4 ıslak" if "Islak" in _ek8a_tip else ""
+
+                    _ek8a_depo_m3 = None
+                    if _ek8a_idx >= 0 and _ek8a_anahtar in _ek8a_hacimler:
+                        _ek8a_depo_m3 = _ek8a_hacimler[_ek8a_anahtar][_ek8a_idx]
+
+                    st.session_state["yangin_75_ek8a_yapi_yuksekligi_m"] = _ek8a_yapi_h
+                    st.session_state["yangin_75_ek8a_h_araligi"] = _ek8a_h_araligi
+                    st.session_state["yangin_75_ek8a_depo_min_hacim_m3"] = float(_ek8a_depo_m3) if _ek8a_depo_m3 is not None else 0.0
+                    st.session_state["yangin_75_ek8a_hesap_kaynagi"] = "BYKHY Ek-8/A"
+
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
+                        "EK-8/A — YAĞMURLAMA SİSTEMİ, YANGIN DOLABI VE HİDRANT TASARIMI ÖN HESABI İÇİN SU DEPOSU EN AZ HACMİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(
+                        "Su deposu ön hesabında sprinkler debisine süre çarpanı uygulanmaz. "
+                        "Ek-8/A tablosundaki su deposu en az hacmi, yapı yüksekliği / h aralığı ve sprinkler sistem tipine göre otomatik seçilir."
+                    )
+
+                    # Ek-8/A tablosunu 7.5 altında görünür şekilde gösteriyoruz.
+                    # Otomatik seçilen tehlike sınıfı + sistem tipi + h aralığına karşılık gelen
+                    # hücre yalnızca sarı renkle vurgulanır; diğer tablo verileri korunur.
+                    _ek8a_tablo = [
+                        ("Düşük Tehlike", "Islak veya ön uyarılı", "9", "10", "11"),
+                        ("Orta Tehlike-1", "Islak veya ön uyarılı", "55", "70", "80"),
+                        ("Orta Tehlike-1", "Kuru veya alternatif", "105", "125", "140"),
+                        ("Orta Tehlike-2", "Islak veya ön uyarılı", "105", "125", "140"),
+                        ("Orta Tehlike-2", "Kuru veya alternatif", "135", "160", "185"),
+                        ("Orta Tehlike-3", "Islak veya ön uyarılı", "135", "160", "185"),
+                        ("Orta Tehlike-3", "Kuru veya alternatif", "160", "185", "200"),
+                        ("Orta Tehlike-4", "Islak veya ön uyarılı", "160", "185", "200"),
+                        ("Orta Tehlike-4", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                        ("Yüksek Tehlike", "Islak veya ön uyarılı", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                        ("Yüksek Tehlike", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                    ]
+                    _ek8a_sinif_goster = str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    _ek8a_secili_satir = None
+                    for _i, _satir in enumerate(_ek8a_tablo):
+                        _sinif_satir = _satir[0].lower().replace("–", "-")
+                        _tip_satir = _satir[1].lower()
+                        if _ek8a_sinif_goster.startswith(_sinif_satir):
+                            if (("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) and "ıslak" in _tip_satir) or (("kuru" in _ek8a_tip.lower() or "alternatif" in _ek8a_tip.lower()) and "kuru" in _tip_satir):
+                                _ek8a_secili_satir = _i
+                                break
+
+                    _ek8a_basliklar = [
+                        "Yangın Tehlike Sınıfı",
+                        "Sistem Tipi",
+                        "h ≤ 15 m",
+                        "15 < h ≤ 30 m",
+                        "30 < h ≤ 45 m",
+                    ]
+                    _ek8a_cols = st.columns([2.0, 2.0, 1.15, 1.15, 1.15])
+                    for _c, _baslik in zip(_ek8a_cols, _ek8a_basliklar):
+                        _c.markdown(
+                            f'<div style="background-color:#D9EAF7; border:1px solid #9FBAD0; padding:7px 8px; min-height:34px; font-weight:700;">{_baslik}</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                    for _i, _satir in enumerate(_ek8a_tablo):
+                        _satir_secili = (_i == _ek8a_secili_satir)
+                        _cols = st.columns([2.0, 2.0, 1.15, 1.15, 1.15])
+                        for _j, (_c, _val) in enumerate(zip(_cols, _satir)):
+                            _hucre_secili = _satir_secili and _j in (2, 3, 4) and (
+                                (_ek8a_h_araligi == "h ≤ 15 m" and _j == 2) or
+                                (_ek8a_h_araligi == "15 < h ≤ 30 m" and _j == 3) or
+                                (_ek8a_h_araligi == "30 < h ≤ 45 m" and _j == 4)
+                            )
+                            _bg = "#FFF2CC" if _hucre_secili else ("#FFF9E6" if _satir_secili else "#FFFFFF")
+                            _border = "2px solid #D6B656" if _hucre_secili else "1px solid #D9D9D9"
+                            _weight = "800" if _hucre_secili else ("700" if _satir_secili else "400")
+                            _c.markdown(
+                                f'<div style="background-color:{_bg}; border:{_border}; padding:7px 8px; min-height:32px; font-weight:{_weight};">{_val}</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                    if _ek8a_secili_satir is not None and _ek8a_depo_m3 is not None:
+                        st.caption(
+                            f"Sarı hücre: 7.2'den otomatik alınan tehlike sınıfı ({_etkin_sinif_75}) + "
+                            f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre kullanılan Ek-8/A hacmidir."
+                        )
+
+                    _e8c = st.columns(4)
+                    _e8c[0].metric("Yapı yüksekliği", f"{_ek8a_yapi_h:g} m")
+                    _e8c[1].metric("Ek-8/A h aralığı", _ek8a_h_araligi)
+                    _e8c[2].metric("Yangın tehlike sınıfı", _etkin_sinif_75 or "Belirlenemedi")
+                    _e8c[3].metric("Otomatik min. depo", f"{_ek8a_depo_m3:g} m³" if _ek8a_depo_m3 is not None else ("Hesap bekleniyor" if _ek8a_yapi_h <= 0 else "Hidrolik hesap"))
+                    if _ek8a_depo_m3 is not None:
+                        st.markdown(
+                            f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px; margin-top:8px;">'
+                            f'<b>Ek-8/A otomatik seçilen minimum yangın suyu deposu hacmi:</b> <b>{_ek8a_depo_m3:g} m³</b><br>'
+                            f'Kriter: {_ek8a_anahtar} → {_ek8a_h_araligi}'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        if _ek8a_yapi_h <= 0:
+                            st.warning("Ek-8/A otomatik depo hacmi için 7.2 GENEL BİNA BİLGİLERİ bölümündeki Yapı yüksekliği (m) değeri girilmelidir.")
+                        else:
+                            st.warning(
+                                "Ek-8/A bu yangın tehlike sınıfı / sprinkler sistemi kombinasyonu için otomatik hacim vermiyor. "
+                                "Yüksek Tehlike ve Orta Tehlike-4 kuru/alternatif durumlarında hidrolik hesap esas alınmalıdır."
+                            )
+
+                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/A ve Madde 92/4-6. Ek-8/A'daki h değeri, en alttaki ve en üstteki yağmurlama başlıkları arasındaki yükseklik için kullanılır; burada 7.2'de girilen yapı yüksekliği otomatik ön seçim girdisi olarak kullanılmıştır.")
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — Ek-8/B: Yağmurlama Sisteminde Tasarım Yoğunlukları.")
                     st.markdown(
                         '<div style="font-size:15px; margin-top:14px; padding:8px 0;"><i>'
@@ -1516,6 +1543,143 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         'L/dak – litre/dakika; kPa – kilopaskal</i></div>',
                         unsafe_allow_html=True,
                     )
+
+            elif _baslik.startswith("7.12 "):
+                # --------------------------------------------------------------
+                # 7.12 YANGIN SUYU DEPOLAMA SİSTEMİ
+                # 7.3.2 + 7.4.2 + 7.5.2 seçilen değerleri otomatik veri kaynağıdır.
+                # --------------------------------------------------------------
+                with st.expander("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                    st.markdown(
+                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
+                        "YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _ui_712_rapor_key = "yangin_712_rapor_ui"
+                    st.session_state.setdefault(_ui_712_rapor_key, bool(st.session_state.get("rapor_bolum_7120", True)))
+                    st.checkbox(
+                        "7.12 rapora eklensin",
+                        key=_ui_712_rapor_key,
+                        on_change=lambda: st.session_state.__setitem__(
+                            "rapor_bolum_7120", bool(st.session_state.get("yangin_712_rapor_ui", True))
+                        ),
+                    )
+
+                    _q73 = float(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0) or 0)
+                    _t73 = float(st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0) or 0)
+                    _q74 = float(st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0) or 0)
+                    _t74 = float(st.session_state.get("yangin_74_ek8c_hidrant_suresi_dak", 0) or 0)
+                    _q75 = float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
+
+                    st.markdown("### 7.3.2 / 7.4.2 / 7.5.2 Otomatik Aktarılan Debiler")
+                    _dcols = st.columns(3)
+                    with _dcols[0]:
+                        st.metric("7.3.2 Yangın Dolabı", f"{_q73:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption(f"Süre: {_t73:g} dk")
+                    with _dcols[1]:
+                        st.metric("7.4.2 Hidrant", f"{_q74:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption(f"Süre: {_t74:g} dk")
+                    with _dcols[2]:
+                        st.metric("7.5.2 Sprinkler", f"{_q75:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption("Debi = tasarım yoğunluğu × seçilen koruma alanı")
+
+                    # ÖNEMLİ: Ek-8/A zaten yağmurlama + yangın dolabı + hidrant
+                    # ön hesabı için ortak minimum depo hacmini verir. Bu nedenle
+                    # 7.3 ve 7.4 süreleri ile sprinkler için ayrıca süre çarpımı
+                    # yapılıp hacimler TOPLANMAZ.
+                    _v73 = _q73 * _t73
+                    _v74 = _q74 * _t74
+                    _v75 = _q75  # yalnızca debi; depo hesabında süre ile çarpılmaz
+                    _ek8a_depo_712 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
+                    _toplam_hacim_m3 = _ek8a_depo_712
+                    _toplam_hacim_litre = _toplam_hacim_m3 * 1000.0
+
+                    st.session_state["yangin_712_depo_gerekli_hacim_litre"] = float(_toplam_hacim_litre)
+                    st.session_state["yangin_712_depo_gerekli_hacim_m3"] = float(_toplam_hacim_m3)
+                    st.session_state["yangin_712_q73_ldak"] = _q73
+                    st.session_state["yangin_712_t73_dak"] = _t73
+                    st.session_state["yangin_712_q74_ldak"] = _q74
+                    st.session_state["yangin_712_t74_dak"] = _t74
+                    st.session_state["yangin_712_q75_ldak"] = _q75
+                    st.session_state["yangin_712_t75_dak"] = 0.0
+
+                    st.markdown("### Toplam Yangın Suyu Depo Hacmi")
+                    st.markdown(
+                        f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px;">'
+                        f'<b>7.3.2 Yangın Dolabı Debisi:</b> {_q73:,.2f} L/dak → süre bilgisi yalnızca ilgili sistem tasarımı içindir.<br>'
+                        f'<b>7.4.2 Hidrant Debisi:</b> {_q74:,.2f} L/dak → süre bilgisi yalnızca ilgili sistem tasarımı içindir.<br>'
+                        f'<b>7.5.2 Sprinkler Debisi:</b> {_q75:,.2f} L/dak = tasarım yoğunluğu × koruma alanı; <b>süre ile çarpılmaz.</b><br>'
+                        f'<b>Ek-8/A otomatik depo ön hesabı:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br><hr>'
+                        f'<b>GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b>'
+                        f'</div>'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+                        unsafe_allow_html=True,
+                    )
+
+                    # Sıhhi soğuk su deposundaki seçim mantığı birebir: en yakın standart
+                    # kapasite otomatik seçilir, kullanıcı isterse kapasite/poz üzerinde son onay verebilir.
+                    _yangin_depo_tipleri = ["Galvaniz Modüler Su Deposu", "Betonarme Su Deposu"]
+                    _yangin_depo_tipi = st.selectbox(
+                        "Yangın Suyu Deposu Tipi", _yangin_depo_tipleri,
+                        index=_yangin_depo_tipleri.index(st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu"))
+                        if st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu") in _yangin_depo_tipleri else 0,
+                        key="yangin_712_depo_tipi",
+                    )
+
+                    _galvaniz_kapasiteleri = [
+                        (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
+                        (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
+                        (10.0, "25.150.1307"), (12.5, "25.150.1308"), (15.0, "25.150.1309"),
+                        (20.0, "25.150.1310"), (22.5, "25.150.1311"), (25.0, "25.150.1312"),
+                        (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
+                        (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
+                        (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
+                    ]
+
+                    def _712_en_yakin_kapasite(kayitlar, hedef):
+                        return min(kayitlar, key=lambda x: abs(x[0] - hedef)) if kayitlar else None
+
+                    if _yangin_depo_tipi == "Galvaniz Modüler Su Deposu":
+                        _oto712 = _712_en_yakin_kapasite(_galvaniz_kapasiteleri, _toplam_hacim_m3)
+                        if _oto712:
+                            _oto_kapasite, _oto_poz = _oto712
+                            st.session_state.setdefault("yangin_712_onceki_otomatik_kapasite", float(_oto_kapasite))
+                            if st.session_state.get("yangin_712_depo_kapasitesi_m3") is None or st.session_state.get("yangin_712_depo_kapasitesi_m3") == st.session_state.get("yangin_712_onceki_otomatik_kapasite"):
+                                st.session_state["yangin_712_depo_kapasitesi_m3"] = float(_oto_kapasite)
+                            st.session_state["yangin_712_onceki_otomatik_kapasite"] = float(_oto_kapasite)
+                            st.caption(f"Sıhhi su deposu mantığıyla en yakın standart kapasite: {_oto_kapasite:g} m³ (hesaplanan: {_toplam_hacim_m3:g} m³)")
+                            _kap712 = st.number_input(
+                                "Galvaniz modüler su deposu kapasitesi (m³) — otomatik, elle değiştirilebilir",
+                                min_value=0.001, step=0.5, key="yangin_712_depo_kapasitesi_m3",
+                            )
+                            _uygun712 = _712_en_yakin_kapasite(_galvaniz_kapasiteleri, _kap712)
+                            _poz712_oto = _uygun712[1] if _uygun712 else ""
+                            _poz712_elle = st.checkbox("Galvaniz su deposu poz numarasını elle düzenle", key="yangin_712_poz_elle")
+                            if _poz712_elle:
+                                st.session_state.setdefault("yangin_712_poz", _poz712_oto)
+                                _poz712 = st.text_input("Galvaniz su deposu Cihaz Poz No", key="yangin_712_poz").strip()
+                                _poz_kap712 = next((c for c,p in _galvaniz_kapasiteleri if p == _poz712), None)
+                                _goster712 = float(_poz_kap712) if _poz_kap712 is not None else float(_kap712)
+                            else:
+                                _poz712 = _poz712_oto
+                                _goster712 = float(_kap712)
+                            st.session_state["yangin_712_depo_poz"] = _poz712
+                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = _goster712
+                            st.markdown(f"**Cihaz Poz No:** {_poz712} **(Kapasite: {_goster712:g} m³)**")
+                        else:
+                            st.warning("Hesaplanan hacim, galvaniz depo kapasite listesinin üzerindedir.")
+                            st.session_state["yangin_712_depo_poz"] = ""
+                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = _toplam_hacim_m3
+                    else:
+                        st.info("Betonarme su deposu seçildi. Poz numarası uygulanmaz; gerekli hacim proje hacmi olarak alınır.")
+                        _beton_kapasite = st.number_input(
+                            "Betonarme su deposu kapasitesi (m³) — otomatik gerekli hacim",
+                            min_value=0.001, value=float(_toplam_hacim_m3), step=0.5, key="yangin_712_beton_kapasitesi_m3",
+                        )
+                        st.session_state["yangin_712_depo_poz"] = ""
+                        st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = float(_beton_kapasite)
+                        st.markdown(f"**Gerekli betonarme depo hacmi:** {_beton_kapasite:g} m³")
+
+                    st.caption("Not: Galvaniz modüler depo kapasitesi ve poz seçimi, sıhhi kullanma soğuk su deposundaki en yakın standart kapasite mantığıyla yapılır. Galvaniz poz listesi mevcut sıhhi modüldeki listeyle aynıdır.")
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
