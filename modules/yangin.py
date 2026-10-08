@@ -1696,13 +1696,16 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.metric("7.5.2 Sprinkler", f"{_q75:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
                         st.caption("Debi = tasarım yoğunluğu × seçilen koruma alanı")
 
-                    # ÖNEMLİ: Ek-8/A zaten yağmurlama + yangın dolabı + hidrant
-                    # ön hesabı için ortak minimum depo hacmini verir. Bu nedenle
-                    # 7.3 ve 7.4 süreleri ile sprinkler için ayrıca süre çarpımı
-                    # yapılıp hacimler TOPLANMAZ.
-                    _v73 = _q73 * _t73
-                    _v74 = _q74 * _t74
-                    _v75 = _q75  # yalnızca debi; depo hesabında süre ile çarpılmaz
+                    # 7.12'de üç sistemin seçilen DEBİLERİ otomatik olarak birlikte gösterilir
+                    # ve toplam yangın söndürme tasarım debisi ayrıca hesaplanır.
+                    # ÖNEMLİ: Bu toplam DEBİ, depo hacmi hesabında kullanılmaz.
+                    # 7.5.2 sprinkler debisi de kesinlikle Ek-8/A depo hacmine eklenmez.
+                    # Sprinkler debisi ileride yangın/sprinkler pompası seçiminde kullanılmak üzere
+                    # ayrı bir veri olarak saklanır.
+                    _toplam_tasarim_debisi_ldak = _q73 + _q74 + _q75
+
+                    # Su deposu hacmi yalnızca 7.5'te bina yüksekliği + tehlike sınıfı +
+                    # sprinkler sistem tipine göre seçilen Ek-8/A minimum hacmidir.
                     _ek8a_depo_712 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
                     _toplam_hacim_m3 = _ek8a_depo_712
                     _toplam_hacim_litre = _toplam_hacim_m3 * 1000.0
@@ -1715,14 +1718,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_712_t74_dak"] = _t74
                     st.session_state["yangin_712_q75_ldak"] = _q75
                     st.session_state["yangin_712_t75_dak"] = 0.0
+                    st.session_state["yangin_712_toplam_tasarim_debisi_ldak"] = float(_toplam_tasarim_debisi_ldak)
 
-                    st.markdown("### Toplam Yangın Suyu Depo Hacmi")
+                    st.markdown("### Otomatik Aktarılan Debiler ve Yangın Suyu Depo Hacmi")
                     st.markdown(
                         f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px;">'
-                        f'<b>7.3.2 Yangın Dolabı Debisi:</b> {_q73:,.2f} L/dak → süre bilgisi yalnızca ilgili sistem tasarımı içindir.<br>'
-                        f'<b>7.4.2 Hidrant Debisi:</b> {_q74:,.2f} L/dak → süre bilgisi yalnızca ilgili sistem tasarımı içindir.<br>'
-                        f'<b>7.5.2 Sprinkler Debisi:</b> {_q75:,.2f} L/dak = tasarım yoğunluğu × koruma alanı; <b>süre ile çarpılmaz.</b><br>'
-                        f'<b>Ek-8/A otomatik depo ön hesabı:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br><hr>'
+                        f'<b>7.3.2 Yangın Dolabı Debisi:</b> {_q73:,.2f} L/dak<br>'
+                        f'<b>7.4.2 Hidrant Debisi:</b> {_q74:,.2f} L/dak<br>'
+                        f'<b>7.5.2 Sprinkler Debisi:</b> {_q75:,.2f} L/dak = tasarım yoğunluğu × koruma alanı<br>'
+                        f'<hr>'
+                        f'<b>TOPLAM TASARIM DEBİSİ:</b> <b>{_toplam_tasarim_debisi_ldak:,.2f} L/dak</b><br>'
+                        f'<span style="font-size:13px;">Bu toplam debi ileride pompa seçim hesabında kullanılacaktır; depo hacmine eklenmez.</span><br><br>'
+                        f'<b>EK-8/A SU DEPOSU MİNİMUM HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br>'
+                        f'<span style="font-size:13px;">Depo hacmi yalnızca 7.5.2 Ek-8/A otomatik seçimine göre belirlenir.</span><br><hr>'
                         f'<b>GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b>'
                         f'</div>'.replace(',', 'X').replace('.', ',').replace('X', '.'),
                         unsafe_allow_html=True,
