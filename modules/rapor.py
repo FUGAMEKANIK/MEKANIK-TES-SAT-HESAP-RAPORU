@@ -63,140 +63,184 @@ if _rapor_olustur_sidebar:
       ).strip()
 
       if _kapak_sablon_kullanildi:
-          # KAPAK — TEK SAYFALIK SABİT YERLEŞİM
-          # Şablondaki 34 boş paragraf yerine kontrollü bir tablo kullanılır.
-          # Böylece Word boş satırları ikinci sayfaya itemez. Satır yükseklikleri
-          # toplamı A4 kullanılabilir alanının altında tutulur; uzun metinlerde
-          # punto ve satır yüksekliği otomatik küçülür.
-          from docx.enum.table import WD_ROW_HEIGHT_RULE, WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+          # KAPAK: Şablonun genel sırası korunur. Ancak FUGA metni yerine
+          # kullanıcının verdiği gerçek logo resmi yerleştirilir ve boş
+          # paragraflar otomatik sıkıştırılarak kapağın tamamı A4 tek sayfaya
+          # sığdırılır.
+          _kapak_paragraflari = doc.paragraphs
 
-          _kurum_metni = (_kurum_adi or 'KURUM ADI').upper().strip()
-          _is_metni = (aktif_is or 'İŞİN ADI').upper().strip()
+          def _kapak_otomatik_punto(metin, temel=18, alt=10):
+              _uzunluk = len(str(metin or '').strip())
+              if _uzunluk <= 35:
+                  return temel
+              if _uzunluk <= 50:
+                  return 16
+              if _uzunluk <= 70:
+                  return 14
+              if _uzunluk <= 95:
+                  return 12
+              return alt
 
-          def _kapak_punto(metin, normal=18, minimum=9, limitler=((35,18),(50,16),(70,14),(95,12))):
-              n = len(str(metin or '').strip())
-              for limit, pt in limitler:
-                  if n <= limit:
-                      return pt
-              return minimum
-
-          _kurum_pt = _kapak_punto(_kurum_metni)
-          _is_pt = _kapak_punto(_is_metni)
-
-          # Çok uzun başlıklarda tablo satırları da otomatik küçülür.
-          _uzunluk = len(_kurum_metni) + len(_is_metni)
-          _sikistir = min(1.0, max(0.72, 1.0 - max(0, _uzunluk - 100) / 500.0))
-
-          # Şablonun tüm eski paragraflarını kaldır.
-          for _old_p in list(doc.paragraphs):
-              _parent = _old_p._element.getparent()
-              if _parent is not None:
-                  _parent.remove(_old_p._element)
-
-          _section = doc.sections[0]
-          _section.page_width = Inches(8.267716535)
-          _section.page_height = Inches(11.692913386)
-          _section.top_margin = Inches(0.55)
-          _section.bottom_margin = Inches(0.45)
-          _section.left_margin = Inches(0.75)
-          _section.right_margin = Inches(0.75)
-          _section.header_distance = Inches(0.15)
-          _section.footer_distance = Inches(0.15)
-
-          # 9 satırlı tek kapak tablosu. Toplam yükseklik yaklaşık 680 pt;
-          # A4 kullanılabilir yüksekliğinin altında kalır.
-          _satir_yukseklikleri = [
-              58, 24, 24, 86, 82, 30, 30, 82, 112
-          ]
-          _satir_yukseklikleri = [max(18, int(v * _sikistir)) for v in _satir_yukseklikleri]
-
-          _tablo = doc.add_table(rows=len(_satir_yukseklikleri), cols=1)
-          _tablo.alignment = WD_TABLE_ALIGNMENT.CENTER
-          _tablo.autofit = False
-          _tablo.allow_autofit = False
-
-          # Tablo genişliği: sayfa iç genişliğini aşmasın.
-          _tablo_genislik = int(Inches(6.77))
-          for _row, _h in zip(_tablo.rows, _satir_yukseklikleri):
-              _row.height = Pt(_h)
-              _row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
-              _row.allow_break_across_pages = False
-              _cell = _row.cells[0]
-              _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-              _cell.width = _tablo_genislik
-              _tcpr = _cell._tc.get_or_add_tcPr()
-              _tcw = _tcpr.find(qn('w:tcW'))
-              if _tcw is None:
-                  _tcw = OxmlElement('w:tcW')
-                  _tcpr.append(_tcw)
-              _tcw.set(qn('w:w'), str(_tablo_genislik))
-              _tcw.set(qn('w:type'), 'dxa')
-              _tcMar = _tcpr.find(qn('w:tcMar'))
-              if _tcMar is None:
-                  _tcMar = OxmlElement('w:tcMar')
-                  _tcpr.append(_tcMar)
-              for _side in ('top','start','bottom','end'):
-                  _node = _tcMar.find(qn(f'w:{_side}'))
-                  if _node is None:
-                      _node = OxmlElement(f'w:{_side}')
-                      _tcMar.append(_node)
-                  _node.set(qn('w:w'), '0')
-                  _node.set(qn('w:type'), 'dxa')
-
-              # Kenarlıkları kaldır.
-              _borders = _tcpr.find(qn('w:tcBorders'))
-              if _borders is None:
-                  _borders = OxmlElement('w:tcBorders')
-                  _tcpr.append(_borders)
-              for _side in ('top','left','bottom','right','insideH','insideV'):
-                  _b = _borders.find(qn(f'w:{_side}'))
-                  if _b is None:
-                      _b = OxmlElement(f'w:{_side}')
-                      _borders.append(_b)
-                  _b.set(qn('w:val'), 'nil')
-
-          def _hucre_yaz(_cell, _metin, _pt, _font='Times New Roman', _bold=True, _space_after=0):
-              _cell.text = ''
-              _p = _cell.paragraphs[0]
-              _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _p.paragraph_format.space_before = Pt(0)
-              _p.paragraph_format.space_after = Pt(_space_after)
-              _p.paragraph_format.line_spacing = 1.0
-              _p.paragraph_format.keep_together = True
-              _p.paragraph_format.widow_control = True
+          def _kapak_run_ayarla(_p, _metin, _punto, _bold=True):
+              _p.clear()
               _r = _p.add_run(str(_metin or ''))
-              _r.font.name = _font
-              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), _font)
-              _r.font.size = Pt(_pt)
+              _r.font.size = Pt(_punto)
+              _r.font.name = 'Times New Roman'
+              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
               _r.font.bold = _bold
               _r.font.italic = False
-              return _p
+              return _r
 
-          # FUGA: gönderdiğiniz logodaki ince, sade sans-serif karakter yapısı.
-          _hucre_yaz(_tablo.cell(0,0), 'FUGA', 24, 'Arial', False)
-          _hucre_yaz(_tablo.cell(1,0), 'MEKANİK MÜŞAVİRLİK MÜHENDİSLİK', 11, 'Arial', False)
-          _hucre_yaz(_tablo.cell(2,0), 'TİCARET LİMİTED ŞİRKETİ', 10, 'Times New Roman', True)
-          _hucre_yaz(_tablo.cell(3,0), _kurum_metni, _kurum_pt, 'Times New Roman', True)
-          _hucre_yaz(_tablo.cell(4,0), _is_metni, _is_pt, 'Times New Roman', True)
-          _hucre_yaz(_tablo.cell(5,0), 'MEKANİK TESİSAT UYGULAMA PROJESİ', 16, 'Times New Roman', True)
-          _hucre_yaz(_tablo.cell(6,0), 'HESAP RAPORU', 16, 'Times New Roman', True)
+          def _kapak_bosluk(_p, _pt):
+              # Boş paragrafı gerçek bir boş satır olmaktan çıkarıp yalnızca
+              # kontrollü dikey mesafe olarak kullan.
+              _p.clear()
+              _p.paragraph_format.space_before = Pt(0)
+              _p.paragraph_format.space_after = Pt(0)
+              _p.paragraph_format.line_spacing = Pt(max(0.5, _pt))
+              _p.paragraph_format.keep_together = False
+              _p.paragraph_format.keep_with_next = False
+              _p.paragraph_format.widow_control = False
+              _r = _p.add_run(' ')
+              _r.font.size = Pt(1)
+              _r.font.name = 'Times New Roman'
 
-          # Hazırlayan bloğu tek hücrede; uzun isimlerde otomatik küçülür.
-          _hazirlayan_metni = (
-              f'Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n'
-              f'MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}'
-          )
-          _haz_pt = 10 if len(_hazirlayan_metni) > 120 or _uzunluk > 180 else 11
-          _hucre_yaz(_tablo.cell(8,0), _hazirlayan_metni, _haz_pt, 'Times New Roman', False)
+          if len(_kapak_paragraflari) >= 34:
+              _kurum_metni = (_kurum_adi or 'KURUM ADI').upper()
+              _is_metni = (aktif_is or 'İŞİN ADI').upper()
+              _toplam_uzunluk = len(_kurum_metni) + len(_is_metni)
 
-          # 7. satır bilinçli boşluk; ancak yüksekliği sabit ve küçüktür.
-          _tablo.cell(7,0).text = ''
+              # -----------------------------------------------------------
+              # 1) FUGA YERİNE SADECE VERİLEN LOGO
+              # -----------------------------------------------------------
+              _logo_yolu = Path(__file__).resolve().parent / 'LOGO.png'
+              _p_logo = _kapak_paragraflari[0]
+              _p_logo.clear()
+              _p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _p_logo.paragraph_format.space_before = Pt(0)
+              _p_logo.paragraph_format.space_after = Pt(0)
+              _p_logo.paragraph_format.line_spacing = Pt(1)
+              if _logo_yolu.exists():
+                  _logo_run = _p_logo.add_run()
+                  # Orijinal oran korunur; yalnızca genişlik kontrol edilir.
+                  _logo_genislik = Inches(2.35 if _toplam_uzunluk <= 110 else 2.15)
+                  _logo_run.add_picture(str(_logo_yolu), width=_logo_genislik)
+              else:
+                  # Logo bulunamazsa rapor bozulmasın; yalnızca FUGA yazısı
+                  # yerine boş alan bırak.
+                  _p_logo.add_run('')
 
-          # Tablo satırlarının sayfa bölünmesini XML seviyesinde de engelle.
-          for _row in _tablo.rows:
-              _trPr = _row._tr.get_or_add_trPr()
-              _cant = OxmlElement('w:cantSplit')
-              _trPr.append(_cant)
+              # -----------------------------------------------------------
+              # 2) ALTTAKİ MEVCUT YAZILAR KALIR
+              # -----------------------------------------------------------
+              _kapak_run_ayarla(_kapak_paragraflari[1], 'mekanik müşavİrlİk mühendİslİk', 11, True)
+              _kapak_paragraflari[1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _kapak_run_ayarla(_kapak_paragraflari[2], 'TİCARET LİMİTED ŞİRKETİ', 11, True)
+              _kapak_paragraflari[2].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+              # Uzun metinlerde punto küçültme + boşlukların kademeli azaltılması.
+              _kurum_punto = _kapak_otomatik_punto(_kurum_metni, 18, 10)
+              _is_punto = _kapak_otomatik_punto(_is_metni, 18, 10)
+
+              if _toplam_uzunluk <= 100:
+                  _ust_gap = 4.0
+                  _orta_gap = 5.0
+                  _alt_gap = 4.0
+                  _baslik_punto = 16
+                  _haz_punto = 10
+              elif _toplam_uzunluk <= 150:
+                  _ust_gap = 3.0
+                  _orta_gap = 3.0
+                  _alt_gap = 2.5
+                  _baslik_punto = 15
+                  _haz_punto = 9.5
+              elif _toplam_uzunluk <= 220:
+                  _ust_gap = 2.0
+                  _orta_gap = 2.0
+                  _alt_gap = 1.5
+                  _baslik_punto = 14
+                  _haz_punto = 9
+              else:
+                  _ust_gap = 1.0
+                  _orta_gap = 1.0
+                  _alt_gap = 0.8
+                  _baslik_punto = 12
+                  _haz_punto = 8.5
+
+              # İlk 3 paragrafın hemen altındaki boşluklar.
+              for _i in range(3, 11):
+                  _kapak_bosluk(_kapak_paragraflari[_i], _ust_gap)
+
+              # -----------------------------------------------------------
+              # 3) KURUM ADI / İŞİN ADI
+              # -----------------------------------------------------------
+              _kapak_run_ayarla(_kapak_paragraflari[11], _kurum_metni, _kurum_punto, True)
+              _kapak_paragraflari[11].alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _kapak_paragraflari[11].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[11].paragraph_format.space_after = Pt(0)
+              _kapak_paragraflari[11].paragraph_format.line_spacing = Pt(_kurum_punto + 1)
+              _kapak_paragraflari[11].paragraph_format.keep_together = True
+
+              for _i in range(12, 15):
+                  _kapak_bosluk(_kapak_paragraflari[_i], _orta_gap)
+
+              _kapak_run_ayarla(_kapak_paragraflari[15], _is_metni, _is_punto, True)
+              _kapak_paragraflari[15].alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _kapak_paragraflari[15].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[15].paragraph_format.space_after = Pt(0)
+              _kapak_paragraflari[15].paragraph_format.line_spacing = Pt(_is_punto + 1)
+              _kapak_paragraflari[15].paragraph_format.keep_together = True
+
+              _kapak_bosluk(_kapak_paragraflari[16], _alt_gap)
+
+              # -----------------------------------------------------------
+              # 4) RAPOR BAŞLIĞI
+              # -----------------------------------------------------------
+              _kapak_run_ayarla(_kapak_paragraflari[17], 'MEKANİK TESİSAT UYGULAMA PROJESİ', _baslik_punto, True)
+              _kapak_run_ayarla(_kapak_paragraflari[18], 'HESAP RAPORU', _baslik_punto, True)
+              for _i in (17, 18):
+                  _kapak_paragraflari[_i].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                  _kapak_paragraflari[_i].paragraph_format.space_before = Pt(0)
+                  _kapak_paragraflari[_i].paragraph_format.space_after = Pt(0)
+                  _kapak_paragraflari[_i].paragraph_format.line_spacing = Pt(_baslik_punto + 1)
+                  _kapak_paragraflari[_i].paragraph_format.keep_together = True
+                  _kapak_paragraflari[_i].paragraph_format.keep_with_next = (_i == 17)
+
+              # -----------------------------------------------------------
+              # 5) ALT BOŞLUKLAR + HAZIRLAYAN BLOĞU
+              # -----------------------------------------------------------
+              for _i in range(19, 33):
+                  _kapak_bosluk(_kapak_paragraflari[_i], _alt_gap)
+
+              _hazirlayan_metni = (
+                  f'Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n'
+                  f'MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}'
+              )
+              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, _haz_punto, False)
+              _kapak_paragraflari[33].alignment = WD_ALIGN_PARAGRAPH.CENTER
+              _kapak_paragraflari[33].paragraph_format.space_before = Pt(0)
+              _kapak_paragraflari[33].paragraph_format.space_after = Pt(0)
+              _kapak_paragraflari[33].paragraph_format.line_spacing = Pt(_haz_punto + 1)
+              _kapak_paragraflari[33].paragraph_format.keep_together = True
+
+              # -----------------------------------------------------------
+              # 6) A4 SAYFA AYARI
+              # -----------------------------------------------------------
+              _cover_section = doc.sections[0]
+              _cover_section.page_width = Inches(8.267716535)
+              _cover_section.page_height = Inches(11.692913386)
+              _cover_section.top_margin = Inches(0.55)
+              _cover_section.bottom_margin = Inches(0.55)
+              _cover_section.left_margin = Inches(0.75)
+              _cover_section.right_margin = Inches(0.75)
+              _cover_section.header_distance = Inches(0.2)
+              _cover_section.footer_distance = Inches(0.2)
+
+              # Tüm kapak paragrafları bölünmez; fakat boşluklar küçüldüğü için
+              # toplam kapak yüksekliği metin uzunluğundan bağımsız olarak tek
+              # A4 sayfada kalacak şekilde kontrol edilir.
+              for _kp in _kapak_paragraflari[:34]:
+                  _kp.paragraph_format.widow_control = False
 
       if not _kapak_sablon_kullanildi:
           # Şablon dosyası taşınmamışsa rapor yine üretilebilsin. Bu bölüm
@@ -219,7 +263,11 @@ if _rapor_olustur_sidebar:
               _r.bold = bold
               return _p
 
-          _kapak_fallback_paragraf("FUGA", 24, True, WD_ALIGN_PARAGRAPH.CENTER)
+          _p_logo_fb = doc.add_paragraph()
+          _p_logo_fb.alignment = WD_ALIGN_PARAGRAPH.CENTER
+          _logo_fb = Path(__file__).resolve().parent / 'LOGO.png'
+          if _logo_fb.exists():
+              _p_logo_fb.add_run().add_picture(str(_logo_fb), width=Inches(2.35))
           _kapak_fallback_paragraf("MEKANİK MÜŞAVİRLİK MÜHENDİSLİK", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
           _kapak_fallback_paragraf("TİCARET LİMİTED ŞİRKETİ", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
           for _ in range(5): _kapak_fallback_paragraf("", 11)
