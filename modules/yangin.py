@@ -1424,7 +1424,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         "Orta Tehlike-3 kuru": [160.0, 185.0, 200.0],
                     }
 
-                    _ek8a_idx = (-1 if _ek8a_yapi_h <= 0 else (0 if _ek8a_yapi_h <= 15 else (1 if _ek8a_yapi_h <= 30 else (2 if _ek8a_yapi_h <= 45 else -1))))
+                    # 45 m üzerindeki yapılarda Ek-8/A tablosunun izin verdiği en büyük
+                    # hacim otomatik olarak seçilir (30 < h <= 45 m sütunundaki değer).
+                    # Böylece 45 m üzeri değerlerde otomatik depo hacmi boş kalmaz.
+                    _ek8a_idx = (-1 if _ek8a_yapi_h <= 0 else (0 if _ek8a_yapi_h <= 15 else (1 if _ek8a_yapi_h <= 30 else 2)))
+                    if _ek8a_yapi_h > 45:
+                        _ek8a_h_araligi = "h > 45 m — Ek-8/A tablosundaki en büyük hacim"
                     _ek8a_anahtar = ""
                     if _ek8a_sinif.startswith("düşük tehlike"):
                         _ek8a_anahtar = "Düşük Tehlike"
@@ -1441,10 +1446,39 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     if _ek8a_idx >= 0 and _ek8a_anahtar in _ek8a_hacimler:
                         _ek8a_depo_m3 = _ek8a_hacimler[_ek8a_anahtar][_ek8a_idx]
 
+                    # Otomatik hacmi belirledikten sonra kullanıcıya manuel değer girme imkanı verilir.
+                    # Widget'ın session_state değerine sonradan doğrudan atama yapılmaz; böylece
+                    # StreamlitValueAssignmentNotAllowedError oluşmaz.
+                    _ek8a_auto_m3 = float(_ek8a_depo_m3) if _ek8a_depo_m3 is not None else 0.0
+                    _ek8a_secim_modu = st.radio(
+                        "Yangın suyu depo hacmi seçimi",
+                        ["Otomatik (Ek-8/A)", "Manuel gir"],
+                        horizontal=True,
+                        key="yangin_75_ek8a_depo_secim_modu",
+                    )
+                    _ek8a_manuel_m3 = 0.0
+                    if _ek8a_secim_modu == "Manuel gir":
+                        _ek8a_manuel_m3 = st.number_input(
+                            "Manuel yangın suyu depo hacmi (m³)",
+                            min_value=0.0,
+                            value=float(st.session_state.get("yangin_75_ek8a_depo_manuel_m3", _ek8a_auto_m3)),
+                            step=1.0,
+                            format="%.2f",
+                            key="yangin_75_ek8a_depo_manuel_m3",
+                            help="Ek-8/A otomatik değerini geçersiz kılar. Girilen değer rapora ve 7.12 depo hesabına aktarılır.",
+                        )
+                        _ek8a_secilen_m3 = float(_ek8a_manuel_m3)
+                        _ek8a_hesap_kaynagi = "Manuel kullanıcı girişi"
+                    else:
+                        _ek8a_secilen_m3 = _ek8a_auto_m3
+                        _ek8a_hesap_kaynagi = "BYKHY Ek-8/A"
+
                     st.session_state["yangin_75_ek8a_yapi_yuksekligi_m"] = _ek8a_yapi_h
                     st.session_state["yangin_75_ek8a_h_araligi"] = _ek8a_h_araligi
-                    st.session_state["yangin_75_ek8a_depo_min_hacim_m3"] = float(_ek8a_depo_m3) if _ek8a_depo_m3 is not None else 0.0
-                    st.session_state["yangin_75_ek8a_hesap_kaynagi"] = "BYKHY Ek-8/A"
+                    st.session_state["yangin_75_ek8a_depo_min_hacim_m3"] = _ek8a_secilen_m3
+                    st.session_state["yangin_75_ek8a_depo_otomatik_m3"] = _ek8a_auto_m3
+                    st.session_state["yangin_75_ek8a_depo_manuel_m3_deger"] = float(_ek8a_manuel_m3)
+                    st.session_state["yangin_75_ek8a_hesap_kaynagi"] = _ek8a_hesap_kaynagi
 
                     st.markdown(
                         '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
@@ -1503,7 +1537,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _hucre_secili = _satir_secili and _j in (2, 3, 4) and (
                                 (_ek8a_h_araligi == "h ≤ 15 m" and _j == 2) or
                                 (_ek8a_h_araligi == "15 < h ≤ 30 m" and _j == 3) or
-                                (_ek8a_h_araligi == "30 < h ≤ 45 m" and _j == 4)
+                                (_ek8a_h_araligi == "30 < h ≤ 45 m" and _j == 4) or
+                                (_ek8a_h_araligi.startswith("h > 45 m") and _j == 4)
                             )
                             _bg = "#FFF2CC" if _hucre_secili else ("#FFF9E6" if _satir_secili else "#FFFFFF")
                             _border = "2px solid #D6B656" if _hucre_secili else "1px solid #D9D9D9"
@@ -1516,19 +1551,21 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     if _ek8a_secili_satir is not None and _ek8a_depo_m3 is not None:
                         st.caption(
                             f"Sarı hücre: 7.2'den otomatik alınan tehlike sınıfı ({_etkin_sinif_75}) + "
-                            f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre kullanılan Ek-8/A hacmidir."
+                            f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre otomatik seçilen Ek-8/A hacmidir."
                         )
 
                     _e8c = st.columns(4)
                     _e8c[0].metric("Yapı yüksekliği", f"{_ek8a_yapi_h:g} m")
                     _e8c[1].metric("Ek-8/A h aralığı", _ek8a_h_araligi)
                     _e8c[2].metric("Yangın tehlike sınıfı", _etkin_sinif_75 or "Belirlenemedi")
-                    _e8c[3].metric("Otomatik min. depo", f"{_ek8a_depo_m3:g} m³" if _ek8a_depo_m3 is not None else ("Hesap bekleniyor" if _ek8a_yapi_h <= 0 else "Hidrolik hesap"))
+                    _e8c[3].metric("Seçilen min. depo", f"{_ek8a_secilen_m3:g} m³" if _ek8a_secilen_m3 is not None else "-")
                     if _ek8a_depo_m3 is not None:
+                        _ek8a_kaynak_metni = "Ek-8/A otomatik" if _ek8a_secim_modu == "Otomatik (Ek-8/A)" else "Manuel kullanıcı girişi"
                         st.markdown(
                             f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px; margin-top:8px;">'
-                            f'<b>Ek-8/A otomatik seçilen minimum yangın suyu deposu hacmi:</b> <b>{_ek8a_depo_m3:g} m³</b><br>'
-                            f'Kriter: {_ek8a_anahtar} → {_ek8a_h_araligi}'
+                            f'<b>Yangın suyu deposu için seçilen minimum hacim:</b> <b>{_ek8a_secilen_m3:g} m³</b><br>'
+                            f'Kriter: {_ek8a_anahtar} → {_ek8a_h_araligi}<br>'
+                            f'Kaynak: {_ek8a_kaynak_metni}'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
