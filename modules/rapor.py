@@ -3297,6 +3297,79 @@ if _rapor_olustur_sidebar:
                           "L/dak – litre/dakika; kPa – kilopaskal"
                       )
                       _rk75.italic = True
+
+                  # 7.12 Yangın Suyu Depolama Sistemi — 7.3.2 / 7.4.2 / 7.5.2 verileri
+                  elif _bk == "bolum_7120":
+                      doc.add_heading("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", level=3)
+
+                      _q73_712 = float(st.session_state.get("yangin_712_q73_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
+                      _t73_712 = float(st.session_state.get("yangin_712_t73_dak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0)) or 0)
+                      _q74_712 = float(st.session_state.get("yangin_712_q74_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
+                      _t74_712 = float(st.session_state.get("yangin_712_t74_dak", st.session_state.get("yangin_74_ek8c_hidrant_suresi_dak", 0)) or 0)
+                      _q75_712 = float(st.session_state.get("yangin_712_q75_ldak", st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0)) or 0)
+                      _t75_712 = 0.0
+
+                      _v73_712 = _q73_712 * _t73_712
+                      _v74_712 = _q74_712 * _t74_712
+                      _v75_712 = _q75_712  # sprinkler debisi; depo hesabında süre ile çarpılmaz
+                      _vtop_712_m3 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", st.session_state.get("yangin_712_depo_gerekli_hacim_m3", 0)) or 0)
+                      _vtop_712_l = _vtop_712_m3 * 1000.0
+                      _vtop_712_m3 = _vtop_712_l / 1000.0
+
+                      doc.add_paragraph(
+                          "Yangın suyu deposu hesabında 7.3.2 yangın dolabı, 7.4.2 hidrant ve 7.5.2 sprinkler "
+                          "bölümlerinde seçilen/türetilen tasarım debileri otomatik olarak kullanılmıştır."
+                      )
+                      _t712 = doc.add_table(rows=1, cols=5)
+                      _t712.style = "Table Grid"
+                      for _cell, _txt in zip(_t712.rows[0].cells, [
+                          "Kaynak", "Debi (L/dak)", "Süre (dk)", "Hesaplanan Su Hacmi (L)", "Hesaplanan Su Hacmi (m³)"
+                      ]):
+                          _cell.text = _txt
+                          for _pr in _cell.paragraphs:
+                              for _run in _pr.runs:
+                                  _run.bold = True
+
+                      for _kaynak712, _q712, _t712v, _v712 in [
+                          ("7.3.2 Yangın Dolabı", _q73_712, _t73_712, _v73_712),
+                          ("7.4.2 Hidrant", _q74_712, _t74_712, _v74_712),
+                          ("7.5.2 Sprinkler (depo hesabında süre kullanılmaz)", _q75_712, 0.0, 0.0),
+                      ]:
+                          _cc = _t712.add_row().cells
+                          _cc[0].text = _kaynak712
+                          _cc[1].text = f"{_q712:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                          _cc[2].text = f"{_t712v:g}"
+                          _cc[3].text = f"{_v712:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                          _cc[4].text = f"{_v712/1000.0:,.3f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+                      _p712not = doc.add_paragraph()
+                      _p712not.add_run(
+                          "Ek-8/A esasına göre otomatik seçilen minimum yangın suyu depo hacmi kullanılmıştır. "
+                          "7.5.2 sprinkler debisi, tasarım yoğunluğu × seçilen koruma alanı olarak hesaplanır ve depo hacmi hesabında ayrıca süre ile çarpılmaz."
+                      ).italic = True
+
+                      _p712 = doc.add_paragraph()
+                      _r712 = _p712.add_run("GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ: ")
+                      _r712.bold = True
+                      _p712.add_run(
+                          f"{_vtop_712_l:,.0f} L ({_vtop_712_m3:,.3f} m³)".replace(",", "X").replace(".", ",").replace("X", ".")
+                      )
+
+                      _depo712_tipi = st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu")
+                      _depo712_kapasite = float(st.session_state.get("yangin_712_depo_kapasitesi_secili_m3", _vtop_712_m3) or _vtop_712_m3)
+                      _depo712_poz = str(st.session_state.get("yangin_712_depo_poz", "") or "").strip()
+                      _p712d = doc.add_paragraph()
+                      _r712d = _p712d.add_run("Seçilen yangın suyu deposu: ")
+                      _r712d.bold = True
+                      _p712d.add_run(f"{_depo712_tipi} — Kapasite: {_depo712_kapasite:g} m³")
+                      if _depo712_poz:
+                          _p712d.add_run(f" — Cihaz Poz No: {_depo712_poz}")
+
+                      _src712 = doc.add_paragraph()
+                      _src712.add_run(
+                          "Not: Galvaniz modüler su deposu kapasite ve poz seçimi, sıhhi kullanma soğuk su deposundaki "
+                          "en yakın standart kapasite seçim mantığı kullanılarak otomatik yapılmıştır. Betonarme su deposunda poz numarası uygulanmaz."
+                      ).italic = True
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
