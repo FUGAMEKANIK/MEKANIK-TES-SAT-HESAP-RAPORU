@@ -3311,7 +3311,8 @@ if _rapor_olustur_sidebar:
 
                       _v73_712 = _q73_712 * _t73_712
                       _v74_712 = _q74_712 * _t74_712
-                      _v75_712 = _q75_712  # sprinkler debisi; depo hesabında süre ile çarpılmaz
+                      _v75_712 = 0.0  # sprinkler debisi depo hacmine eklenmez
+                      _toplam_tasarim_debisi_712 = _q73_712 + _q74_712 + _q75_712
                       _vtop_712_m3 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", st.session_state.get("yangin_712_depo_gerekli_hacim_m3", 0)) or 0)
                       _vtop_712_l = _vtop_712_m3 * 1000.0
                       _vtop_712_m3 = _vtop_712_l / 1000.0
@@ -3342,10 +3343,21 @@ if _rapor_olustur_sidebar:
                           _cc[3].text = f"{_v712:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
                           _cc[4].text = f"{_v712/1000.0:,.3f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+                      _p712deb = doc.add_paragraph()
+                      _r712deb = _p712deb.add_run("TOPLAM TASARIM DEBİSİ: ")
+                      _r712deb.bold = True
+                      _p712deb.add_run(
+                          f"{_toplam_tasarim_debisi_712:,.2f} L/dak".replace(",", "X").replace(".", ",").replace("X", ".")
+                      )
+                      _p712deb.add_run(
+                          " — 7.3.2 + 7.4.2 + 7.5.2 debilerinin toplamıdır ve ileride pompa seçim hesabında kullanılacaktır."
+                      )
+
                       _p712not = doc.add_paragraph()
                       _p712not.add_run(
                           "Ek-8/A esasına göre otomatik seçilen minimum yangın suyu depo hacmi kullanılmıştır. "
-                          "7.5.2 sprinkler debisi, tasarım yoğunluğu × seçilen koruma alanı olarak hesaplanır ve depo hacmi hesabında ayrıca süre ile çarpılmaz."
+                          "7.5.2 sprinkler debisi, tasarım yoğunluğu × seçilen koruma alanı olarak hesaplanır; "
+                          "bu debi depo hacmine eklenmez ve pompa seçim hesabında kullanılmak üzere ayrıca saklanır."
                       ).italic = True
 
                       _p712 = doc.add_paragraph()
