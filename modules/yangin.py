@@ -882,26 +882,47 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=19):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
+
+                        # ÖNEMLİ: Burada st.form/st.form_submit_button kullanmıyoruz.
+                        # Proje geri yükleme mekanizması eski Streamlit widget durumlarını
+                        # session_state'e taşıyabildiği için form submit widget'ında
+                        # StreamlitValueAssignmentNotAllowedError oluşabiliyordu.
+                        # Bunun yerine açık ve benzersiz widget anahtarları kullanıyoruz.
+                        # Anahtarların sonundaki _button ifadesi ana uygulamanın proje
+                        # kaydında bunları widget olarak filtrelemesini de sağlar.
+                        _nonce_key = f"{_liste_key}_form_nonce"
+                        st.session_state.setdefault(_nonce_key, 0)
+                        _nonce = st.session_state[_nonce_key]
+                        _b_key = f"{_liste_key}_baslik_{_nonce}_button"
+                        _m_key = f"{_liste_key}_metin_{_nonce}_button"
+                        _s_key = f"{_liste_key}_submit_{_nonce}_button"
+
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
-                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
-                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            # Bu formdaki widget'lara session_state key vermiyoruz.
-                            # Proje geri yükleme/persist mekanizması eski widget key'lerini
-                            # yeniden yazabildiği için StreamlitValueAssignmentNotAllowedError
-                            # oluşmasını engellemek amacıyla form kapsamındaki otomatik
-                            # widget kimliklerini kullanıyoruz. Form key'leri zaten benzersizdir.
-                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
-                                _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
-                                _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
-                                _submit_madde = st.form_submit_button(f"Maddeyi ekle — {_yer_etiketi}")
-                            if _submit_madde:
-                                if _b.strip() and _m.strip():
-                                    _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
-                                    st.session_state[_liste_key] = _liste
-                                    st.rerun()
-                                else:
-                                    st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+                            _b = st.text_input(
+                                f"Madde başlığı — {_yer_etiketi}",
+                                key=_b_key,
+                            )
+                            _m = st.text_area(
+                                f"Madde açıklaması — {_yer_etiketi}",
+                                height=90,
+                                key=_m_key,
+                            )
+                            _submit_madde = st.button(
+                                f"Maddeyi ekle — {_yer_etiketi}",
+                                key=_s_key,
+                                type="primary",
+                            )
+
+                        if _submit_madde:
+                            if _b.strip() and _m.strip():
+                                _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
+                                st.session_state[_liste_key] = _liste
+                                # Yeni nonce yeni widget anahtarları üretir; eski input
+                                # değerlerini silmeye/üzerine yazmaya gerek kalmaz.
+                                st.session_state[_nonce_key] = _nonce + 1
+                                st.rerun()
+                            else:
+                                st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
 
                     st.markdown("**ÇAP TABLOSUNDAN ÖNCE EK MADDELER**")
                     _maddeleri_goster_ve_ekle("yangin_731_maddeler_cap_oncesi", "Çap tablosundan önce")
@@ -1068,26 +1089,41 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _idx, _madde in enumerate(_liste, start=_bas_no):
                             st.markdown(f"**{_idx}. {_madde.get('baslik','')}**")
                             st.write(_madde.get('metin',''))
+
+                        # 7.3.1 ile aynı güvenli widget yaklaşımı: form submit yerine
+                        # benzersiz st.button kullanıyoruz. Böylece eski proje dosyalarından
+                        # kalan widget state'i form submit widget'ına yazılamıyor.
+                        _nonce_key = f"{_liste_key}_form_nonce"
+                        st.session_state.setdefault(_nonce_key, 0)
+                        _nonce = st.session_state[_nonce_key]
+                        _b_key = f"{_liste_key}_baslik_{_nonce}_button"
+                        _m_key = f"{_liste_key}_metin_{_nonce}_button"
+                        _s_key = f"{_liste_key}_submit_{_nonce}_button"
+
                         with st.expander(f"➕ {_yer_etiketi} yeni madde ekle", expanded=False):
-                            # Form kullanıyoruz: submit sonrası clear_on_submit=True alanları
-                            # güvenli şekilde temizler. Widget oluşturulduktan sonra
-                            # st.session_state[key] = "" yapılması Streamlit'te hataya yol açar.
-                            # Bu formdaki widget'lara session_state key vermiyoruz.
-                            # Proje geri yükleme/persist mekanizması eski widget key'lerini
-                            # yeniden yazabildiği için StreamlitValueAssignmentNotAllowedError
-                            # oluşmasını engellemek amacıyla form kapsamındaki otomatik
-                            # widget kimliklerini kullanıyoruz. Form key'leri zaten benzersizdir.
-                            with st.form(key=f"yangin_v3_{_liste_key}_form", clear_on_submit=True):
-                                _b = st.text_input(f"Madde başlığı — {_yer_etiketi}")
-                                _m = st.text_area(f"Madde açıklaması — {_yer_etiketi}", height=90)
-                                _submit_madde = st.form_submit_button(f"Maddeyi ekle — {_yer_etiketi}")
-                            if _submit_madde:
-                                if _b.strip() and _m.strip():
-                                    _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
-                                    st.session_state[_liste_key] = _liste
-                                    st.rerun()
-                                else:
-                                    st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+                            _b = st.text_input(
+                                f"Madde başlığı — {_yer_etiketi}",
+                                key=_b_key,
+                            )
+                            _m = st.text_area(
+                                f"Madde açıklaması — {_yer_etiketi}",
+                                height=90,
+                                key=_m_key,
+                            )
+                            _submit_madde = st.button(
+                                f"Maddeyi ekle — {_yer_etiketi}",
+                                key=_s_key,
+                                type="primary",
+                            )
+
+                        if _submit_madde:
+                            if _b.strip() and _m.strip():
+                                _liste.append({"baslik": _b.strip(), "metin": _m.strip()})
+                                st.session_state[_liste_key] = _liste
+                                st.session_state[_nonce_key] = _nonce + 1
+                                st.rerun()
+                            else:
+                                st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
 
                     st.markdown("**HİDRANT MADDELERİ — EK MADDELER (8. MADDEDEN SONRA)**")
                     _hidrant_maddeleri_goster_ve_ekle("yangin_741_maddeler_cap_oncesi", "8. maddeden sonra")
@@ -1458,10 +1494,14 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     )
                     _ek8a_manuel_m3 = 0.0
                     if _ek8a_secim_modu == "Manuel gir":
+                        # Widget oluşturulmadan ÖNCE varsayılan değeri hazırlıyoruz.
+                        # Böylece number_input oluşturulduktan sonra aynı key'e değer
+                        # atamaya çalışıp StreamlitValueAssignmentNotAllowedError üretmeyiz.
+                        if "yangin_75_ek8a_depo_manuel_m3" not in st.session_state:
+                            st.session_state["yangin_75_ek8a_depo_manuel_m3"] = _ek8a_auto_m3
                         _ek8a_manuel_m3 = st.number_input(
                             "Manuel yangın suyu depo hacmi (m³)",
                             min_value=0.0,
-                            value=float(st.session_state.get("yangin_75_ek8a_depo_manuel_m3", _ek8a_auto_m3)),
                             step=1.0,
                             format="%.2f",
                             key="yangin_75_ek8a_depo_manuel_m3",
