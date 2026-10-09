@@ -1,3 +1,14 @@
+
+def _yangin_mevzuat_atiflarini_kaldir(metin):
+    """Metindeki parantez içindeki BYKHY/yönetmelik madde atıflarını kaldırır."""
+    return re.sub(
+        r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)",
+        "",
+        str(metin or ""),
+        flags=re.IGNORECASE,
+    ).strip()
+
+import re
 # Rapor Oluştur Butonu
 _proje_otomatik_kaydet()
 
@@ -2933,6 +2944,10 @@ if _rapor_olustur_sidebar:
                           ("18", "İtfaiye su alma ağızlarının bağlantısı ve basıncı", "İtfaiye su alma ağızlarının bağlantısı doğrudan yangın kollektöründen yapılacaktır. Yangın merdiven yuvaları içinde yer alacak olan riser kolonlarına yerden yaklaşık 1.0-1.2 m yükseklikte olacak şekilde itfaiye su alma ağızları bağlantısı yapılacaktır. İtfaiye su alma ağızlarında yassı hortum ucundaki lans girişinde, akış halinde basınç 6 bar olacaktır. Ve 9 barı geçmemelidir."),
                       ]
                       for _no, _baslik_yd, _metin_yd in _yd_esaslari_rapor:
+                          if not bool(st.session_state.get(f"yangin_731_madde_{_no}", True)):
+                              continue
+                          if not bool(st.session_state.get("yangin_731_yonetmelik_atiflari", True)):
+                              _metin_yd = _yangin_mevzuat_atiflarini_kaldir(_metin_yd)
                           _pyd = doc.add_paragraph()
                           _r = _pyd.add_run(f"{_no}. {_baslik_yd}: ")
                           _r.bold = True
@@ -3072,6 +3087,10 @@ if _rapor_olustur_sidebar:
                           ("19", "Boru hatlarının flushing işlemi", "Yapım esnasında, boru içerisinde kalan yabancı malzemeleri temizlemek için su ile flushing yapılacaktır. Flushing esnasında, borular içerisindeki hız en az 3 m/s olacaktır."),
                       ]
                       for _no, _baslik_h, _metin_h in _hidrant_esaslari_rapor:
+                          if not bool(st.session_state.get(f"yangin_741_madde_{_no}", True)):
+                              continue
+                          if not bool(st.session_state.get("yangin_741_yonetmelik_atiflari", True)):
+                              _metin_h = _yangin_mevzuat_atiflarini_kaldir(_metin_h)
                           _p = doc.add_paragraph()
                           _r = _p.add_run(f"{_no}. {_baslik_h}: ")
                           _r.bold = True
@@ -3187,6 +3206,10 @@ if _rapor_olustur_sidebar:
                           ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
                       ]
                       for _no, _baslik_s, _metin_s in _sprinkler_esaslari_rapor:
+                          if not bool(st.session_state.get(f"yangin_751_madde_{_no}", True)):
+                              continue
+                          if not bool(st.session_state.get("yangin_751_yonetmelik_atiflari", True)):
+                              _metin_s = _yangin_mevzuat_atiflarini_kaldir(_metin_s)
                           _p = doc.add_paragraph()
                           _r = _p.add_run(f"{_no}. {_baslik_s}: ")
                           _r.bold = True
@@ -3514,7 +3537,10 @@ if _rapor_olustur_sidebar:
                           _pkriter = doc.add_paragraph(style="List Number")
                           _pkriter.paragraph_format.space_after = Pt(4)
                           _pkriter.paragraph_format.keep_together = True
-                          _pkriter.add_run(_kriter_metin[1])
+                          _metin_7131 = _kriter_metin[1]
+                          if not bool(st.session_state.get("yangin_7131_yonetmelik_atiflari", True)):
+                              _metin_7131 = _yangin_mevzuat_atiflarini_kaldir(_metin_7131)
+                          _pkriter.add_run(_metin_7131)
                       if not _secili_7131_kriterler:
                           _pnone = doc.add_paragraph("Bu bölüm için rapora eklenecek seçim kriteri seçilmemiştir.")
                           _pnone.paragraph_format.space_after = Pt(6)
