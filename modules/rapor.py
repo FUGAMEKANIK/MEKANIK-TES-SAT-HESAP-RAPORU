@@ -3284,6 +3284,68 @@ if _rapor_olustur_sidebar:
                               f"Kuru/değişken koruma alanı: {_ek8b_sec75_kayit[3]} m²."
                           )
 
+                      # Ek-8/A depo hacmi tablosu: programdaki seçimin rapora aktarılması
+                      # ve kullanılan tek hücrenin sarı vurgulanması.
+                      doc.add_paragraph(
+                          "BYKHY Ek-8/A — Yağmurlama Sistemi, Yangın Dolabı ve Hidrant Tasarımı Ön Hesabı İçin Su Deposu En Az Hacmi"
+                      ).runs[0].bold = True
+                      _ek8a_rapor_verileri = [
+                          ("Düşük Tehlike", "Islak veya ön uyarılı", "9", "10", "11"),
+                          ("Orta Tehlike-1", "Islak veya ön uyarılı", "55", "70", "80"),
+                          ("Orta Tehlike-1", "Kuru veya alternatif", "105", "125", "140"),
+                          ("Orta Tehlike-2", "Islak veya ön uyarılı", "105", "125", "140"),
+                          ("Orta Tehlike-2", "Kuru veya alternatif", "135", "160", "185"),
+                          ("Orta Tehlike-3", "Islak veya ön uyarılı", "135", "160", "185"),
+                          ("Orta Tehlike-3", "Kuru veya alternatif", "160", "185", "200"),
+                          ("Orta Tehlike-4", "Islak veya ön uyarılı", "160", "185", "200"),
+                          ("Orta Tehlike-4", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                          ("Yüksek Tehlike", "Islak veya ön uyarılı", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                          ("Yüksek Tehlike", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
+                      ]
+                      _sinif8a_rapor = str(st.session_state.get("yangin_722_etkin_sinif", st.session_state.get("yangin_722_otomatik_sinif", "")) or "").strip().lower().replace("–", "-")
+                      _tip8a_rapor = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili")).lower()
+                      _h8a_rapor = float(st.session_state.get("yangin_75_ek8a_yapi_yuksekligi_m", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0)) or 0)
+                      _idx8a_rapor = 0 if 0 < _h8a_rapor <= 15 else 1 if _h8a_rapor <= 30 and _h8a_rapor > 15 else 2 if _h8a_rapor > 30 else -1
+                      _col8a_rapor = _idx8a_rapor + 2 if _idx8a_rapor >= 0 else -1
+                      _satir8a_rapor = None
+                      for _ix8a, _row8a in enumerate(_ek8a_rapor_verileri):
+                          _rowclass = _row8a[0].lower().replace("–", "-")
+                          _rowwet = "ıslak" in _row8a[1].lower()
+                          _iswet = not ("kuru" in _tip8a_rapor or "alternatif" in _tip8a_rapor)
+                          if _sinif8a_rapor.startswith(_rowclass) and _rowwet == _iswet:
+                              _satir8a_rapor = _ix8a
+                              break
+                      _t8a = doc.add_table(rows=1, cols=5)
+                      _t8a.style = "Table Grid"
+                      _h8a_labels = ["YANGIN TEHLİKE SINIFI", "SİSTEM TİPİ", "h ≤ 15 m", "15 < h ≤ 30 m", "30 < h ≤ 45 m"]
+                      for _cell8a, _label8a in zip(_t8a.rows[0].cells, _h8a_labels):
+                          _cell8a.text = _label8a
+                          for _pr8a in _cell8a.paragraphs:
+                              for _run8a in _pr8a.runs:
+                                  _run8a.bold = True
+                      for _ix8a, _row8a in enumerate(_ek8a_rapor_verileri):
+                          _cells8a = _t8a.add_row().cells
+                          for _j8a, (_cell8a, _value8a) in enumerate(zip(_cells8a, _row8a)):
+                              _cell8a.text = _value8a
+                              if _ix8a == _satir8a_rapor:
+                                  _tcPr8a = _cell8a._tc.get_or_add_tcPr()
+                                  _shd8a = OxmlElement("w:shd")
+                                  _shd8a.set(qn("w:fill"), "FFF9E6")
+                                  _tcPr8a.append(_shd8a)
+                                  if _j8a == _col8a_rapor:
+                                      _shd_sel8a = OxmlElement("w:shd")
+                                      _shd_sel8a.set(qn("w:fill"), "FFF2CC")
+                                      _tcPr8a.append(_shd_sel8a)
+                                      for _pr8a in _cell8a.paragraphs:
+                                          for _run8a in _pr8a.runs:
+                                              _run8a.bold = True
+                      _v8a_rapor = st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", None)
+                      _p8a_result = doc.add_paragraph()
+                      _p8a_result.add_run("Ek-8/A seçilen minimum depo hacmi: ").bold = True
+                      _p8a_result.add_run(f"{float(_v8a_rapor):g} m³" if _v8a_rapor is not None else "Hacim belirlenemedi")
+                      if _h8a_rapor > 45:
+                          _p8a_result.add_run(" (45 m üzeri için 30 < h ≤ 45 m sütunundaki değer kullanılmıştır.)")
+
                       _src752 = doc.add_paragraph()
                       _src752.add_run(
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
@@ -3300,7 +3362,8 @@ if _rapor_olustur_sidebar:
 
                   # 7.12 Yangın Suyu Depolama Sistemi — 7.3.2 / 7.4.2 / 7.5.2 verileri
                   elif _bk == "bolum_7120":
-                      doc.add_heading("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", level=3)
+                      # 7.12 alt başlığı kullanıcı talebiyle raporda gösterilmez;
+                      # bölümün hesap içeriği korunur.
 
                       _q73_712 = float(st.session_state.get("yangin_712_q73_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
                       _t73_712 = float(st.session_state.get("yangin_712_t73_dak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0)) or 0)
