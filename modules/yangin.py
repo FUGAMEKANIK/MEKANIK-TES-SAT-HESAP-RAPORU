@@ -1937,7 +1937,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (BYKHY Madde 93, 11)",
                     "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
                 ]
-                with st.expander("7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ", expanded=True):
+                st.markdown("### 7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ")
+                with st.container():
                     st.caption("Tüm maddeler başlangıçta seçilidir. İşaretini kaldırdığınız maddeler rapora aktarılmaz.")
                     _7131_atif_key = "yangin_7131_yonetmelik_atiflari"
                     st.session_state.setdefault(_7131_atif_key, True)
@@ -1962,7 +1963,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_7131_kriter_metinleri"] = _yangin_7131_kriterler
 
                 # 7.13.2 Yangın hidroforu debi hesabı: kaynak debileri, adetler ve sprinkler yoğunluk x alan.
-                with st.expander("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", expanded=True):
+                st.markdown("### 7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI")
+                with st.container():
                     st.caption("Yangın dolabı ve hidrant adetleri 7.12 bölümünden otomatik alınır. İstenirse bu bölümde ayrıca düzeltilebilir.")
                     _q73_7132_birim = float(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak", 0)) or 0)
                     _q74_7132_birim = float(st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0) or 0)
@@ -2059,7 +2061,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                 # 7.13.3 Yangın hidroforu basma yüksekliği hesabı.
                 # Basınç ve kayıp değerleri proje/hidrolik hesaptan girilir; toplam otomatik hesaplanır.
-                with st.expander("7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI", expanded=True):
+                st.markdown("### 7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI")
+                with st.container():
                     st.caption("Basma yüksekliği; yukarıda girilen yapı yüksekliği + boru kayıpları + lans girişindeki gerekli basınç toplamı olarak hesaplanır. 400 kPa yaklaşık 40 mSS'tir; bu lans basıncı, BYKHY Madde 94'teki ilgili yangın dolabı tipinin koşulları için geçerlidir.")
                     _yapi_yuksekligi_7133 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
                     st.session_state["yangin_7133_kot_farki_m"] = _yapi_yuksekligi_7133
@@ -2085,7 +2088,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_7133_basma_yuksekligi_mss"] = float(_h_pompa_mss)
 
                 # 7.13.4 Yangın hidroforu seçimi: debi 7.13.2, basma yüksekliği 7.13.3 hesabından gelir.
-                with st.expander("7.13.4 YANGIN HİDROFORU SEÇİMİ", expanded=True):
+                st.markdown("### 7.13.4 YANGIN HİDROFORU SEÇİMİ")
+                with st.container():
                     _q_pompa_otomatik_m3h = float(st.session_state.get("yangin_7132_emniyet_debi_m3h", 0.0) or 0.0)
                     st.markdown(f"**7.13.2 hesabından gelen tasarım debisi:** {_q_pompa_otomatik_m3h:.2f} m³/h ({_q_pompa_otomatik_m3h / 0.06:.2f} L/dak)")
                     _q_pompa_elle = st.checkbox("Pompa tasarım debisini elle düzelt", value=bool(st.session_state.get("yangin_7133_debi_elle", False)), key="yangin_7133_debi_elle")
