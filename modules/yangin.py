@@ -1498,15 +1498,15 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         # sütunu kullanılır; ayrı bir >45 m sütunu varsayılmaz.
                         _ek8a_h_araligi = "30 < h ≤ 45 m"
                     _ek8a_anahtar = ""
-                    if _ek8a_sinif.startswith("düşük tehlike"):
+                    if _ek8a_sinif.startswith("düşüktehlike"):
                         _ek8a_anahtar = "Düşük Tehlike"
-                    elif _ek8a_sinif.startswith("orta tehlike-1"):
+                    elif _ek8a_sinif.startswith("ortatehlike-1"):
                         _ek8a_anahtar = "Orta Tehlike-1 ıslak" if ("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) else "Orta Tehlike-1 kuru"
-                    elif _ek8a_sinif.startswith("orta tehlike-2"):
+                    elif _ek8a_sinif.startswith("ortatehlike-2"):
                         _ek8a_anahtar = "Orta Tehlike-2 ıslak" if ("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) else "Orta Tehlike-2 kuru"
-                    elif _ek8a_sinif.startswith("orta tehlike-3"):
+                    elif _ek8a_sinif.startswith("ortatehlike-3"):
                         _ek8a_anahtar = "Orta Tehlike-3 ıslak" if ("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) else "Orta Tehlike-3 kuru"
-                    elif _ek8a_sinif.startswith("orta tehlike-4"):
+                    elif _ek8a_sinif.startswith("ortatehlike-4"):
                         _ek8a_anahtar = "Orta Tehlike-4 ıslak" if ("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) else ""
 
                     _ek8a_depo_m3 = None
