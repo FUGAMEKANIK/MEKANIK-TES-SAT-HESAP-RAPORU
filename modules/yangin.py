@@ -1689,25 +1689,47 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     _t74 = float(st.session_state.get("yangin_74_ek8c_hidrant_suresi_dak", 0) or 0)
                     _q75 = float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
 
-                    st.markdown("### 7.3.2 / 7.4.2 / 7.5.2 Otomatik Aktarılan Debiler")
+                    st.markdown("### Yangın Dolabı ve Hidrant Adetleri")
+                    _adet_cols = st.columns(2)
+                    with _adet_cols[0]:
+                        _yangin_dolabi_adedi = int(st.number_input(
+                            "Yangın dolabı sayısı (adet)", min_value=0, step=1,
+                            value=int(st.session_state.get("yangin_712_yangin_dolabi_adedi", 2) or 0),
+                            key="yangin_712_yangin_dolabi_adedi",
+                        ))
+                    with _adet_cols[1]:
+                        _hidrant_adedi = int(st.number_input(
+                            "Hidrant sayısı (adet)", min_value=0, step=1,
+                            value=int(st.session_state.get("yangin_712_hidrant_adedi", 1) or 0),
+                            key="yangin_712_hidrant_adedi",
+                        ))
+
+                    _q73_toplam = _q73 * _yangin_dolabi_adedi
+                    _q74_toplam = _q74 * _hidrant_adedi
+                    _toplam_tasarim_debisi_ldak = _q73_toplam + _q74_toplam
+                    _toplam_tasarim_debisi_m3h = _toplam_tasarim_debisi_ldak * 0.06
+
+                    st.markdown("### 7.3.2 / 7.4.2 Aktarılan Debiler ve 7.5.2 Depo Hacmi")
                     _dcols = st.columns(3)
                     with _dcols[0]:
-                        st.metric("7.3.2 Yangın Dolabı", f"{_q73:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption(f"Süre: {_t73:g} dk")
+                        st.metric("Yangın Dolabı Toplamı", f"{_q73_toplam:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption(f"{_q73:,.2f} L/dak × {_yangin_dolabi_adedi} adet".replace(',', 'X').replace('.', ',').replace('X', '.'))
                     with _dcols[1]:
-                        st.metric("7.4.2 Hidrant", f"{_q74:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption(f"Süre: {_t74:g} dk")
+                        st.metric("Hidrant Toplamı", f"{_q74_toplam:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption(f"{_q74:,.2f} L/dak × {_hidrant_adedi} adet".replace(',', 'X').replace('.', ',').replace('X', '.'))
                     with _dcols[2]:
-                        st.metric("7.5.2 Sprinkler", f"{_q75:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption("Debi = tasarım yoğunluğu × seçilen koruma alanı")
+                        _ek8a_depo_goster = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
+                        st.metric("Sprinkler Depo Hacmi (Ek-8/A)", f"{_ek8a_depo_goster:,.3f} m³".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        st.caption("Yüksekliğe, tehlike sınıfına ve sistem tipine göre seçilir; debi değildir.")
 
-                    # 7.12'de üç sistemin seçilen DEBİLERİ otomatik olarak birlikte gösterilir
-                    # ve toplam yangın söndürme tasarım debisi ayrıca hesaplanır.
-                    # ÖNEMLİ: Bu toplam DEBİ, depo hacmi hesabında kullanılmaz.
-                    # 7.5.2 sprinkler debisi de kesinlikle Ek-8/A depo hacmine eklenmez.
-                    # Sprinkler debisi ileride yangın/sprinkler pompası seçiminde kullanılmak üzere
-                    # ayrı bir veri olarak saklanır.
-                    _toplam_tasarim_debisi_ldak = _q73 + _q74 + _q75
+                    # Yalnızca yangın dolabı ve hidrant birim debileri adetleriyle çarpılarak toplanır.
+                    # Sprinkler için tasarım debisi değil, Ek-8/A'dan seçilen depo hacmi ayrı gösterilir.
+                    st.session_state["yangin_712_yangin_dolabi_birim_debisi_ldak"] = _q73
+                    st.session_state["yangin_712_hidrant_birim_debisi_ldak"] = _q74
+                    st.session_state["yangin_712_yangin_dolabi_toplam_debisi_ldak"] = _q73_toplam
+                    st.session_state["yangin_712_hidrant_toplam_debisi_ldak"] = _q74_toplam
+                    st.session_state["yangin_712_toplam_tasarim_debisi_ldak"] = float(_toplam_tasarim_debisi_ldak)
+                    st.session_state["yangin_712_toplam_tasarim_debisi_m3h"] = float(_toplam_tasarim_debisi_m3h)
 
                     # Su deposu hacmi yalnızca 7.5'te bina yüksekliği + tehlike sınıfı +
                     # sprinkler sistem tipine göre seçilen Ek-8/A minimum hacmidir.
@@ -1725,17 +1747,16 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_712_t75_dak"] = 0.0
                     st.session_state["yangin_712_toplam_tasarim_debisi_ldak"] = float(_toplam_tasarim_debisi_ldak)
 
-                    st.markdown("### Otomatik Aktarılan Debiler ve Yangın Suyu Depo Hacmi")
+                    st.markdown("### Yangın Suyu Debi Toplamı ve Depo Hacmi")
                     st.markdown(
                         f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px;">'
-                        f'<b>7.3.2 Yangın Dolabı Debisi:</b> {_q73:,.2f} L/dak<br>'
-                        f'<b>7.4.2 Hidrant Debisi:</b> {_q74:,.2f} L/dak<br>'
-                        f'<b>7.5.2 Sprinkler Debisi:</b> {_q75:,.2f} L/dak = tasarım yoğunluğu × koruma alanı<br>'
+                        f'<b>Yangın dolapları:</b> {_q73:,.2f} L/dak × {_yangin_dolabi_adedi} adet = <b>{_q73_toplam:,.2f} L/dak</b><br>'
+                        f'<b>Hidrantlar:</b> {_q74:,.2f} L/dak × {_hidrant_adedi} adet = <b>{_q74_toplam:,.2f} L/dak</b><br>'
                         f'<hr>'
-                        f'<b>TOPLAM TASARIM DEBİSİ:</b> <b>{_toplam_tasarim_debisi_ldak:,.2f} L/dak</b><br>'
-                        f'<span style="font-size:13px;">Bu toplam debi ileride pompa seçim hesabında kullanılacaktır; depo hacmine eklenmez.</span><br><br>'
-                        f'<b>EK-8/A SU DEPOSU MİNİMUM HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br>'
-                        f'<span style="font-size:13px;">Depo hacmi yalnızca 7.5.2 Ek-8/A otomatik seçimine göre belirlenir.</span><br><hr>'
+                        f'<b>TOPLAM TASARIM DEBİSİ:</b> <b>{_toplam_tasarim_debisi_ldak:,.2f} L/dak</b> = <b>{_toplam_tasarim_debisi_m3h:,.3f} m³/h</b><br>'
+                        f'<span style="font-size:13px;">m³/h dönüşümü: toplam L/dak × 0,06. Bu toplam debi depo hacmine eklenmez.</span><br><br>'
+                        f'<b>EK-8/A’YA GÖRE SPRİNKLER SU DEPOSU HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br>'
+                        f'<span style="font-size:13px;">Sprinkler için tasarım debisi değil, bina yüksekliği/tehlike sınıfı/sistem tipine göre seçilen Ek-8/A hacmi kullanılır.</span><br><hr>'
                         f'<b>GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b>'
                         f'</div>'.replace(',', 'X').replace('.', ',').replace('X', '.'),
                         unsafe_allow_html=True,
