@@ -3482,6 +3482,40 @@ if _rapor_olustur_sidebar:
                       _ppoz712.add_run("Cihaz Poz No: ").bold = True
                       _ppoz712.add_run(_rapor_depo_pozu_712).bold = True
 
+                  # 7.13 Yangın Pompa Grubu — seçim kriterleri
+                  elif _bk == "bolum_7130":
+                      doc.add_heading(
+                          "7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ",
+                          level=4,
+                      )
+                      _yangin_hidroforu_secim_kriterleri = [
+                          "Yangın hidroforu ve pompa grubu, sabit yangın söndürme sistemlerinin gerekli su debisini ve basıncını sağlayacak şekilde seçilecektir. (Binaların Yangından Korunması Hakkında Yönetmelik, Madde 91 ve Madde 93)",
+                          "Pompa grubunun tasarım debisi ve basma yüksekliği, ilgili sistemlerin hidrolik hesapları sonucunda belirlenecektir. (Madde 91)",
+                          "Pompa performans eğrisinde kapalı vana basma yüksekliği, anma basma yüksekliğinin %140'ını aşmayacak; %150 debideki basma yüksekliği ise anma basma yüksekliğinin %65'inden düşük olmayacaktır. (Madde 93/1)",
+                          "Pompa, gerekli basınç değerini karşılamak şartıyla anma debisinin %130'u kapasitedeki sistem taleplerinde kullanılabilecektir. (Madde 93/1)",
+                          "Tek yangın pompası kullanılması durumunda aynı kapasitede yedek pompa bulundurulacaktır. Birden fazla pompa kullanılması durumunda toplam kapasitenin en az %50'si yedek kapasite olarak sağlanacaktır. (Madde 93/2)",
+                          "Yangın pompaları elektrik motoru, içten yanmalı motor veya türbin ile tahrik edilebilecektir. (Madde 93/3)",
+                          "Yedek dizel motor tahrikli pompa kullanılmaması durumunda, yangın pompalarının enerji beslemesi güvenilir kaynaktan ve binanın genel elektrik sisteminden bağımsız olarak sağlanacaktır. (Madde 93/4)",
+                          "Pompalarda gerekli otomatik hava boşaltma ve sirkülasyon rahatlama valfleri gibi yardımcı elemanlar bulunacaktır. (Madde 93/5)",
+                          "Her pompa için ayrı ve kilitlenebilir kumanda panosu bulunacak; panolarda faz hatası, faz sırası hatası ve kumanda fazı hatası göstergeleri yer alacaktır. (Madde 93/6)",
+                          "Her pompa için ayrı kumanda basınç anahtarı kullanılacak; alt ve üst basınç değerleri bağımsız ayarlanabilir ve ayarlandıktan sonra kilitlenebilir olacaktır. (Madde 93/7)",
+                          "Pompa kontrolü basınç kumandalı, tam otomatik veya yarı otomatik olarak düzenlenebilecektir. (Madde 93/8)",
+                          "Pompa odasında elektrik motorlu pompalar için sürekli +4 °C'nin, dizel motorlu pompalar için sürekli +10 °C'nin üzerinde sıcaklık sağlanacaktır. (Madde 93/9)",
+                          "Pompa istasyonunda servis, muayene ve ayar gerektiren cihazların çalışma alanlarında acil aydınlatma sağlanacaktır. (Madde 93/10)",
+                          "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (Madde 93/11)",
+                          "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
+                      ]
+                      for _kriter_sira, _kriter_metin in enumerate(_yangin_hidroforu_secim_kriterleri, start=1):
+                          _pkriter = doc.add_paragraph(style="List Number")
+                          _pkriter.paragraph_format.space_after = Pt(4)
+                          _pkriter.paragraph_format.keep_together = True
+                          _pkriter.add_run(_kriter_metin)
+                      _pkaynak = doc.add_paragraph()
+                      _pkaynak.add_run(
+                          "Mevzuat kaynağı: Binaların Yangından Korunması Hakkında Yönetmelik. "
+                          "Nihai proje kontrolünde yürürlükteki resmî metin ve uygulanabilir standartlar esas alınmalıdır."
+                      ).italic = True
+
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
