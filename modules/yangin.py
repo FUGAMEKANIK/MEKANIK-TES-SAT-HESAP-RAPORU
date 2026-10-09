@@ -1961,17 +1961,43 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.checkbox(f"{_i + 1}. {_kriter_goster}", key=_kriter_key)
                     st.session_state["yangin_7131_kriter_metinleri"] = _yangin_7131_kriterler
 
-                # 7.13.2 Yangın hidroforu debi hesabı: 7.3.2, 7.4.2 ve 7.5.2'den alınır.
+                # 7.13.2 Yangın hidroforu debi hesabı: kaynak debileri, adetler ve sprinkler yoğunluk x alan.
                 with st.expander("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", expanded=True):
-                    st.caption("Debiler 7.3.2, 7.4.2 ve 7.5.2 bölümlerinden otomatik alınır. Toplam debiye varsayılan %15 emniyet payı uygulanır.")
-                    _q73_7132 = float(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak", 0)) or 0)
-                    _q74_7132 = float(st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0) or 0)
-                    _q75_7132 = float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
+                    st.caption("Yangın dolabı ve hidrant adetleri 7.12 bölümünden otomatik alınır. İstenirse bu bölümde ayrıca düzeltilebilir.")
+                    _q73_7132_birim = float(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak", 0)) or 0)
+                    _q74_7132_birim = float(st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0) or 0)
+
+                    _dolap_adedi_otomatik = int(st.session_state.get("yangin_712_yangin_dolabi_adedi", 2) or 0)
+                    _hidrant_adedi_otomatik = int(st.session_state.get("yangin_712_hidrant_adedi", 1) or 0)
+                    _col_dolap, _col_hidrant = st.columns(2)
+                    with _col_dolap:
+                        _dolap_elle = st.checkbox("Yangın dolabı sayısını elle düzelt", value=bool(st.session_state.get("yangin_7132_dolap_adedi_elle", False)), key="yangin_7132_dolap_adedi_elle")
+                        if _dolap_elle:
+                            _dolap_adedi_7132 = int(st.number_input("Yangın dolabı sayısı (adet)", min_value=0, step=1, value=int(st.session_state.get("yangin_7132_dolap_adedi_manuel", _dolap_adedi_otomatik)), key="yangin_7132_dolap_adedi_manuel"))
+                        else:
+                            _dolap_adedi_7132 = _dolap_adedi_otomatik
+                            st.metric("Yangın dolabı sayısı (7.12'den)", _dolap_adedi_7132)
+                    with _col_hidrant:
+                        _hidrant_elle = st.checkbox("Hidrant sayısını elle düzelt", value=bool(st.session_state.get("yangin_7132_hidrant_adedi_elle", False)), key="yangin_7132_hidrant_adedi_elle")
+                        if _hidrant_elle:
+                            _hidrant_adedi_7132 = int(st.number_input("Hidrant sayısı (adet)", min_value=0, step=1, value=int(st.session_state.get("yangin_7132_hidrant_adedi_manuel", _hidrant_adedi_otomatik)), key="yangin_7132_hidrant_adedi_manuel"))
+                        else:
+                            _hidrant_adedi_7132 = _hidrant_adedi_otomatik
+                            st.metric("Hidrant sayısı (7.12'den)", _hidrant_adedi_7132)
+
+                    _spr_yog_7132 = float(st.session_state.get("yangin_75_ek8b_tasarim_yogunlugu", 0) or 0)
+                    _spr_tip_7132 = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
+                    _spr_kuru_7132 = ("kuru" in _spr_tip_7132.lower() or "alternatif" in _spr_tip_7132.lower())
+                    _spr_alan_key_7132 = "yangin_75_ek8b_kuru_degisken_alan" if _spr_kuru_7132 else "yangin_75_ek8b_islak_on_etkili_alan"
+                    _spr_alan_7132 = float(st.session_state.get(_spr_alan_key_7132, 0) or 0)
+                    _q75_7132 = _spr_yog_7132 * _spr_alan_7132 if _spr_yog_7132 > 0 and _spr_alan_7132 > 0 else float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
+                    _q73_7132 = _q73_7132_birim * _dolap_adedi_7132
+                    _q74_7132 = _q74_7132_birim * _hidrant_adedi_7132
+
                     _emniyet_7132 = float(st.number_input(
-                        "Toplam tasarım debisi emniyet oranı (%)",
-                        min_value=0.0, max_value=100.0, value=float(st.session_state.get("yangin_7132_emniyet_orani", 15.0)),
-                        step=1.0, key="yangin_7132_emniyet_orani",
-                        help="Varsayılan %15'tir; proje kriterlerine göre değiştirilebilir."
+                        "Toplam tasarım debisi emniyet oranı (%)", min_value=0.0, max_value=100.0,
+                        value=float(st.session_state.get("yangin_7132_emniyet_orani", 15.0)), step=1.0,
+                        key="yangin_7132_emniyet_orani", help="Varsayılan %15'tir; proje kriterlerine göre değiştirilebilir."
                     ))
                     _toplam_debi_7132_ldak = _q73_7132 + _q74_7132 + _q75_7132
                     _toplam_debi_7132_m3h = _toplam_debi_7132_ldak * 0.06
@@ -1981,19 +2007,28 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     def _yangin_sayi_7132(_v, _nd=2):
                         return f"{_v:,.{_nd}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+                    st.markdown("**Hidrofor debisi hesap tablosu**")
                     st.table([
-                        {"Kaynak": "7.3.2 Yangın Dolabı", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q73_7132)},
-                        {"Kaynak": "7.4.2 Hidrant", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q74_7132)},
-                        {"Kaynak": "7.5.2 Sprinkler", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q75_7132)},
+                        {"Kaynak": "7.3.2 Yangın Dolabı", "Adet": _dolap_adedi_7132, "Birim tasarım debisi (L/dak)": _yangin_sayi_7132(_q73_7132_birim), "Toplam debi (L/dak)": _yangin_sayi_7132(_q73_7132)},
+                        {"Kaynak": "7.4.2 Hidrant", "Adet": _hidrant_adedi_7132, "Birim tasarım debisi (L/dak)": _yangin_sayi_7132(_q74_7132_birim), "Toplam debi (L/dak)": _yangin_sayi_7132(_q74_7132)},
+                        {"Kaynak": "7.5.2 Sprinkler", "Adet": "—", "Birim tasarım debisi (L/dak)": f"{_yangin_sayi_7132(_spr_yog_7132)} mm/dak × {_yangin_sayi_7132(_spr_alan_7132)} m²", "Toplam debi (L/dak)": _yangin_sayi_7132(_q75_7132)},
                     ])
+                    if _spr_yog_7132 > 0 and _spr_alan_7132 > 0:
+                        st.markdown(f"**Sprinkler debi hesabı:** {_yangin_sayi_7132(_spr_yog_7132)} mm/dak × {_yangin_sayi_7132(_spr_alan_7132)} m² = **{_yangin_sayi_7132(_q75_7132)} L/dak**")
                     st.markdown(f"**Toplam tasarım debisi:** {_yangin_sayi_7132(_toplam_debi_7132_ldak)} L/dak = {_yangin_sayi_7132(_toplam_debi_7132_m3h)} m³/h")
                     st.markdown(f"**Emniyet payı (%{_yangin_sayi_7132(_emniyet_7132, 0)}):** {_yangin_sayi_7132(_emniyet_debi_7132_ldak - _toplam_debi_7132_ldak)} L/dak = {_yangin_sayi_7132((_emniyet_debi_7132_ldak - _toplam_debi_7132_ldak) * 0.06)} m³/h")
                     st.markdown(f"### Nihai yangın hidroforu tasarım debisi: {_yangin_sayi_7132(_emniyet_debi_7132_ldak)} L/dak = {_yangin_sayi_7132(_emniyet_debi_7132_m3h)} m³/h")
                     if _toplam_debi_7132_ldak <= 0:
-                        st.warning("7.3.2, 7.4.2 ve 7.5.2 bölümlerinden henüz debi gelmiyor. İlgili hesaplamaları tamamlayınca bu tablo otomatik güncellenir.")
+                        st.warning("7.3.2, 7.4.2 ve 7.5.2 bölümlerinden henüz geçerli debi gelmiyor. İlgili hesaplamaları tamamlayınca bu tablo otomatik güncellenir.")
+                    st.session_state["yangin_7132_dolap_adedi_secili"] = _dolap_adedi_7132
+                    st.session_state["yangin_7132_hidrant_adedi_secili"] = _hidrant_adedi_7132
+                    st.session_state["yangin_7132_q73_birim_ldak"] = _q73_7132_birim
+                    st.session_state["yangin_7132_q74_birim_ldak"] = _q74_7132_birim
                     st.session_state["yangin_7132_q73_ldak"] = _q73_7132
                     st.session_state["yangin_7132_q74_ldak"] = _q74_7132
                     st.session_state["yangin_7132_q75_ldak"] = _q75_7132
+                    st.session_state["yangin_7132_spr_yogunluk"] = _spr_yog_7132
+                    st.session_state["yangin_7132_spr_alan"] = _spr_alan_7132
                     st.session_state["yangin_7132_toplam_debi_ldak"] = _toplam_debi_7132_ldak
                     st.session_state["yangin_7132_toplam_debi_m3h"] = _toplam_debi_7132_m3h
                     st.session_state["yangin_7132_emniyet_debi_ldak"] = _emniyet_debi_7132_ldak
