@@ -3596,6 +3596,33 @@ if _rapor_olustur_sidebar:
                       _p7132.add_run("YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
                       _p7132.add_run(f"{_fmt_7132(_nihai_7132_r)} L/dak = {_fmt_7132(_nihai_7132_m3h_r)} m³/h").bold = True
 
+                      # 7.13.3 — Yangın hidroforu seçimi (1 asıl + 1 yedek)
+                      doc.add_heading("7.13.3 YANGIN HİDROFORU SEÇİMİ", level=4)
+                      _qsec_m3h = float(st.session_state.get("yangin_7133_tasarim_debi_m3h", _nihai_7132_m3h_r) or 0.0)
+                      _qsec_ldak = float(st.session_state.get("yangin_7133_tasarim_debi_ldak", _qsec_m3h / 0.06 if _qsec_m3h else 0.0) or 0.0)
+                      _hsec = float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0)
+                      _pompa_tab = doc.add_table(rows=1, cols=6)
+                      _pompa_tab.style = "Table Grid"
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Adet", "Marka / Model", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
+                          _c.text = _t
+                          for _p in _c.paragraphs:
+                              for _run in _p.runs:
+                                  _run.bold = True
+                      for _tip, _adet, _marka, _model, _debi, _basma, _guc in [
+                          ("Ana yangın pompası", "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
+                          ("Yedek yangın pompası", "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
+                      ]:
+                          _cells = _pompa_tab.add_row().cells
+                          _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
+                          for _c, _t in zip(_cells, [_tip, _adet, _markamodel, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
+                              _c.text = _t
+                      for _tip, _key in [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]:
+                          _poz_p = doc.add_paragraph()
+                          _poz_p.add_run(f"{_tip} Cihaz Poz No: ").bold = True
+                          _poz_p.add_run(str(st.session_state.get(_key, "") or "Belirtilmedi")).bold = True
+                      _sec_not = doc.add_paragraph("Not: Pompa debisi 7.13.2 hesabından aktarılır. Basma yüksekliği hidrolik hesapla belirlenmeli; pompa çalışma noktası ve motor gücü üretici performans eğrisiyle doğrulanmalıdır.")
+                      _sec_not.paragraph_format.space_after = Pt(6)
+
 
                   else:
                       _body7 = doc.add_paragraph(
