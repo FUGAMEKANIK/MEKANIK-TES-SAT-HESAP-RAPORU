@@ -3402,65 +3402,68 @@ if _rapor_olustur_sidebar:
 
                   # 7.12 Yangın Suyu Depolama Sistemi — adetli debi toplamı ve Ek-8/A depo hacmi
                   elif _bk == "bolum_7120":
-                      # Bölüm başlığı korunur; içerikte dolap/hidrant adetleriyle debi hesabı gösterilir.
+                      # 7.12 tablosu: dolap/hidrant için debi × süre × adet; sprinkler için yalnız Ek-8/A hacmi.
                       _q73_712 = float(st.session_state.get("yangin_712_yangin_dolabi_birim_debisi_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
                       _q74_712 = float(st.session_state.get("yangin_712_hidrant_birim_debisi_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
+                      _t73_712 = float(st.session_state.get("yangin_712_t73_dak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0)) or 0)
+                      _t74_712 = float(st.session_state.get("yangin_712_t74_dak", st.session_state.get("yangin_74_ek8c_hidrant_suresi_dak", 0)) or 0)
                       _adet73_712 = int(st.session_state.get("yangin_712_yangin_dolabi_adedi", 2) or 0)
                       _adet74_712 = int(st.session_state.get("yangin_712_hidrant_adedi", 1) or 0)
                       _q73_toplam_712 = _q73_712 * _adet73_712
                       _q74_toplam_712 = _q74_712 * _adet74_712
                       _toplam_tasarim_debisi_712 = _q73_toplam_712 + _q74_toplam_712
                       _toplam_tasarim_debisi_712_m3h = _toplam_tasarim_debisi_712 * 0.06
-                      _vtop_712_m3 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", st.session_state.get("yangin_712_depo_gerekli_hacim_m3", 0)) or 0)
-                      _vtop_712_l = _vtop_712_m3 * 1000.0
+                      _v73_712_l = _q73_712 * _t73_712 * _adet73_712
+                      _v74_712_l = _q74_712 * _t74_712 * _adet74_712
+                      _v75_712_m3 = float(st.session_state.get("yangin_712_sprinkler_hacmi_m3", st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0)) or 0)
+                      _v75_712_l = _v75_712_m3 * 1000.0
+                      _vtop_712_l = _v73_712_l + _v74_712_l + _v75_712_l
                       _vtop_712_m3 = _vtop_712_l / 1000.0
 
+                      def _yangin_rapor_sayi(_deger, _ondalik=2):
+                          return f"{_deger:,.{_ondalik}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
                       doc.add_paragraph(
-                          "Yangın dolabı ve hidrant debileri, 7.12 bölümünde girilen adetlerle çarpılmıştır. "
-                          "Sprinkler için tasarım debisi toplam debiye eklenmemiş; bina yüksekliği, tehlike sınıfı "
-                          "ve sistem tipine göre Ek-8/A'dan seçilen depo hacmi ayrı gösterilmiştir."
+                          "Yangın dolabı ve hidrant su hacimleri, seçilen tasarım debisinin çalışma süresi ve adetle çarpılmasıyla hesaplanmıştır. "
+                          "Sprinkler için yalnızca 7.5.2 bölümünden Ek-8/A'ya göre alınan depo hacmi kullanılmıştır."
                       )
-                      _t712 = doc.add_table(rows=1, cols=5)
+                      _t712 = doc.add_table(rows=1, cols=6)
                       _t712.style = "Table Grid"
                       for _cell, _txt in zip(_t712.rows[0].cells, [
-                          "Hesap kalemi", "Birim debi (L/dak)", "Adet", "Toplam debi (L/dak)", "Toplam debi (m³/h)"
+                          "Kaynak", "Debi (L/dak)", "Süre (dk)", "Adet", "Hesaplanan Su Hacmi (L)", "Hesaplanan Su Hacmi (m³)"
                       ]):
                           _cell.text = _txt
                           for _pr in _cell.paragraphs:
                               for _run in _pr.runs:
                                   _run.bold = True
 
-                      for _kaynak712, _q712, _adet712, _qtop712 in [
-                          ("7.3.2 Yangın Dolabı", _q73_712, _adet73_712, _q73_toplam_712),
-                          ("7.4.2 Hidrant", _q74_712, _adet74_712, _q74_toplam_712),
-                      ]:
+                      _satirlar_712 = [
+                          ("7.3.2 Yangın Dolabı", _yangin_rapor_sayi(_q73_712), _yangin_rapor_sayi(_t73_712, 0), str(_adet73_712), _yangin_rapor_sayi(_v73_712_l, 0), _yangin_rapor_sayi(_v73_712_l / 1000.0, 3)),
+                          ("7.4.2 Hidrant", _yangin_rapor_sayi(_q74_712), _yangin_rapor_sayi(_t74_712, 0), str(_adet74_712), _yangin_rapor_sayi(_v74_712_l, 0), _yangin_rapor_sayi(_v74_712_l / 1000.0, 3)),
+                          ("7.5.2 Sprinkler (Ek-8/A)", "—", "—", "—", _yangin_rapor_sayi(_v75_712_l, 0), _yangin_rapor_sayi(_v75_712_m3, 3)),
+                      ]
+                      for _satir712 in _satirlar_712:
                           _cc = _t712.add_row().cells
-                          _cc[0].text = _kaynak712
-                          _cc[1].text = f"{_q712:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                          _cc[2].text = str(_adet712)
-                          _cc[3].text = f"{_qtop712:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                          _cc[4].text = f"{(_qtop712 * 0.06):,.3f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                          for _cell, _txt in zip(_cc, _satir712):
+                              _cell.text = _txt
 
                       _p712deb = doc.add_paragraph()
-                      _r712deb = _p712deb.add_run("TOPLAM TASARIM DEBİSİ: ")
+                      _r712deb = _p712deb.add_run("TOPLAM TASARIM DEBİSİ (yangın dolabı + hidrant): ")
                       _r712deb.bold = True
                       _p712deb.add_run(
-                          f"{_toplam_tasarim_debisi_712:,.2f} L/dak = {_toplam_tasarim_debisi_712_m3h:,.3f} m³/h".replace(",", "X").replace(".", ",").replace("X", ".")
+                          f"{_yangin_rapor_sayi(_toplam_tasarim_debisi_712)} L/dak = {_yangin_rapor_sayi(_toplam_tasarim_debisi_712_m3h, 3)} m³/h"
                       )
+
+                      _p712top = doc.add_paragraph()
+                      _r712top = _p712top.add_run("TOPLAM HESAPLANAN YANGIN SUYU HACMİ: ")
+                      _r712top.bold = True
+                      _p712top.add_run(f"{_yangin_rapor_sayi(_vtop_712_l, 0)} L = {_yangin_rapor_sayi(_vtop_712_m3, 3)} m³")
 
                       _p712not = doc.add_paragraph()
                       _p712not.add_run(
-                          f"Sprinkler su deposu hacmi (Ek-8/A): {_vtop_712_l:,.0f} L ({_vtop_712_m3:,.3f} m³). "
-                          "Bu değer debi değildir; toplam L/dak veya m³/h hesabına eklenmez. "
-                          "Debi dönüşümü: L/dak × 0,06 = m³/h."
+                          "Hesap yöntemi: yangın dolabı/hidrant su hacmi = debi × süre × adet; "
+                          "sprinkler hacmi = 7.5.2 / Ek-8/A'dan seçilen m³ değeri. Hacimler toplamda m³ cinsinden birleştirilmiştir."
                       ).italic = True
-
-                      _p712 = doc.add_paragraph()
-                      _r712 = _p712.add_run("GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ: ")
-                      _r712.bold = True
-                      _p712.add_run(
-                          f"{_vtop_712_l:,.0f} L ({_vtop_712_m3:,.3f} m³)".replace(",", "X").replace(".", ",").replace("X", ".")
-                      )
 
                       _depo712_tipi = st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu")
                       _depo712_kapasite = float(st.session_state.get("yangin_712_depo_kapasitesi_secili_m3", _vtop_712_m3) or _vtop_712_m3)
