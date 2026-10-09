@@ -3550,6 +3550,48 @@ if _rapor_olustur_sidebar:
                           "Nihai proje kontrolünde yürürlükteki resmî metin ve uygulanabilir standartlar esas alınmalıdır."
                       ).italic = True
 
+                      # 7.13.2 — tasarım debileri, kaynak bölümlerden alınır; emniyet payı uygulanır.
+                      doc.add_heading("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", level=4)
+                      _q73_7132_r = float(st.session_state.get("yangin_7132_q73_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
+                      _q74_7132_r = float(st.session_state.get("yangin_7132_q74_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
+                      _q75_7132_r = float(st.session_state.get("yangin_7132_q75_ldak", st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0)) or 0)
+                      _emniyet_7132_r = float(st.session_state.get("yangin_7132_emniyet_orani", 15.0) or 0)
+                      _toplam_7132_r = _q73_7132_r + _q74_7132_r + _q75_7132_r
+                      _toplam_7132_m3h_r = _toplam_7132_r * 0.06
+                      _nihai_7132_r = _toplam_7132_r * (1 + _emniyet_7132_r / 100.0)
+                      _nihai_7132_m3h_r = _nihai_7132_r * 0.06
+                      _fmt_7132 = lambda x, n=2: f"{x:,.{n}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                      _tab_7132 = doc.add_table(rows=1, cols=2)
+                      _tab_7132.style = "Table Grid"
+                      for _cell, _txt in zip(_tab_7132.rows[0].cells, ["Tasarım debisi kaynağı", "Debi (L/dak)"]):
+                          _cell.text = _txt
+                          for _para in _cell.paragraphs:
+                              for _run in _para.runs:
+                                  _run.bold = True
+                      for _kaynak_7132, _debi_7132 in [
+                          ("7.3.2 Yangın Dolabı", _q73_7132_r),
+                          ("7.4.2 Hidrant", _q74_7132_r),
+                          ("7.5.2 Sprinkler", _q75_7132_r),
+                          ("TOPLAM TASARIM DEBİSİ", _toplam_7132_r),
+                      ]:
+                          _cells_7132 = _tab_7132.add_row().cells
+                          _cells_7132[0].text = _kaynak_7132
+                          _cells_7132[1].text = _fmt_7132(_debi_7132)
+                      _p7132 = doc.add_paragraph()
+                      _p7132.add_run("Toplam tasarım debisi: ").bold = True
+                      _p7132.add_run(f"{_fmt_7132(_toplam_7132_r)} L/dak = {_fmt_7132(_toplam_7132_m3h_r)} m³/h")
+                      _p7132 = doc.add_paragraph()
+                      _p7132.add_run(f"Emniyet payı (%{_fmt_7132(_emniyet_7132_r, 0)}): ").bold = True
+                      _p7132.add_run(f"{_fmt_7132(_nihai_7132_r - _toplam_7132_r)} L/dak = {_fmt_7132((_nihai_7132_r - _toplam_7132_r) * 0.06)} m³/h")
+                      _p7132 = doc.add_paragraph()
+                      _p7132.add_run("NİHAİ YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
+                      _p7132.add_run(f"{_fmt_7132(_nihai_7132_r)} L/dak = {_fmt_7132(_nihai_7132_m3h_r)} m³/h").bold = True
+                      _p7132 = doc.add_paragraph(
+                          "Hesap: Nihai debi = (7.3.2 + 7.4.2 + 7.5.2 tasarım debileri toplamı) × (1 + emniyet oranı / 100). "
+                          "Varsayılan emniyet oranı %15'tir ve program ekranından değiştirilebilir."
+                      )
+                      _p7132.paragraph_format.space_after = Pt(6)
+
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
