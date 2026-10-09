@@ -1467,7 +1467,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     else:
                         _ek8a_h_araligi = "h > 45 m"
 
-                    _ek8a_sinif = str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    # Sınıf adlarını boşluk ve tire farklılıklarından bağımsız eşleştir.
+                    # 7.2 ekranındaki "Orta Tehlike -1" biçimi, Ek-8/A'daki
+                    # "Orta Tehlike-1" anahtarıyla aynı sınıfı ifade eder.
+                    _ek8a_sinif = re.sub(
+                        r"\\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    )
                     _ek8a_tip = str(_spr_sistem_tipi_75 or "Islak / Ön etkili").strip()
 
                     # Ek-8/A tablosunun mevzuattaki gruplanmış satırları aynen korunur.
@@ -1496,7 +1501,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     if _ek8a_yapi_h > 45:
                         # 45 m üzerindeki yapılarda tabloda bulunan 30 < h ≤ 45 m
                         # sütunu kullanılır; ayrı bir >45 m sütunu varsayılmaz.
-                        _ek8a_h_araligi = "30 < h ≤ 45 m (45 m sütunu kullanılır)"
+                        _ek8a_h_araligi = "30 < h ≤ 45 m"
                     _ek8a_anahtar = ""
                     if _ek8a_sinif.startswith("düşük tehlike"):
                         _ek8a_anahtar = "Düşük Tehlike"
@@ -1577,10 +1582,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("Yüksek Tehlike", "Islak veya ön uyarılı", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
                         ("Yüksek Tehlike", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
                     ]
-                    _ek8a_sinif_goster = str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    _ek8a_sinif_goster = re.sub(
+                        r"\\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
+                    )
                     _ek8a_secili_satir = None
                     for _i, _satir in enumerate(_ek8a_tablo):
-                        _sinif_satir = _satir[0].lower().replace("–", "-")
+                        _sinif_satir = re.sub(r"\\s+", "", _satir[0].lower().replace("–", "-"))
                         _tip_satir = _satir[1].lower()
                         if _ek8a_sinif_goster.startswith(_sinif_satir):
                             if (("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) and "ıslak" in _tip_satir) or (("kuru" in _ek8a_tip.lower() or "alternatif" in _ek8a_tip.lower()) and "kuru" in _tip_satir):
