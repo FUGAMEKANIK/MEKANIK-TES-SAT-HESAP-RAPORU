@@ -3461,11 +3461,25 @@ if _rapor_olustur_sidebar:
                       _depo712_tipi = st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu")
                       _depo712_kapasite = float(st.session_state.get("yangin_712_depo_kapasitesi_secili_m3", _vtop_712_m3) or _vtop_712_m3)
                       _depo712_poz = str(st.session_state.get("yangin_712_depo_poz", "") or "").strip()
+                      _depo712_adet = int(st.session_state.get("yangin_712_depo_bolme_sayisi_secili", st.session_state.get("yangin_712_depo_bolme_sayisi", 2 if _vtop_712_m3 > 121.5 else 1)) or 1)
+                      _depo712_bolme_hacmi = _depo712_kapasite / max(1, _depo712_adet)
+                      _depo712_pozlari = st.session_state.get("yangin_712_depo_pozlari", []) or []
                       _p712d = doc.add_paragraph()
                       _r712d = _p712d.add_run("Seçilen yangın suyu deposu: ")
                       _r712d.bold = True
-                      _p712d.add_run(f"{_depo712_tipi} — Kapasite: {_depo712_kapasite:g} m³")
-                      if _depo712_poz:
+                      _depo_adet_ifadesi_712 = "1 adet" if _depo712_adet == 1 else f"{_depo712_adet} adet"
+                      _p712d.add_run(
+                          f"{_depo712_tipi} — Su deposu sayısı: {_depo_adet_ifadesi_712} — "
+                          f"Toplam seçilen kapasite: {_depo712_kapasite:g} m³ — "
+                          f"Depo başına yaklaşık: {_depo712_bolme_hacmi:g} m³"
+                      )
+                      if _depo712_pozlari:
+                          _ptitle712 = doc.add_paragraph()
+                          _ptitle712.add_run("Depo poz ve kapasite bilgileri:").bold = True
+                          for _dp712 in _depo712_pozlari:
+                              _pp712 = doc.add_paragraph(style="List Bullet")
+                              _pp712.add_run(f"{_dp712.get('adet', '')}. depo — {_dp712.get('kapasite_m3', 0):g} m³ — Cihaz Poz No: {_dp712.get('poz', '')}")
+                      elif _depo712_poz:
                           _p712d.add_run(f" — Cihaz Poz No: {_depo712_poz}")
 
                   else:
