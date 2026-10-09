@@ -3593,7 +3593,7 @@ if _rapor_olustur_sidebar:
                       _p7132.add_run(f"Emniyet payı (%{_fmt_7132(_emniyet_7132_r, 0)}): ").bold = True
                       _p7132.add_run(f"{_fmt_7132(_nihai_7132_r - _toplam_7132_r)} L/dak = {_fmt_7132((_nihai_7132_r - _toplam_7132_r) * 0.06)} m³/h")
                       _p7132 = doc.add_paragraph()
-                      _p7132.add_run("NİHAİ YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
+                      _p7132.add_run("YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
                       _p7132.add_run(f"{_fmt_7132(_nihai_7132_r)} L/dak = {_fmt_7132(_nihai_7132_m3h_r)} m³/h").bold = True
 
 
