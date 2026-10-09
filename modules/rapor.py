@@ -3473,14 +3473,14 @@ if _rapor_olustur_sidebar:
                           f"Toplam seçilen kapasite: {_depo712_kapasite:g} m³ — "
                           f"Depo başına yaklaşık: {_depo712_bolme_hacmi:g} m³"
                       )
-                      if _depo712_pozlari:
-                          _ptitle712 = doc.add_paragraph()
-                          _ptitle712.add_run("Depo poz ve kapasite bilgileri:").bold = True
-                          for _dp712 in _depo712_pozlari:
-                              _pp712 = doc.add_paragraph(style="List Bullet")
-                              _pp712.add_run(f"{_dp712.get('adet', '')}. depo — {_dp712.get('kapasite_m3', 0):g} m³ — Cihaz Poz No: {_dp712.get('poz', '')}")
-                      elif _depo712_poz:
-                          _p712d.add_run(f" — Cihaz Poz No: {_depo712_poz}")
+                      # Poz ve kapasiteyi her depo için ayrı ayrı listelemek yerine,
+                      # seçilen poz numarasını tek satırda ve tırnak içinde göster.
+                      _rapor_depo_pozu_712 = _depo712_poz
+                      if not _rapor_depo_pozu_712 and _depo712_pozlari:
+                          _rapor_depo_pozu_712 = str(_depo712_pozlari[0].get("poz", "") or "").strip()
+                      _ppoz712 = doc.add_paragraph()
+                      _ppoz712.add_run("Cihaz Poz No: ").bold = True
+                      _ppoz712.add_run(f"'{_rapor_depo_pozu_712}'")
 
                   else:
                       _body7 = doc.add_paragraph(
