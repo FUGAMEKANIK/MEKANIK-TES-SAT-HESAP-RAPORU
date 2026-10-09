@@ -3319,7 +3319,7 @@ if _rapor_olustur_sidebar:
 
                       doc.add_paragraph(
                           "Yangın suyu deposu hesabında 7.3.2 yangın dolabı, 7.4.2 hidrant ve 7.5.2 sprinkler "
-                          "bölümlerinde seçilen/türetilen tasarım debileri otomatik olarak kullanılmıştır."
+                          "bölümlerinde seçilen/türetilen tasarım debileri kullanılmıştır."
                       )
                       _t712 = doc.add_table(rows=1, cols=5)
                       _t712.style = "Table Grid"
