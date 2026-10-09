@@ -3402,7 +3402,7 @@ if _rapor_olustur_sidebar:
 
                   # 7.12 Yangın Suyu Depolama Sistemi — 7.3.2 / 7.4.2 / 7.5.2 verileri
                   elif _bk == "bolum_7120":
-                      doc.add_heading("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", level=3)
+                      # 7.12 başlığı raporda gösterilmiyor; bölüm içeriği korunuyor.
 
                       _q73_712 = float(st.session_state.get("yangin_712_q73_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
                       _t73_712 = float(st.session_state.get("yangin_712_t73_dak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0)) or 0)
