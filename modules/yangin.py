@@ -1582,8 +1582,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     for _i, _satir in enumerate(_ek8a_tablo):
                         _sinif_satir = re.sub(r"\s+", "", _satir[0].lower().replace("–", "-").replace("—", "-"))
                         _tip_satir = _satir[1].lower()
+                        _tip_islak = ("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower())
+                        _tip_kuru = ("kuru" in _ek8a_tip.lower() or "alternatif" in _ek8a_tip.lower())
+                        _satir_islak = "ıslak" in _tip_satir or "ön" in _tip_satir
+                        _satir_kuru = "kuru" in _tip_satir or "alternatif" in _tip_satir
                         if _ek8a_sinif_goster.startswith(_sinif_satir):
-                            if (("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) and "ıslak" in _tip_satir) or (("kuru" in _ek8a_tip.lower() or "alternatif" in _ek8a_tip.lower()) and "kuru" in _tip_satir):
+                            if (_tip_islak and _satir_islak) or (_tip_kuru and _satir_kuru):
                                 _ek8a_secili_satir = _i
                                 break
 
@@ -1606,11 +1610,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _cols = st.columns([2.0, 2.0, 1.15, 1.15, 1.15])
                         for _j, (_c, _val) in enumerate(zip(_cols, _satir)):
                             _hucre_secili = _satir_secili and _j in (2, 3, 4) and (
-                                (_ek8a_h_araligi == "h ≤ 15 m" and _j == 2) or
-                                (_ek8a_h_araligi == "15 < h ≤ 30 m" and _j == 3) or
-                                (_ek8a_h_araligi == "30 < h ≤ 45 m" and _j == 4) or
-                                (_ek8a_yapi_h > 45 and _j == 4)
-                            )
+                                (_ek8a_idx == 0 and _j == 2) or
+                                (_ek8a_idx == 1 and _j == 3) or
+                                (_ek8a_idx == 2 and _j == 4)
+                            ) and _ek8a_depo_m3 is not None
                             _bg = "#FFF2CC" if _hucre_secili else ("#FFF9E6" if _satir_secili else "#FFFFFF")
                             _border = "2px solid #D6B656" if _hucre_secili else "1px solid #D9D9D9"
                             _weight = "800" if _hucre_secili else ("700" if _satir_secili else "400")
