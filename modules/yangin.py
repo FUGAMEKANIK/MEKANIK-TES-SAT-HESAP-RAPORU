@@ -1483,8 +1483,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     }
 
                     # Ek-8/A seçim sütunu: yapı yüksekliğine göre otomatik belirlenir.
-                    # 45 m'den büyük yapılarda ilgili satırın en yüksek hacmi, yani
-                    # 30 < h <= 45 m sütunundaki değer seçilir.
+                    # 45 m üzerindeki yapılarda da tablodaki 30 < h <= 45 m
+                    # sütunu kullanılır; ayrıca bir >45 m sütunu oluşturulmaz.
                     if _ek8a_yapi_h <= 0:
                         _ek8a_idx = -1
                     elif _ek8a_yapi_h <= 15:
@@ -1494,7 +1494,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     else:
                         _ek8a_idx = 2
                     if _ek8a_yapi_h > 45:
-                        _ek8a_h_araligi = "h > 45 m — ilgili satırdaki en yüksek Ek-8/A hacmi"
+                        # 45 m üzerindeki yapılarda tabloda bulunan 30 < h ≤ 45 m
+                        # sütunu kullanılır; ayrı bir >45 m sütunu varsayılmaz.
+                        _ek8a_h_araligi = "30 < h ≤ 45 m (45 m sütunu kullanılır)"
                     _ek8a_anahtar = ""
                     if _ek8a_sinif.startswith("düşük tehlike"):
                         _ek8a_anahtar = "Düşük Tehlike"
@@ -1607,7 +1609,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 (_ek8a_h_araligi == "h ≤ 15 m" and _j == 2) or
                                 (_ek8a_h_araligi == "15 < h ≤ 30 m" and _j == 3) or
                                 (_ek8a_h_araligi == "30 < h ≤ 45 m" and _j == 4) or
-                                (_ek8a_h_araligi.startswith("h > 45 m") and _j == 4)
+                                (_ek8a_yapi_h > 45 and _j == 4)
                             )
                             _bg = "#FFF2CC" if _hucre_secili else ("#FFF9E6" if _satir_secili else "#FFFFFF")
                             _border = "2px solid #D6B656" if _hucre_secili else "1px solid #D9D9D9"
@@ -1621,7 +1623,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.caption(
                             f"Sarı hücre: 7.2'den otomatik alınan tehlike sınıfı ({_etkin_sinif_75}) + "
                             f"seçilen sistem tipi ({_spr_sistem_tipi_75}) + {_ek8a_h_araligi} kriterine göre otomatik seçilen Ek-8/A hacmidir. "
-                            f"45 m üzerindeki yapılarda ilgili satırın en yüksek hacmi seçilir."
+                            f"45 m üzerindeki yapılarda 30 < h ≤ 45 m sütunundaki (45 m'ye karşılık gelen) değer kullanılır."
                         )
 
                     _e8c = st.columns(4)
