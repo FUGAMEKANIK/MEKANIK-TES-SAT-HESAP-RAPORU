@@ -3332,14 +3332,17 @@ if _rapor_olustur_sidebar:
                           for _j8a, _deger8a in enumerate([_sinif8a, _tip8a] + _hacimler8a):
                               _cc8a[_j8a].text = _deger8a
                           if _i8a == _ek8a_rapor_satir and _hacimler8a[_ek8a_rapor_kolon] != "Hidrolik Hesap":
-                              _hedef8a = _cc8a[2 + _ek8a_rapor_kolon]
-                              _tcPr8a = _hedef8a._tc.get_or_add_tcPr()
-                              _shd8a = OxmlElement("w:shd")
-                              _shd8a.set(qn("w:fill"), "FFF2CC")
-                              _tcPr8a.append(_shd8a)
-                              for _pr8a in _hedef8a.paragraphs:
-                                  for _run8a in _pr8a.runs:
-                                      _run8a.bold = True
+                              # Diğer rapor tablolarındaki gibi seçili satırın TAMAMINI sarıya boya.
+                              for _hedef8a in _cc8a:
+                                  _tcPr8a = _hedef8a._tc.get_or_add_tcPr()
+                                  _shd8a = _tcPr8a.find(qn("w:shd"))
+                                  if _shd8a is None:
+                                      _shd8a = OxmlElement("w:shd")
+                                      _tcPr8a.append(_shd8a)
+                                  _shd8a.set(qn("w:fill"), "FFF2CC")
+                                  for _pr8a in _hedef8a.paragraphs:
+                                      for _run8a in _pr8a.runs:
+                                          _run8a.bold = True
                       _ek8a_rapor_secilen_m3 = st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", None)
                       _ek8a_rapor_not = doc.add_paragraph()
                       if _ek8a_rapor_satir is not None and _ek8a_rapor_hacimler[_ek8a_rapor_satir][2][_ek8a_rapor_kolon] != "Hidrolik Hesap":
