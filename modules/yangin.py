@@ -1467,12 +1467,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     else:
                         _ek8a_h_araligi = "h > 45 m"
 
-                    # Sınıf adlarını boşluk ve tire farklılıklarından bağımsız eşleştir.
-                    # 7.2 ekranındaki "Orta Tehlike -1" biçimi, Ek-8/A'daki
-                    # "Orta Tehlike-1" anahtarıyla aynı sınıfı ifade eder.
-                    _ek8a_sinif = re.sub(
-                        r"\\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
-                    )
+                    _ek8a_sinif = re.sub(r"\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-"))
                     _ek8a_tip = str(_spr_sistem_tipi_75 or "Islak / Ön etkili").strip()
 
                     # Ek-8/A tablosunun mevzuattaki gruplanmış satırları aynen korunur.
@@ -1582,12 +1577,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("Yüksek Tehlike", "Islak veya ön uyarılı", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
                         ("Yüksek Tehlike", "Kuru veya alternatif", "Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"),
                     ]
-                    _ek8a_sinif_goster = re.sub(
-                        r"\\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-")
-                    )
+                    _ek8a_sinif_goster = re.sub(r"\s+", "", str(_etkin_sinif_75 or "").strip().lower().replace("–", "-"))
                     _ek8a_secili_satir = None
                     for _i, _satir in enumerate(_ek8a_tablo):
-                        _sinif_satir = re.sub(r"\\s+", "", _satir[0].lower().replace("–", "-"))
+                        _sinif_satir = re.sub(r"\s+", "", _satir[0].lower().replace("–", "-"))
                         _tip_satir = _satir[1].lower()
                         if _ek8a_sinif_goster.startswith(_sinif_satir):
                             if (("ıslak" in _ek8a_tip.lower() or "ön" in _ek8a_tip.lower()) and "ıslak" in _tip_satir) or (("kuru" in _ek8a_tip.lower() or "alternatif" in _ek8a_tip.lower()) and "kuru" in _tip_satir):
