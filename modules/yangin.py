@@ -1877,6 +1877,46 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                     st.caption("Galvaniz modüler depo poz aralığı: 25.150.1301–25.150.1326. Seçilen poz, depo başına gerekli hacme göre belirlenir.")
 
+            elif _baslik.startswith("7.13 "):
+                # 7.13.1 Yangın hidroforu seçim kriterleri: kullanıcı ekranında
+                # ayrı ayrı seçilebilir; yalnızca seçilen maddeler rapora aktarılır.
+                _yangin_7131_kriterler = [
+                    "Yangın hidroforu ve pompa grubu, sabit yangın söndürme sistemlerinin gerekli su debisini ve basıncını sağlayacak şekilde seçilecektir. (Binaların Yangından Korunması Hakkında Yönetmelik, Madde 91 ve Madde 93)",
+                    "Pompa grubunun tasarım debisi ve basma yüksekliği, ilgili sistemlerin hidrolik hesapları sonucunda belirlenecektir. (Madde 91)",
+                    "Pompa performans eğrisinde kapalı vana basma yüksekliği, anma basma yüksekliğinin %140'ını aşmayacak; %150 debideki basma yüksekliği ise anma basma yüksekliğinin %65'inden düşük olmayacaktır. (Madde 93/1)",
+                    "Pompa, gerekli basınç değerini karşılamak şartıyla anma debisinin %130'u kapasitedeki sistem taleplerinde kullanılabilecektir. (Madde 93/1)",
+                    "Tek yangın pompası kullanılması durumunda aynı kapasitede yedek pompa bulundurulacaktır. Birden fazla pompa kullanılması durumunda toplam kapasitenin en az %50'si yedek kapasite olarak sağlanacaktır. (Madde 93/2)",
+                    "Yangın pompaları elektrik motoru, içten yanmalı motor veya türbin ile tahrik edilebilecektir. (Madde 93/3)",
+                    "Yedek dizel motor tahrikli pompa kullanılmaması durumunda, yangın pompalarının enerji beslemesi güvenilir kaynaktan ve binanın genel elektrik sisteminden bağımsız olarak sağlanacaktır. (Madde 93/4)",
+                    "Pompalarda gerekli otomatik hava boşaltma ve sirkülasyon rahatlama valfleri gibi yardımcı elemanlar bulunacaktır. (Madde 93/5)",
+                    "Her pompa için ayrı ve kilitlenebilir kumanda panosu bulunacak; panolarda faz hatası, faz sırası hatası ve kumanda fazı hatası göstergeleri yer alacaktır. (Madde 93/6)",
+                    "Her pompa için ayrı kumanda basınç anahtarı kullanılacak; alt ve üst basınç değerleri bağımsız ayarlanabilir ve ayarlandıktan sonra kilitlenebilir olacaktır. (Madde 93/7)",
+                    "Pompa kontrolü basınç kumandalı, tam otomatik veya yarı otomatik olarak düzenlenebilecektir. (Madde 93/8)",
+                    "Pompa odasında elektrik motorlu pompalar için sürekli +4 °C'nin, dizel motorlu pompalar için sürekli +10 °C'nin üzerinde sıcaklık sağlanacaktır. (Madde 93/9)",
+                    "Pompa istasyonunda servis, muayene ve ayar gerektiren cihazların çalışma alanlarında acil aydınlatma sağlanacaktır. (Madde 93/10)",
+                    "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (Madde 93/11)",
+                    "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
+                ]
+                with st.expander("7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ", expanded=True):
+                    st.caption("İşaretli maddeler rapora aktarılır. Maddeleri tek tek seçebilir veya toplu seçim yapabilirsiniz.")
+                    _kcol1, _kcol2 = st.columns(2)
+                    with _kcol1:
+                        if st.button("✓ Tüm kriterleri seç", key="yangin_7131_tum_sec", use_container_width=True):
+                            for _i in range(len(_yangin_7131_kriterler)):
+                                st.session_state[f"yangin_7131_kriter_{_i}"] = True
+                            st.rerun()
+                    with _kcol2:
+                        if st.button("✕ Tüm kriterleri kaldır", key="yangin_7131_tum_kaldir", use_container_width=True):
+                            for _i in range(len(_yangin_7131_kriterler)):
+                                st.session_state[f"yangin_7131_kriter_{_i}"] = False
+                            st.rerun()
+                    for _i, _kriter in enumerate(_yangin_7131_kriterler):
+                        st.checkbox(
+                            f"{_i + 1}. {_kriter}",
+                            key=f"yangin_7131_kriter_{_i}",
+                        )
+                    st.session_state["yangin_7131_kriter_metinleri"] = _yangin_7131_kriterler
+
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
             if not _baslik.startswith("7.1") and not _baslik.startswith("7.2"):
