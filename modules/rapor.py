@@ -3468,11 +3468,6 @@ if _rapor_olustur_sidebar:
                       if _depo712_poz:
                           _p712d.add_run(f" — Cihaz Poz No: {_depo712_poz}")
 
-                      _src712 = doc.add_paragraph()
-                      _src712.add_run(
-                          "Not: Galvaniz modüler su deposu kapasite ve poz seçimi, sıhhi kullanma soğuk su deposundaki "
-                          "en yakın standart kapasite seçim mantığı kullanılarak otomatik yapılmıştır. Betonarme su deposunda poz numarası uygulanmaz."
-                      ).italic = True
                   else:
                       _body7 = doc.add_paragraph(
                           "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
