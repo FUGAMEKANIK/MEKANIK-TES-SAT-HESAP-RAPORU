@@ -3447,13 +3447,6 @@ if _rapor_olustur_sidebar:
                           for _cell, _txt in zip(_cc, _satir712):
                               _cell.text = _txt
 
-                      _p712deb = doc.add_paragraph()
-                      _r712deb = _p712deb.add_run("TOPLAM TASARIM DEBİSİ (yangın dolabı + hidrant): ")
-                      _r712deb.bold = True
-                      _p712deb.add_run(
-                          f"{_yangin_rapor_sayi(_toplam_tasarim_debisi_712)} L/dak = {_yangin_rapor_sayi(_toplam_tasarim_debisi_712_m3h, 3)} m³/h"
-                      )
-
                       _p712top = doc.add_paragraph()
                       _r712top = _p712top.add_run("TOPLAM HESAPLANAN YANGIN SUYU HACMİ: ")
                       _r712top.bold = True
