@@ -1,3 +1,4 @@
+import re
 # Yangın modülü aynı app.py çalıştırması içinde iki kez çağrılırsa
 # Streamlit aynı widget key'lerini ikinci kez oluşturmasın.
 # Her yeni Streamlit rerun'ında app.py globals sıfırlandığı için normal çalışma etkilenmez.
@@ -864,13 +865,27 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("17", "İtfaiye su alma ağızlarının tesis edilmesi ve özellikleri", "Binada yangının büyümesi durumunda itfaiyenin ve eğitilmiş personelin yangına müdahale edebilmesi için kaçış merdiven yuvaları içerisinde, ayrıca itfaiye su alma ağızları da tesis edilecektir. İtfaiye su alma ağızları DIN normlarına uygun vanalı, 2½” çapında olacak ve her bağlantı ağzında 2½” x 2” ara rakor ve zincirli kapakları takılı halde bulunacaktır. İtfaiye su alma ağızlarına, gerektiğinde B tipi (110’luk) veya C tipi (85’lik) yassı hortum takılarak yangına müdahale edilebilecektir."),
                         ("18", "İtfaiye su alma ağızlarının bağlantısı ve basıncı", "İtfaiye su alma ağızlarının bağlantısı doğrudan yangın kollektöründen yapılacaktır. Yangın merdiven yuvaları içinde yer alacak olan riser kolonlarına yerden yaklaşık 1.0-1.2 m yükseklikte olacak şekilde itfaiye su alma ağızları bağlantısı yapılacaktır. İtfaiye su alma ağızlarında yassı hortum ucundaki lans girişinde, akış halinde basınç 6 bar olacaktır. Ve 9 barı geçmemelidir."),
                     ]
+                    _yd_atif_key = "yangin_731_yonetmelik_atiflari"
+                    st.session_state.setdefault(_yd_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_yd_atif_key)
+                    _yd_c1, _yd_c2 = st.columns(2)
+                    with _yd_c1:
+                        if st.button("✓ 7.3.1 tüm maddeleri seç", key="yangin_731_tum_sec", use_container_width=True):
+                            for _no, _baslik_yd, _metin_yd in _yd_esaslari:
+                                st.session_state[f"yangin_731_madde_{_no}"] = True
+                            st.rerun()
+                    with _yd_c2:
+                        if st.button("✕ 7.3.1 tüm maddeleri kaldır", key="yangin_731_tum_kaldir", use_container_width=True):
+                            for _no, _baslik_yd, _metin_yd in _yd_esaslari:
+                                st.session_state[f"yangin_731_madde_{_no}"] = False
+                            st.rerun()
                     for _no, _baslik_yd, _metin_yd in _yd_esaslari:
-                        if _no == "•":
-                            st.markdown(f"**• {_baslik_yd}:**")
-                            st.write(_metin_yd)
-                        else:
-                            st.markdown(f"**{_no}. {_baslik_yd}**")
-                            st.write(_metin_yd)
+                        _madde_key = f"yangin_731_madde_{_no}"
+                        st.session_state.setdefault(_madde_key, True)
+                        _metin_goster = _metin_yd if st.session_state[_yd_atif_key] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", _metin_yd, flags=re.IGNORECASE).strip()
+                        with st.container(border=True):
+                            st.checkbox(f"{_no}. {_baslik_yd}", key=_madde_key)
+                            st.caption(_metin_goster)
 
                     # Kullanıcının çap tablosundan ÖNCE/Sonra kendi maddelerini ekleyebilmesi
                     # için kalıcı oturum listeleri. Rapor aynı session-state verisini kullanır.
@@ -1074,9 +1089,27 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("18", "Hortum bağlantı ağızlarının yüksekliği", "Hidrant üzerindeki hortum bağlantı ağızlarının yerden yüksekliği en az 45 cm olacak şekilde yerleştirilecektir."),
                         ("19", "Boru hatlarının flushing işlemi", "Yapım esnasında, boru içerisinde kalan yabancı malzemeleri temizlemek için su ile flushing yapılacaktır. Flushing esnasında, borular içerisindeki hız en az 3 m/s olacaktır."),
                     ]
+                    _hidrant_atif_key = "yangin_741_yonetmelik_atiflari"
+                    st.session_state.setdefault(_hidrant_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_hidrant_atif_key)
+                    _h_c1, _h_c2 = st.columns(2)
+                    with _h_c1:
+                        if st.button("✓ 7.4.1 tüm maddeleri seç", key="yangin_741_tum_sec", use_container_width=True):
+                            for _no, _baslik_h, _metin_h in _hidrant_esaslari:
+                                st.session_state[f"yangin_741_madde_{_no}"] = True
+                            st.rerun()
+                    with _h_c2:
+                        if st.button("✕ 7.4.1 tüm maddeleri kaldır", key="yangin_741_tum_kaldir", use_container_width=True):
+                            for _no, _baslik_h, _metin_h in _hidrant_esaslari:
+                                st.session_state[f"yangin_741_madde_{_no}"] = False
+                            st.rerun()
                     for _no, _baslik_h, _metin_h in _hidrant_esaslari:
-                        st.markdown(f"**{_no}. {_baslik_h}**")
-                        st.write(_metin_h)
+                        _madde_key = f"yangin_741_madde_{_no}"
+                        st.session_state.setdefault(_madde_key, True)
+                        _metin_goster = _metin_h if st.session_state[_hidrant_atif_key] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", _metin_h, flags=re.IGNORECASE).strip()
+                        with st.container(border=True):
+                            st.checkbox(f"{_no}. {_baslik_h}", key=_madde_key)
+                            st.caption(_metin_goster)
 
                     st.session_state.setdefault("yangin_741_maddeler_cap_oncesi", [])
                     st.session_state.setdefault("yangin_741_maddeler_cap_sonrasi", [])
@@ -1304,20 +1337,27 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
                         ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
                     ]
+                    _spr_atif_key = "yangin_751_yonetmelik_atiflari"
+                    st.session_state.setdefault(_spr_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_spr_atif_key)
+                    _s_c1, _s_c2 = st.columns(2)
+                    with _s_c1:
+                        if st.button("✓ 7.5.1 tüm maddeleri seç", key="yangin_751_tum_sec", use_container_width=True):
+                            for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
+                                st.session_state[f"yangin_751_madde_{_no}"] = True
+                            st.rerun()
+                    with _s_c2:
+                        if st.button("✕ 7.5.1 tüm maddeleri kaldır", key="yangin_751_tum_kaldir", use_container_width=True):
+                            for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
+                                st.session_state[f"yangin_751_madde_{_no}"] = False
+                            st.rerun()
                     for _no, _baslik_s, _metin_s in _sprinkler_esaslari:
-                        st.markdown(f"**{_no}. {_baslik_s}**")
-                        if _no == "2" and _spr_75_vurgu:
-                            # Madde metninin sadece 7.2'de seçilen kullanım alanıyla
-                            # ilişkili kısmını sarı vurgula. Diğer metin aynen korunur.
-                            _html_s = _metin_s
-                            for _ifade in _spr_75_vurgu:
-                                _html_s = _html_s.replace(
-                                    _ifade,
-                                    f'<mark style="background-color:#FFF2CC; padding:2px 4px; border-radius:3px; font-weight:700;">{_ifade}</mark>'
-                                )
-                            st.markdown(_html_s, unsafe_allow_html=True)
-                        else:
-                            st.write(_metin_s)
+                        _madde_key = f"yangin_751_madde_{_no}"
+                        st.session_state.setdefault(_madde_key, True)
+                        _metin_goster = _metin_s if st.session_state[_spr_atif_key] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", _metin_s, flags=re.IGNORECASE).strip()
+                        with st.container(border=True):
+                            st.checkbox(f"{_no}. {_baslik_s}", key=_madde_key)
+                            st.caption(_metin_goster)
 
                     st.caption("Sarı vurgular, 7.2’de seçilen bina/kullanım alanının Madde 96/2’deki karşılığını gösterir. Sprinkler zorunluluğunun kesin değerlendirilmesinde bina yüksekliği, alan, otopark ve diğer yönetmelik koşulları ayrıca dikkate alınır.")
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
@@ -1898,7 +1938,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
                 ]
                 with st.expander("7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ", expanded=True):
-                    st.caption("İşaretli maddeler rapora aktarılır. Maddeleri tek tek seçebilir veya toplu seçim yapabilirsiniz.")
+                    st.caption("Tüm maddeler başlangıçta seçilidir. İşaretini kaldırdığınız maddeler rapora aktarılmaz.")
+                    _7131_atif_key = "yangin_7131_yonetmelik_atiflari"
+                    st.session_state.setdefault(_7131_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_7131_atif_key)
                     _kcol1, _kcol2 = st.columns(2)
                     with _kcol1:
                         if st.button("✓ Tüm kriterleri seç", key="yangin_7131_tum_sec", use_container_width=True):
@@ -1911,10 +1954,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"yangin_7131_kriter_{_i}"] = False
                             st.rerun()
                     for _i, _kriter in enumerate(_yangin_7131_kriterler):
-                        st.checkbox(
-                            f"{_i + 1}. {_kriter}",
-                            key=f"yangin_7131_kriter_{_i}",
-                        )
+                        _kriter_key = f"yangin_7131_kriter_{_i}"
+                        st.session_state.setdefault(_kriter_key, True)
+                        _kriter_goster = _kriter if st.session_state[_7131_atif_key] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", _kriter, flags=re.IGNORECASE).strip()
+                        with st.container(border=True):
+                            st.checkbox(f"{_i + 1}. {_kriter_goster}", key=_kriter_key)
                     st.session_state["yangin_7131_kriter_metinleri"] = _yangin_7131_kriterler
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
