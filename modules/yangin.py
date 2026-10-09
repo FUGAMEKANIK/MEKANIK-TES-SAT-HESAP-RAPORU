@@ -1704,39 +1704,75 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             key="yangin_712_hidrant_adedi",
                         ))
 
+                    # Tasarım debileri adetle çarpılır; su hacmi için ayrıca çalışma süresi kullanılır.
                     _q73_toplam = _q73 * _yangin_dolabi_adedi
                     _q74_toplam = _q74 * _hidrant_adedi
                     _toplam_tasarim_debisi_ldak = _q73_toplam + _q74_toplam
                     _toplam_tasarim_debisi_m3h = _toplam_tasarim_debisi_ldak * 0.06
 
-                    st.markdown("### 7.3.2 / 7.4.2 Aktarılan Debiler ve 7.5.2 Depo Hacmi")
-                    _dcols = st.columns(3)
-                    with _dcols[0]:
-                        st.metric("Yangın Dolabı Toplamı", f"{_q73_toplam:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption(f"{_q73:,.2f} L/dak × {_yangin_dolabi_adedi} adet".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                    with _dcols[1]:
-                        st.metric("Hidrant Toplamı", f"{_q74_toplam:,.2f} L/dak".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption(f"{_q74:,.2f} L/dak × {_hidrant_adedi} adet".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                    with _dcols[2]:
-                        _ek8a_depo_goster = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
-                        st.metric("Sprinkler Depo Hacmi (Ek-8/A)", f"{_ek8a_depo_goster:,.3f} m³".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        st.caption("Yüksekliğe, tehlike sınıfına ve sistem tipine göre seçilir; debi değildir.")
+                    _yangin_dolabi_hacmi_l = _q73 * _t73 * _yangin_dolabi_adedi
+                    _hidrant_hacmi_l = _q74 * _t74 * _hidrant_adedi
+                    _ek8a_depo_712 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
+                    _sprinkler_hacmi_m3 = _ek8a_depo_712
+                    _sprinkler_hacmi_l = _sprinkler_hacmi_m3 * 1000.0
+                    _toplam_hacim_litre = _yangin_dolabi_hacmi_l + _hidrant_hacmi_l + _sprinkler_hacmi_l
+                    _toplam_hacim_m3 = _toplam_hacim_litre / 1000.0
 
-                    # Yalnızca yangın dolabı ve hidrant birim debileri adetleriyle çarpılarak toplanır.
-                    # Sprinkler için tasarım debisi değil, Ek-8/A'dan seçilen depo hacmi ayrı gösterilir.
+                    st.markdown("### 7.3.2 / 7.4.2 / 7.5.2 Su Hacmi Hesap Tablosu")
+                    def _yangin_sayi_yaz(_deger, _ondalik=2):
+                        return f"{_deger:,.{_ondalik}f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+                    st.table([
+                        {
+                            "Kaynak": "7.3.2 Yangın Dolabı",
+                            "Debi (L/dak)": _yangin_sayi_yaz(_q73),
+                            "Süre (dk)": _yangin_sayi_yaz(_t73, 0),
+                            "Adet": str(_yangin_dolabi_adedi),
+                            "Hesaplanan Su Hacmi (L)": _yangin_sayi_yaz(_yangin_dolabi_hacmi_l, 0),
+                            "Hesaplanan Su Hacmi (m³)": _yangin_sayi_yaz(_yangin_dolabi_hacmi_l / 1000.0, 3),
+                        },
+                        {
+                            "Kaynak": "7.4.2 Hidrant",
+                            "Debi (L/dak)": _yangin_sayi_yaz(_q74),
+                            "Süre (dk)": _yangin_sayi_yaz(_t74, 0),
+                            "Adet": str(_hidrant_adedi),
+                            "Hesaplanan Su Hacmi (L)": _yangin_sayi_yaz(_hidrant_hacmi_l, 0),
+                            "Hesaplanan Su Hacmi (m³)": _yangin_sayi_yaz(_hidrant_hacmi_l / 1000.0, 3),
+                        },
+                        {
+                            "Kaynak": "7.5.2 Sprinkler (Ek-8/A)",
+                            "Debi (L/dak)": "—",
+                            "Süre (dk)": "—",
+                            "Adet": "—",
+                            "Hesaplanan Su Hacmi (L)": _yangin_sayi_yaz(_sprinkler_hacmi_l, 0),
+                            "Hesaplanan Su Hacmi (m³)": _yangin_sayi_yaz(_sprinkler_hacmi_m3, 3),
+                        },
+                    ])
+
+                    st.markdown(
+                        f"**TOPLAM TASARIM DEBİSİ (yangın dolabı + hidrant):** "
+                        f"{_yangin_sayi_yaz(_toplam_tasarim_debisi_ldak)} L/dak = "
+                        f"{_yangin_sayi_yaz(_toplam_tasarim_debisi_m3h, 3)} m³/h"
+                    )
+                    st.markdown(
+                        f"**TOPLAM HESAPLANAN YANGIN SUYU HACMİ:** "
+                        f"{_yangin_sayi_yaz(_toplam_hacim_litre, 0)} L = "
+                        f"{_yangin_sayi_yaz(_toplam_hacim_m3, 3)} m³"
+                    )
+                    st.caption(
+                        "Yangın dolabı ve hidrant hacimleri = debi × süre × adet. "
+                        "Sprinkler satırında yalnızca 7.5.2 / Ek-8/A'dan gelen depo hacmi kullanılır."
+                    )
+
                     st.session_state["yangin_712_yangin_dolabi_birim_debisi_ldak"] = _q73
                     st.session_state["yangin_712_hidrant_birim_debisi_ldak"] = _q74
                     st.session_state["yangin_712_yangin_dolabi_toplam_debisi_ldak"] = _q73_toplam
                     st.session_state["yangin_712_hidrant_toplam_debisi_ldak"] = _q74_toplam
                     st.session_state["yangin_712_toplam_tasarim_debisi_ldak"] = float(_toplam_tasarim_debisi_ldak)
                     st.session_state["yangin_712_toplam_tasarim_debisi_m3h"] = float(_toplam_tasarim_debisi_m3h)
-
-                    # Su deposu hacmi yalnızca 7.5'te bina yüksekliği + tehlike sınıfı +
-                    # sprinkler sistem tipine göre seçilen Ek-8/A minimum hacmidir.
-                    _ek8a_depo_712 = float(st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0.0) or 0.0)
-                    _toplam_hacim_m3 = _ek8a_depo_712
-                    _toplam_hacim_litre = _toplam_hacim_m3 * 1000.0
-
+                    st.session_state["yangin_712_yangin_dolabi_hacmi_litre"] = float(_yangin_dolabi_hacmi_l)
+                    st.session_state["yangin_712_hidrant_hacmi_litre"] = float(_hidrant_hacmi_l)
+                    st.session_state["yangin_712_sprinkler_hacmi_m3"] = float(_sprinkler_hacmi_m3)
                     st.session_state["yangin_712_depo_gerekli_hacim_litre"] = float(_toplam_hacim_litre)
                     st.session_state["yangin_712_depo_gerekli_hacim_m3"] = float(_toplam_hacim_m3)
                     st.session_state["yangin_712_q73_ldak"] = _q73
@@ -1745,22 +1781,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_712_t74_dak"] = _t74
                     st.session_state["yangin_712_q75_ldak"] = _q75
                     st.session_state["yangin_712_t75_dak"] = 0.0
-                    st.session_state["yangin_712_toplam_tasarim_debisi_ldak"] = float(_toplam_tasarim_debisi_ldak)
-
-                    st.markdown("### Yangın Suyu Debi Toplamı ve Depo Hacmi")
-                    st.markdown(
-                        f'<div style="background-color:#FFF2CC; border:2px solid #D6B656; padding:12px 14px; border-radius:5px;">'
-                        f'<b>Yangın dolapları:</b> {_q73:,.2f} L/dak × {_yangin_dolabi_adedi} adet = <b>{_q73_toplam:,.2f} L/dak</b><br>'
-                        f'<b>Hidrantlar:</b> {_q74:,.2f} L/dak × {_hidrant_adedi} adet = <b>{_q74_toplam:,.2f} L/dak</b><br>'
-                        f'<hr>'
-                        f'<b>TOPLAM TASARIM DEBİSİ:</b> <b>{_toplam_tasarim_debisi_ldak:,.2f} L/dak</b> = <b>{_toplam_tasarim_debisi_m3h:,.3f} m³/h</b><br>'
-                        f'<span style="font-size:13px;">m³/h dönüşümü: toplam L/dak × 0,06. Bu toplam debi depo hacmine eklenmez.</span><br><br>'
-                        f'<b>EK-8/A’YA GÖRE SPRİNKLER SU DEPOSU HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b><br>'
-                        f'<span style="font-size:13px;">Sprinkler için tasarım debisi değil, bina yüksekliği/tehlike sınıfı/sistem tipine göre seçilen Ek-8/A hacmi kullanılır.</span><br><hr>'
-                        f'<b>GEREKLİ MİNİMUM YANGIN SUYU DEPO HACMİ:</b> <b>{_toplam_hacim_litre:,.0f} L ({_toplam_hacim_m3:,.3f} m³)</b>'
-                        f'</div>'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-                        unsafe_allow_html=True,
-                    )
 
                     # Sıhhi soğuk su deposundaki seçim mantığı birebir: en yakın standart
                     # kapasite otomatik seçilir, kullanıcı isterse kapasite/poz üzerinde son onay verebilir.
