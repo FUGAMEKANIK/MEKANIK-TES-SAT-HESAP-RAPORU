@@ -1787,6 +1787,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         key="yangin_712_depo_tipi",
                     )
 
+                    # Galvaniz modüler yangın suyu deposu poz listesi.
+                    # Galvaniz modüler depo poz aralığı 25.150.1301–25.150.1326 olarak tanımlanır; kapasite eşleştirmesi paslanmaz depo kapasite basamaklarıyla uyumludur.
                     _galvaniz_kapasiteleri = [
                         (1.25, "25.150.1301"), (2.50, "25.150.1302"), (3.75, "25.150.1303"),
                         (5.00, "25.150.1304"), (6.25, "25.150.1305"), (7.50, "25.150.1306"),
@@ -1795,53 +1797,85 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         (30.0, "25.150.1313"), (37.5, "25.150.1314"), (40.0, "25.150.1315"),
                         (45.0, "25.150.1316"), (50.0, "25.150.1317"), (56.0, "25.150.1318"),
                         (59.6, "25.150.1319"), (62.0, "25.150.1320"), (75.0, "25.150.1321"),
+                        (90.0, "25.150.1322"), (93.2, "25.150.1323"), (104.2, "25.150.1324"),
+                        (112.0, "25.150.1325"), (121.5, "25.150.1326"),
                     ]
 
                     def _712_en_yakin_kapasite(kayitlar, hedef):
                         return min(kayitlar, key=lambda x: abs(x[0] - hedef)) if kayitlar else None
 
-                    if _yangin_depo_tipi == "Galvaniz Modüler Su Deposu":
-                        _oto712 = _712_en_yakin_kapasite(_galvaniz_kapasiteleri, _toplam_hacim_m3)
-                        if _oto712:
-                            _oto_kapasite, _oto_poz = _oto712
-                            st.session_state.setdefault("yangin_712_onceki_otomatik_kapasite", float(_oto_kapasite))
-                            if st.session_state.get("yangin_712_depo_kapasitesi_m3") is None or st.session_state.get("yangin_712_depo_kapasitesi_m3") == st.session_state.get("yangin_712_onceki_otomatik_kapasite"):
-                                st.session_state["yangin_712_depo_kapasitesi_m3"] = float(_oto_kapasite)
-                            st.session_state["yangin_712_onceki_otomatik_kapasite"] = float(_oto_kapasite)
-                            st.caption(f"Sıhhi su deposu mantığıyla en yakın standart kapasite: {_oto_kapasite:g} m³ (hesaplanan: {_toplam_hacim_m3:g} m³)")
-                            _kap712 = st.number_input(
-                                "Galvaniz modüler su deposu kapasitesi (m³) — otomatik, elle değiştirilebilir",
-                                min_value=0.001, step=0.5, key="yangin_712_depo_kapasitesi_m3",
-                            )
-                            _uygun712 = _712_en_yakin_kapasite(_galvaniz_kapasiteleri, _kap712)
-                            _poz712_oto = _uygun712[1] if _uygun712 else ""
-                            _poz712_elle = st.checkbox("Galvaniz su deposu poz numarasını elle düzenle", key="yangin_712_poz_elle")
-                            if _poz712_elle:
-                                st.session_state.setdefault("yangin_712_poz", _poz712_oto)
-                                _poz712 = st.text_input("Galvaniz su deposu Cihaz Poz No", key="yangin_712_poz").strip()
-                                _poz_kap712 = next((c for c,p in _galvaniz_kapasiteleri if p == _poz712), None)
-                                _goster712 = float(_poz_kap712) if _poz_kap712 is not None else float(_kap712)
-                            else:
-                                _poz712 = _poz712_oto
-                                _goster712 = float(_kap712)
-                            st.session_state["yangin_712_depo_poz"] = _poz712
-                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = _goster712
-                            st.markdown(f"**Cihaz Poz No:** {_poz712} **(Kapasite: {_goster712:g} m³)**")
-                        else:
-                            st.warning("Hesaplanan hacim, galvaniz depo kapasite listesinin üzerindedir.")
-                            st.session_state["yangin_712_depo_poz"] = ""
-                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = _toplam_hacim_m3
+                    # 121,5 m³ üzerindeki toplam ihtiyaçta otomatik olarak 2 depo seçilir.
+                    # Bölme sayısı kullanıcı tarafından istenirse 1–4 arasında değiştirilebilir.
+                    _oto_bolme_sayisi_712 = 2 if _toplam_hacim_m3 > 121.5 else 1
+                    _bolme_elle_key_712 = "yangin_712_depo_bolme_sayisi_elle"
+                    st.checkbox("Depo bölme sayısını elle belirle", key=_bolme_elle_key_712)
+                    if st.session_state.get(_bolme_elle_key_712, False):
+                        _depo_bolme_sayisi_712 = int(st.selectbox(
+                            "Yangın suyu deposu kaç bölmeye/depo ünitesine ayrılsın?",
+                            options=[1, 2, 3, 4],
+                            index=[1, 2, 3, 4].index(int(st.session_state.get("yangin_712_depo_bolme_sayisi", _oto_bolme_sayisi_712))),
+                            key="yangin_712_depo_bolme_sayisi",
+                        ))
                     else:
-                        st.info("Betonarme su deposu seçildi. Poz numarası uygulanmaz; gerekli hacim proje hacmi olarak alınır.")
-                        _beton_kapasite = st.number_input(
-                            "Betonarme su deposu kapasitesi (m³) — otomatik gerekli hacim",
-                            min_value=0.001, value=float(_toplam_hacim_m3), step=0.5, key="yangin_712_beton_kapasitesi_m3",
-                        )
-                        st.session_state["yangin_712_depo_poz"] = ""
-                        st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = float(_beton_kapasite)
-                        st.markdown(f"**Gerekli betonarme depo hacmi:** {_beton_kapasite:g} m³")
+                        _depo_bolme_sayisi_712 = _oto_bolme_sayisi_712
+                        st.session_state["yangin_712_depo_bolme_sayisi"] = _depo_bolme_sayisi_712
+                        st.caption(f"Otomatik depo bölme sayısı: {_depo_bolme_sayisi_712} (toplam ihtiyaç: {_toplam_hacim_m3:g} m³; eşik: 121,5 m³)")
 
-                    st.caption("Not: Galvaniz modüler depo kapasitesi ve poz seçimi, sıhhi kullanma soğuk su deposundaki en yakın standart kapasite mantığıyla yapılır. Galvaniz poz listesi mevcut sıhhi modüldeki listeyle aynıdır.")
+                    _bir_depo_gerekli_hacim_712 = _toplam_hacim_m3 / max(1, _depo_bolme_sayisi_712)
+                    st.session_state["yangin_712_depo_bolme_sayisi_secili"] = int(_depo_bolme_sayisi_712)
+                    st.session_state["yangin_712_depo_bir_bolme_gerekli_hacim_m3"] = float(_bir_depo_gerekli_hacim_712)
+
+                    if _yangin_depo_tipi == "Galvaniz Modüler Su Deposu":
+                        _oto712 = _712_en_yakin_kapasite(_galvaniz_kapasiteleri, _bir_depo_gerekli_hacim_712)
+                        if _oto712:
+                            _bir_depo_kapasite_712, _bir_depo_poz_712 = _oto712
+                            _toplam_secili_kapasite_712 = _bir_depo_kapasite_712 * _depo_bolme_sayisi_712
+                            _depo_pozlari_712 = [
+                                {"adet": i + 1, "kapasite_m3": float(_bir_depo_kapasite_712), "poz": _bir_depo_poz_712}
+                                for i in range(_depo_bolme_sayisi_712)
+                            ]
+                            st.markdown(f"**Bir depo için hesaplanan hacim:** {_bir_depo_gerekli_hacim_712:g} m³")
+                            st.markdown(f"**Seçilen standart depo kapasitesi:** {_bir_depo_kapasite_712:g} m³ × {_depo_bolme_sayisi_712} adet = **{_toplam_secili_kapasite_712:g} m³**")
+                            _poz_elle_712 = st.checkbox("Galvaniz depo pozunu elle düzenle", key="yangin_712_poz_elle")
+                            if _poz_elle_712:
+                                _poz_opsiyonlari_712 = [p for _, p in _galvaniz_kapasiteleri]
+                                _poz_default_712 = st.session_state.get("yangin_712_poz_secim", _bir_depo_poz_712)
+                                _poz_idx_712 = _poz_opsiyonlari_712.index(_poz_default_712) if _poz_default_712 in _poz_opsiyonlari_712 else _poz_opsiyonlari_712.index(_bir_depo_poz_712)
+                                _poz_secim_712 = st.selectbox("Her bir galvaniz depo için Cihaz Poz No", _poz_opsiyonlari_712, index=_poz_idx_712, key="yangin_712_poz_secim")
+                                _kap_poz_712 = next((c for c, p in _galvaniz_kapasiteleri if p == _poz_secim_712), _bir_depo_kapasite_712)
+                                _depo_pozlari_712 = [
+                                    {"adet": i + 1, "kapasite_m3": float(_kap_poz_712), "poz": _poz_secim_712}
+                                    for i in range(_depo_bolme_sayisi_712)
+                                ]
+                                _toplam_secili_kapasite_712 = float(_kap_poz_712) * _depo_bolme_sayisi_712
+                            st.session_state["yangin_712_depo_pozlari"] = _depo_pozlari_712
+                            st.session_state["yangin_712_depo_poz"] = _depo_pozlari_712[0]["poz"] if _depo_pozlari_712 else ""
+                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = float(_toplam_secili_kapasite_712)
+                            st.markdown("**Depo poz seçimi:**")
+                            for _depo_satir_712 in _depo_pozlari_712:
+                                st.write(f"{_depo_satir_712['adet']}. depo: {_depo_satir_712['kapasite_m3']:g} m³ — Cihaz Poz No: {_depo_satir_712['poz']}")
+                            if _bir_depo_gerekli_hacim_712 > max(c for c, _ in _galvaniz_kapasiteleri):
+                                st.warning("Bir depo için gereken hacim galvaniz depo poz listesindeki en büyük 121,5 m³ kapasiteyi aşıyor. Bölme sayısını artırın veya betonarme depo seçin.")
+                        else:
+                            st.warning("Galvaniz depo için poz kapasitesi bulunamadı.")
+                            st.session_state["yangin_712_depo_poz"] = ""
+                            st.session_state["yangin_712_depo_pozlari"] = []
+                            st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = 0.0
+                    else:
+                        _beton_kapasite_toplam_712 = st.number_input(
+                            "Betonarme yangın suyu deposu toplam kapasitesi (m³)",
+                            min_value=0.001,
+                            value=float(st.session_state.get("yangin_712_beton_kapasitesi_toplam_m3", _toplam_hacim_m3) or _toplam_hacim_m3),
+                            step=0.5,
+                            key="yangin_712_beton_kapasitesi_toplam_m3",
+                        )
+                        _beton_bolme_hacmi_712 = _beton_kapasite_toplam_712 / max(1, _depo_bolme_sayisi_712)
+                        st.session_state["yangin_712_depo_poz"] = ""
+                        st.session_state["yangin_712_depo_pozlari"] = []
+                        st.session_state["yangin_712_depo_kapasitesi_secili_m3"] = float(_beton_kapasite_toplam_712)
+                        st.markdown(f"**Betonarme depo başına hacim:** {_beton_bolme_hacmi_712:g} m³ × {_depo_bolme_sayisi_712} adet")
+
+                    st.caption("Galvaniz modüler depo poz aralığı: 25.150.1301–25.150.1326. Seçilen poz, depo başına gerekli hacme göre belirlenir.")
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
