@@ -3505,11 +3505,19 @@ if _rapor_olustur_sidebar:
                           "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (Madde 93/11)",
                           "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
                       ]
-                      for _kriter_sira, _kriter_metin in enumerate(_yangin_hidroforu_secim_kriterleri, start=1):
+                      _secili_7131_kriterler = [
+                          (i, metin)
+                          for i, metin in enumerate(_yangin_hidroforu_secim_kriterleri)
+                          if bool(st.session_state.get(f"yangin_7131_kriter_{i}", True))
+                      ]
+                      for _kriter_sira, _kriter_metin in enumerate(_secili_7131_kriterler, start=1):
                           _pkriter = doc.add_paragraph(style="List Number")
                           _pkriter.paragraph_format.space_after = Pt(4)
                           _pkriter.paragraph_format.keep_together = True
-                          _pkriter.add_run(_kriter_metin)
+                          _pkriter.add_run(_kriter_metin[1])
+                      if not _secili_7131_kriterler:
+                          _pnone = doc.add_paragraph("Bu bölüm için rapora eklenecek seçim kriteri seçilmemiştir.")
+                          _pnone.paragraph_format.space_after = Pt(6)
                       _pkaynak = doc.add_paragraph()
                       _pkaynak.add_run(
                           "Mevzuat kaynağı: Binaların Yangından Korunması Hakkında Yönetmelik. "
