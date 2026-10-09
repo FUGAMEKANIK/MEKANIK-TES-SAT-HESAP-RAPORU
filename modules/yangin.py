@@ -1921,20 +1921,20 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.13.1 Yangın hidroforu seçim kriterleri: kullanıcı ekranında
                 # ayrı ayrı seçilebilir; yalnızca seçilen maddeler rapora aktarılır.
                 _yangin_7131_kriterler = [
-                    "Yangın hidroforu ve pompa grubu, sabit yangın söndürme sistemlerinin gerekli su debisini ve basıncını sağlayacak şekilde seçilecektir. (Binaların Yangından Korunması Hakkında Yönetmelik, Madde 91 ve Madde 93)",
-                    "Pompa grubunun tasarım debisi ve basma yüksekliği, ilgili sistemlerin hidrolik hesapları sonucunda belirlenecektir. (Madde 91)",
-                    "Pompa performans eğrisinde kapalı vana basma yüksekliği, anma basma yüksekliğinin %140'ını aşmayacak; %150 debideki basma yüksekliği ise anma basma yüksekliğinin %65'inden düşük olmayacaktır. (Madde 93/1)",
-                    "Pompa, gerekli basınç değerini karşılamak şartıyla anma debisinin %130'u kapasitedeki sistem taleplerinde kullanılabilecektir. (Madde 93/1)",
-                    "Tek yangın pompası kullanılması durumunda aynı kapasitede yedek pompa bulundurulacaktır. Birden fazla pompa kullanılması durumunda toplam kapasitenin en az %50'si yedek kapasite olarak sağlanacaktır. (Madde 93/2)",
-                    "Yangın pompaları elektrik motoru, içten yanmalı motor veya türbin ile tahrik edilebilecektir. (Madde 93/3)",
-                    "Yedek dizel motor tahrikli pompa kullanılmaması durumunda, yangın pompalarının enerji beslemesi güvenilir kaynaktan ve binanın genel elektrik sisteminden bağımsız olarak sağlanacaktır. (Madde 93/4)",
-                    "Pompalarda gerekli otomatik hava boşaltma ve sirkülasyon rahatlama valfleri gibi yardımcı elemanlar bulunacaktır. (Madde 93/5)",
-                    "Her pompa için ayrı ve kilitlenebilir kumanda panosu bulunacak; panolarda faz hatası, faz sırası hatası ve kumanda fazı hatası göstergeleri yer alacaktır. (Madde 93/6)",
-                    "Her pompa için ayrı kumanda basınç anahtarı kullanılacak; alt ve üst basınç değerleri bağımsız ayarlanabilir ve ayarlandıktan sonra kilitlenebilir olacaktır. (Madde 93/7)",
-                    "Pompa kontrolü basınç kumandalı, tam otomatik veya yarı otomatik olarak düzenlenebilecektir. (Madde 93/8)",
-                    "Pompa odasında elektrik motorlu pompalar için sürekli +4 °C'nin, dizel motorlu pompalar için sürekli +10 °C'nin üzerinde sıcaklık sağlanacaktır. (Madde 93/9)",
-                    "Pompa istasyonunda servis, muayene ve ayar gerektiren cihazların çalışma alanlarında acil aydınlatma sağlanacaktır. (Madde 93/10)",
-                    "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (Madde 93/11)",
+                    "Yangın hidroforu ve pompa grubu, sabit yangın söndürme sistemlerinin gerekli su debisini ve basıncını sağlayacak şekilde seçilecektir. (BYKHY Madde 91, 1; Madde 93, 1)",
+                    "Pompa grubunun tasarım debisi ve basma yüksekliği, ilgili sistemlerin hidrolik hesapları sonucunda belirlenecektir. (BYKHY Madde 91, 1)",
+                    "Pompa performans eğrisinde kapalı vana basma yüksekliği, anma basma yüksekliğinin %140'ını aşmayacak; %150 debideki basma yüksekliği ise anma basma yüksekliğinin %65'inden düşük olmayacaktır. (BYKHY Madde 93, 1)",
+                    "Pompa, gerekli basınç değerini karşılamak şartıyla anma debisinin %130'u kapasitedeki sistem taleplerinde kullanılabilecektir. (BYKHY Madde 93, 1)",
+                    "Tek yangın pompası kullanılması durumunda aynı kapasitede yedek pompa bulundurulacaktır. Birden fazla pompa kullanılması durumunda toplam kapasitenin en az %50'si yedek kapasite olarak sağlanacaktır. (BYKHY Madde 93, 2)",
+                    "Yangın pompaları elektrik motoru, içten yanmalı motor veya türbin ile tahrik edilebilecektir. (BYKHY Madde 93, 3)",
+                    "Yedek dizel motor tahrikli pompa kullanılmaması durumunda, yangın pompalarının enerji beslemesi güvenilir kaynaktan ve binanın genel elektrik sisteminden bağımsız olarak sağlanacaktır. (BYKHY Madde 93, 4)",
+                    "Pompalarda gerekli otomatik hava boşaltma ve sirkülasyon rahatlama valfleri gibi yardımcı elemanlar bulunacaktır. (BYKHY Madde 93, 5)",
+                    "Her pompa için ayrı ve kilitlenebilir kumanda panosu bulunacak; panolarda faz hatası, faz sırası hatası ve kumanda fazı hatası göstergeleri yer alacaktır. (BYKHY Madde 93, 6)",
+                    "Her pompa için ayrı kumanda basınç anahtarı kullanılacak; alt ve üst basınç değerleri bağımsız ayarlanabilir ve ayarlandıktan sonra kilitlenebilir olacaktır. (BYKHY Madde 93, 7)",
+                    "Pompa kontrolü basınç kumandalı, tam otomatik veya yarı otomatik olarak düzenlenebilecektir. (BYKHY Madde 93, 8)",
+                    "Pompa odasında elektrik motorlu pompalar için sürekli +4 °C'nin, dizel motorlu pompalar için sürekli +10 °C'nin üzerinde sıcaklık sağlanacaktır. (BYKHY Madde 93, 9)",
+                    "Pompa istasyonunda servis, muayene ve ayar gerektiren cihazların çalışma alanlarında acil aydınlatma sağlanacaktır. (BYKHY Madde 93, 10)",
+                    "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (BYKHY Madde 93, 11)",
                     "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
                 ]
                 with st.expander("7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ", expanded=True):
@@ -1960,6 +1960,44 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with st.container(border=True):
                             st.checkbox(f"{_i + 1}. {_kriter_goster}", key=_kriter_key)
                     st.session_state["yangin_7131_kriter_metinleri"] = _yangin_7131_kriterler
+
+                # 7.13.2 Yangın hidroforu debi hesabı: 7.3.2, 7.4.2 ve 7.5.2'den alınır.
+                with st.expander("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", expanded=True):
+                    st.caption("Debiler 7.3.2, 7.4.2 ve 7.5.2 bölümlerinden otomatik alınır. Toplam debiye varsayılan %15 emniyet payı uygulanır.")
+                    _q73_7132 = float(st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_debisi_ldak", 0)) or 0)
+                    _q74_7132 = float(st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0) or 0)
+                    _q75_7132 = float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
+                    _emniyet_7132 = float(st.number_input(
+                        "Toplam tasarım debisi emniyet oranı (%)",
+                        min_value=0.0, max_value=100.0, value=float(st.session_state.get("yangin_7132_emniyet_orani", 15.0)),
+                        step=1.0, key="yangin_7132_emniyet_orani",
+                        help="Varsayılan %15'tir; proje kriterlerine göre değiştirilebilir."
+                    ))
+                    _toplam_debi_7132_ldak = _q73_7132 + _q74_7132 + _q75_7132
+                    _toplam_debi_7132_m3h = _toplam_debi_7132_ldak * 0.06
+                    _emniyet_debi_7132_ldak = _toplam_debi_7132_ldak * (1 + _emniyet_7132 / 100.0)
+                    _emniyet_debi_7132_m3h = _emniyet_debi_7132_ldak * 0.06
+
+                    def _yangin_sayi_7132(_v, _nd=2):
+                        return f"{_v:,.{_nd}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+                    st.table([
+                        {"Kaynak": "7.3.2 Yangın Dolabı", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q73_7132)},
+                        {"Kaynak": "7.4.2 Hidrant", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q74_7132)},
+                        {"Kaynak": "7.5.2 Sprinkler", "Tasarım debisi (L/dak)": _yangin_sayi_7132(_q75_7132)},
+                    ])
+                    st.markdown(f"**Toplam tasarım debisi:** {_yangin_sayi_7132(_toplam_debi_7132_ldak)} L/dak = {_yangin_sayi_7132(_toplam_debi_7132_m3h)} m³/h")
+                    st.markdown(f"**Emniyet payı (%{_yangin_sayi_7132(_emniyet_7132, 0)}):** {_yangin_sayi_7132(_emniyet_debi_7132_ldak - _toplam_debi_7132_ldak)} L/dak = {_yangin_sayi_7132((_emniyet_debi_7132_ldak - _toplam_debi_7132_ldak) * 0.06)} m³/h")
+                    st.markdown(f"### Nihai yangın hidroforu tasarım debisi: {_yangin_sayi_7132(_emniyet_debi_7132_ldak)} L/dak = {_yangin_sayi_7132(_emniyet_debi_7132_m3h)} m³/h")
+                    if _toplam_debi_7132_ldak <= 0:
+                        st.warning("7.3.2, 7.4.2 ve 7.5.2 bölümlerinden henüz debi gelmiyor. İlgili hesaplamaları tamamlayınca bu tablo otomatik güncellenir.")
+                    st.session_state["yangin_7132_q73_ldak"] = _q73_7132
+                    st.session_state["yangin_7132_q74_ldak"] = _q74_7132
+                    st.session_state["yangin_7132_q75_ldak"] = _q75_7132
+                    st.session_state["yangin_7132_toplam_debi_ldak"] = _toplam_debi_7132_ldak
+                    st.session_state["yangin_7132_toplam_debi_m3h"] = _toplam_debi_7132_m3h
+                    st.session_state["yangin_7132_emniyet_debi_ldak"] = _emniyet_debi_7132_ldak
+                    st.session_state["yangin_7132_emniyet_debi_m3h"] = _emniyet_debi_7132_m3h
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
