@@ -3284,6 +3284,37 @@ if _rapor_olustur_sidebar:
                               f"Kuru/değişken koruma alanı: {_ek8b_sec75_kayit[3]} m²."
                           )
 
+                          # Programda seçilen ıslak/kuru sistem tipine göre debi hesabını raporda da açıkça göster.
+                          _spr_sistem_tipi_rapor = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
+                          _spr_sistem_norm_rapor = _spr_sistem_tipi_rapor.lower()
+                          _spr_kuru_rapor = ("kuru" in _spr_sistem_norm_rapor or "alternatif" in _spr_sistem_norm_rapor)
+                          _spr_alan_metin_rapor = _ek8b_sec75_kayit[3] if _spr_kuru_rapor else _ek8b_sec75_kayit[2]
+                          _spr_alan_num_rapor = None
+                          try:
+                              _spr_alan_num_rapor = float(str(_spr_alan_metin_rapor).replace(",", "."))
+                              _spr_yog_num_rapor = float(str(_ek8b_sec75_kayit[1]).replace(",", "."))
+                          except (TypeError, ValueError):
+                              _spr_alan_num_rapor = None
+                          _p75hesap = doc.add_paragraph()
+                          _r = _p75hesap.add_run("Sprinkler tasarım sistemi seçimi: ")
+                          _r.bold = True
+                          _p75hesap.add_run(_spr_sistem_tipi_rapor + ".")
+                          _p75hesap = doc.add_paragraph()
+                          _r = _p75hesap.add_run("7.5.2 Sprinkler Tasarım Debisi Hesabı: ")
+                          _r.bold = True
+                          if _spr_alan_num_rapor is not None and _spr_alan_num_rapor > 0:
+                              _spr_q_rapor = _spr_yog_num_rapor * _spr_alan_num_rapor
+                              _p75hesap.add_run(
+                                  f"Tasarım yoğunluğu × seçilen {('kuru/değişken' if _spr_kuru_rapor else 'ıslak/ön etkili')} koruma alanı "
+                                  f"= {_spr_yog_num_rapor:g} mm/dak × {_spr_alan_num_rapor:g} m² "
+                                  f"= {_spr_q_rapor:,.2f} L/dak."
+                              )
+                          else:
+                              _p75hesap.add_run(
+                                  f"Seçilen {('kuru/değişken' if _spr_kuru_rapor else 'ıslak/ön etkili')} koruma alanı "
+                                  f"({_spr_alan_metin_rapor}) için sayısal değer bulunmadığından debi bu tabloda hesaplanmamıştır."
+                              )
+
                       # Ek-8/A su deposu hacim tablosu: uygulamada seçilen
                       # tehlike sınıfı + sistem tipi + yapı yüksekliği sütunu raporda da sarı vurgulanır.
                       _ek8a_rapor_sinif = str(st.session_state.get("yangin_722_etkin_sinif", st.session_state.get("yangin_722_otomatik_sinif", "")) or "")
