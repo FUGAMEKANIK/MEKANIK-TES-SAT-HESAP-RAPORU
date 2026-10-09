@@ -1985,12 +1985,35 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _hidrant_adedi_7132 = _hidrant_adedi_otomatik
                             st.metric("Hidrant sayısı (7.12'den)", _hidrant_adedi_7132)
 
-                    _spr_yog_7132 = float(st.session_state.get("yangin_75_ek8b_tasarim_yogunlugu", 0) or 0)
+                    # Ek-8/B tablosundaki sayılar Türkçe ondalık virgülle (ör. "2,25")
+                    # ve bazı hücreler "—" / "Yoğun su" metniyle tutulduğundan güvenli dönüştür.
+                    def _sayisal_deger_7132(_deger, _varsayilan=0.0):
+                        if _deger is None or _deger == "":
+                            return float(_varsayilan)
+                        if isinstance(_deger, (int, float)):
+                            return float(_deger)
+                        _metin = str(_deger).strip().replace(" ", " ")
+                        if not _metin or _metin in {"—", "-", "–"}:
+                            return float(_varsayilan)
+                        _metin = _metin.replace(" ", "")
+                        # Türkçe ondalık virgülünü noktaya çevir; binlik ayırıcıları da destekle.
+                        if "," in _metin:
+                            _metin = _metin.replace(".", "").replace(",", ".")
+                        try:
+                            return float(_metin)
+                        except (TypeError, ValueError):
+                            return float(_varsayilan)
+
+                    _spr_yog_7132 = _sayisal_deger_7132(st.session_state.get("yangin_75_ek8b_tasarim_yogunlugu", 0))
                     _spr_tip_7132 = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
                     _spr_kuru_7132 = ("kuru" in _spr_tip_7132.lower() or "alternatif" in _spr_tip_7132.lower())
                     _spr_alan_key_7132 = "yangin_75_ek8b_kuru_degisken_alan" if _spr_kuru_7132 else "yangin_75_ek8b_islak_on_etkili_alan"
-                    _spr_alan_7132 = float(st.session_state.get(_spr_alan_key_7132, 0) or 0)
-                    _q75_7132 = _spr_yog_7132 * _spr_alan_7132 if _spr_yog_7132 > 0 and _spr_alan_7132 > 0 else float(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0) or 0)
+                    _spr_alan_7132 = _sayisal_deger_7132(st.session_state.get(_spr_alan_key_7132, 0))
+                    _q75_7132 = (
+                        _spr_yog_7132 * _spr_alan_7132
+                        if _spr_yog_7132 > 0 and _spr_alan_7132 > 0
+                        else _sayisal_deger_7132(st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0))
+                    )
                     _q73_7132 = _q73_7132_birim * _dolap_adedi_7132
                     _q74_7132 = _q74_7132_birim * _hidrant_adedi_7132
 
