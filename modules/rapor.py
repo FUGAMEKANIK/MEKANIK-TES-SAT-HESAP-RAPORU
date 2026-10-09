@@ -3598,31 +3598,30 @@ if _rapor_olustur_sidebar:
 
                       # 7.13.3 — Yangın hidroforu basma yüksekliği hesabı
                       doc.add_heading("7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI", level=4)
-                      _kot_farki_7133_r = float(st.session_state.get("yangin_7133_kot_farki_m", 0.0) or 0.0)
-                      _kritik_basinci_7133_r = float(st.session_state.get("yangin_7133_kritik_basinci_mss", 0.0) or 0.0)
+                      _kot_farki_7133_r = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+                      _kritik_basinci_7133_r = 40.0
                       _boru_kaybi_7133_r = float(st.session_state.get("yangin_7133_boru_kaybi_mss", 0.0) or 0.0)
                       _yerel_kayip_7133_r = float(st.session_state.get("yangin_7133_yerel_kayip_mss", 0.0) or 0.0)
-                      _h_hesaplanan_7133_r = _kot_farki_7133_r + _kritik_basinci_7133_r + _boru_kaybi_7133_r + _yerel_kayip_7133_r
+                      _h_hesaplanan_7133_r = _kot_farki_7133_r + _boru_kaybi_7133_r + _yerel_kayip_7133_r + _kritik_basinci_7133_r
                       _h_elle_7133_r = bool(st.session_state.get("yangin_7133_basma_yuksekligi_elle", False))
                       _h_nihai_7133_r = float(st.session_state.get("yangin_7133_basma_yuksekligi_manuel_mss", _h_hesaplanan_7133_r) or 0.0) if _h_elle_7133_r else _h_hesaplanan_7133_r
                       _h_tab_7133 = doc.add_table(rows=1, cols=2)
                       _h_tab_7133.style = "Table Grid"
-                      for _c, _t in zip(_h_tab_7133.rows[0].cells, ["Hesap kalemi", "Değer (mSS)"]):
+                      for _c, _t in zip(_h_tab_7133.rows[0].cells, ["Hesap kalemi", "Değer"]):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
                       for _kalem, _deger in [
-                          ("Statik kot farkı", _kot_farki_7133_r),
-                          ("Kritik noktada gerekli basınç", _kritik_basinci_7133_r),
-                          ("Boru sürtünme kayıpları", _boru_kaybi_7133_r),
-                          ("Armatür/yerel kayıplar", _yerel_kayip_7133_r),
-                          ("Hesaplanan basma yüksekliği", _h_hesaplanan_7133_r),
-                          ("Nihai tasarım basma yüksekliği", _h_nihai_7133_r),
+                          ("Kot farkı / yapı yüksekliği: hp", f"{_fmt_7132(_kot_farki_7133_r)} mSS"),
+                          ("Boru kayıpları: hb", f"{_fmt_7132(_boru_kaybi_7133_r + _yerel_kayip_7133_r)} mSS"),
+                          ("Lans girişindeki basınç: ha (400 kPa)", "40 mSS"),
+                          ("P = hp + hb + ha", f"({_fmt_7132(_kot_farki_7133_r)} + {_fmt_7132(_boru_kaybi_7133_r + _yerel_kayip_7133_r)} + 40) = {_fmt_7132(_h_hesaplanan_7133_r)} mSS"),
+                          ("Toplam basınç", f"≈ {_fmt_7132(_h_nihai_7133_r)} mSS = {_fmt_7132(_h_nihai_7133_r / 10)} bar"),
                       ]:
                           _cells = _h_tab_7133.add_row().cells
                           _cells[0].text = _kalem
-                          _cells[1].text = _fmt_7132(_deger)
+                          _cells[1].text = _deger
 
                       # 7.13.4 — Yangın hidroforu seçimi (1 asıl + 1 yedek)
                       doc.add_heading("7.13.4 YANGIN HİDROFORU SEÇİMİ", level=4)
