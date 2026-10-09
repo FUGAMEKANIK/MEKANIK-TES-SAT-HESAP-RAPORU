@@ -2057,8 +2057,28 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state["yangin_7132_emniyet_debi_ldak"] = _emniyet_debi_7132_ldak
                     st.session_state["yangin_7132_emniyet_debi_m3h"] = _emniyet_debi_7132_m3h
 
-                # 7.13.3 Yangın hidroforu seçimi: debi 7.13.2 hesabından otomatik gelir.
-                with st.expander("7.13.3 YANGIN HİDROFORU SEÇİMİ", expanded=True):
+                # 7.13.3 Yangın hidroforu basma yüksekliği hesabı.
+                # Basınç ve kayıp değerleri proje/hidrolik hesaptan girilir; toplam otomatik hesaplanır.
+                with st.expander("7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI", expanded=True):
+                    st.caption("Gerekli değerleri hidrolik hesaptan giriniz. Toplam basma yüksekliği statik kot farkı + kritik noktada gerekli basınç + boru ve yerel kayıplar olarak hesaplanır.")
+                    _hcol1, _hcol2 = st.columns(2)
+                    with _hcol1:
+                        _kot_farki_7133 = st.number_input("Statik kot farkı (m)", min_value=0.0, value=float(st.session_state.get("yangin_7133_kot_farki_m", 0.0) or 0.0), step=1.0, key="yangin_7133_kot_farki_m")
+                        _kritik_basinci_7133 = st.number_input("Kritik noktada gerekli basınç (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_kritik_basinci_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_kritik_basinci_mss")
+                    with _hcol2:
+                        _boru_kaybi_7133 = st.number_input("Boru sürtünme kayıpları (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_boru_kaybi_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_boru_kaybi_mss")
+                        _yerel_kayip_7133 = st.number_input("Armatür/yerel kayıplar (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_yerel_kayip_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_yerel_kayip_mss")
+                    _h_hesaplanan_7133 = _kot_farki_7133 + _kritik_basinci_7133 + _boru_kaybi_7133 + _yerel_kayip_7133
+                    st.metric("Hesaplanan gerekli basma yüksekliği", f"{_h_hesaplanan_7133:.2f} mSS")
+                    _h_elle_7133 = st.checkbox("Basma yüksekliğini elle düzelt", value=bool(st.session_state.get("yangin_7133_basma_yuksekligi_elle", False)), key="yangin_7133_basma_yuksekligi_elle")
+                    if _h_elle_7133:
+                        _h_pompa_mss = st.number_input("Nihai tasarım basma yüksekliği (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_basma_yuksekligi_manuel_mss", _h_hesaplanan_7133) or 0.0), step=1.0, key="yangin_7133_basma_yuksekligi_manuel_mss")
+                    else:
+                        _h_pompa_mss = _h_hesaplanan_7133
+                    st.session_state["yangin_7133_basma_yuksekligi_mss"] = float(_h_pompa_mss)
+
+                # 7.13.4 Yangın hidroforu seçimi: debi 7.13.2, basma yüksekliği 7.13.3 hesabından gelir.
+                with st.expander("7.13.4 YANGIN HİDROFORU SEÇİMİ", expanded=True):
                     _q_pompa_otomatik_m3h = float(st.session_state.get("yangin_7132_emniyet_debi_m3h", 0.0) or 0.0)
                     st.markdown(f"**7.13.2 hesabından gelen tasarım debisi:** {_q_pompa_otomatik_m3h:.2f} m³/h ({_q_pompa_otomatik_m3h / 0.06:.2f} L/dak)")
                     _q_pompa_elle = st.checkbox("Pompa tasarım debisini elle düzelt", value=bool(st.session_state.get("yangin_7133_debi_elle", False)), key="yangin_7133_debi_elle")
@@ -2066,8 +2086,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _q_pompa_m3h = st.number_input("Pompa tasarım debisi (m³/h)", min_value=0.0, value=float(st.session_state.get("yangin_7133_debi_manuel_m3h", _q_pompa_otomatik_m3h) or 0.0), step=0.5, key="yangin_7133_debi_manuel_m3h")
                     else:
                         _q_pompa_m3h = _q_pompa_otomatik_m3h
-                    _h_pompa_mss = st.number_input("Gerekli basma yüksekliği (mSS) — hidrolik hesap sonucunu giriniz", min_value=0.0, value=float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_basma_yuksekligi_mss", help="Kot farkı, kritik noktadaki gerekli basınç ve boru/lokal kayıplarıyla hesaplanmalıdır.")
-                    st.caption("Pompa debisi otomatik olarak 7.13.2'den alınır. Basma yüksekliği bu aşamada kullanıcı tarafından girilir; marka/model ve poz numarası elle düzenlenebilir. Nihai seçim üretici performans eğrisiyle doğrulanmalıdır.")
+                    st.caption("Pompa debisi 7.13.2'den, gerekli basma yüksekliği 7.13.3 hesabından aktarılır. Marka/model ve poz numarası elle düzenlenebilir. Nihai seçim üretici performans eğrisiyle doğrulanmalıdır.")
                     st.markdown("#### Ana yangın pompası (1 asıl)")
                     _pcol1, _pcol2 = st.columns(2)
                     with _pcol1:
