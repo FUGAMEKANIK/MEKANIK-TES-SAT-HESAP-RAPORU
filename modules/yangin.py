@@ -2084,9 +2084,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         step=1.0, key="yangin_7133_boru_kaybi_mss",
                         help="Varsayılan 0 mSS; hesaplanan kaybı elle giriniz."
                     )
-                    # Sıralı girişler raporda da aynı sırayla gösterilir.
-                    st.session_state["yangin_7133_kot_farki_m"] = float(_kot_farki_7133)
-                    st.session_state["yangin_7133_kritik_basinci_mss"] = float(_kritik_basinci_7133)
+                    # st.number_input değerleri session_state'e kendisi yazar;
+                    # widget oluşturulduktan sonra aynı anahtara atama yapılmamalıdır.
                     _h_hesaplanan_7133 = _kot_farki_7133 + _boru_kaybi_7133 + _kritik_basinci_7133
                     st.markdown(f"**P = hp + hb + ha = ({_kot_farki_7133:.2f} + {_boru_kaybi_7133:.2f} + {_kritik_basinci_7133:.2f}) = {_h_hesaplanan_7133:.2f} mSS**")
                     st.markdown(f"**Toplam basınç ≈ {_h_hesaplanan_7133:.2f} mSS = {_h_hesaplanan_7133/10:.2f} bar**")
