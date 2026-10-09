@@ -3550,33 +3550,42 @@ if _rapor_olustur_sidebar:
                           "Nihai proje kontrolünde yürürlükteki resmî metin ve uygulanabilir standartlar esas alınmalıdır."
                       ).italic = True
 
-                      # 7.13.2 — tasarım debileri, kaynak bölümlerden alınır; emniyet payı uygulanır.
+                      # 7.13.2 — yangın hidroforu debi hesabı
                       doc.add_heading("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", level=4)
-                      _q73_7132_r = float(st.session_state.get("yangin_7132_q73_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
-                      _q74_7132_r = float(st.session_state.get("yangin_7132_q74_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
+                      _dolap_adedi_7132_r = int(st.session_state.get("yangin_7132_dolap_adedi_secili", st.session_state.get("yangin_712_yangin_dolabi_adedi", 2)) or 0)
+                      _hidrant_adedi_7132_r = int(st.session_state.get("yangin_7132_hidrant_adedi_secili", st.session_state.get("yangin_712_hidrant_adedi", 1)) or 0)
+                      _q73_birim_7132_r = float(st.session_state.get("yangin_7132_q73_birim_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
+                      _q74_birim_7132_r = float(st.session_state.get("yangin_7132_q74_birim_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
+                      _q73_7132_r = float(st.session_state.get("yangin_7132_q73_ldak", _q73_birim_7132_r * _dolap_adedi_7132_r) or 0)
+                      _q74_7132_r = float(st.session_state.get("yangin_7132_q74_ldak", _q74_birim_7132_r * _hidrant_adedi_7132_r) or 0)
                       _q75_7132_r = float(st.session_state.get("yangin_7132_q75_ldak", st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0)) or 0)
+                      _spr_yog_7132_r = float(st.session_state.get("yangin_7132_spr_yogunluk", st.session_state.get("yangin_75_ek8b_tasarim_yogunlugu", 0)) or 0)
+                      _spr_alan_7132_r = float(st.session_state.get("yangin_7132_spr_alan", 0) or 0)
                       _emniyet_7132_r = float(st.session_state.get("yangin_7132_emniyet_orani", 15.0) or 0)
                       _toplam_7132_r = _q73_7132_r + _q74_7132_r + _q75_7132_r
                       _toplam_7132_m3h_r = _toplam_7132_r * 0.06
                       _nihai_7132_r = _toplam_7132_r * (1 + _emniyet_7132_r / 100.0)
                       _nihai_7132_m3h_r = _nihai_7132_r * 0.06
                       _fmt_7132 = lambda x, n=2: f"{x:,.{n}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                      _tab_7132 = doc.add_table(rows=1, cols=2)
+                      _tab_7132 = doc.add_table(rows=1, cols=4)
                       _tab_7132.style = "Table Grid"
-                      for _cell, _txt in zip(_tab_7132.rows[0].cells, ["Tasarım debisi kaynağı", "Debi (L/dak)"]):
+                      for _cell, _txt in zip(_tab_7132.rows[0].cells, ["Tasarım debisi kaynağı", "Adet", "Birim tasarım debisi", "Toplam debi (L/dak)"]):
                           _cell.text = _txt
                           for _para in _cell.paragraphs:
                               for _run in _para.runs:
                                   _run.bold = True
-                      for _kaynak_7132, _debi_7132 in [
-                          ("7.3.2 Yangın Dolabı", _q73_7132_r),
-                          ("7.4.2 Hidrant", _q74_7132_r),
-                          ("7.5.2 Sprinkler", _q75_7132_r),
-                          ("TOPLAM TASARIM DEBİSİ", _toplam_7132_r),
-                      ]:
+                      _spr_tipi_7132_r = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
+                      _spr_alan_tipi_7132_r = "kuru/değişken" if ("kuru" in _spr_tipi_7132_r.lower() or "alternatif" in _spr_tipi_7132_r.lower()) else "ıslak/ön etkili"
+                      _tablo_satirlari_7132 = [
+                          ("7.3.2 Yangın Dolabı", str(_dolap_adedi_7132_r), f"{_fmt_7132(_q73_birim_7132_r)} L/dak × adet", _q73_7132_r),
+                          ("7.4.2 Hidrant", str(_hidrant_adedi_7132_r), f"{_fmt_7132(_q74_birim_7132_r)} L/dak × adet", _q74_7132_r),
+                          ("7.5.2 Sprinkler", "—", f"{_fmt_7132(_spr_yog_7132_r)} mm/dak × {_fmt_7132(_spr_alan_7132_r)} m² ({_spr_alan_tipi_7132_r})", _q75_7132_r),
+                          ("TOPLAM TASARIM DEBİSİ", "—", "—", _toplam_7132_r),
+                      ]
+                      for _kaynak_7132, _adet_7132, _birim_7132, _debi_7132 in _tablo_satirlari_7132:
                           _cells_7132 = _tab_7132.add_row().cells
-                          _cells_7132[0].text = _kaynak_7132
-                          _cells_7132[1].text = _fmt_7132(_debi_7132)
+                          for _cell, _txt in zip(_cells_7132, [_kaynak_7132, _adet_7132, _birim_7132, _fmt_7132(_debi_7132)]):
+                              _cell.text = _txt
                       _p7132 = doc.add_paragraph()
                       _p7132.add_run("Toplam tasarım debisi: ").bold = True
                       _p7132.add_run(f"{_fmt_7132(_toplam_7132_r)} L/dak = {_fmt_7132(_toplam_7132_m3h_r)} m³/h")
@@ -3586,11 +3595,7 @@ if _rapor_olustur_sidebar:
                       _p7132 = doc.add_paragraph()
                       _p7132.add_run("NİHAİ YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
                       _p7132.add_run(f"{_fmt_7132(_nihai_7132_r)} L/dak = {_fmt_7132(_nihai_7132_m3h_r)} m³/h").bold = True
-                      _p7132 = doc.add_paragraph(
-                          "Hesap: Nihai debi = (7.3.2 + 7.4.2 + 7.5.2 tasarım debileri toplamı) × (1 + emniyet oranı / 100). "
-                          "Varsayılan emniyet oranı %15'tir ve program ekranından değiştirilebilir."
-                      )
-                      _p7132.paragraph_format.space_after = Pt(6)
+
 
                   else:
                       _body7 = doc.add_paragraph(
