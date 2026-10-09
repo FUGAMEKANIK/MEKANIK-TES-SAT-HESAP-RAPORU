@@ -1750,11 +1750,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     ])
 
                     st.markdown(
-                        f"**TOPLAM TASARIM DEBİSİ (yangın dolabı + hidrant):** "
-                        f"{_yangin_sayi_yaz(_toplam_tasarim_debisi_ldak)} L/dak = "
-                        f"{_yangin_sayi_yaz(_toplam_tasarim_debisi_m3h, 3)} m³/h"
-                    )
-                    st.markdown(
                         f"**TOPLAM HESAPLANAN YANGIN SUYU HACMİ:** "
                         f"{_yangin_sayi_yaz(_toplam_hacim_litre, 0)} L = "
                         f"{_yangin_sayi_yaz(_toplam_hacim_m3, 3)} m³"
