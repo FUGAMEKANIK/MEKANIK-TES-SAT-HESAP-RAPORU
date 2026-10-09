@@ -2060,15 +2060,22 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.13.3 Yangın hidroforu basma yüksekliği hesabı.
                 # Basınç ve kayıp değerleri proje/hidrolik hesaptan girilir; toplam otomatik hesaplanır.
                 with st.expander("7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI", expanded=True):
-                    st.caption("Gerekli değerleri hidrolik hesaptan giriniz. Toplam basma yüksekliği statik kot farkı + kritik noktada gerekli basınç + boru ve yerel kayıplar olarak hesaplanır.")
+                    st.caption("Basma yüksekliği; yukarıda girilen yapı yüksekliği + boru kayıpları + lans girişindeki gerekli basınç toplamı olarak hesaplanır. 400 kPa yaklaşık 40 mSS'tir; bu lans basıncı, BYKHY Madde 94'teki ilgili yangın dolabı tipinin koşulları için geçerlidir.")
+                    _yapi_yuksekligi_7133 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
+                    st.session_state["yangin_7133_kot_farki_m"] = _yapi_yuksekligi_7133
+                    st.markdown(f"**Kot farkı / yapı yüksekliği (hp):** {_yapi_yuksekligi_7133:.2f} mSS")
                     _hcol1, _hcol2 = st.columns(2)
                     with _hcol1:
-                        _kot_farki_7133 = st.number_input("Statik kot farkı (m)", min_value=0.0, value=float(st.session_state.get("yangin_7133_kot_farki_m", 0.0) or 0.0), step=1.0, key="yangin_7133_kot_farki_m")
-                        _kritik_basinci_7133 = st.number_input("Kritik noktada gerekli basınç (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_kritik_basinci_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_kritik_basinci_mss")
+                        _kot_farki_7133 = _yapi_yuksekligi_7133
+                        _kritik_basinci_7133 = 40.0
+                        st.markdown("**Lans girişindeki basınç (ha):** 40,00 mSS (400 kPa)")
+                        st.session_state["yangin_7133_kritik_basinci_mss"] = 40.0
                     with _hcol2:
-                        _boru_kaybi_7133 = st.number_input("Boru sürtünme kayıpları (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_boru_kaybi_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_boru_kaybi_mss")
+                        _boru_kaybi_7133 = st.number_input("Boru kayıpları (hb, mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_boru_kaybi_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_boru_kaybi_mss")
                         _yerel_kayip_7133 = st.number_input("Armatür/yerel kayıplar (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_yerel_kayip_mss", 0.0) or 0.0), step=1.0, key="yangin_7133_yerel_kayip_mss")
-                    _h_hesaplanan_7133 = _kot_farki_7133 + _kritik_basinci_7133 + _boru_kaybi_7133 + _yerel_kayip_7133
+                    _h_hesaplanan_7133 = _kot_farki_7133 + _boru_kaybi_7133 + _yerel_kayip_7133 + _kritik_basinci_7133
+                    st.markdown(f"**P = hp + hb + ha = ({_kot_farki_7133:.2f} + {_boru_kaybi_7133:.2f} + {_yerel_kayip_7133:.2f} + {_kritik_basinci_7133:.2f}) = {_h_hesaplanan_7133:.2f} mSS**")
+                    st.markdown(f"**Toplam basınç ≈ {_h_hesaplanan_7133:.2f} mSS = {_h_hesaplanan_7133/10:.2f} bar**")
                     st.metric("Hesaplanan gerekli basma yüksekliği", f"{_h_hesaplanan_7133:.2f} mSS")
                     _h_elle_7133 = st.checkbox("Basma yüksekliğini elle düzelt", value=bool(st.session_state.get("yangin_7133_basma_yuksekligi_elle", False)), key="yangin_7133_basma_yuksekligi_elle")
                     if _h_elle_7133:
