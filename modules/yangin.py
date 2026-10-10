@@ -2336,7 +2336,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.text_input(f"{_etiket} model", key=f"{_prefix}_model")
                                 st.text_input(f"{_etiket} Cihaz Poz No (otomatik)", key=f"{_prefix}_poz", disabled=True)
                             with _c2:
-                                st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
+                                # Motor gücü alanı aşağıda, otomatik hesaplamadan sonra
+                                # yalnızca bir kez oluşturulur. Aynı key'i burada da
+                                # oluşturmak session_state güncellemesinde Streamlit
+                                # StreamlitWidgetAlreadyInstantiatedError hatasına yol açıyordu.
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
                                 _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
                                 _q_default = 6.0 if "jokey" in _prefix else float(_q_pompa_m3h)
