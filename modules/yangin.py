@@ -2150,12 +2150,54 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2200 grubu",
                             }
                             _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu tip için Bakanlık alt poz grubu doğrulanmalı")
-                            st.caption(f"Poz grubu: {_poz_grup}. Poz numarası yalnızca doğrulanmış tariften seçilmelidir.")
+
+                            # Doğrulanmış Bakanlık poz eşleştirmeleri. Debi ve basma yüksekliği
+                            # aynı tasarım değerlerinden asıl/yedek pompalara aktarılır.
+                            # Tabloya yalnızca doğrulanmış tarifler eklenir; eşleşme yoksa poz uydurulmaz.
+                            _poz_katalog = {
+                                ("Elektrik motorlu", "Yatay arkadan emişli"): [
+                                    (60.0, 60.0, "25.720.1207", "60–66 m³/h, 60 mSS"),
+                                    (60.0, 80.0, "25.720.1208", "60–66 m³/h, 80 mSS"),
+                                    (60.0, 100.0, "25.720.1209", "60–66 m³/h, 100 mSS"),
+                                    (90.0, 80.0, "25.720.1217", "90–99 m³/h, 80 mSS"),
+                                    (120.0, 60.0, "25.720.1220", "120–126 m³/h, 60 mSS"),
+                                ],
+                                ("Dizel motorlu", "Yatay arkadan emişli"): [
+                                    (60.0, 60.0, "25.720.2101", "60–66 m³/h, 60 mSS"),
+                                    (60.0, 80.0, "25.720.2102", "60–66 m³/h, 80 mSS"),
+                                    (60.0, 100.0, "25.720.2103", "60–66 m³/h, 100 mSS"),
+                                ],
+                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): [
+                                    (110.0, 100.0, "25.720.2201", "110–119 m³/h, 100 mSS"),
+                                    (110.0, 120.0, "25.720.2202", "110–119 m³/h, 120 mSS"),
+                                    (120.0, 60.0, "25.720.2203", "120–126 m³/h, 60 mSS"),
+                                    (120.0, 80.0, "25.720.2204", "120–126 m³/h, 80 mSS"),
+                                    (120.0, 100.0, "25.720.2205", "120–126 m³/h, 100 mSS"),
+                                    (120.0, 120.0, "25.720.2206", "120–126 m³/h, 120 mSS"),
+                                ],
+                            }
+                            _q_pompa_esas = float(_q_pompa_m3h)
+                            _h_pompa_esas = float(_h_pompa_otomatik_mss)
+                            _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
+                            _poz_eslesme = next(
+                                (item for item in _uygun_pozlar
+                                 if item[0] <= _q_pompa_esas <= item[0] + (6.0 if item[0] in (60.0, 90.0, 110.0, 120.0) else 0.0)
+                                 and abs(item[1] - _h_pompa_esas) < 0.51),
+                                None
+                            )
+                            _poz_key = f"{_prefix}_poz"
+                            if _poz_eslesme:
+                                st.session_state[_poz_key] = _poz_eslesme[2]
+                                st.success(f"Otomatik poz: {_poz_eslesme[2]} — {_poz_eslesme[3]}")
+                            else:
+                                st.session_state[_poz_key] = ""
+                                st.warning("Bu debi/basma yüksekliği ve pompa tipi için doğrulanmış otomatik poz eşleşmesi bulunamadı. Poz numarası uydurulmadı.")
+                            st.caption(f"Poz grubu: {_poz_grup}")
                             _c1, _c2 = st.columns(2)
                             with _c1:
                                 st.text_input(f"{_etiket} marka", key=f"{_prefix}_marka")
                                 st.text_input(f"{_etiket} model", key=f"{_prefix}_model")
-                                st.text_input(f"{_etiket} Cihaz Poz No", key=f"{_prefix}_poz")
+                                st.text_input(f"{_etiket} Cihaz Poz No (otomatik)", key=f"{_prefix}_poz", disabled=True)
                             with _c2:
                                 st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
