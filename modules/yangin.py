@@ -2247,8 +2247,18 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     (120, 126, 120, "25.720.2206", "120–126 m³/h, 120 mSS"),
                                 ],
                             }
-                            _q_pompa_esas = float(_q_pompa_m3h)
-                            _h_pompa_esas = float(_h_pompa_otomatik_mss)
+                            # Jokey pompa varsayılanları sabittir: 6 m³/h ve ana tasarım
+                            # basma yüksekliğine +5 mSS. Ana pompa debisiyle karıştırılmaz.
+                            if "jokey" in _prefix:
+                                _q_pompa_esas = 6.0
+                                _h_pompa_esas = float(_h_pompa_otomatik_mss) + 5.0
+                                st.info(
+                                    f"Jokey pompa varsayılan çalışma noktası: **6,00 m³/h** ve "
+                                    f"**{_h_pompa_esas:.2f} mSS** (üst hesap basma yüksekliği + 5 mSS)."
+                                )
+                            else:
+                                _q_pompa_esas = float(_q_pompa_m3h)
+                                _h_pompa_esas = float(_h_pompa_otomatik_mss)
                             _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
                             _aday_pozlar = [
                                 item for item in _uygun_pozlar
@@ -2329,26 +2339,38 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
                                 _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
-                                if "yedek" in _prefix:
+                                if "jokey" in _prefix:
+                                    st.session_state[_qauto_key] = False
+                                    st.session_state[_qkey] = 6.0
+                                    st.caption("Jokey pompa debisi varsayılan olarak 6 m³/h alınır.")
+                                elif "yedek" in _prefix:
                                     st.session_state[_qauto_key] = False
                                     st.session_state[_qkey] = float(_q_pompa_m3h)
                                     st.caption("Yedek pompa debisi asıl pompayla aynı tasarım debisinden otomatik aktarılır.")
                                 else:
                                     st.checkbox(f"{_etiket}: debiyi elle düzelt", key=_qauto_key, value=bool(st.session_state.get(_qauto_key, False)))
-                                if "yedek" in _prefix:
+                                if "jokey" in _prefix:
+                                    st.number_input(f"{_etiket} debisi (m³/h) — varsayılan", min_value=0.0, step=0.5, key=_qkey, disabled=True)
+                                elif "yedek" in _prefix:
                                     st.number_input(f"{_etiket} debisi (m³/h) — asıl pompayla aynı", min_value=0.0, step=0.5, key=_qkey, disabled=True)
                                 elif st.session_state.get(_qauto_key, False):
                                     st.number_input(f"{_etiket} debisi (m³/h)", min_value=0.0, step=0.5, key=_qkey, value=float(st.session_state.get(_qkey, _q_pompa_m3h) if st.session_state.get(_qkey) is not None else _q_pompa_m3h))
                                 else:
                                     st.session_state[_qkey] = float(_q_pompa_m3h)
                                     st.number_input(f"{_etiket} debisi (m³/h) — otomatik", min_value=0.0, step=0.5, key=_qkey, disabled=True)
-                                if "yedek" in _prefix:
+                                if "jokey" in _prefix:
+                                    st.session_state[_hauto_key] = False
+                                    st.session_state[_hkey] = float(_h_pompa_otomatik_mss) + 5.0
+                                    st.caption("Jokey pompa basma yüksekliği, üst hesap değerine otomatik +5 mSS eklenerek belirlenir.")
+                                elif "yedek" in _prefix:
                                     st.session_state[_hauto_key] = False
                                     st.session_state[_hkey] = float(_h_pompa_otomatik_mss)
                                     st.caption("Yedek pompa basma yüksekliği asıl pompayla aynı tasarım değerinden otomatik aktarılır.")
                                 else:
                                     st.checkbox(f"{_etiket}: basma yüksekliğini elle düzelt", key=_hauto_key, value=bool(st.session_state.get(_hauto_key, False)))
-                                if "yedek" in _prefix:
+                                if "jokey" in _prefix:
+                                    st.number_input(f"{_etiket} basma yüksekliği (mSS) — üst hesap + 5 mSS", min_value=0.0, step=1.0, key=_hkey, disabled=True)
+                                elif "yedek" in _prefix:
                                     st.number_input(f"{_etiket} basma yüksekliği (mSS) — asıl pompayla aynı", min_value=0.0, step=1.0, key=_hkey, disabled=True)
                                 elif st.session_state.get(_hauto_key, False):
                                     st.number_input(f"{_etiket} basma yüksekliği (mSS)", min_value=0.0, step=1.0, key=_hkey, value=float(st.session_state.get(_hkey, _h_pompa_otomatik_mss) if st.session_state.get(_hkey) is not None else _h_pompa_otomatik_mss))
