@@ -2257,18 +2257,36 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _poz_eslesme = min(_aday_pozlar, key=lambda item: item[2]) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
                             if _poz_eslesme:
-                                st.session_state[_poz_key] = _poz_eslesme[3]
+                                _otomatik_poz = _poz_eslesme[3]
                                 st.success(f"Otomatik Bakanlık pozu: **{_poz_eslesme[3]}** — {_poz_eslesme[4]}")
                             else:
-                                st.session_state[_poz_key] = ""
+                                _otomatik_poz = ""
                                 st.warning(
                                     f"Seçilen tipte ({_tip_secim}), {_q_pompa_esas:.2f} m³/h ve "
                                     f"{_h_pompa_esas:.2f} mSS çalışma noktasını karşılayan doğrulanmış "
-                                    "Bakanlık alt pozu mevcut katalogda bulunamadı. Poz numarası tahmin edilmiyor."
+                                    "Bakanlık alt pozu mevcut katalogda bulunamadı. Sistem tahmini poz atamaz. "
+                                    "Resmî tariften kontrol ederek aşağıdan manuel poz girebilirsiniz."
                                 )
                             st.caption(f"Bakanlık poz grubu: {_poz_grup}")
+                            _manuel_poz_acik = st.checkbox(
+                                f"{_etiket}: poz numarasını elle gir / otomatik seçimi değiştir",
+                                key=f"{_prefix}_poz_manuel_aktif",
+                                value=bool(st.session_state.get(f"{_prefix}_poz_manuel_aktif", False)),
+                            )
+                            if _manuel_poz_acik:
+                                _manuel_poz_degeri = st.text_input(
+                                    f"{_etiket} manuel Bakanlık poz numarası",
+                                    value=str(st.session_state.get(f"{_prefix}_poz_manuel_giris", st.session_state.get(_poz_key, _otomatik_poz)) or ""),
+                                    key=f"{_prefix}_poz_manuel_giris",
+                                    placeholder="Örn. 25.720.1217",
+                                ).strip()
+                                st.session_state[_poz_key] = _manuel_poz_degeri
+                                if _manuel_poz_degeri:
+                                    st.info(f"Rapora aktarılacak poz: **{_manuel_poz_degeri}** (manuel seçim)")
+                            else:
+                                st.session_state[_poz_key] = _otomatik_poz
                             if "jokey" in _prefix:
-                                st.info("Jokey pompa için 25.720.4101 grubu ayrıldı. Alt pozların Q-H tarifleri tamamlanınca bu grupta da otomatik seçim yapılacak.")
+                                st.info("Jokey pompa grubu 25.720.4101 ve devamıdır. Bu grupta alt pozların debi/basma tarifleri doğrulanmadan otomatik alt poz atanmıyor; resmî alt poz numarasını manuel girebilirsiniz.")
 
                             # Çalışma noktasını gösteren ön tasarım eğrisi. Üretici Q-H
                             # katalog eğrisi mevcut olmadığından açıkça temsili olarak etiketlenir.
