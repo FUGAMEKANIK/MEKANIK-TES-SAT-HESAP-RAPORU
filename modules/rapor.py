@@ -3627,6 +3627,10 @@ if _rapor_olustur_sidebar:
                       _qsec_m3h = float(st.session_state.get("yangin_7133_tasarim_debi_m3h", _nihai_7132_m3h_r) or 0.0)
                       _qsec_ldak = float(st.session_state.get("yangin_7133_tasarim_debi_ldak", _qsec_m3h / 0.06 if _qsec_m3h else 0.0) or 0.0)
                       _hsec = float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0)
+                      _set_tipi_rapor = str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "Elektrikli asıl + elektrikli yedek + jokey pompa") or "")
+                      _set_par = doc.add_paragraph()
+                      _set_par.add_run("Seçilen pompa seti: ").bold = True
+                      _set_par.add_run(_set_tipi_rapor)
                       _pompa_tab = doc.add_table(rows=1, cols=6)
                       _pompa_tab.style = "Table Grid"
                       for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Adet", "Marka / Model", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
@@ -3634,15 +3638,21 @@ if _rapor_olustur_sidebar:
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
-                      for _tip, _adet, _marka, _model, _debi, _basma, _guc in [
+                      _pompa_satirlari = [
                           ("Ana yangın pompası", "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
                           ("Yedek yangın pompası", "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
-                      ]:
+                      ]
+                      if st.session_state.get("yangin_7134_jokey_var", False):
+                          _pompa_satirlari.append(("Jokey pompa", "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
+                      for _tip, _adet, _marka, _model, _debi, _basma, _guc in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
                           _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
                           for _c, _t in zip(_cells, [_tip, _adet, _markamodel, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
                               _c.text = _t
-                      for _tip, _key in [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]:
+                      _poz_kalemleri = [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]
+                      if st.session_state.get("yangin_7134_jokey_var", False):
+                          _poz_kalemleri.append(("Jokey pompa", "yangin_7134_jokey_poz"))
+                      for _tip, _key in _poz_kalemleri:
                           _poz_p = doc.add_paragraph()
                           _poz_p.add_run(f"{_tip} Cihaz Poz No: ").bold = True
                           _poz_p.add_run(str(st.session_state.get(_key, "") or "Belirtilmedi")).bold = True
