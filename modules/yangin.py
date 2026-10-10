@@ -495,7 +495,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # veri kaynağıdır. Şimdilik yalnızca program ekranında kullanılır;
                 # rapor üretimine aktarılmaz.
                 # ------------------------------------------------------------------
-                with st.expander("GENEL BİNA BİLGİLERİ", expanded=True):
+                with st.expander("GENEL BİNA BİLGİLERİ", expanded=False):
                     st.markdown(
                         '<div style="font-size:16px;font-weight:700;font-style:italic;">'
                         'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
@@ -615,7 +615,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 _acil_asansor = bool(st.session_state.get("yangin_genel_acil_durum_asansoru", False))
 
                 if st.session_state.get(_k721, True):
-                    with st.expander("7.2.1 BİNA KULLANIM AMACI", expanded=True):
+                    with st.expander("7.2.1 BİNA KULLANIM AMACI", expanded=False):
                         _c721a, _c721b = st.columns([3, 1])
                         with _c721a:
                             st.multiselect(
@@ -669,7 +669,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             )
 
                 if st.session_state.get(_k722, True):
-                    with st.expander("7.2.2 YANGIN TEHLİKE SINIFI", expanded=True):
+                    with st.expander("7.2.2 YANGIN TEHLİKE SINIFI", expanded=False):
                         _secili_kayitlar = _yangin_721_secili_kayitlar()
                         _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
                         _manuel = bool(st.session_state.get("yangin_721_manuel", False))
@@ -824,7 +824,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.2 GENEL BİNA BİLGİLERİ ve seçilen etkin yangın tehlike sınıfı
                 # bu bölümün ortak veri kaynağıdır.
                 # ------------------------------------------------------------------
-                with st.expander("7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
+                with st.expander("7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=False):
                     st.markdown(
                         '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
                         "BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
@@ -1047,7 +1047,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     )
 
             elif _baslik.startswith("7.4 "):
-                with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=True):
+                with st.expander("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=False):
                     st.markdown(
                         '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
                         "HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI</div>",
@@ -1262,7 +1262,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # --------------------------------------------------------------
                 # 7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ
                 # --------------------------------------------------------------
-                with st.expander("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                with st.expander("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=False):
                     st.markdown(
                         '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
                         "SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
@@ -1707,7 +1707,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 # 7.12 YANGIN SUYU DEPOLAMA SİSTEMİ
                 # 7.3.2 + 7.4.2 + 7.5.2 seçilen değerleri otomatik veri kaynağıdır.
                 # --------------------------------------------------------------
-                with st.expander("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                with st.expander("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=False):
                     st.markdown(
                         '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
                         "YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
