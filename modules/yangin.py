@@ -2133,6 +2133,24 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     for _idx, (_prefix, _etiket, _tahrik) in enumerate(_pompa_tanimlari):
                         with _pompa_sekmeleri[_idx]:
                             st.markdown(f"#### {_etiket} — {_tahrik}")
+                            # Pompa tipi seçimi: motor türüne göre Bakanlık poz grubu ayrımı korunur.
+                            _tip_key = f"{_prefix}_tipi"
+                            _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey tip", "Önden emişli", "Diğer / tarifteki adıyla"]
+                            _tip_default = st.session_state.get(_tip_key, ("Jokey / basınç koruma" if "jokey" in _prefix else _tipler[1]))
+                            _tip_secim = st.radio(
+                                f"{_etiket} pompa tipi", _tipler,
+                                index=_tipler.index(_tip_default) if _tip_default in _tipler else 1,
+                                key=_tip_key, horizontal=True,
+                            )
+                            _poz_grup_map = {
+                                ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1100 grubu",
+                                ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1200 grubu",
+                                ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "Resmî alt poz eşlemesi doğrulanacak",
+                                ("Dizel motorlu", "Yatay arkadan emişli"): "25.720.2100 grubu",
+                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2200 grubu",
+                            }
+                            _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu tip için Bakanlık alt poz grubu doğrulanmalı")
+                            st.caption(f"Poz grubu: {_poz_grup}. Poz numarası yalnızca doğrulanmış tariften seçilmelidir.")
                             _c1, _c2 = st.columns(2)
                             with _c1:
                                 st.text_input(f"{_etiket} marka", key=f"{_prefix}_marka")
