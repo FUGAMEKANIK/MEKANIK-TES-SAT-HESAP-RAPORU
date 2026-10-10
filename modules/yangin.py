@@ -2097,39 +2097,67 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _h_pompa_mss = _h_hesaplanan_7133
                     st.session_state["yangin_7133_basma_yuksekligi_mss"] = float(_h_pompa_mss)
 
-                # 7.13.4 Yangın hidroforu seçimi: debi 7.13.2, basma yüksekliği 7.13.3 hesabından gelir.
-                st.markdown("### 7.13.4 YANGIN HİDROFORU SEÇİMİ")
+                # 7.13.4 Yangın pompa seti: tasarım debisi ve basma yüksekliği yukarıdaki hesaplardan otomatik aktarılır.
+                st.markdown("### 7.13.4 YANGIN HİDROFORU / POMPA GRUBU SEÇİMİ")
                 with st.container():
                     _q_pompa_otomatik_m3h = float(st.session_state.get("yangin_7132_emniyet_debi_m3h", 0.0) or 0.0)
-                    st.markdown(f"**7.13.2 hesabından gelen tasarım debisi:** {_q_pompa_otomatik_m3h:.2f} m³/h ({_q_pompa_otomatik_m3h / 0.06:.2f} L/dak)")
-                    _q_pompa_elle = st.checkbox("Pompa tasarım debisini elle düzelt", value=bool(st.session_state.get("yangin_7133_debi_elle", False)), key="yangin_7133_debi_elle")
+                    _h_pompa_otomatik_mss = float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0)
+                    st.markdown(f"**Otomatik aktarılan tasarım debisi:** {_q_pompa_otomatik_m3h:.2f} m³/h ({_q_pompa_otomatik_m3h / 0.06:.2f} L/dak)")
+                    st.markdown(f"**Otomatik aktarılan basma yüksekliği:** {_h_pompa_otomatik_mss:.2f} mSS")
+                    _q_pompa_elle = st.checkbox("Pompa seti tasarım debisini elle düzelt", key="yangin_7133_debi_elle", value=bool(st.session_state.get("yangin_7133_debi_elle", False)))
                     if _q_pompa_elle:
-                        _q_pompa_m3h = st.number_input("Pompa tasarım debisi (m³/h)", min_value=0.0, value=float(st.session_state.get("yangin_7133_debi_manuel_m3h", _q_pompa_otomatik_m3h) or 0.0), step=0.5, key="yangin_7133_debi_manuel_m3h")
+                        _q_pompa_m3h = st.number_input("Pompa seti tasarım debisi (m³/h)", min_value=0.0, value=float(st.session_state.get("yangin_7133_debi_manuel_m3h", _q_pompa_otomatik_m3h) or 0.0), step=0.5, key="yangin_7133_debi_manuel_m3h")
                     else:
                         _q_pompa_m3h = _q_pompa_otomatik_m3h
-                    st.caption("Pompa debisi 7.13.2'den, gerekli basma yüksekliği 7.13.3 hesabından aktarılır. Marka/model ve poz numarası elle düzenlenebilir. Nihai seçim üretici performans eğrisiyle doğrulanmalıdır.")
-                    st.markdown("#### Ana yangın pompası (1 asıl)")
-                    _pcol1, _pcol2 = st.columns(2)
-                    with _pcol1:
-                        st.text_input("Ana pompa marka", key="yangin_7133_ana_marka")
-                        st.text_input("Ana pompa model", key="yangin_7133_ana_model")
-                        st.text_input("Ana pompa Cihaz Poz No", key="yangin_7133_ana_poz", help="Poz numarasını onaylı poz tarifine göre giriniz.")
-                    with _pcol2:
-                        st.number_input("Ana pompa motor gücü (kW)", min_value=0.0, value=float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0), step=0.5, key="yangin_7133_ana_guc_kw")
-                        st.number_input("Ana pompa debisi (m³/h)", min_value=0.0, value=float(st.session_state.get("yangin_7133_ana_debi_m3h", _q_pompa_m3h) if st.session_state.get("yangin_7133_ana_debi_m3h") is not None else _q_pompa_m3h), step=0.5, key="yangin_7133_ana_debi_m3h")
-                        st.number_input("Ana pompa basma yüksekliği (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_mss) if st.session_state.get("yangin_7133_ana_h_mss") is not None else _h_pompa_mss), step=1.0, key="yangin_7133_ana_h_mss")
-                    st.markdown("#### Yedek yangın pompası (1 yedek)")
-                    _ycol1, _ycol2 = st.columns(2)
-                    with _ycol1:
-                        st.text_input("Yedek pompa marka", key="yangin_7133_yedek_marka")
-                        st.text_input("Yedek pompa model", key="yangin_7133_yedek_model")
-                        st.text_input("Yedek pompa Cihaz Poz No", key="yangin_7133_yedek_poz", help="Poz numarasını onaylı poz tarifine göre giriniz.")
-                    with _ycol2:
-                        st.number_input("Yedek pompa motor gücü (kW)", min_value=0.0, value=float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0), step=0.5, key="yangin_7133_yedek_guc_kw")
-                        st.number_input("Yedek pompa debisi (m³/h)", min_value=0.0, value=float(st.session_state.get("yangin_7133_yedek_debi_m3h", _q_pompa_m3h) if st.session_state.get("yangin_7133_yedek_debi_m3h") is not None else _q_pompa_m3h), step=0.5, key="yangin_7133_yedek_debi_m3h")
-                        st.number_input("Yedek pompa basma yüksekliği (mSS)", min_value=0.0, value=float(st.session_state.get("yangin_7133_yedek_h_mss", _h_pompa_mss) if st.session_state.get("yangin_7133_yedek_h_mss") is not None else _h_pompa_mss), step=1.0, key="yangin_7133_yedek_h_mss")
+                    _pompa_seti_secenekleri = {
+                        "Elektrikli asıl + elektrikli yedek + jokey pompa": ("Elektrik motorlu", "Elektrik motorlu", True, False),
+                        "Elektrikli asıl + dizel yedek + jokey pompa": ("Elektrik motorlu", "Dizel motorlu", True, False),
+                        "Dizel asıl + dizel yedek + jokey pompa": ("Dizel motorlu", "Dizel motorlu", True, False),
+                        "Paket elektrikli pompa grubu (asıl + yedek)": ("Elektrik motorlu", "Elektrik motorlu", False, True),
+                    }
+                    _pompa_seti_secimi = st.radio(
+                        "Pompa seti konfigürasyonu", list(_pompa_seti_secenekleri.keys()),
+                        key="yangin_7134_pompa_seti_tipi", horizontal=False,
+                    )
+                    _ana_tahrik, _yedek_tahrik, _jokey_var, _paket_grup = _pompa_seti_secenekleri[_pompa_seti_secimi]
+                    st.session_state["yangin_7134_pompa_seti_tipi_rapor"] = _pompa_seti_secimi
+                    st.caption("Set tipi seçildiğinde ilgili pompa sekmeleri görünür. Her pompanın debi ve basma yüksekliği varsayılan olarak üstteki hesaplardan gelir; istenirse pompa bazında elle düzenlenebilir.")
+                    _sekme_adlari = ["Asıl pompa", "Yedek pompa"] + (["Jokey pompa"] if _jokey_var else [])
+                    _pompa_sekmeleri = st.tabs(_sekme_adlari)
+                    _pompa_tanimlari = [
+                        ("yangin_7133_ana", "Asıl yangın pompası", _ana_tahrik),
+                        ("yangin_7133_yedek", "Yedek yangın pompası", _yedek_tahrik),
+                    ]
+                    if _jokey_var:
+                        _pompa_tanimlari.append(("yangin_7134_jokey", "Jokey pompa", "Elektrik motorlu"))
+                    for _idx, (_prefix, _etiket, _tahrik) in enumerate(_pompa_tanimlari):
+                        with _pompa_sekmeleri[_idx]:
+                            st.markdown(f"#### {_etiket} — {_tahrik}")
+                            _c1, _c2 = st.columns(2)
+                            with _c1:
+                                st.text_input(f"{_etiket} marka", key=f"{_prefix}_marka")
+                                st.text_input(f"{_etiket} model", key=f"{_prefix}_model")
+                                st.text_input(f"{_etiket} Cihaz Poz No", key=f"{_prefix}_poz")
+                            with _c2:
+                                st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
+                                _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
+                                _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
+                                st.checkbox(f"{_etiket}: debiyi elle düzelt", key=_qauto_key, value=bool(st.session_state.get(_qauto_key, False)))
+                                if st.session_state.get(_qauto_key, False):
+                                    st.number_input(f"{_etiket} debisi (m³/h)", min_value=0.0, step=0.5, key=_qkey, value=float(st.session_state.get(_qkey, _q_pompa_m3h) if st.session_state.get(_qkey) is not None else _q_pompa_m3h))
+                                else:
+                                    st.session_state[_qkey] = float(_q_pompa_m3h)
+                                    st.number_input(f"{_etiket} debisi (m³/h) — otomatik", min_value=0.0, step=0.5, key=_qkey, disabled=True)
+                                st.checkbox(f"{_etiket}: basma yüksekliğini elle düzelt", key=_hauto_key, value=bool(st.session_state.get(_hauto_key, False)))
+                                if st.session_state.get(_hauto_key, False):
+                                    st.number_input(f"{_etiket} basma yüksekliği (mSS)", min_value=0.0, step=1.0, key=_hkey, value=float(st.session_state.get(_hkey, _h_pompa_otomatik_mss) if st.session_state.get(_hkey) is not None else _h_pompa_otomatik_mss))
+                                else:
+                                    st.session_state[_hkey] = float(_h_pompa_otomatik_mss)
+                                    st.number_input(f"{_etiket} basma yüksekliği (mSS) — otomatik", min_value=0.0, step=1.0, key=_hkey, disabled=True)
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
                     st.session_state["yangin_7133_tasarim_debi_ldak"] = float(_q_pompa_m3h / 0.06)
+                    st.session_state["yangin_7134_jokey_var"] = bool(_jokey_var)
+                    st.session_state["yangin_7134_paket_grup"] = bool(_paket_grup)
 
             # 7.1 alt maddeleri yukarıda gerçek expander arayüzleriyle oluşturuldu.
             # Tekrar aşağıda statik başlık/placeholder üretmeyelim.
