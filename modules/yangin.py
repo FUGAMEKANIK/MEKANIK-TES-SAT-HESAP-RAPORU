@@ -2156,59 +2156,97 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             }
                             _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu tip için Bakanlık alt poz grubu doğrulanmalı")
 
-                            # Doğrulanmış Bakanlık poz eşleştirmeleri. Debi ve basma yüksekliği
-                            # aynı tasarım değerlerinden asıl/yedek pompalara aktarılır.
-                            # Tabloya yalnızca doğrulanmış tarifler eklenir; eşleşme yoksa poz uydurulmaz.
+                            # Bakanlık tariflerinden doğrulanmış pozlar. Katalogda bulunmayan
+                            # kombinasyonlara tahmini poz numarası verilmez.
                             _poz_katalog = {
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): [
-                                    (60.0, 60.0, "25.720.1207", "60–66 m³/h, 60 mSS"),
-                                    (60.0, 80.0, "25.720.1208", "60–66 m³/h, 80 mSS"),
-                                    (60.0, 100.0, "25.720.1209", "60–66 m³/h, 100 mSS"),
-                                    (90.0, 80.0, "25.720.1217", "90–99 m³/h, 80 mSS"),
-                                    (120.0, 60.0, "25.720.1220", "120–126 m³/h, 60 mSS"),
+                                    (60.0, 66.0, 60.0, "25.720.1207", "60–66 m³/h, 60 mSS"),
+                                    (60.0, 66.0, 80.0, "25.720.1208", "60–66 m³/h, 80 mSS"),
+                                    (60.0, 66.0, 100.0, "25.720.1209", "60–66 m³/h, 100 mSS"),
+                                    (90.0, 99.0, 80.0, "25.720.1217", "90–99 m³/h, 80 mSS"),
+                                    (120.0, 126.0, 60.0, "25.720.1220", "120–126 m³/h, 60 mSS"),
                                 ],
                                 ("Dizel motorlu", "Yatay arkadan emişli"): [
-                                    (60.0, 60.0, "25.720.2101", "60–66 m³/h, 60 mSS"),
-                                    (60.0, 80.0, "25.720.2102", "60–66 m³/h, 80 mSS"),
-                                    (60.0, 100.0, "25.720.2103", "60–66 m³/h, 100 mSS"),
+                                    (60.0, 66.0, 60.0, "25.720.2101", "60–66 m³/h, 60 mSS"),
+                                    (60.0, 66.0, 80.0, "25.720.2102", "60–66 m³/h, 80 mSS"),
+                                    (60.0, 66.0, 100.0, "25.720.2103", "60–66 m³/h, 100 mSS"),
+                                    (70.0, 79.0, 60.0, "25.720.2104", "70–79 m³/h, 60 mSS"),
+                                    (70.0, 79.0, 80.0, "25.720.2105", "70–79 m³/h, 80 mSS"),
+                                    (70.0, 79.0, 100.0, "25.720.2106", "70–79 m³/h, 100 mSS"),
+                                    (80.0, 89.0, 60.0, "25.720.2107", "80–89 m³/h, 60 mSS"),
+                                    (80.0, 89.0, 80.0, "25.720.2108", "80–89 m³/h, 80 mSS"),
+                                    (80.0, 89.0, 100.0, "25.720.2109", "80–89 m³/h, 100 mSS"),
+                                    (90.0, 99.0, 60.0, "25.720.2110", "90–99 m³/h, 60 mSS"),
+                                    (90.0, 99.0, 80.0, "25.720.2111", "90–99 m³/h, 80 mSS"),
+                                    (110.0, 119.0, 60.0, "25.720.2112", "110–119 m³/h, 60 mSS"),
+                                    (110.0, 119.0, 80.0, "25.720.2113", "110–119 m³/h, 80 mSS"),
+                                    (120.0, 126.0, 60.0, "25.720.2114", "120–126 m³/h, 60 mSS"),
+                                    (120.0, 126.0, 80.0, "25.720.2115", "120–126 m³/h, 80 mSS"),
+                                    (120.0, 126.0, 100.0, "25.720.2116", "120–126 m³/h, 100 mSS"),
+                                    (120.0, 126.0, 120.0, "25.720.2117", "120–126 m³/h, 120 mSS"),
                                 ],
                                 ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): [
-                                    (110.0, 100.0, "25.720.2201", "110–119 m³/h, 100 mSS"),
-                                    (110.0, 120.0, "25.720.2202", "110–119 m³/h, 120 mSS"),
-                                    (120.0, 60.0, "25.720.2203", "120–126 m³/h, 60 mSS"),
-                                    (120.0, 80.0, "25.720.2204", "120–126 m³/h, 80 mSS"),
-                                    (120.0, 100.0, "25.720.2205", "120–126 m³/h, 100 mSS"),
-                                    (120.0, 120.0, "25.720.2206", "120–126 m³/h, 120 mSS"),
+                                    (110.0, 119.0, 100.0, "25.720.2201", "110–119 m³/h, 100 mSS"),
+                                    (110.0, 119.0, 120.0, "25.720.2202", "110–119 m³/h, 120 mSS"),
+                                    (120.0, 126.0, 60.0, "25.720.2203", "120–126 m³/h, 60 mSS"),
+                                    (120.0, 126.0, 80.0, "25.720.2204", "120–126 m³/h, 80 mSS"),
+                                    (120.0, 126.0, 100.0, "25.720.2205", "120–126 m³/h, 100 mSS"),
+                                    (120.0, 126.0, 120.0, "25.720.2206", "120–126 m³/h, 120 mSS"),
                                 ],
                             }
                             _q_pompa_esas = float(_q_pompa_m3h)
                             _h_pompa_esas = float(_h_pompa_otomatik_mss)
                             _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
-                            def _debi_araligi_poz(_alt):
-                                if _alt == 60.0:
-                                    return 66.0
-                                if _alt in (90.0, 110.0):
-                                    return 99.0 if _alt == 90.0 else 119.0
-                                if _alt == 120.0:
-                                    return 126.0
-                                return _alt
-
-                            # Pozdaki debi aralığı tasarım debisini kapsamalı; basma yüksekliği
-                            # ise tasarım ihtiyacını karşılayan en düşük tarif değerinden seçilir.
                             _aday_pozlar = [
                                 item for item in _uygun_pozlar
-                                if item[0] <= _q_pompa_esas <= _debi_araligi_poz(item[0])
-                                and item[1] >= _h_pompa_esas
+                                if item[0] <= _q_pompa_esas <= item[1] and item[2] >= _h_pompa_esas
                             ]
-                            _poz_eslesme = min(_aday_pozlar, key=lambda item: item[1]) if _aday_pozlar else None
+                            _poz_eslesme = min(_aday_pozlar, key=lambda item: item[2]) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
                             if _poz_eslesme:
-                                st.session_state[_poz_key] = _poz_eslesme[2]
-                                st.success(f"Otomatik poz: {_poz_eslesme[2]} — {_poz_eslesme[3]}")
+                                st.session_state[_poz_key] = _poz_eslesme[3]
+                                st.success(f"Otomatik Bakanlık pozu: **{_poz_eslesme[3]}** — {_poz_eslesme[4]}")
                             else:
                                 st.session_state[_poz_key] = ""
-                                st.warning("Bu debi/basma yüksekliği ve pompa tipi için doğrulanmış otomatik poz eşleşmesi bulunamadı. Poz numarası uydurulmadı.")
+                                st.warning(
+                                    f"Seçilen tipte ({_tip_secim}), {_q_pompa_esas:.2f} m³/h ve "
+                                    f"{_h_pompa_esas:.2f} mSS çalışma noktasını karşılayan doğrulanmış "
+                                    "Bakanlık alt pozu mevcut katalogda bulunamadı. Poz numarası tahmin edilmiyor."
+                                )
                             st.caption(f"Poz grubu: {_poz_grup}")
+
+                            # Çalışma noktasını gösteren ön tasarım eğrisi. Üretici Q-H
+                            # katalog eğrisi mevcut olmadığından açıkça temsili olarak etiketlenir.
+                            if _q_pompa_esas > 0 and _h_pompa_esas > 0:
+                                try:
+                                    import matplotlib.pyplot as _plt_fire
+                                    import io as _io_fire
+                                    _q_curve_fire = [0.0, 0.50*_q_pompa_esas, 0.75*_q_pompa_esas,
+                                                     _q_pompa_esas, 1.25*_q_pompa_esas,
+                                                     1.50*_q_pompa_esas, 1.75*_q_pompa_esas]
+                                    _h_curve_fire = [1.40*_h_pompa_esas, 1.22*_h_pompa_esas,
+                                                     1.10*_h_pompa_esas, _h_pompa_esas,
+                                                     0.82*_h_pompa_esas, 0.63*_h_pompa_esas,
+                                                     0.43*_h_pompa_esas]
+                                    _fig_fire, _ax_fire = _plt_fire.subplots(figsize=(7, 3.2))
+                                    _ax_fire.plot(_q_curve_fire, _h_curve_fire, marker="o",
+                                                  label="Temsili Q-H eğrisi")
+                                    _ax_fire.scatter([_q_pompa_esas], [_h_pompa_esas],
+                                                     marker="x", s=90, label="Tasarım çalışma noktası")
+                                    _ax_fire.set_xlabel("Debi Q (m³/h)")
+                                    _ax_fire.set_ylabel("Basma yüksekliği H (mSS)")
+                                    _ax_fire.set_title("Yangın pompası Q-H çalışma grafiği")
+                                    _ax_fire.grid(True, alpha=0.3)
+                                    _ax_fire.legend()
+                                    _fig_fire.tight_layout()
+                                    _buf_fire = _io_fire.BytesIO()
+                                    _fig_fire.savefig(_buf_fire, format="png", dpi=140, bbox_inches="tight")
+                                    _plt_fire.close(_fig_fire)
+                                    _buf_fire.seek(0)
+                                    st.image(_buf_fire, use_container_width=True)
+                                    st.caption("Not: Bu eğri çalışma noktasını görselleştiren temsili eğridir; üretici katalog eğrisi değildir. Gerçek eğri, seçilen modelin üretici Q-H verisiyle doğrulanmalıdır.")
+                                except Exception as _curve_err:
+                                    st.caption("Q-H grafiği bu ortamda oluşturulamadı.")
                             _c1, _c2 = st.columns(2)
                             with _c1:
                                 st.text_input(f"{_etiket} marka", key=f"{_prefix}_marka")
