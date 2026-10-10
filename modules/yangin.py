@@ -2135,63 +2135,116 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.markdown(f"#### {_etiket} — {_tahrik}")
                             # Pompa tipi seçimi: motor türüne göre Bakanlık poz grubu ayrımı korunur.
                             _tip_key = f"{_prefix}_tipi"
-                            _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey tip", "Önden emişli", "Diğer / tarifteki adıyla"]
-                            _tip_default = st.session_state.get(_tip_key, ("Jokey / basınç koruma" if "jokey" in _prefix else _tipler[1]))
+                            _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey milli çok kademeli"]
+                            _tip_default = st.session_state.get(_tip_key, (_tipler[1] if "jokey" not in _prefix else _tipler[1]))
                             if "yedek" in _prefix:
                                 _ana_tip_secim = st.session_state.get("yangin_7133_ana_tipi", _tipler[1])
                                 _tip_secim = _ana_tip_secim
                                 st.info(f"Yedek pompa tipi asıl pompayla aynı: {_tip_secim}")
+                            elif "jokey" in _prefix:
+                                _tip_secim = "Jokey / basınç koruma"
+                                st.info("Jokey pompa Bakanlık poz grubu: 25.720.4101 ve devamı")
                             else:
                                 _tip_secim = st.radio(
                                     f"{_etiket} pompa tipi", _tipler,
                                     index=_tipler.index(_tip_default) if _tip_default in _tipler else 1,
                                     key=_tip_key, horizontal=True,
                                 )
+                            # Bakanlık 2026 Mayıs Mekanik Tesisat poz grupları.
+                            # Kullanıcının doğruladığı başlangıç pozları esas alınır.
                             _poz_grup_map = {
-                                ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1100 grubu",
-                                ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1200 grubu",
-                                ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "Resmî alt poz eşlemesi doğrulanacak",
-                                ("Dizel motorlu", "Yatay arkadan emişli"): "25.720.2100 grubu",
-                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2200 grubu",
+                                ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1101–25.720.1109",
+                                ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1201–25.720.1223",
+                                ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "25.720.1301–25.720.1306",
+                                ("Elektrik motorlu", "Dikey milli çok kademeli"): "25.720.1401 ve devamı",
+                                ("Dizel motorlu", "Yatay arkadan emişli"): "25.720.2101 ve devamı",
+                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2201 ve devamı",
+                                ("Elektrik motorlu", "Jokey / basınç koruma"): "25.720.4101 ve devamı",
                             }
-                            _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu tip için Bakanlık alt poz grubu doğrulanmalı")
+                            if "jokey" in _prefix:
+                                _tip_secim = "Jokey / basınç koruma"
+                                _poz_grup = "25.720.4101 ve devamı — Elektrik motorlu kaçak giderme pompası / jokey pompa"
+                            else:
+                                _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu motor/tip eşleşmesi için Bakanlık poz grubu doğrulanmalı")
 
-                            # Bakanlık tariflerinden doğrulanmış pozlar. Katalogda bulunmayan
-                            # kombinasyonlara tahmini poz numarası verilmez.
+                            # 2026 Mayıs resmî listeden doğrulanmış debi/basma pozları.
+                            # Her poz: Qmin, Qmax, H (mSS), poz no, tarif.
                             _poz_katalog = {
+                                ("Elektrik motorlu", "Yatay hat (in-line)"): [
+                                    (12, 12, 60, "25.720.1101", "12 m³/h, 60 mSS"),
+                                    (12, 12, 80, "25.720.1102", "12 m³/h, 80 mSS"),
+                                    (12, 12, 100, "25.720.1103", "12 m³/h, 100 mSS"),
+                                    (60, 66, 60, "25.720.1104", "60–66 m³/h, 60 mSS"),
+                                    (60, 66, 80, "25.720.1105", "60–66 m³/h, 80 mSS"),
+                                    (60, 66, 100, "25.720.1106", "60–66 m³/h, 100 mSS"),
+                                    (120, 126, 60, "25.720.1107", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.1108", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.1109", "120–126 m³/h, 100 mSS"),
+                                ],
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): [
-                                    (60.0, 66.0, 60.0, "25.720.1207", "60–66 m³/h, 60 mSS"),
-                                    (60.0, 66.0, 80.0, "25.720.1208", "60–66 m³/h, 80 mSS"),
-                                    (60.0, 66.0, 100.0, "25.720.1209", "60–66 m³/h, 100 mSS"),
-                                    (90.0, 99.0, 80.0, "25.720.1217", "90–99 m³/h, 80 mSS"),
-                                    (120.0, 126.0, 60.0, "25.720.1220", "120–126 m³/h, 60 mSS"),
+                                    (12, 12, 60, "25.720.1201", "12 m³/h, 60 mSS"),
+                                    (12, 12, 80, "25.720.1202", "12 m³/h, 80 mSS"),
+                                    (12, 12, 100, "25.720.1203", "12 m³/h, 100 mSS"),
+                                    (50, 59, 60, "25.720.1204", "50–59 m³/h, 60 mSS"),
+                                    (50, 59, 80, "25.720.1205", "50–59 m³/h, 80 mSS"),
+                                    (50, 59, 100, "25.720.1206", "50–59 m³/h, 100 mSS"),
+                                    (60, 66, 60, "25.720.1207", "60–66 m³/h, 60 mSS"),
+                                    (60, 66, 80, "25.720.1208", "60–66 m³/h, 80 mSS"),
+                                    (60, 66, 100, "25.720.1209", "60–66 m³/h, 100 mSS"),
+                                    (70, 79, 60, "25.720.1210", "70–79 m³/h, 60 mSS"),
+                                    (70, 79, 80, "25.720.1211", "70–79 m³/h, 80 mSS"),
+                                    (70, 79, 100, "25.720.1212", "70–79 m³/h, 100 mSS"),
+                                    (80, 89, 60, "25.720.1213", "80–89 m³/h, 60 mSS"),
+                                    (80, 89, 80, "25.720.1214", "80–89 m³/h, 80 mSS"),
+                                    (80, 89, 100, "25.720.1215", "80–89 m³/h, 100 mSS"),
+                                    (90, 99, 60, "25.720.1216", "90–99 m³/h, 60 mSS"),
+                                    (90, 99, 80, "25.720.1217", "90–99 m³/h, 80 mSS"),
+                                    (110, 119, 60, "25.720.1218", "110–119 m³/h, 60 mSS"),
+                                    (110, 119, 80, "25.720.1219", "110–119 m³/h, 80 mSS"),
+                                    (120, 126, 60, "25.720.1220", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.1221", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.1222", "120–126 m³/h, 100 mSS"),
+                                    (120, 126, 120, "25.720.1223", "120–126 m³/h, 120 mSS"),
+                                ],
+                                ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): [
+                                    (110, 119, 100, "25.720.1301", "110–119 m³/h, 100 mSS"),
+                                    (110, 119, 120, "25.720.1302", "110–119 m³/h, 120 mSS"),
+                                    (120, 126, 60, "25.720.1303", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.1304", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.1305", "120–126 m³/h, 100 mSS"),
+                                    (120, 126, 120, "25.720.1306", "120–126 m³/h, 120 mSS"),
+                                ],
+                                ("Elektrik motorlu", "Dikey milli çok kademeli"): [
+                                    (12, 12, 60, "25.720.1401", "12 m³/h, 60 mSS"),
+                                    (12, 12, 80, "25.720.1402", "12 m³/h, 80 mSS"),
+                                    (12, 12, 100, "25.720.1403", "12 m³/h, 100 mSS"),
                                 ],
                                 ("Dizel motorlu", "Yatay arkadan emişli"): [
-                                    (60.0, 66.0, 60.0, "25.720.2101", "60–66 m³/h, 60 mSS"),
-                                    (60.0, 66.0, 80.0, "25.720.2102", "60–66 m³/h, 80 mSS"),
-                                    (60.0, 66.0, 100.0, "25.720.2103", "60–66 m³/h, 100 mSS"),
-                                    (70.0, 79.0, 60.0, "25.720.2104", "70–79 m³/h, 60 mSS"),
-                                    (70.0, 79.0, 80.0, "25.720.2105", "70–79 m³/h, 80 mSS"),
-                                    (70.0, 79.0, 100.0, "25.720.2106", "70–79 m³/h, 100 mSS"),
-                                    (80.0, 89.0, 60.0, "25.720.2107", "80–89 m³/h, 60 mSS"),
-                                    (80.0, 89.0, 80.0, "25.720.2108", "80–89 m³/h, 80 mSS"),
-                                    (80.0, 89.0, 100.0, "25.720.2109", "80–89 m³/h, 100 mSS"),
-                                    (90.0, 99.0, 60.0, "25.720.2110", "90–99 m³/h, 60 mSS"),
-                                    (90.0, 99.0, 80.0, "25.720.2111", "90–99 m³/h, 80 mSS"),
-                                    (110.0, 119.0, 60.0, "25.720.2112", "110–119 m³/h, 60 mSS"),
-                                    (110.0, 119.0, 80.0, "25.720.2113", "110–119 m³/h, 80 mSS"),
-                                    (120.0, 126.0, 60.0, "25.720.2114", "120–126 m³/h, 60 mSS"),
-                                    (120.0, 126.0, 80.0, "25.720.2115", "120–126 m³/h, 80 mSS"),
-                                    (120.0, 126.0, 100.0, "25.720.2116", "120–126 m³/h, 100 mSS"),
-                                    (120.0, 126.0, 120.0, "25.720.2117", "120–126 m³/h, 120 mSS"),
+                                    (60, 66, 60, "25.720.2101", "60–66 m³/h, 60 mSS"),
+                                    (60, 66, 80, "25.720.2102", "60–66 m³/h, 80 mSS"),
+                                    (60, 66, 100, "25.720.2103", "60–66 m³/h, 100 mSS"),
+                                    (70, 79, 60, "25.720.2104", "70–79 m³/h, 60 mSS"),
+                                    (70, 79, 80, "25.720.2105", "70–79 m³/h, 80 mSS"),
+                                    (70, 79, 100, "25.720.2106", "70–79 m³/h, 100 mSS"),
+                                    (80, 89, 60, "25.720.2107", "80–89 m³/h, 60 mSS"),
+                                    (80, 89, 80, "25.720.2108", "80–89 m³/h, 80 mSS"),
+                                    (80, 89, 100, "25.720.2109", "80–89 m³/h, 100 mSS"),
+                                    (90, 99, 60, "25.720.2110", "90–99 m³/h, 60 mSS"),
+                                    (90, 99, 80, "25.720.2111", "90–99 m³/h, 80 mSS"),
+                                    (110, 119, 60, "25.720.2112", "110–119 m³/h, 60 mSS"),
+                                    (110, 119, 80, "25.720.2113", "110–119 m³/h, 80 mSS"),
+                                    (120, 126, 60, "25.720.2114", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.2115", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.2116", "120–126 m³/h, 100 mSS"),
+                                    (120, 126, 120, "25.720.2117", "120–126 m³/h, 120 mSS"),
                                 ],
                                 ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): [
-                                    (110.0, 119.0, 100.0, "25.720.2201", "110–119 m³/h, 100 mSS"),
-                                    (110.0, 119.0, 120.0, "25.720.2202", "110–119 m³/h, 120 mSS"),
-                                    (120.0, 126.0, 60.0, "25.720.2203", "120–126 m³/h, 60 mSS"),
-                                    (120.0, 126.0, 80.0, "25.720.2204", "120–126 m³/h, 80 mSS"),
-                                    (120.0, 126.0, 100.0, "25.720.2205", "120–126 m³/h, 100 mSS"),
-                                    (120.0, 126.0, 120.0, "25.720.2206", "120–126 m³/h, 120 mSS"),
+                                    (110, 119, 100, "25.720.2201", "110–119 m³/h, 100 mSS"),
+                                    (110, 119, 120, "25.720.2202", "110–119 m³/h, 120 mSS"),
+                                    (120, 126, 60, "25.720.2203", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.2204", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.2205", "120–126 m³/h, 100 mSS"),
+                                    (120, 126, 120, "25.720.2206", "120–126 m³/h, 120 mSS"),
                                 ],
                             }
                             _q_pompa_esas = float(_q_pompa_m3h)
@@ -2213,7 +2266,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     f"{_h_pompa_esas:.2f} mSS çalışma noktasını karşılayan doğrulanmış "
                                     "Bakanlık alt pozu mevcut katalogda bulunamadı. Poz numarası tahmin edilmiyor."
                                 )
-                            st.caption(f"Poz grubu: {_poz_grup}")
+                            st.caption(f"Bakanlık poz grubu: {_poz_grup}")
+                            if "jokey" in _prefix:
+                                st.info("Jokey pompa için 25.720.4101 grubu ayrıldı. Alt pozların Q-H tarifleri tamamlanınca bu grupta da otomatik seçim yapılacak.")
 
                             # Çalışma noktasını gösteren ön tasarım eğrisi. Üretici Q-H
                             # katalog eğrisi mevcut olmadığından açıkça temsili olarak etiketlenir.
