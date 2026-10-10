@@ -2137,11 +2137,16 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _tip_key = f"{_prefix}_tipi"
                             _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey tip", "Önden emişli", "Diğer / tarifteki adıyla"]
                             _tip_default = st.session_state.get(_tip_key, ("Jokey / basınç koruma" if "jokey" in _prefix else _tipler[1]))
-                            _tip_secim = st.radio(
-                                f"{_etiket} pompa tipi", _tipler,
-                                index=_tipler.index(_tip_default) if _tip_default in _tipler else 1,
-                                key=_tip_key, horizontal=True,
-                            )
+                            if "yedek" in _prefix:
+                                _ana_tip_secim = st.session_state.get("yangin_7133_ana_tipi", _tipler[1])
+                                _tip_secim = _ana_tip_secim
+                                st.info(f"Yedek pompa tipi asıl pompayla aynı: {_tip_secim}")
+                            else:
+                                _tip_secim = st.radio(
+                                    f"{_etiket} pompa tipi", _tipler,
+                                    index=_tipler.index(_tip_default) if _tip_default in _tipler else 1,
+                                    key=_tip_key, horizontal=True,
+                                )
                             _poz_grup_map = {
                                 ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1100 grubu",
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1200 grubu",
@@ -2179,12 +2184,23 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _q_pompa_esas = float(_q_pompa_m3h)
                             _h_pompa_esas = float(_h_pompa_otomatik_mss)
                             _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
-                            _poz_eslesme = next(
-                                (item for item in _uygun_pozlar
-                                 if item[0] <= _q_pompa_esas <= item[0] + (6.0 if item[0] in (60.0, 90.0, 110.0, 120.0) else 0.0)
-                                 and abs(item[1] - _h_pompa_esas) < 0.51),
-                                None
-                            )
+                            def _debi_araligi_poz(_alt):
+                                if _alt == 60.0:
+                                    return 66.0
+                                if _alt in (90.0, 110.0):
+                                    return 99.0 if _alt == 90.0 else 119.0
+                                if _alt == 120.0:
+                                    return 126.0
+                                return _alt
+
+                            # Pozdaki debi aralığı tasarım debisini kapsamalı; basma yüksekliği
+                            # ise tasarım ihtiyacını karşılayan en düşük tarif değerinden seçilir.
+                            _aday_pozlar = [
+                                item for item in _uygun_pozlar
+                                if item[0] <= _q_pompa_esas <= _debi_araligi_poz(item[0])
+                                and item[1] >= _h_pompa_esas
+                            ]
+                            _poz_eslesme = min(_aday_pozlar, key=lambda item: item[1]) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
                             if _poz_eslesme:
                                 st.session_state[_poz_key] = _poz_eslesme[2]
@@ -2202,14 +2218,28 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
                                 _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
-                                st.checkbox(f"{_etiket}: debiyi elle düzelt", key=_qauto_key, value=bool(st.session_state.get(_qauto_key, False)))
-                                if st.session_state.get(_qauto_key, False):
+                                if "yedek" in _prefix:
+                                    st.session_state[_qauto_key] = False
+                                    st.session_state[_qkey] = float(_q_pompa_m3h)
+                                    st.caption("Yedek pompa debisi asıl pompayla aynı tasarım debisinden otomatik aktarılır.")
+                                else:
+                                    st.checkbox(f"{_etiket}: debiyi elle düzelt", key=_qauto_key, value=bool(st.session_state.get(_qauto_key, False)))
+                                if "yedek" in _prefix:
+                                    st.number_input(f"{_etiket} debisi (m³/h) — asıl pompayla aynı", min_value=0.0, step=0.5, key=_qkey, disabled=True)
+                                elif st.session_state.get(_qauto_key, False):
                                     st.number_input(f"{_etiket} debisi (m³/h)", min_value=0.0, step=0.5, key=_qkey, value=float(st.session_state.get(_qkey, _q_pompa_m3h) if st.session_state.get(_qkey) is not None else _q_pompa_m3h))
                                 else:
                                     st.session_state[_qkey] = float(_q_pompa_m3h)
                                     st.number_input(f"{_etiket} debisi (m³/h) — otomatik", min_value=0.0, step=0.5, key=_qkey, disabled=True)
-                                st.checkbox(f"{_etiket}: basma yüksekliğini elle düzelt", key=_hauto_key, value=bool(st.session_state.get(_hauto_key, False)))
-                                if st.session_state.get(_hauto_key, False):
+                                if "yedek" in _prefix:
+                                    st.session_state[_hauto_key] = False
+                                    st.session_state[_hkey] = float(_h_pompa_otomatik_mss)
+                                    st.caption("Yedek pompa basma yüksekliği asıl pompayla aynı tasarım değerinden otomatik aktarılır.")
+                                else:
+                                    st.checkbox(f"{_etiket}: basma yüksekliğini elle düzelt", key=_hauto_key, value=bool(st.session_state.get(_hauto_key, False)))
+                                if "yedek" in _prefix:
+                                    st.number_input(f"{_etiket} basma yüksekliği (mSS) — asıl pompayla aynı", min_value=0.0, step=1.0, key=_hkey, disabled=True)
+                                elif st.session_state.get(_hauto_key, False):
                                     st.number_input(f"{_etiket} basma yüksekliği (mSS)", min_value=0.0, step=1.0, key=_hkey, value=float(st.session_state.get(_hkey, _h_pompa_otomatik_mss) if st.session_state.get(_hkey) is not None else _h_pompa_otomatik_mss))
                                 else:
                                     st.session_state[_hkey] = float(_h_pompa_otomatik_mss)
