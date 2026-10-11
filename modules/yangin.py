@@ -2371,7 +2371,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # yeni seçime taşınmasını önle.
                             for _alan in (
                                 "katalog_model", "katalog_satir", "katalog_debi_m3h",
-                                "katalog_gpm", "katalog_basinc_bar", "katalog_basma_mss",
+                                "katalog_gpm", "katalog_gpm_karsilik_m3h", "katalog_basinc_bar", "katalog_basma_mss",
+                                "rapor_gpm", "rapor_gpm_karsilik_m3h", "rapor_katalog_debi_m3h", "rapor_katalog_basma_mss",
                                 "katalog_elektrik_kw", "katalog_dizel_es_kw_hp",
                                 "katalog_dizel_rad_kw_hp", "katalog_motor_rapor_gucu",
                             ):
@@ -2380,6 +2381,22 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state.pop("yangin_7133_ana_katalog_model", None)
                                 st.session_state.pop("yangin_7133_ana_katalog_satir", None)
 
+                            # Üretici kataloğundaki nominal GPM sınıfları ve bunların
+                            # m³/h karşılıkları. Pompa kapasitesi seçiminde GPM sınıfı
+                            # esas alınır; gerekli debiyi karşılamayan alt sınıf seçilmez.
+                            _katalog_standart_gpm = {
+                                "SNK 50-250": 200,
+                                "SNK 50-250 / 250 GPM": 250,
+                                "SNK 65-250": 300,
+                                "SNK 65-250 / 400 GPM": 400,
+                                "SNK 80-250": 450,
+                                "SNK 80-250 / 500 GPM": 500,
+                                "SDS 100-250": 750,
+                                "SDS 100-250 / 1000 GPM": 1000,
+                                "SDS 125-315": 1250,
+                                "SDS 125-315 / 1500 GPM": 1500,
+                            }
+                            _gpm_m3h_karsilik = {g: round(g * 0.2271247, 2) for g in set(_katalog_standart_gpm.values())}
                             _secim_adaylari = []
                             if _model_ailesi_istenen and _tahrik in ("Elektrik motorlu", "Dizel motorlu"):
                                 for _model_adi, _satirlar in _snk_sds_katalog.items():
@@ -2387,10 +2404,13 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                         continue
                                     for _satir in _satirlar:
                                         _satir_debi, _satir_bar = float(_satir[0]), float(_satir[1])
-                                        # En küçük standart katalog debisi ve bu debide gerekli
-                                        # basma yüksekliğini karşılayan ilk basınç satırı seçilir.
-                                        if _satir_debi >= _gerekli_debi and (_satir_bar * 10.197) >= _gerekli_h:
-                                            _secim_adaylari.append((_satir_debi, _satir_bar, _model_adi, _satir))
+                                        _gpm_sinifi = _katalog_standart_gpm.get(_model_adi)
+                                        _gpm_karsilik_m3h = _gpm_m3h_karsilik.get(_gpm_sinifi, _satir_debi)
+                                        # Önce standart GPM kapasitesinin m³/h karşılığı gerekli
+                                        # debiyi karşılamalı; ardından aynı kapasitedeki basınç
+                                        # satırı gerekli basma yüksekliğini karşılamalıdır.
+                                        if _gpm_karsilik_m3h >= _gerekli_debi and (_satir_bar * 10.197) >= _gerekli_h:
+                                            _secim_adaylari.append((_gpm_karsilik_m3h, _satir_bar, _model_adi, _satir))
                             _secim_adaylari.sort(key=lambda x: (x[0], x[1]))
                             _katalog_secimi = _secim_adaylari[0] if _secim_adaylari else None
 
@@ -2408,9 +2428,15 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _secili_model = _katalog_secimi[2]
                                 _satir = _katalog_secimi[3]
                                 _satir_debi, _satir_bar, _guc_100, _guc_150, _el_onayli, _el_onaysiz, _diz_es, _diz_rad, _diz_es_guc, _diz_rad_guc = _satir
-                                _gpm = round(_satir_debi / 0.227)
-                                st.success(f"Katalog seçimi: **{_secili_model}** — {_satir_debi:.1f} m³/h / **{_gpm} GPM**, {_satir_bar:.2f} bar (yaklaşık {_satir_bar * 10.197:.1f} mSS)")
+                                # GPM, debiyi m³/h'den dönüştürerek türetilmez;
+                                # üretici PDF'sindeki standart nominal GPM değerinden alınır.
+                                # Böylece 749 gibi katalogda olmayan küsuratlı değerler yazılmaz.
+                                _gpm = _katalog_standart_gpm.get(_secili_model)
+                                _gpm_m3h = _gpm_m3h_karsilik.get(_gpm, _satir_debi)
+                                _gpm_gosterim = f"{_gpm} GPM" if _gpm is not None else "Katalogda belirtilmemiş"
+                                st.success(f"Katalog seçimi: **{_secili_model}** — **{_gpm_gosterim}** (nominal karşılığı {_gpm_m3h:.2f} m³/h), katalog çalışma satırı {_satir_debi:.1f} m³/h, {_satir_bar:.2f} bar (yaklaşık {_satir_bar * 10.197:.1f} mSS)")
                                 st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
+                                st.session_state[f"{_prefix}_rapor_gpm_karsilik_m3h"] = _gpm_m3h
                                 if _tahrik == "Elektrik motorlu":
                                     st.write(f"Elektrik motor gücü — katalog: **{_el_onayli} kW (UL/FM onaylı)** / **{_el_onaysiz} kW (onaysız)**")
                                     _motor_rapor_gucu = _el_onayli
@@ -2421,8 +2447,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_katalog_satir"] = tuple(_satir)
                                 st.session_state[f"{_prefix}_katalog_debi_m3h"] = _satir_debi
                                 st.session_state[f"{_prefix}_katalog_gpm"] = _gpm
-                                # GPM değerini rapor modülünün okuyabilmesi için ayrıca rapor alanı olarak sakla.
+                                st.session_state[f"{_prefix}_katalog_gpm_karsilik_m3h"] = _gpm_m3h
+                                # Nominal GPM sınıfı ve m³/h karşılığı rapora ayrı aktarılır.
                                 st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
+                                st.session_state[f"{_prefix}_rapor_gpm_karsilik_m3h"] = _gpm_m3h
                                 st.session_state[f"{_prefix}_rapor_katalog_debi_m3h"] = _satir_debi
                                 st.session_state[f"{_prefix}_rapor_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
                                 st.session_state[f"{_prefix}_katalog_basinc_bar"] = _satir_bar
@@ -2669,12 +2697,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     except (TypeError, ValueError):
                                         _katalog_guc_kw = None
                                 if not st.session_state.get(_guc_elle_key, False):
-                                    # Jokey pompanın varsayılan elektrik motor gücü kullanıcı talebiyle 4,5 kW.
-                                    # Diğer pompalar katalog gücünü, katalog satırı yoksa yaklaşık hesabı kullanır.
-                                    if "jokey" in _prefix:
-                                        st.session_state[_guc_key] = 4.5
-                                    else:
-                                        st.session_state[_guc_key] = round(_katalog_guc_kw, 2) if _katalog_guc_kw is not None else round(_guc_hesap, 2)
+                                    # Widget henüz oluşturulmadı; katalog gücünü güvenli şekilde varsayılan yap.
+                                    st.session_state[_guc_key] = round(_katalog_guc_kw, 2) if _katalog_guc_kw is not None else round(_guc_hesap, 2)
                                 st.number_input(
                                     f"{_etiket} elektrik/motor gücü (kW)",
                                     min_value=0.0, step=0.5, key=_guc_key,
