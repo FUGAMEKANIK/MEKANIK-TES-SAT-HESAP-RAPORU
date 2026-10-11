@@ -3631,9 +3631,9 @@ if _rapor_olustur_sidebar:
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
-                      _pompa_tab = doc.add_table(rows=1, cols=8)
+                      _pompa_tab = doc.add_table(rows=1, cols=9)
                       _pompa_tab.style = "Table Grid"
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "GPM", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "GPM", "GPM karşılığı (m³/h)", "Gerekli debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
@@ -3648,15 +3648,16 @@ if _rapor_olustur_sidebar:
                       else:
                           _ana_tahrik_rapor, _yedek_tahrik_rapor = "Elektrik", "Elektrik"
                       _pompa_satirlari = [
-                          ("Ana yangın pompası", _ana_tahrik_rapor, "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), str(st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")) or "—"), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
-                          ("Yedek yangın pompası", _yedek_tahrik_rapor, "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
+                          ("Ana yangın pompası", _ana_tahrik_rapor, "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), str(st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
+                          ("Yedek yangın pompası", _yedek_tahrik_rapor, "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append(("Jokey pompa", "Jokey (dikey milli)", "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
-                      for _tip, _pompa_tipi, _adet, _marka, _model, _gpm, _debi, _basma, _guc in _pompa_satirlari:
+                          _pompa_satirlari.append(("Jokey pompa", "Jokey (dikey milli)", "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
+                      for _tip, _pompa_tipi, _adet, _marka, _model, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
                           _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
-                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, str(_gpm), _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
+                          _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h)
+                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, str(_gpm), _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
                               _c.text = _t
                       # Cihaz Poz No satırları ve pompa çalışma noktasıyla ilgili genel not rapordan kaldırıldı.
 
@@ -3668,67 +3669,6 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
-      # SEÇİLİ BAŞLIKLARI OTOMATİK YENİDEN NUMARALANDIR
-      # Yalnızca rapora dahil edilen ana 7.x bölümler numara alır; bölüm içindeki
-      # alt başlıklar ve metin/tablo içi bölüm atıfları aynı eşlemeyle güncellenir.
-      # Bu işlem içerik üretimi bittikten sonra yapıldığı için hesaplamalara,
-      # seçim durumlarına ve mevcut rapor biçimlendirmesine müdahale etmez.
-      try:
-          _ana_7_bolumleri = [
-              ("rapor_bolum_71", "1"),
-              ("rapor_bolum_72", "2"),
-              ("rapor_bolum_73", "3"),
-              ("rapor_bolum_74", "4"),
-              ("rapor_bolum_75", "5"),
-              ("rapor_bolum_76", "6"),
-              ("rapor_bolum_77", "7"),
-              ("rapor_bolum_78", "8"),
-              ("rapor_bolum_79", "9"),
-              ("rapor_bolum_710", "10"),
-              ("rapor_bolum_7110", "11"),
-              ("rapor_bolum_7120", "12"),
-              ("rapor_bolum_7130", "13"),
-              ("rapor_bolum_7140", "14"),
-              ("rapor_bolum_7150", "15"),
-          ]
-          _eski_yeni_7 = {}
-          _yeni_sira_7 = 0
-          if st.session_state.get("rapor_bolum_7", True):
-              for _ana_key_7, _eski_no_7 in _ana_7_bolumleri:
-                  _aktif_ana_7 = bool(st.session_state.get(_ana_key_7, True))
-                  if _eski_no_7 == "1":
-                      _aktif_ana_7 = _aktif_ana_7 and any(
-                          st.session_state.get(_rk, True)
-                          for _rb, _rm, _rk, _rrk in _yangin_71_gruplari
-                      ) or (_aktif_ana_7 and bool(st.session_state.get("rapor_bolum_713", True)))
-                  elif _eski_no_7 == "2":
-                      _aktif_ana_7 = _aktif_ana_7 and (
-                          bool(st.session_state.get("rapor_bolum_721", True))
-                          or bool(st.session_state.get("rapor_bolum_722", True))
-                      )
-                  if _aktif_ana_7:
-                      _yeni_sira_7 += 1
-                      _eski_yeni_7[_eski_no_7] = str(_yeni_sira_7)
-          if _eski_yeni_7:
-              _numara_deseni_7 = re.compile(r"(?<![\w])7\.(15|14|13|12|11|10|9|8|7|6|5|4|3|2|1)(?=\.|\s)")
-              def _numarayi_guncelle_7(_metin_7):
-                  def _degistir_7(_m7):
-                      _eski7 = _m7.group(1)
-                      return "7." + _eski_yeni_7.get(_eski7, _eski7)
-                  return _numara_deseni_7.sub(_degistir_7, _metin_7)
-              for _par_7 in doc.paragraphs:
-                  for _run_7 in _par_7.runs:
-                      _run_7.text = _numarayi_guncelle_7(_run_7.text)
-              for _tablo_7 in doc.tables:
-                  for _satir_7 in _tablo_7.rows:
-                      for _hucre_7 in _satir_7.cells:
-                          for _par_7 in _hucre_7.paragraphs:
-                              for _run_7 in _par_7.runs:
-                                  _run_7.text = _numarayi_guncelle_7(_run_7.text)
-      except Exception as _numaralandirma_hatasi_7:
-          # Numaralandırma hatası raporun geri kalanının oluşmasını engellemesin.
-          st.warning(f"Başlık numaraları otomatik güncellenemedi: {_numaralandirma_hatasi_7}")
-
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
