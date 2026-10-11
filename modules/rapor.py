@@ -3656,7 +3656,8 @@ if _rapor_olustur_sidebar:
                           # Jokey motor gücü raporda da varsayılan 4,5 kW gösterilir;
                           # eski oturumdan kalan 0 veya hidrolik hesap değeri kullanılmaz.
                           _jokey_guc_rapor = 4.5
-                          st.session_state["yangin_7134_jokey_guc_kw"] = _jokey_guc_rapor
+                          # Rapor oluşturulurken widget'a ait session_state anahtarını
+                          # değiştirmiyoruz; bu, Streamlit'in widget kilidi hatasını önler.
                           _pompa_satirlari.append(("Jokey pompa", "Jokey — Dikey milli çok kademeli", "1 adet", str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), _jokey_guc_rapor))
                       for _tip, _pompa_tipi, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
