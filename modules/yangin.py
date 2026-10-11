@@ -2135,12 +2135,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.markdown(f"#### {_etiket} — {_tahrik}")
                             # Pompa tipi seçimi: motor türüne göre Bakanlık poz grubu ayrımı korunur.
                             _tip_key = f"{_prefix}_tipi"
-                            _tipler = ["Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey milli çok kademeli"]
-                            # Önceki kayıtlı projelerde kaldırılan tip seçili kalmış olabilir.
-                            # Widget oluşmadan geçerli tipe aktar.
-                            if st.session_state.get(_tip_key) == "Yatay hat (in-line)":
-                                st.session_state[_tip_key] = _tipler[0]
-                            _tip_default = st.session_state.get(_tip_key, _tipler[0])
+                            _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey milli çok kademeli"]
+                            _tip_default = st.session_state.get(_tip_key, (_tipler[1] if "jokey" not in _prefix else _tipler[1]))
                             if "yedek" in _prefix:
                                 _ana_tip_secim = st.session_state.get("yangin_7133_ana_tipi", _tipler[1])
                                 _tip_secim = _ana_tip_secim
@@ -2157,6 +2153,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Bakanlık 2026 Mayıs Mekanik Tesisat poz grupları.
                             # Kullanıcının doğruladığı başlangıç pozları esas alınır.
                             _poz_grup_map = {
+                                ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1101–25.720.1109",
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1201–25.720.1223",
                                 ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "25.720.1301–25.720.1306",
                                 ("Elektrik motorlu", "Dikey milli çok kademeli"): "25.720.1401 ve devamı",
@@ -2173,6 +2170,17 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # 2026 Mayıs resmî listeden doğrulanmış debi/basma pozları.
                             # Her poz: Qmin, Qmax, H (mSS), poz no, tarif.
                             _poz_katalog = {
+                                ("Elektrik motorlu", "Yatay hat (in-line)"): [
+                                    (12, 12, 60, "25.720.1101", "12 m³/h, 60 mSS"),
+                                    (12, 12, 80, "25.720.1102", "12 m³/h, 80 mSS"),
+                                    (12, 12, 100, "25.720.1103", "12 m³/h, 100 mSS"),
+                                    (60, 66, 60, "25.720.1104", "60–66 m³/h, 60 mSS"),
+                                    (60, 66, 80, "25.720.1105", "60–66 m³/h, 80 mSS"),
+                                    (60, 66, 100, "25.720.1106", "60–66 m³/h, 100 mSS"),
+                                    (120, 126, 60, "25.720.1107", "120–126 m³/h, 60 mSS"),
+                                    (120, 126, 80, "25.720.1108", "120–126 m³/h, 80 mSS"),
+                                    (120, 126, 100, "25.720.1109", "120–126 m³/h, 100 mSS"),
+                                ],
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): [
                                     (12, 12, 60, "25.720.1201", "12 m³/h, 60 mSS"),
                                     (12, 12, 80, "25.720.1202", "12 m³/h, 80 mSS"),
@@ -2375,26 +2383,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _eta = float(st.session_state.get(_eta_key, 65.0) or 65.0)
                                 _guc_hesap = (0.002725 * _q_now * _h_now / max(_eta / 100.0, 0.01)) if _q_now > 0 and _h_now > 0 else 0.0
                                 _guc_elle_key = f"{_prefix}_guc_elle"
-                                st.checkbox(
-                                    f"{_etiket}: motor gücünü elle düzelt",
-                                    key=_guc_elle_key,
-                                    value=bool(st.session_state.get(_guc_elle_key, False)),
-                                )
-                                if st.session_state.get(_guc_elle_key, False):
-                                    # Elle düzenleme açıkken kullanıcı girdisi için tek widget.
-                                    st.number_input(
-                                        f"{_etiket} elektrik/motor gücü (kW)",
-                                        min_value=0.0,
-                                        step=0.5,
-                                        key=_guc_key,
-                                        value=float(st.session_state.get(_guc_key, round(_guc_hesap, 2)) or 0.0),
-                                        help="Nihai motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.",
-                                    )
-                                else:
-                                    # Otomatik modda widget anahtarına doğrudan yazma yapılmaz.
-                                    # Bu, Streamlit'in WidgetAlreadyInstantiatedError hatasını önler.
-                                    st.metric(f"{_etiket} yaklaşık motor gücü", f"{_guc_hesap:.2f} kW")
-                                st.caption(f"Yaklaşık hesap: 0,002725 × Q × H / η")
+                                st.checkbox(f"{_etiket}: motor gücünü elle düzelt", key=_guc_elle_key, value=bool(st.session_state.get(_guc_elle_key, False)))
+                                if not st.session_state.get(_guc_elle_key, False):
+                                    st.session_state[_guc_key] = round(_guc_hesap, 2)
+                                st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help="Otomatik değer yaklaşık güç hesabıdır; kesin motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.")
+                                st.caption(f"Yaklaşık hesaplanan güç: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
                     st.session_state["yangin_7133_tasarim_debi_ldak"] = float(_q_pompa_m3h / 0.06)
                     st.session_state["yangin_7134_jokey_var"] = bool(_jokey_var)
