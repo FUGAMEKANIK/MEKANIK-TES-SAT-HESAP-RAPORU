@@ -2085,14 +2085,23 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 with st.container():
                     st.caption("Basma yüksekliği; yukarıda girilen yapı yüksekliği + boru kayıpları + lans girişindeki gerekli basınç toplamı olarak hesaplanır. 400 kPa yaklaşık 40 mSS'tir; bu lans basıncı, BYKHY Madde 94'teki ilgili yangın dolabı tipinin koşulları için geçerlidir.")
                     _yapi_yuksekligi_7133 = float(st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0) or 0.0)
-                    # Varsayılanları üstte girilen yapı yüksekliği, 40 mSS lans basıncı ve 0 mSS boru kaybı olarak başlat.
-                    st.session_state.setdefault("yangin_7133_kot_farki_m", _yapi_yuksekligi_7133)
-                    st.session_state.setdefault("yangin_7133_kritik_basinci_mss", 40.0)
-                    st.session_state.setdefault("yangin_7133_boru_kaybi_mss", 0.0)
+                    # Yeni projede hp üstteki yapı yüksekliğinden, ha 40 mSS'den başlar.
+                    # Daha önce girilmiş geçerli kullanıcı değerleri korunur; boş/None değerler onarılır.
+                    if st.session_state.get("yangin_7133_kot_farki_m") in (None, ""):
+                        st.session_state["yangin_7133_kot_farki_m"] = _yapi_yuksekligi_7133
+                    elif "yangin_7133_kot_farki_m" not in st.session_state:
+                        st.session_state["yangin_7133_kot_farki_m"] = _yapi_yuksekligi_7133
+                    if st.session_state.get("yangin_7133_kritik_basinci_mss") in (None, ""):
+                        st.session_state["yangin_7133_kritik_basinci_mss"] = 40.0
+                    elif "yangin_7133_kritik_basinci_mss" not in st.session_state:
+                        st.session_state["yangin_7133_kritik_basinci_mss"] = 40.0
+                    # Boru kaybı bilerek boş bırakılır; kullanıcı hesapladığında değer girebilir.
+                    if "yangin_7133_boru_kaybi_mss" not in st.session_state:
+                        st.session_state["yangin_7133_boru_kaybi_mss"] = None
                     _kot_farki_7133 = st.number_input(
                         "Kot farkı / yapı yüksekliği (hp, mSS)", min_value=0.0,
                         step=1.0, key="yangin_7133_kot_farki_m",
-                        help="Başlangıç değeri yukarıda girilen yapı yüksekliğinden alınır; elle değiştirilebilir."
+                        help="Varsayılan değer yukarıda girilen yapı yüksekliğidir; elle değiştirilebilir."
                     )
                     _kritik_basinci_7133 = st.number_input(
                         "Lans girişindeki basınç (ha, mSS)", min_value=0.0,
@@ -2100,14 +2109,15 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         help="Varsayılan 40 mSS (yaklaşık 400 kPa); elle değiştirilebilir."
                     )
                     _boru_kaybi_7133 = st.number_input(
-                        "Boru kayıpları (hb, mSS)", min_value=0.0,
+                        "Boru kayıpları (hb, mSS)", min_value=0.0, value=None,
                         step=1.0, key="yangin_7133_boru_kaybi_mss",
-                        help="Varsayılan 0 mSS; hesaplanan kaybı elle giriniz."
+                        help="Boru kaybı varsayılan olarak boş bırakılır; hesaplanan kaybı giriniz."
                     )
                     # st.number_input değerleri session_state'e kendisi yazar;
                     # widget oluşturulduktan sonra aynı anahtara atama yapılmamalıdır.
-                    _h_hesaplanan_7133 = _kot_farki_7133 + _boru_kaybi_7133 + _kritik_basinci_7133
-                    st.markdown(f"**P = hp + hb + ha = ({_kot_farki_7133:.2f} + {_boru_kaybi_7133:.2f} + {_kritik_basinci_7133:.2f}) = {_h_hesaplanan_7133:.2f} mSS**")
+                    _boru_kaybi_sayisal_7133 = float(_boru_kaybi_7133 or 0.0)
+                    _h_hesaplanan_7133 = _kot_farki_7133 + _boru_kaybi_sayisal_7133 + _kritik_basinci_7133
+                    st.markdown(f"**P = hp + hb + ha = ({_kot_farki_7133:.2f} + {_boru_kaybi_sayisal_7133:.2f} + {_kritik_basinci_7133:.2f}) = {_h_hesaplanan_7133:.2f} mSS**")
                     st.markdown(f"**Toplam basınç ≈ {_h_hesaplanan_7133:.2f} mSS = {_h_hesaplanan_7133/10:.2f} bar**")
                     st.metric("Hesaplanan gerekli basma yüksekliği", f"{_h_hesaplanan_7133:.2f} mSS")
                     _h_elle_7133 = st.checkbox("Basma yüksekliğini elle düzelt", value=bool(st.session_state.get("yangin_7133_basma_yuksekligi_elle", False)), key="yangin_7133_basma_yuksekligi_elle")
