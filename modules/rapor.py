@@ -3668,6 +3668,54 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
+      # Ana bölüm seçimlerine göre başlık numaralarını yeniden düzenle.
+      # Sıhhi tesisat (6) rapordan çıkarılmışsa yangın bölümü 7 yerine 6 olur;
+      # sonraki ana bölümler de bir basamak kaydırılır. Hesap içindeki sayılar
+      # değiştirilmez; yalnızca Word başlık stilleri üzerinde işlem yapılır.
+      try:
+          import re as _re_bolum_no
+          _bolum6_var = bool(st.session_state.get("rapor_bolum_6", False))
+          _bolum7_var = bool(st.session_state.get("rapor_bolum_7", False))
+          _kaydirma = 0 if _bolum6_var else 1
+          if _kaydirma:
+              for _p_no in doc.paragraphs:
+                  _stil_no = getattr(_p_no, "style", None)
+                  _stil_adi_no = str(getattr(_stil_no, "name", "") or "").lower()
+                  if not _stil_adi_no.startswith("heading"):
+                      continue
+                  _eski_metin_no = _p_no.text or ""
+                  _m_no = _re_bolum_no.match(r"^(\s*)(7(?:\.\d+)*)(?=\s|$)(.*)$", _eski_metin_no)
+                  if not _m_no:
+                      continue
+                  _eski_num_no = _m_no.group(2)
+                  _yeni_num_no = "6" + _eski_num_no[1:]
+                  _yeni_metin_no = _m_no.group(1) + _yeni_num_no + _m_no.group(3)
+                  for _r_no in _p_no.runs:
+                      _r_no.text = ""
+                  if _p_no.runs:
+                      _p_no.runs[0].text = _yeni_metin_no
+                  else:
+                      _p_no.add_run(_yeni_metin_no)
+      except Exception as _bolum_no_hatasi:
+          st.warning(f"Ana bölüm numaraları güncellenemedi: {_bolum_no_hatasi}")
+
+      # Eski sürümden kalan çağrı eksik fonksiyon nedeniyle raporu durdurmasın.
+      # Temel Word stillerini güvenli biçimde uygula.
+      def rapor_word_stillerini_uygula(_doc):
+          for _style_name in ("Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"):
+              try:
+                  _style = _doc.styles[_style_name]
+                  _style.font.name = "Times New Roman"
+                  _style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+                  _style.font.size = Pt(12)
+                  _style.paragraph_format.widow_control = True
+              except (KeyError, AttributeError):
+                  pass
+          for _paragraph in _doc.paragraphs:
+              _style = getattr(_paragraph, "style", None)
+              if str(getattr(_style, "name", "") or "").lower().startswith("heading"):
+                  _paragraph.paragraph_format.keep_with_next = True
+
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
