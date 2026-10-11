@@ -3668,6 +3668,67 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
+      # SEÇİLİ BAŞLIKLARI OTOMATİK YENİDEN NUMARALANDIR
+      # Yalnızca rapora dahil edilen ana 7.x bölümler numara alır; bölüm içindeki
+      # alt başlıklar ve metin/tablo içi bölüm atıfları aynı eşlemeyle güncellenir.
+      # Bu işlem içerik üretimi bittikten sonra yapıldığı için hesaplamalara,
+      # seçim durumlarına ve mevcut rapor biçimlendirmesine müdahale etmez.
+      try:
+          _ana_7_bolumleri = [
+              ("rapor_bolum_71", "1"),
+              ("rapor_bolum_72", "2"),
+              ("rapor_bolum_73", "3"),
+              ("rapor_bolum_74", "4"),
+              ("rapor_bolum_75", "5"),
+              ("rapor_bolum_76", "6"),
+              ("rapor_bolum_77", "7"),
+              ("rapor_bolum_78", "8"),
+              ("rapor_bolum_79", "9"),
+              ("rapor_bolum_710", "10"),
+              ("rapor_bolum_7110", "11"),
+              ("rapor_bolum_7120", "12"),
+              ("rapor_bolum_7130", "13"),
+              ("rapor_bolum_7140", "14"),
+              ("rapor_bolum_7150", "15"),
+          ]
+          _eski_yeni_7 = {}
+          _yeni_sira_7 = 0
+          if st.session_state.get("rapor_bolum_7", True):
+              for _ana_key_7, _eski_no_7 in _ana_7_bolumleri:
+                  _aktif_ana_7 = bool(st.session_state.get(_ana_key_7, True))
+                  if _eski_no_7 == "1":
+                      _aktif_ana_7 = _aktif_ana_7 and any(
+                          st.session_state.get(_rk, True)
+                          for _rb, _rm, _rk, _rrk in _yangin_71_gruplari
+                      ) or (_aktif_ana_7 and bool(st.session_state.get("rapor_bolum_713", True)))
+                  elif _eski_no_7 == "2":
+                      _aktif_ana_7 = _aktif_ana_7 and (
+                          bool(st.session_state.get("rapor_bolum_721", True))
+                          or bool(st.session_state.get("rapor_bolum_722", True))
+                      )
+                  if _aktif_ana_7:
+                      _yeni_sira_7 += 1
+                      _eski_yeni_7[_eski_no_7] = str(_yeni_sira_7)
+          if _eski_yeni_7:
+              _numara_deseni_7 = re.compile(r"(?<![\w])7\.(15|14|13|12|11|10|9|8|7|6|5|4|3|2|1)(?=\.|\s)")
+              def _numarayi_guncelle_7(_metin_7):
+                  def _degistir_7(_m7):
+                      _eski7 = _m7.group(1)
+                      return "7." + _eski_yeni_7.get(_eski7, _eski7)
+                  return _numara_deseni_7.sub(_degistir_7, _metin_7)
+              for _par_7 in doc.paragraphs:
+                  for _run_7 in _par_7.runs:
+                      _run_7.text = _numarayi_guncelle_7(_run_7.text)
+              for _tablo_7 in doc.tables:
+                  for _satir_7 in _tablo_7.rows:
+                      for _hucre_7 in _satir_7.cells:
+                          for _par_7 in _hucre_7.paragraphs:
+                              for _run_7 in _par_7.runs:
+                                  _run_7.text = _numarayi_guncelle_7(_run_7.text)
+      except Exception as _numaralandirma_hatasi_7:
+          # Numaralandırma hatası raporun geri kalanının oluşmasını engellemesin.
+          st.warning(f"Başlık numaraları otomatik güncellenemedi: {_numaralandirma_hatasi_7}")
+
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
