@@ -2142,9 +2142,13 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _tip_secim = _ana_tip_secim
                                 st.info(f"Yedek pompa tipi asıl pompayla aynı: {_tip_secim}")
                             elif "jokey" in _prefix:
-                                # Jokey pompalar bütün set seçeneklerinde dikey milli çok kademelidir.
+                                # Jokey pompanın tipi sabittir; hem seçim ekranında hem rapora
+                                # aktarılan session_state alanında dikey milli olarak saklanır.
                                 _tip_secim = "Dikey milli çok kademeli"
-                                st.info("Jokey pompa: dikey milli çok kademeli; varsayılan debi 6 m³/h, basma yüksekliği ana pompa basma yüksekliği + 5 mSS.")
+                                st.session_state[_tip_key] = _tip_secim
+                                st.session_state[f"{_prefix}_tipi_rapor"] = _tip_secim
+                                st.session_state["yangin_7134_jokey_tipi"] = _tip_secim
+                                st.info("Jokey pompa tipi sabittir: Dikey milli çok kademeli. Varsayılan debi 6 m³/h, basma yüksekliği ana pompa basma yüksekliği + 5 mSS.")
                             else:
                                 _tip_secim = st.radio(
                                     f"{_etiket} pompa tipi", _tipler,
@@ -2529,7 +2533,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 st.session_state[_poz_key] = _otomatik_poz
                             if "jokey" in _prefix:
-                                st.info("Jokey pompa dikey milli tiptedir. 6 m³/h debi için poz, ana pompa basma yüksekliği + 5 mSS değerini karşılayan en düşük Bakanlık kademesinden otomatik atanır.")
+                                # Sonradan değişen genel tip/poz işlemleri rapor tipini ezemesin.
+                                st.session_state[_tip_key] = "Dikey milli çok kademeli"
+                                st.session_state[f"{_prefix}_tipi_rapor"] = "Dikey milli çok kademeli"
+                                st.session_state["yangin_7134_jokey_tipi"] = "Dikey milli çok kademeli"
+                                st.info("Jokey pompa rapor tipi: Dikey milli çok kademeli. 6 m³/h debi için poz, ana pompa basma yüksekliği + 5 mSS değerini karşılayan en düşük Bakanlık kademesinden otomatik atanır.")
 
                             # Çalışma noktasını gösteren ön tasarım eğrisi. Üretici Q-H
                             # katalog eğrisi mevcut olmadığından açıkça temsili olarak etiketlenir.
