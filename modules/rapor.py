@@ -3631,15 +3631,14 @@ if _rapor_olustur_sidebar:
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
-                      _pompa_tab = doc.add_table(rows=1, cols=9)
+                      # Raporda marka/model gösterilmez; pompa tipi tahrik türü ve hidrolik gövde tipini birlikte belirtir.
+                      _pompa_tab = doc.add_table(rows=1, cols=8)
                       _pompa_tab.style = "Table Grid"
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "GPM", "GPM karşılığı (m³/h)", "Gerekli debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "GPM", "GPM karşılığı (m³/h)", "Gerekli debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
-                      _ana_tahrik_rapor = "Dizel" if "dizel" in str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "")).lower() and "asıl + dizel yedek" not in str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "")).lower() else "Elektrik"
-                      # Asıl ve yedek pompa tahrik tipini seçilen set konfigürasyonundan belirle.
                       _set_rapor_lower = str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "") or "").lower()
                       if "dizel asıl" in _set_rapor_lower:
                           _ana_tahrik_rapor, _yedek_tahrik_rapor = "Dizel", "Dizel"
@@ -3647,17 +3646,18 @@ if _rapor_olustur_sidebar:
                           _ana_tahrik_rapor, _yedek_tahrik_rapor = "Elektrik", "Dizel"
                       else:
                           _ana_tahrik_rapor, _yedek_tahrik_rapor = "Elektrik", "Elektrik"
+                      _ana_hidrolik_tip = str(st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Yatay arkadan emişli")) or "Yatay arkadan emişli")
+                      _yedek_hidrolik_tip = str(st.session_state.get("yangin_7133_yedek_tipi_rapor", st.session_state.get("yangin_7133_yedek_tipi", _ana_hidrolik_tip)) or _ana_hidrolik_tip)
                       _pompa_satirlari = [
-                          ("Ana yangın pompası", _ana_tahrik_rapor, "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), str(st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
-                          ("Yedek yangın pompası", _yedek_tahrik_rapor, "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
+                          ("Ana yangın pompası", f"{_ana_tahrik_rapor} — {_ana_hidrolik_tip}", "1 asıl", str(st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
+                          ("Yedek yangın pompası", f"{_yedek_tahrik_rapor} — {_yedek_hidrolik_tip}", "1 yedek", str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append(("Jokey pompa", "Jokey (dikey milli)", "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
-                      for _tip, _pompa_tipi, _adet, _marka, _model, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
+                          _pompa_satirlari.append(("Jokey pompa", "Jokey — Dikey milli çok kademeli", "1 adet", str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
+                      for _tip, _pompa_tipi, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
-                          _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
                           _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h)
-                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, str(_gpm), _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
+                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, str(_gpm), _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
                               _c.text = _t
                       # Cihaz Poz No satırları ve pompa çalışma noktasıyla ilgili genel not rapordan kaldırıldı.
 
