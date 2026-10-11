@@ -3653,7 +3653,11 @@ if _rapor_olustur_sidebar:
                           ("Yedek yangın pompası", f"{_yedek_tahrik_rapor} — {_yedek_hidrolik_tip}", "1 yedek", str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append(("Jokey pompa", "Jokey — Dikey milli çok kademeli", "1 adet", str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0)))
+                          # Jokey motor gücü raporda da varsayılan 4,5 kW gösterilir;
+                          # eski oturumdan kalan 0 veya hidrolik hesap değeri kullanılmaz.
+                          _jokey_guc_rapor = 4.5
+                          st.session_state["yangin_7134_jokey_guc_kw"] = _jokey_guc_rapor
+                          _pompa_satirlari.append(("Jokey pompa", "Jokey — Dikey milli çok kademeli", "1 adet", str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), _jokey_guc_rapor))
                       for _tip, _pompa_tipi, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
                           _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h)
@@ -3669,6 +3673,32 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
+      # Dahil edilen 7.x ana başlıklarını sırayla yeniden numaralandır.
+      # Yalnızca başlık stilleri değiştirilir; hesap metinlerindeki referanslar korunur.
+      import re as _re_baslik_numara
+      _ana_basliklar_7x = []
+      for _par_baslik in doc.paragraphs:
+          if not str(getattr(_par_baslik, "style", "").name if getattr(_par_baslik, "style", None) else "").lower().startswith("heading"):
+              continue
+          _m_baslik = _re_baslik_numara.match(r"^\s*7\.(\d+)(?=\s|\.|$)", _par_baslik.text or "")
+          if _m_baslik and _m_baslik.group(1) not in _ana_basliklar_7x:
+              _ana_basliklar_7x.append(_m_baslik.group(1))
+      _baslik_no_esleme = {eski: str(i + 1) for i, eski in enumerate(_ana_basliklar_7x)}
+      for _par_baslik in doc.paragraphs:
+          if not str(getattr(_par_baslik, "style", "").name if getattr(_par_baslik, "style", None) else "").lower().startswith("heading"):
+              continue
+          _metin_baslik = _par_baslik.text or ""
+          _m_baslik = _re_baslik_numara.match(r"^(\s*)7\.(\d+)(?=\s|\.|$)", _metin_baslik)
+          if _m_baslik and _m_baslik.group(2) in _baslik_no_esleme:
+              _yeni_metin = _m_baslik.group(1) + "7." + _baslik_no_esleme[_m_baslik.group(2)] + _metin_baslik[_m_baslik.end():]
+              if _yeni_metin != _metin_baslik:
+                  for _run in _par_baslik.runs:
+                      _run.text = ""
+                  if _par_baslik.runs:
+                      _par_baslik.runs[0].text = _yeni_metin
+                  else:
+                      _par_baslik.add_run(_yeni_metin)
+
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
