@@ -2155,11 +2155,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _poz_grup_map = {
                                 ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1101–25.720.1109",
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1201–25.720.1223",
+                                ("Dizel motorlu", "Yatay arkadan emişli"): "25.720.2101–25.720.2117",
                                 ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "25.720.1301–25.720.1306",
-                                ("Elektrik motorlu", "Dikey milli çok kademeli"): "25.720.1401 ve devamı",
-                                ("Dizel motorlu", "Yatay arkadan emişli"): "25.720.2101 ve devamı",
-                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2201 ve devamı",
-                                ("Elektrik motorlu", "Jokey / basınç koruma"): "25.720.4101 ve devamı",
+                                ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): "25.720.2201–25.720.2210",
+                                ("Elektrik motorlu", "Dikey milli çok kademeli"): "25.720.1401–25.720.1406",
+                                ("Elektrik motorlu", "Dikey tip"): "25.720.1401–25.720.1406",
+                                ("Elektrik motorlu", "Jokey / basınç koruma"): "25.720.4101–25.720.4116",
                             }
                             if "jokey" in _prefix:
                                 _tip_secim = "Jokey / basınç koruma"
