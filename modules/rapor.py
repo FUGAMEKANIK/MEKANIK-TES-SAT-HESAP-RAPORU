@@ -321,29 +321,31 @@ if _rapor_olustur_sidebar:
       body_section.footer_distance = Inches(0.25)
   
       # --- 1. GENEL BİLGİLER ---
-      ana_baslik_ekle("1. GENEL BİLGİLER")
-      # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
-      p_giris = doc.add_paragraph()
-      p_giris.add_run("Bu raporda ")
-      if aktif_is:
-          _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
-          _r_proje = p_giris.add_run(_genel_proje_ifade)
-          _r_proje.font.name = "Times New Roman"
-          _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-          _r_proje.font.bold = True
-          _r_proje.font.italic = True
-          _r_proje.font.color.rgb = RGBColor(0, 0, 0)
-      else:
-          p_giris.add_run("ilgili proje")
-      p_giris.add_run(
-          " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
-          "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
-          "tesisat sistem çözümleri tespit edilmiştir."
-      )
-      yapi_metni = (
-          f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
-      )
-      doc.add_paragraph(yapi_metni)
+      # Ana bölüm 1 kapatıldığında bu başlık ve içeriği rapora eklenmez.
+      if st.session_state.get("rapor_bolum_1", True):
+          ana_baslik_ekle("1. GENEL BİLGİLER")
+          # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
+          p_giris = doc.add_paragraph()
+          p_giris.add_run("Bu raporda ")
+          if aktif_is:
+              _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
+              _r_proje = p_giris.add_run(_genel_proje_ifade)
+              _r_proje.font.name = "Times New Roman"
+              _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+              _r_proje.font.bold = True
+              _r_proje.font.italic = True
+              _r_proje.font.color.rgb = RGBColor(0, 0, 0)
+          else:
+              p_giris.add_run("ilgili proje")
+          p_giris.add_run(
+              " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
+              "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
+              "tesisat sistem çözümleri tespit edilmiştir."
+          )
+          yapi_metni = (
+              f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
+          )
+          doc.add_paragraph(yapi_metni)
   
       if bolum_2_aktif:
               # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
@@ -3631,41 +3633,33 @@ if _rapor_olustur_sidebar:
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
-                      # Raporda marka/model gösterilmez; pompa tipi tahrik türü ve hidrolik gövde tipini birlikte belirtir.
                       _pompa_tab = doc.add_table(rows=1, cols=8)
                       _pompa_tab.style = "Table Grid"
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "GPM", "GPM karşılığı (m³/h)", "Gerekli debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)"]):
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
-                      _set_rapor_lower = str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "") or "").lower()
-                      if "dizel asıl" in _set_rapor_lower:
-                          _ana_tahrik_rapor, _yedek_tahrik_rapor = "Dizel", "Dizel"
-                      elif "elektrikli asıl + dizel yedek" in _set_rapor_lower:
-                          _ana_tahrik_rapor, _yedek_tahrik_rapor = "Elektrik", "Dizel"
-                      else:
-                          _ana_tahrik_rapor, _yedek_tahrik_rapor = "Elektrik", "Elektrik"
-                      _ana_hidrolik_tip = str(st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Yatay arkadan emişli")) or "Yatay arkadan emişli")
-                      _yedek_hidrolik_tip = str(st.session_state.get("yangin_7133_yedek_tipi_rapor", st.session_state.get("yangin_7133_yedek_tipi", _ana_hidrolik_tip)) or _ana_hidrolik_tip)
                       _pompa_satirlari = [
-                          ("Ana yangın pompası", f"{_ana_tahrik_rapor} — {_ana_hidrolik_tip}", "1 asıl", str(st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0)),
-                          ("Yedek yangın pompası", f"{_yedek_tahrik_rapor} — {_yedek_hidrolik_tip}", "1 yedek", str(st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")) or "—"), st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0)),
+                          ("Ana yangın pompası", str(st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi")),
+                          ("Yedek yangın pompası", str(st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi")),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          # Jokey motor gücü raporda da varsayılan 4,5 kW gösterilir;
-                          # eski oturumdan kalan 0 veya hidrolik hesap değeri kullanılmaz.
-                          _jokey_guc_rapor = 4.5
-                          # Rapor oluşturulurken widget'a ait session_state anahtarını
-                          # değiştirmiyoruz; bu, Streamlit'in widget kilidi hatasını önler.
-                          _pompa_satirlari.append(("Jokey pompa", "Jokey — Dikey milli çok kademeli", "1 adet", str(st.session_state.get("yangin_7134_jokey_rapor_gpm", "—") or "—"), st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), _jokey_guc_rapor))
-                      for _tip, _pompa_tipi, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc in _pompa_satirlari:
+                          _pompa_satirlari.append(("Jokey pompa", str(st.session_state.get("yangin_7134_jokey_tipi", "Jokey / basınç koruma") or "Jokey / basınç koruma"), "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi")))
+                      for _tip, _pompa_tipi, _adet, _marka, _model, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
-                          _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h)
-                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, str(_gpm), _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc)]):
+                          _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
+                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]):
                               _c.text = _t
-                      # Cihaz Poz No satırları ve pompa çalışma noktasıyla ilgili genel not rapordan kaldırıldı.
-
+                      _poz_kalemleri = [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]
+                      if st.session_state.get("yangin_7134_jokey_var", False):
+                          _poz_kalemleri.append(("Jokey pompa", "yangin_7134_jokey_poz"))
+                      for _tip, _key in _poz_kalemleri:
+                          _poz_p = doc.add_paragraph()
+                          _poz_p.add_run(f"{_tip} Cihaz Poz No: ").bold = True
+                          _poz_p.add_run(str(st.session_state.get(_key, "") or "Belirtilmedi")).bold = True
+                      _sec_not = doc.add_paragraph("Not: Pompa debisi 7.13.2 hesabından, basma yüksekliği 7.13.3 hesabından aktarılır. Pompa çalışma noktası ve motor gücü üretici performans eğrisiyle doğrulanmalıdır.")
+                      _sec_not.paragraph_format.space_after = Pt(6)
 
 
                   else:
@@ -3674,67 +3668,6 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
-      # Dahil edilen 7.x ana başlıklarını sırayla yeniden numaralandır.
-      # Yalnızca başlık stilleri değiştirilir; hesap metinlerindeki referanslar korunur.
-      import re as _re_baslik_numara
-      _ana_basliklar_7x = []
-      for _par_baslik in doc.paragraphs:
-          if not str(getattr(_par_baslik, "style", "").name if getattr(_par_baslik, "style", None) else "").lower().startswith("heading"):
-              continue
-          _m_baslik = _re_baslik_numara.match(r"^\s*7\.(\d+)(?=\s|\.|$)", _par_baslik.text or "")
-          if _m_baslik and _m_baslik.group(1) not in _ana_basliklar_7x:
-              _ana_basliklar_7x.append(_m_baslik.group(1))
-      _baslik_no_esleme = {eski: str(i + 1) for i, eski in enumerate(_ana_basliklar_7x)}
-      for _par_baslik in doc.paragraphs:
-          if not str(getattr(_par_baslik, "style", "").name if getattr(_par_baslik, "style", None) else "").lower().startswith("heading"):
-              continue
-          _metin_baslik = _par_baslik.text or ""
-          _m_baslik = _re_baslik_numara.match(r"^(\s*)7\.(\d+)(?=\s|\.|$)", _metin_baslik)
-          if _m_baslik and _m_baslik.group(2) in _baslik_no_esleme:
-              _yeni_metin = _m_baslik.group(1) + "7." + _baslik_no_esleme[_m_baslik.group(2)] + _metin_baslik[_m_baslik.end():]
-              if _yeni_metin != _metin_baslik:
-                  for _run in _par_baslik.runs:
-                      _run.text = ""
-                  if _par_baslik.runs:
-                      _par_baslik.runs[0].text = _yeni_metin
-                  else:
-                      _par_baslik.add_run(_yeni_metin)
-
-      # Stil fonksiyonu eski bir sürümde yanlışlıkla kaldırılmış olabilir.
-      # Rapor oluşturma akışını durdurmamak için burada güvenli biçimde tanımla.
-      def rapor_word_stillerini_uygula(_doc):
-          """Raporun temel Word yazı tiplerini ve sayfa akışı ayarlarını uygular."""
-          for _style_name in ("Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"):
-              try:
-                  _style = _doc.styles[_style_name]
-                  _style.font.name = "Times New Roman"
-                  try:
-                      _style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  except Exception:
-                      pass
-                  _style.font.size = Pt(12)
-                  _style.paragraph_format.widow_control = True
-              except (KeyError, AttributeError):
-                  pass
-          # Başlıkları sayfa sonunda tek başına bırakmamaya çalış.
-          for _paragraph in _doc.paragraphs:
-              try:
-                  _style_name = (_paragraph.style.name or "").lower()
-                  if _style_name.startswith("heading"):
-                      _paragraph.paragraph_format.keep_with_next = True
-              except Exception:
-                  pass
-          # Tablolardaki satırların sayfa arasında bölünmesini önle.
-          for _table in _doc.tables:
-              for _row in _table.rows:
-                  try:
-                      _trPr = _row._tr.get_or_add_trPr()
-                      from docx.oxml import OxmlElement as _OxmlElement
-                      _cant_split = _OxmlElement("w:cantSplit")
-                      _trPr.append(_cant_split)
-                  except Exception:
-                      pass
-
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
