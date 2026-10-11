@@ -2142,8 +2142,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _tip_secim = _ana_tip_secim
                                 st.info(f"Yedek pompa tipi asıl pompayla aynı: {_tip_secim}")
                             elif "jokey" in _prefix:
-                                _tip_secim = "Jokey / basınç koruma"
-                                st.info("Jokey pompa Bakanlık poz grubu: 25.720.4101 ve devamı")
+                                # Jokey pompalar bütün set seçeneklerinde dikey milli çok kademelidir.
+                                _tip_secim = "Dikey milli çok kademeli"
+                                st.info("Jokey pompa: dikey milli çok kademeli; varsayılan debi 6 m³/h, basma yüksekliği ana pompa basma yüksekliği + 5 mSS.")
                             else:
                                 _tip_secim = st.radio(
                                     f"{_etiket} pompa tipi", _tipler,
@@ -2163,8 +2164,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 ("Elektrik motorlu", "Jokey / basınç koruma"): "25.720.4101–25.720.4116",
                             }
                             if "jokey" in _prefix:
-                                _tip_secim = "Jokey / basınç koruma"
-                                _poz_grup = "25.720.4101 ve devamı — Elektrik motorlu kaçak giderme pompası / jokey pompa"
+                                # Ekranda ve rapor verisinde jokey tipi dikey milli kalır;
+                                # poz grubu ayrı olarak Bakanlığın 4101-4116 aralığıdır.
+                                _poz_grup = "25.720.4101–25.720.4116 — Elektrik motorlu kaçak giderme / dikey milli jokey pompası"
                             else:
                                 _poz_grup = _poz_grup_map.get((_tahrik, _tip_secim), "Bu motor/tip eşleşmesi için Bakanlık poz grubu doğrulanmalı")
 
@@ -2219,6 +2221,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     (12, 12, 60, "25.720.1401", "12 m³/h, 60 mSS"),
                                     (12, 12, 80, "25.720.1402", "12 m³/h, 80 mSS"),
                                     (12, 12, 100, "25.720.1403", "12 m³/h, 100 mSS"),
+                                    (60, 66, 60, "25.720.1404", "60–66 m³/h, 60 mSS"),
+                                    (60, 66, 80, "25.720.1405", "60–66 m³/h, 80 mSS"),
+                                    (60, 66, 100, "25.720.1406", "60–66 m³/h, 100 mSS"),
                                 ],
                                 ("Dizel motorlu", "Yatay arkadan emişli"): [
                                     (60, 66, 60, "25.720.2101", "60–66 m³/h, 60 mSS"),
@@ -2246,6 +2251,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     (120, 126, 80, "25.720.2204", "120–126 m³/h, 80 mSS"),
                                     (120, 126, 100, "25.720.2205", "120–126 m³/h, 100 mSS"),
                                     (120, 126, 120, "25.720.2206", "120–126 m³/h, 120 mSS"),
+                                    (170, 180, 60, "25.720.2207", "170–180 m³/h, 60 mSS"),
+                                    (170, 180, 80, "25.720.2208", "170–180 m³/h, 80 mSS"),
+                                    (170, 180, 100, "25.720.2209", "170–180 m³/h, 100 mSS"),
+                                    (170, 180, 120, "25.720.2210", "170–180 m³/h, 120 mSS"),
                                 ],
                             }
                             # Üretici SDS/SNK kataloğu (yüklenen sds-snk-tr.pdf) çalışma tablosu.
@@ -2333,39 +2342,95 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 ],
                             }
 
-                            _catalog_debi_adimlari = [5.68, 11.3, 22.7, 34.0, 45.4, 56.8, 68.1, 90.8, 102.2, 113.5, 170.0, 227.0, 284.0, 340.0]
-                            _gerekli_debi = float(_q_pompa_m3h)
-                            _gerekli_h = float(_h_pompa_otomatik_mss)
-                            # Catalog pressure is bar; approximate conversion to mSS is shown explicitly.
-                            _gerekli_bar = _gerekli_h / 10.197
+                            _gerekli_debi = (
+                                6.0 if "jokey" in _prefix
+                                else float(st.session_state.get(f"{_prefix}_debi_m3h", _q_pompa_m3h) or _q_pompa_m3h)
+                            )
+                            if "jokey" in _prefix:
+                                _gerekli_h = float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss) + 5.0
+                            else:
+                                _gerekli_h = float(st.session_state.get(f"{_prefix}_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss)
+
+                            # Yüklenen üretici kataloğunda SNK = yatay arkadan emişli,
+                            # SDS = yatay ayrılabilir gövdeli. Diğer tiplerde bu PDF'de
+                            # üretici seçim satırı olmadığı için model/güç uydurulmaz.
+                            _model_tipi_uygun = (
+                                (_tip_secim == "Yatay arkadan emişli")
+                                or (_tip_secim == "Yatay ayrılabilir gövdeli")
+                            )
+                            _model_ailesi_istenen = (
+                                "SDS" if _tip_secim == "Yatay ayrılabilir gövdeli"
+                                else "SNK" if _tip_secim == "Yatay arkadan emişli"
+                                else ""
+                            )
+                            # Önceki pompa tipi/debi seçimine ait katalog sonucunun yanlışlıkla
+                            # yeni seçime taşınmasını önle.
+                            for _alan in (
+                                "katalog_model", "katalog_satir", "katalog_debi_m3h",
+                                "katalog_gpm", "katalog_basinc_bar", "katalog_basma_mss",
+                                "katalog_elektrik_kw", "katalog_dizel_es_kw_hp",
+                                "katalog_dizel_rad_kw_hp", "katalog_motor_rapor_gucu",
+                            ):
+                                st.session_state.pop(f"{_prefix}_{_alan}", None)
+                            if "ana" in _prefix:
+                                st.session_state.pop("yangin_7133_ana_katalog_model", None)
+                                st.session_state.pop("yangin_7133_ana_katalog_satir", None)
+
                             _secim_adaylari = []
-                            for _model_adi, _satirlar in _snk_sds_katalog.items():
-                                for _satir in _satirlar:
-                                    _satir_debi, _satir_bar, _guc_100, _guc_150, _el_onayli, _el_onaysiz, _diz_es, _diz_rad, _diz_es_guc, _diz_rad_guc = _satir
-                                    # Katalog yalnızca belirli GPM/debi kademelerini kabul eder:
-                                    # gerekli debiyi karşılayan en küçük katalog debisi seçilir.
-                                    _tip_uygun = (
-                                        (_model_adi.startswith("SNK") and _tip_secim == "Yatay arkadan emişli")
-                                        or (_model_adi.startswith("SDS") and _tip_secim == "Yatay ayrılabilir gövdeli")
-                                    )
-                                    if _tip_uygun and _satir_debi >= _gerekli_debi and _satir_bar >= _gerekli_bar:
-                                        _secim_adaylari.append((_satir_debi, _satir_bar, _model_adi, _satir))
+                            if _model_ailesi_istenen and _tahrik in ("Elektrik motorlu", "Dizel motorlu"):
+                                for _model_adi, _satirlar in _snk_sds_katalog.items():
+                                    if not _model_adi.startswith(_model_ailesi_istenen):
+                                        continue
+                                    for _satir in _satirlar:
+                                        _satir_debi, _satir_bar = float(_satir[0]), float(_satir[1])
+                                        # En küçük standart katalog debisi ve bu debide gerekli
+                                        # basma yüksekliğini karşılayan ilk basınç satırı seçilir.
+                                        if _satir_debi >= _gerekli_debi and (_satir_bar * 10.197) >= _gerekli_h:
+                                            _secim_adaylari.append((_satir_debi, _satir_bar, _model_adi, _satir))
                             _secim_adaylari.sort(key=lambda x: (x[0], x[1]))
                             _katalog_secimi = _secim_adaylari[0] if _secim_adaylari else None
-                            if _katalog_secimi:
-                                _secili_model, _satir = _katalog_secimi[2], _katalog_secimi[3]
-                                st.success(f"Katalog seçimi: {_secili_model} — katalog debisi { _satir[0]:.1f} m³/h ({_satir[0]/0.227:.0f} GPM), { _satir[1]:.2f} bar")
-                                st.caption(f"Üst hesaptan gelen gerekli debi: {_gerekli_debi:.2f} m³/h; katalogdaki bir üst uygun debi kademesi seçildi.")
-                                st.write(f"Elektrik motor gücü: onaylı **{_satir[4]} kW**, onaysız **{_satir[5]} kW**")
-                                st.write(f"Dizel motor: eşanjör **{_satir[8]}**, radyatör **{_satir[9]}**")
+
+                            # Aynı tahrikli yedek, ana pompanın katalog seçim sonucunu aynen devralır.
+                            # Elektrik+dizel setinde ise aynı Q/H çalışma noktasından dizel motor verisi alınır.
+                            if "yedek" in _prefix and _ana_tahrik == _yedek_tahrik:
+                                _ana_model = st.session_state.get("yangin_7133_ana_katalog_model")
+                                _ana_satir = st.session_state.get("yangin_7133_ana_katalog_satir")
+                                if _ana_model and _ana_satir:
+                                    _katalog_secimi = (float(_ana_satir[0]), float(_ana_satir[1]), _ana_model, tuple(_ana_satir))
+
+                            if "jokey" in _prefix:
+                                st.caption(f"Jokey çalışma noktası: {_gerekli_debi:.2f} m³/h, {_gerekli_h:.2f} mSS. Üretici SNK/SDS tablosu jokey/dikey milli pompa tablosu olmadığından jokey motor modeli bu tablodan seçilmez.")
+                            elif _katalog_secimi:
+                                _secili_model = _katalog_secimi[2]
+                                _satir = _katalog_secimi[3]
+                                _satir_debi, _satir_bar, _guc_100, _guc_150, _el_onayli, _el_onaysiz, _diz_es, _diz_rad, _diz_es_guc, _diz_rad_guc = _satir
+                                _gpm = round(_satir_debi / 0.227)
+                                st.success(f"Katalog seçimi: **{_secili_model}** — {_satir_debi:.1f} m³/h / {_gpm} GPM, {_satir_bar:.2f} bar (yaklaşık {_satir_bar * 10.197:.1f} mSS)")
+                                if _tahrik == "Elektrik motorlu":
+                                    st.write(f"Elektrik motor gücü — katalog: **{_el_onayli} kW (UL/FM onaylı)** / **{_el_onaysiz} kW (onaysız)**")
+                                    _motor_rapor_gucu = _el_onayli
+                                else:
+                                    st.write(f"Dizel motor — eşanjörlü: **{_diz_es}**, **{_diz_es_guc} kW/HP**; radyatörlü: **{_diz_rad}**, **{_diz_rad_guc} kW/HP**")
+                                    _motor_rapor_gucu = _diz_es_guc
                                 st.session_state[f"{_prefix}_katalog_model"] = _secili_model
-                                st.session_state[f"{_prefix}_katalog_debi_m3h"] = _satir[0]
-                                st.session_state[f"{_prefix}_katalog_gpm"] = round(_satir[0] / 0.227)
-                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _satir[4]
-                                st.session_state[f"{_prefix}_katalog_dizel_es_kw_hp"] = _satir[8]
-                                st.session_state[f"{_prefix}_katalog_dizel_rad_kw_hp"] = _satir[9]
+                                st.session_state[f"{_prefix}_katalog_satir"] = tuple(_satir)
+                                st.session_state[f"{_prefix}_katalog_debi_m3h"] = _satir_debi
+                                st.session_state[f"{_prefix}_katalog_gpm"] = _gpm
+                                st.session_state[f"{_prefix}_katalog_basinc_bar"] = _satir_bar
+                                st.session_state[f"{_prefix}_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _el_onayli
+                                st.session_state[f"{_prefix}_katalog_dizel_es_kw_hp"] = _diz_es_guc
+                                st.session_state[f"{_prefix}_katalog_dizel_rad_kw_hp"] = _diz_rad_guc
+                                st.session_state[f"{_prefix}_katalog_motor_rapor_gucu"] = _motor_rapor_gucu
+                                if "ana" in _prefix:
+                                    st.session_state["yangin_7133_ana_katalog_model"] = _secili_model
+                                    st.session_state["yangin_7133_ana_katalog_satir"] = tuple(_satir)
                             else:
-                                st.warning("Gerekli debi/basma yüksekliği için yüklenen SDS/SNK kataloğunda doğrudan eşleşen satır bulunamadı. Katalog dışı model veya ara debi otomatik seçilmiyor.")
+                                st.warning(
+                                    f"Seçilen tip/tahrik için katalogda gerekli debi {_gerekli_debi:.2f} m³/h "
+                                    f"ve basma yüksekliği {_gerekli_h:.2f} mSS değerlerini karşılayan satır bulunamadı. "
+                                    "Katalog dışı model veya motor gücü otomatik atanmadı."
+                                )
 
                             # Poz eşleştirmesi, kullanıcıya gösterilen gerçek pompa Q/H
                             # değerleriyle yapılır. Yedek pompa varsayılan olarak asılın
@@ -2380,12 +2445,25 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _q_pompa_esas = float(st.session_state.get(f"{_prefix}_debi_m3h", _q_pompa_m3h) or 0.0)
                                 _h_pompa_esas = float(st.session_state.get(f"{_prefix}_h_mss", _h_pompa_otomatik_mss) or 0.0)
                             _katalog_poz_debisi = st.session_state.get(f"{_prefix}_katalog_debi_m3h")
+                            _katalog_poz_basma = st.session_state.get(f"{_prefix}_katalog_basma_mss")
                             if _katalog_poz_debisi is not None and (
                                 str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SNK")
                                 or str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SDS")
                             ):
                                 _q_pompa_esas = float(_katalog_poz_debisi)
-                            _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
+                                if _katalog_poz_basma is not None:
+                                    _h_pompa_esas = float(_katalog_poz_basma)
+                            if "jokey" in _prefix:
+                                # Resmî 2026 Mayıs Bakanlık tarifindeki jokey alt pozları:
+                                # 6 m³/h için 60/80/100/120 mSS sırasıyla 4104/4108/4112/4116.
+                                _jokey_q = 6.0
+                                _jokey_h = float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss) + 5.0
+                                _jokey_poz_kademeleri = [(60.0, "25.720.4104"), (80.0, "25.720.4108"), (100.0, "25.720.4112"), (120.0, "25.720.4116")]
+                                _jokey_adaylar = [(h, poz) for h, poz in _jokey_poz_kademeleri if h >= _jokey_h]
+                                _jokey_eslesme = min(_jokey_adaylar, key=lambda x: x[0]) if _jokey_adaylar else None
+                                _uygun_pozlar = []
+                            else:
+                                _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
                             # Üretici kataloğunda SNK ailesi yatay arkadan emişli, SDS ailesi
                             # yatay ayrılabilir gövdeli gruba karşılık gelir. Seçilen modele göre
                             # Bakanlık poz grubunu filtrele; alt poz kapasite satırı yoksa tahmin etme.
@@ -2406,13 +2484,26 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     item for item in _uygun_pozlar
                                     if _aralik[0] <= int(str(item[3]).split(".")[-1]) <= _aralik[1]
                                 ]
+                            if "jokey" in _prefix:
+                                _poz_eslesme = None
+                                _otomatik_poz = _jokey_eslesme[1] if _jokey_eslesme else ""
+                                if _jokey_eslesme:
+                                    st.success(f"Otomatik jokey poz numarası: **{_otomatik_poz}** — 6,0 m³/h, {_jokey_eslesme[0]:.0f} mSS (gerekli: {_jokey_h:.2f} mSS)")
+                                else:
+                                    st.warning(f"Jokey pompa için gerekli basma yüksekliği {_jokey_h:.2f} mSS; Bakanlık jokey pozlarında en yüksek kademe 120 mSS. Otomatik poz atanmadı.")
                             _aday_pozlar = [
                                 item for item in _uygun_pozlar
-                                if item[0] <= _q_pompa_esas <= item[1] and item[2] >= _h_pompa_esas
+                                if item[1] >= _q_pompa_esas and item[2] >= _h_pompa_esas
                             ]
-                            _poz_eslesme = min(_aday_pozlar, key=lambda item: item[2]) if _aday_pozlar else None
+                            if "jokey" not in _prefix:
+                                # Önce debi için yeterli en küçük Bakanlık kapasite bandı,
+                                # sonra o bandın içinde gerekli basma yüksekliğini karşılayan
+                                # en düşük H seviyesi seçilir.
+                                _poz_eslesme = min(_aday_pozlar, key=lambda item: (item[1], item[2])) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
-                            if _poz_eslesme:
+                            if "jokey" in _prefix:
+                                pass
+                            elif _poz_eslesme:
                                 _otomatik_poz = _poz_eslesme[3]
                                 st.success(f"Otomatik Bakanlık pozu: **{_poz_eslesme[3]}** — {_poz_eslesme[4]}")
                             else:
@@ -2442,7 +2533,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 st.session_state[_poz_key] = _otomatik_poz
                             if "jokey" in _prefix:
-                                st.info("Jokey pompa grubu 25.720.4101 ve devamıdır. Bu grupta alt pozların debi/basma tarifleri doğrulanmadan otomatik alt poz atanmıyor; resmî alt poz numarasını manuel girebilirsiniz.")
+                                st.info("Jokey pompa dikey milli tiptedir. 6 m³/h debi için poz, ana pompa basma yüksekliği + 5 mSS değerini karşılayan en düşük Bakanlık kademesinden otomatik atanır.")
 
                             # Çalışma noktasını gösteren ön tasarım eğrisi. Üretici Q-H
                             # katalog eğrisi mevcut olmadığından açıkça temsili olarak etiketlenir.
@@ -2487,7 +2578,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
                                 _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
                                 _q_default = 6.0 if "jokey" in _prefix else float(_q_pompa_m3h)
-                                _h_default = float(_h_pompa_otomatik_mss) + 5.0 if "jokey" in _prefix else float(_h_pompa_otomatik_mss)
+                                _h_default = (
+                                    float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss) + 5.0
+                                    if "jokey" in _prefix else float(_h_pompa_otomatik_mss)
+                                )
                                 if "yedek" in _prefix:
                                     _q_default = float(st.session_state.get("yangin_7133_ana_debi_m3h", _q_pompa_m3h) or _q_pompa_m3h)
                                     _h_default = float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss)
@@ -2507,14 +2601,18 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.checkbox(f"{_etiket}: basma yüksekliğini elle düzelt", key=_hauto_key, value=bool(st.session_state.get(_hauto_key, False)))
                                 if not st.session_state.get(_hauto_key, False):
                                     if "jokey" in _prefix:
-                                        st.session_state[_hkey] = float(_h_pompa_otomatik_mss) + 5.0
+                                        st.session_state[_hkey] = float(
+                                            st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss)
+                                            or _h_pompa_otomatik_mss
+                                        ) + 5.0
                                     elif "yedek" in _prefix:
                                         st.session_state[_hkey] = float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss)
                                     else:
                                         st.session_state[_hkey] = float(_h_pompa_otomatik_mss)
                                 st.number_input(f"{_etiket} basma yüksekliği (mSS)", min_value=0.0, step=1.0, key=_hkey, disabled=not st.session_state.get(_hauto_key, False))
                                 if "jokey" in _prefix:
-                                    st.caption(f"Varsayılan basma yüksekliği: üst hesap {_h_pompa_otomatik_mss:.2f} + 5 = {_h_pompa_otomatik_mss + 5.0:.2f} mSS.")
+                                    _jokey_h_goster = float(st.session_state.get("yangin_7133_ana_h_mss", _h_pompa_otomatik_mss) or _h_pompa_otomatik_mss) + 5.0
+                                    st.caption(f"Varsayılan basma yüksekliği: ana pompa {_jokey_h_goster - 5.0:.2f} + 5 = {_jokey_h_goster:.2f} mSS.")
                                 elif "yedek" in _prefix:
                                     st.caption("Yedek pompa, asıl pompanın tipini ve çalışma noktasını varsayılan olarak aynen kullanır; poz grubu motor türüne göre seçilir.")
 
@@ -2531,10 +2629,37 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _guc_hesap = (0.002725 * _q_now * _h_now / max(_eta / 100.0, 0.01)) if _q_now > 0 and _h_now > 0 else 0.0
                                 _guc_elle_key = f"{_prefix}_guc_elle"
                                 st.checkbox(f"{_etiket}: motor gücünü elle düzelt", key=_guc_elle_key, value=bool(st.session_state.get(_guc_elle_key, False)))
+                                _katalog_guc_kw = None
+                                _katalog_model_ad = str(st.session_state.get(f"{_prefix}_katalog_model", "") or "")
+                                if _tahrik == "Elektrik motorlu":
+                                    _katalog_guc_raw = st.session_state.get(f"{_prefix}_katalog_elektrik_kw")
+                                    try:
+                                        _katalog_guc_kw = float(_katalog_guc_raw) if _katalog_guc_raw not in (None, "", "-") else None
+                                    except (TypeError, ValueError):
+                                        _katalog_guc_kw = None
+                                else:
+                                    # Üretici tablosunda dizel gücü kW/HP biçimindedir.
+                                    # Radyatörlü değer varsa onu; yoksa eşanjörlü değeri kullan.
+                                    _dizel_kw_hp = st.session_state.get(f"{_prefix}_katalog_dizel_rad_kw_hp")
+                                    if _dizel_kw_hp in (None, "", "-"):
+                                        _dizel_kw_hp = st.session_state.get(f"{_prefix}_katalog_dizel_es_kw_hp")
+                                    try:
+                                        _katalog_guc_kw = float(str(_dizel_kw_hp).split("/")[0]) if _dizel_kw_hp not in (None, "", "-") else None
+                                    except (TypeError, ValueError):
+                                        _katalog_guc_kw = None
                                 if not st.session_state.get(_guc_elle_key, False):
-                                    _guc_hesaplanan_deger = round(_guc_hesap, 2)
-                                st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help="Otomatik değer yaklaşık güç hesabıdır; kesin motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.")
-                                st.caption(f"Yaklaşık hesaplanan güç: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
+                                    # Widget henüz oluşturulmadı; katalog gücünü güvenli şekilde varsayılan yap.
+                                    st.session_state[_guc_key] = round(_katalog_guc_kw, 2) if _katalog_guc_kw is not None else round(_guc_hesap, 2)
+                                st.number_input(
+                                    f"{_etiket} elektrik/motor gücü (kW)",
+                                    min_value=0.0, step=0.5, key=_guc_key,
+                                    disabled=not st.session_state.get(_guc_elle_key, False),
+                                    help="SNK/SDS pompasında değer yüklenen üretici kataloğundan; katalog satırı yoksa yaklaşık hidrolik güç hesabından gelir."
+                                )
+                                if _katalog_guc_kw is not None:
+                                    st.caption(f"Katalog motor gücü: {_katalog_guc_kw:.2f} kW — {_katalog_model_ad}")
+                                else:
+                                    st.caption(f"Katalogda bu tip için motor gücü satırı bulunmadığından yaklaşık hesap: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
                     st.session_state["yangin_7133_tasarim_debi_ldak"] = float(_q_pompa_m3h / 0.06)
                     st.session_state["yangin_7134_jokey_var"] = bool(_jokey_var)
