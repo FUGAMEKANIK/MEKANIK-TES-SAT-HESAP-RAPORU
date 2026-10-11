@@ -2385,7 +2385,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _guc_elle_key = f"{_prefix}_guc_elle"
                                 st.checkbox(f"{_etiket}: motor gücünü elle düzelt", key=_guc_elle_key, value=bool(st.session_state.get(_guc_elle_key, False)))
                                 if not st.session_state.get(_guc_elle_key, False):
-                                    st.session_state[_guc_key] = round(_guc_hesap, 2)
+                                    _guc_hesaplanan_deger = round(_guc_hesap, 2)
                                 st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help="Otomatik değer yaklaşık güç hesabıdır; kesin motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.")
                                 st.caption(f"Yaklaşık hesaplanan güç: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
