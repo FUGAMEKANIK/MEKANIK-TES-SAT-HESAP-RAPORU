@@ -2669,8 +2669,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     except (TypeError, ValueError):
                                         _katalog_guc_kw = None
                                 if not st.session_state.get(_guc_elle_key, False):
-                                    # Widget henüz oluşturulmadı; katalog gücünü güvenli şekilde varsayılan yap.
-                                    st.session_state[_guc_key] = round(_katalog_guc_kw, 2) if _katalog_guc_kw is not None else round(_guc_hesap, 2)
+                                    # Jokey pompanın varsayılan elektrik motor gücü kullanıcı talebiyle 4,5 kW.
+                                    # Diğer pompalar katalog gücünü, katalog satırı yoksa yaklaşık hesabı kullanır.
+                                    if "jokey" in _prefix:
+                                        st.session_state[_guc_key] = 4.5
+                                    else:
+                                        st.session_state[_guc_key] = round(_katalog_guc_kw, 2) if _katalog_guc_kw is not None else round(_guc_hesap, 2)
                                 st.number_input(
                                     f"{_etiket} elektrik/motor gücü (kW)",
                                     min_value=0.0, step=0.5, key=_guc_key,
