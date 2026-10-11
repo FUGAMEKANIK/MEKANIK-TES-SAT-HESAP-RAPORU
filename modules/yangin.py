@@ -2200,8 +2200,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     (80, 89, 60, "25.720.1213", "80–89 m³/h, 60 mSS"),
                                     (80, 89, 80, "25.720.1214", "80–89 m³/h, 80 mSS"),
                                     (80, 89, 100, "25.720.1215", "80–89 m³/h, 100 mSS"),
-                                    (90, 99, 60, "25.720.1216", "90–99 m³/h, 60 mSS"),
-                                    (90, 99, 80, "25.720.1217", "90–99 m³/h, 80 mSS"),
+                                    (90, 99, 80, "25.720.1216", "90–99 m³/h, 80 mSS"),
+                                    (90, 99, 100, "25.720.1217", "90–99 m³/h, 100 mSS"),
                                     (110, 119, 60, "25.720.1218", "110–119 m³/h, 60 mSS"),
                                     (110, 119, 80, "25.720.1219", "110–119 m³/h, 80 mSS"),
                                     (120, 126, 60, "25.720.1220", "120–126 m³/h, 60 mSS"),
@@ -2444,15 +2444,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 _q_pompa_esas = float(st.session_state.get(f"{_prefix}_debi_m3h", _q_pompa_m3h) or 0.0)
                                 _h_pompa_esas = float(st.session_state.get(f"{_prefix}_h_mss", _h_pompa_otomatik_mss) or 0.0)
-                            _katalog_poz_debisi = st.session_state.get(f"{_prefix}_katalog_debi_m3h")
-                            _katalog_poz_basma = st.session_state.get(f"{_prefix}_katalog_basma_mss")
-                            if _katalog_poz_debisi is not None and (
-                                str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SNK")
-                                or str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SDS")
-                            ):
-                                _q_pompa_esas = float(_katalog_poz_debisi)
-                                if _katalog_poz_basma is not None:
-                                    _h_pompa_esas = float(_katalog_poz_basma)
+                            # ÖNEMLİ: Bakanlık pozunu üretici kataloğundaki modelin nominal
+                            # debi/basıncına göre değil, tasarımda istenen çalışma noktası Q/H'ye
+                            # göre seç. Üretici kataloğu model/motor seçimi içindir; poz seçimini
+                            # değiştirmemelidir.
                             if "jokey" in _prefix:
                                 # Resmî 2026 Mayıs Bakanlık tarifindeki jokey alt pozları:
                                 # 6 m³/h için 60/80/100/120 mSS sırasıyla 4104/4108/4112/4116.
@@ -2496,10 +2491,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 if item[1] >= _q_pompa_esas and item[2] >= _h_pompa_esas
                             ]
                             if "jokey" not in _prefix:
-                                # Önce debi için yeterli en küçük Bakanlık kapasite bandı,
-                                # sonra o bandın içinde gerekli basma yüksekliğini karşılayan
-                                # en düşük H seviyesi seçilir.
-                                _poz_eslesme = min(_aday_pozlar, key=lambda item: (item[1], item[2])) if _aday_pozlar else None
+                                # Öncelik BASMA YÜKSEKLİĞİ: gereken H'yi karşılayan en düşük
+                                # standart H kademesini seç; aynı H kademesinde debiyi karşılayan
+                                # en küçük kapasite bandını seç. Örnek Q=91, H=75 için
+                                # 90–99 m³/h ve 80 mSS kademesi seçilir (1216).
+                                _poz_eslesme = min(_aday_pozlar, key=lambda item: (item[2], item[1])) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
                             if "jokey" in _prefix:
                                 pass
