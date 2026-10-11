@@ -3700,6 +3700,41 @@ if _rapor_olustur_sidebar:
                   else:
                       _par_baslik.add_run(_yeni_metin)
 
+      # Stil fonksiyonu eski bir sürümde yanlışlıkla kaldırılmış olabilir.
+      # Rapor oluşturma akışını durdurmamak için burada güvenli biçimde tanımla.
+      def rapor_word_stillerini_uygula(_doc):
+          """Raporun temel Word yazı tiplerini ve sayfa akışı ayarlarını uygular."""
+          for _style_name in ("Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"):
+              try:
+                  _style = _doc.styles[_style_name]
+                  _style.font.name = "Times New Roman"
+                  try:
+                      _style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+                  except Exception:
+                      pass
+                  _style.font.size = Pt(12)
+                  _style.paragraph_format.widow_control = True
+              except (KeyError, AttributeError):
+                  pass
+          # Başlıkları sayfa sonunda tek başına bırakmamaya çalış.
+          for _paragraph in _doc.paragraphs:
+              try:
+                  _style_name = (_paragraph.style.name or "").lower()
+                  if _style_name.startswith("heading"):
+                      _paragraph.paragraph_format.keep_with_next = True
+              except Exception:
+                  pass
+          # Tablolardaki satırların sayfa arasında bölünmesini önle.
+          for _table in _doc.tables:
+              for _row in _table.rows:
+                  try:
+                      _trPr = _row._tr.get_or_add_trPr()
+                      from docx.oxml import OxmlElement as _OxmlElement
+                      _cant_split = _OxmlElement("w:cantSplit")
+                      _trPr.append(_cant_split)
+                  except Exception:
+                      pass
+
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
   
