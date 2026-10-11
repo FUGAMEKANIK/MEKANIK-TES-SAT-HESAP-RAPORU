@@ -2248,6 +2248,125 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     (120, 126, 120, "25.720.2206", "120–126 m³/h, 120 mSS"),
                                 ],
                             }
+                            # Üretici SDS/SNK kataloğu (yüklenen sds-snk-tr.pdf) çalışma tablosu.
+                            # Satır: model, katalog debisi m3/h, basınç bar, %100 güç kW,
+                            # %150 güç kW, elektrik motoru onaylı kW, onaysız kW,
+                            # dizel eşanjör kW/HP, dizel radyatör kW/HP.
+                            _snk_sds_katalog = {
+                                "SNK 50-250": [
+                                    (45.4, 6.4, 13.5, 16.6, 15, 18.5, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (45.4, 7.0, 15.0, 18.4, 18.5, 18.5, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (45.4, 8.0, 17.6, 21.6, 22, 22, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (45.4, 9.0, 20.4, 24.9, 22, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (45.4, 10.34, 24.1, 29.3, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                ],
+                                "SNK 50-250 / 250 GPM": [
+                                    (56.8, 6.27, 15.3, 19.1, 18.5, 18.5, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (56.8, 7.0, 17.1, 21.3, 22, 22, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (56.8, 8.0, 19.8, 24.2, 22, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (56.8, 9.0, 22.7, 28.4, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (56.8, 10.34, 26.7, 33.0, 30, 37, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                ],
+                                "SNK 65-250": [
+                                    (68.1, 6.06, 16.6, 21.1, 18.5, 22, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (68.1, 7.0, 19.1, 24.2, 22, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (68.1, 8.0, 22.0, 28.1, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (68.1, 9.0, 25.1, 32.1, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (68.1, 10.2, 29.1, 37.2, 37, 37, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                ],
+                                "SNK 65-250 / 400 GPM": [
+                                    (90.8, 6.06, 22.4, 26.8, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (90.8, 7.0, 25.9, 31.4, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (90.8, 8.0, 29.7, 36.6, 37, 37, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (90.8, 9.0, 33.9, 42.2, 37, 45, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (90.8, 9.78, 37.2, 46.7, 45, 45, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                ],
+                                "SNK 80-250": [
+                                    (102.2, 6.0, 25.9, 29.8, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (102.2, 7.0, 30.0, 35.4, 37, 37, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (102.2, 8.0, 34.5, 40.7, 37, 45, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (102.2, 9.0, 39.1, 47.5, 45, 45, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (102.2, 10.2, 45.1, 53.0, 56, 55, "JU4R-UF23", "JU4R-UF23", "58/78", "58/78"),
+                                ],
+                                "SNK 80-250 / 500 GPM": [
+                                    (113.5, 5.79, 26.5, 30.6, 30, 30, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (113.5, 7.0, 31.8, 37.7, 37, 37, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (113.5, 8.0, 36.5, 44.0, 45, 45, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (113.5, 9.0, 41.4, 50.0, 45, 55, "JU4H-UF14", "JU4R-UF13", "53/71", "50/66.5"),
+                                    (113.5, 10.2, 47.5, 57.8, 56, 55, "JU4H-UF24", "JU4R-UF23", "62/83", "58/78"),
+                                ],
+                                "SDS 100-250": [
+                                    (170.0, 6.13, 46.6, 53.0, 56, 55, "JU4H-UF14", "JU4R-UF23", "53/71", "58/78"),
+                                    (170.0, 7.0, 51.2, 61.8, 56, 75, "JU4H-UF24", "-", "62/83", "-"),
+                                    (170.0, 8.0, 56.8, 70.9, 75, 75, "JU4H-UF34", "-", "86/115", "-"),
+                                    (170.0, 9.0, 62.6, 78.8, 75, 75, "JU4H-UF34", "JU4R-UF53", "99/133", "99/133"),
+                                    (170.0, 10.0, 70.3, 90.8, 93, 90, "JU4H-UF54", "-", "108/145", "-"),
+                                    (170.0, 11.0, 79.7, 102.0, 93, 110, "JU6H-UF34", "-", "131/175", "-"),
+                                    (170.0, 11.85, 90.8, 115.5, 112, 132, "JU6H-UF34", "-", "131/175", "-"),
+                                ],
+                                "SDS 100-250 / 1000 GPM": [
+                                    (227.0, 5.86, 52.1, 60.9, 56, 75, "JU4H-UF24", "-", "62/83", "-"),
+                                    (227.0, 7.0, 60.5, 74.9, 75, 75, "JU4H-UF34", "-", "86/115", "-"),
+                                    (227.0, 8.0, 68.3, 87.7, 93, 90, "JU4H-UF54", "JU4R-UF53", "108/145", "99/133"),
+                                    (227.0, 9.0, 76.5, 101.0, 93, 110, "JU4H-UF54", "-", "108/145", "-"),
+                                    (227.0, 10.0, 85.9, 113.0, 112, 110, "JU6H-UF34", "-", "131/175", "-"),
+                                    (227.0, 11.0, 96.0, 126.0, 112, 132, "JU6H-UF34", "-", "131/175", "-"),
+                                    (227.0, 11.8, 107.0, 138.6, 130, 160, "JU6H-UF54", "-", "161/216", "-"),
+                                ],
+                                "SDS 125-315": [
+                                    (284.0, 8.06, 93.1, 108.0, 112, 110, "JU4H-UF54", "-", "108/145", "-"),
+                                    (284.0, 9.0, 104.0, 124.0, 112, 132, "JU6H-UF34", "-", "131/175", "-"),
+                                    (284.0, 10.0, 117.0, 142.0, 130, 160, "JU6H-UF54", "-", "161/216", "-"),
+                                    (284.0, 11.0, 130.0, 160.0, 150, 160, "JU6H-UF54", "-", "161/216", "-"),
+                                    (284.0, 12.0, 146.0, 179.0, 168, 185, "JU6H-UF84", "-", "205/275", "-"),
+                                    (284.0, 13.0, 164.0, 200.0, 187, 200, "JU6H-UF84", "-", "205/275", "-"),
+                                    (284.0, 13.72, 178.0, 216.0, 200, 250, "-", "-", "-", "-"),
+                                ],
+                                "SDS 125-315 / 1500 GPM": [
+                                    (340.0, 7.72, 98.6, 115.5, 112, 132, "JU6H-UF34", "-", "131/175", "-"),
+                                    (340.0, 9.0, 115.0, 145.0, 130, 160, "JU6H-UF54", "-", "161/216", "-"),
+                                    (340.0, 10.0, 129.0, 159.0, 150, 160, "JU6H-UF54", "-", "161/216", "-"),
+                                    (340.0, 11.0, 144.0, 178.0, 168, 185, "JU6H-UF84", "-", "205/275", "-"),
+                                    (340.0, 12.0, 161.0, 200.0, 187, 200, "JU6H-UF84", "-", "205/275", "-"),
+                                    (340.0, 13.0, 179.0, 223.0, 200, 250, "-", "-", "-", "-"),
+                                    (340.0, 13.65, 193.0, 239.0, 225, 250, "-", "-", "-", "-"),
+                                ],
+                            }
+
+                            _catalog_debi_adimlari = [5.68, 11.3, 22.7, 34.0, 45.4, 56.8, 68.1, 90.8, 102.2, 113.5, 170.0, 227.0, 284.0, 340.0]
+                            _gerekli_debi = float(_q_pompa_m3h)
+                            _gerekli_h = float(_h_pompa_otomatik_mss)
+                            # Catalog pressure is bar; approximate conversion to mSS is shown explicitly.
+                            _gerekli_bar = _gerekli_h / 10.197
+                            _secim_adaylari = []
+                            for _model_adi, _satirlar in _snk_sds_katalog.items():
+                                for _satir in _satirlar:
+                                    _satir_debi, _satir_bar, _guc_100, _guc_150, _el_onayli, _el_onaysiz, _diz_es, _diz_rad, _diz_es_guc, _diz_rad_guc = _satir
+                                    # Katalog yalnızca belirli GPM/debi kademelerini kabul eder:
+                                    # gerekli debiyi karşılayan en küçük katalog debisi seçilir.
+                                    _tip_uygun = (
+                                        (_model_adi.startswith("SNK") and _tip_secim == "Yatay arkadan emişli")
+                                        or (_model_adi.startswith("SDS") and _tip_secim == "Yatay ayrılabilir gövdeli")
+                                    )
+                                    if _tip_uygun and _satir_debi >= _gerekli_debi and _satir_bar >= _gerekli_bar:
+                                        _secim_adaylari.append((_satir_debi, _satir_bar, _model_adi, _satir))
+                            _secim_adaylari.sort(key=lambda x: (x[0], x[1]))
+                            _katalog_secimi = _secim_adaylari[0] if _secim_adaylari else None
+                            if _katalog_secimi:
+                                _secili_model, _satir = _katalog_secimi[2], _katalog_secimi[3]
+                                st.success(f"Katalog seçimi: {_secili_model} — katalog debisi { _satir[0]:.1f} m³/h ({_satir[0]/0.227:.0f} GPM), { _satir[1]:.2f} bar")
+                                st.caption(f"Üst hesaptan gelen gerekli debi: {_gerekli_debi:.2f} m³/h; katalogdaki bir üst uygun debi kademesi seçildi.")
+                                st.write(f"Elektrik motor gücü: onaylı **{_satir[4]} kW**, onaysız **{_satir[5]} kW**")
+                                st.write(f"Dizel motor: eşanjör **{_satir[8]}**, radyatör **{_satir[9]}**")
+                                st.session_state[f"{_prefix}_katalog_model"] = _secili_model
+                                st.session_state[f"{_prefix}_katalog_debi_m3h"] = _satir[0]
+                                st.session_state[f"{_prefix}_katalog_gpm"] = round(_satir[0] / 0.227)
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _satir[4]
+                                st.session_state[f"{_prefix}_katalog_dizel_es_kw_hp"] = _satir[8]
+                                st.session_state[f"{_prefix}_katalog_dizel_rad_kw_hp"] = _satir[9]
+                            else:
+                                st.warning("Gerekli debi/basma yüksekliği için yüklenen SDS/SNK kataloğunda doğrudan eşleşen satır bulunamadı. Katalog dışı model veya ara debi otomatik seçilmiyor.")
+
                             # Poz eşleştirmesi, kullanıcıya gösterilen gerçek pompa Q/H
                             # değerleriyle yapılır. Yedek pompa varsayılan olarak asılın
                             # Q/H ve tipini kullanır; tahrik tipi kendi poz grubunu belirler.
@@ -2260,7 +2379,33 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 _q_pompa_esas = float(st.session_state.get(f"{_prefix}_debi_m3h", _q_pompa_m3h) or 0.0)
                                 _h_pompa_esas = float(st.session_state.get(f"{_prefix}_h_mss", _h_pompa_otomatik_mss) or 0.0)
+                            _katalog_poz_debisi = st.session_state.get(f"{_prefix}_katalog_debi_m3h")
+                            if _katalog_poz_debisi is not None and (
+                                str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SNK")
+                                or str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SDS")
+                            ):
+                                _q_pompa_esas = float(_katalog_poz_debisi)
                             _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
+                            # Üretici kataloğunda SNK ailesi yatay arkadan emişli, SDS ailesi
+                            # yatay ayrılabilir gövdeli gruba karşılık gelir. Seçilen modele göre
+                            # Bakanlık poz grubunu filtrele; alt poz kapasite satırı yoksa tahmin etme.
+                            _model_poz_araliklari = {
+                                "SNK": {
+                                    ("Elektrik motorlu", "Yatay arkadan emişli"): (1201, 1223),
+                                    ("Dizel motorlu", "Yatay arkadan emişli"): (2101, 2117),
+                                },
+                                "SDS": {
+                                    ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): (1301, 1306),
+                                    ("Dizel motorlu", "Yatay ayrılabilir gövdeli"): (2201, 2210),
+                                },
+                            }
+                            _model_aile = "SDS" if str(st.session_state.get(f"{_prefix}_katalog_model", "")).startswith("SDS") else "SNK"
+                            _aralik = _model_poz_araliklari.get(_model_aile, {}).get((_tahrik, _tip_secim))
+                            if _aralik:
+                                _uygun_pozlar = [
+                                    item for item in _uygun_pozlar
+                                    if _aralik[0] <= int(str(item[3]).split(".")[-1]) <= _aralik[1]
+                                ]
                             _aday_pozlar = [
                                 item for item in _uygun_pozlar
                                 if item[0] <= _q_pompa_esas <= item[1] and item[2] >= _h_pompa_esas
