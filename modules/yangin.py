@@ -2458,8 +2458,27 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
                                 st.session_state[f"{_prefix}_rapor_gpm_karsilik_m3h"] = _gpm_m3h
                                 if _tahrik == "Elektrik motorlu":
-                                    st.write(f"Elektrik motor gücü — katalog: **{_el_onayli} kW (UL/FM onaylı)** / **{_el_onaysiz} kW (onaysız)**")
-                                    _motor_rapor_gucu = _el_onayli
+                                    # Kullanıcı katalogdaki UL/FM onaylı veya onaysız motor gücünü seçebilir.
+                                    # Varsayılan seçim onaysız motor gücüdür.
+                                    _elektrik_guc_secim_key = f"{_prefix}_elektrik_guc_secim"
+                                    _elektrik_guc_secenekleri = [
+                                        f"Onaysız — {_el_onaysiz} kW",
+                                        f"UL/FM onaylı — {_el_onayli} kW",
+                                    ]
+                                    _elektrik_guc_varsayilan = _elektrik_guc_secenekleri[0]
+                                    if st.session_state.get(_elektrik_guc_secim_key) not in _elektrik_guc_secenekleri:
+                                        st.session_state[_elektrik_guc_secim_key] = _elektrik_guc_varsayilan
+                                    _elektrik_guc_secimi = st.selectbox(
+                                        "Elektrik motor gücü seçimi",
+                                        options=_elektrik_guc_secenekleri,
+                                        key=_elektrik_guc_secim_key,
+                                        help="Varsayılan: katalogdaki onaysız motor gücü. İstersen UL/FM onaylı gücü seçebilirsin.",
+                                    )
+                                    if _elektrik_guc_secimi.startswith("UL/FM onaylı"):
+                                        _motor_rapor_gucu = _el_onayli
+                                    else:
+                                        _motor_rapor_gucu = _el_onaysiz
+                                    st.caption(f"Seçilen katalog motor gücü: {_motor_rapor_gucu} kW")
                                 else:
                                     st.write(f"Dizel motor — eşanjörlü: **{_diz_es}**, **{_diz_es_guc} kW/HP**; radyatörlü: **{_diz_rad}**, **{_diz_rad_guc} kW/HP**")
                                     _motor_rapor_gucu = _diz_es_guc
@@ -2475,10 +2494,14 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_rapor_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
                                 st.session_state[f"{_prefix}_katalog_basinc_bar"] = _satir_bar
                                 st.session_state[f"{_prefix}_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
-                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _el_onayli
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _motor_rapor_gucu if _tahrik == "Elektrik motorlu" else _el_onayli
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw_onayli"] = _el_onayli
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw_onaysiz"] = _el_onaysiz
                                 st.session_state[f"{_prefix}_katalog_dizel_es_kw_hp"] = _diz_es_guc
                                 st.session_state[f"{_prefix}_katalog_dizel_rad_kw_hp"] = _diz_rad_guc
                                 st.session_state[f"{_prefix}_katalog_motor_rapor_gucu"] = _motor_rapor_gucu
+                                if _tahrik == "Elektrik motorlu":
+                                    st.session_state[f"{_prefix}_rapor_motor_gucu_kw"] = float(_motor_rapor_gucu)
                                 if "ana" in _prefix:
                                     st.session_state["yangin_7133_ana_katalog_model"] = _secili_model
                                     st.session_state["yangin_7133_ana_katalog_satir"] = tuple(_satir)
