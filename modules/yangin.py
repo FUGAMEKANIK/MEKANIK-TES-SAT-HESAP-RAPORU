@@ -2409,7 +2409,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _satir = _katalog_secimi[3]
                                 _satir_debi, _satir_bar, _guc_100, _guc_150, _el_onayli, _el_onaysiz, _diz_es, _diz_rad, _diz_es_guc, _diz_rad_guc = _satir
                                 _gpm = round(_satir_debi / 0.227)
-                                st.success(f"Katalog seçimi: **{_secili_model}** — {_satir_debi:.1f} m³/h / {_gpm} GPM, {_satir_bar:.2f} bar (yaklaşık {_satir_bar * 10.197:.1f} mSS)")
+                                st.success(f"Katalog seçimi: **{_secili_model}** — {_satir_debi:.1f} m³/h / **{_gpm} GPM**, {_satir_bar:.2f} bar (yaklaşık {_satir_bar * 10.197:.1f} mSS)")
+                                st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
                                 if _tahrik == "Elektrik motorlu":
                                     st.write(f"Elektrik motor gücü — katalog: **{_el_onayli} kW (UL/FM onaylı)** / **{_el_onaysiz} kW (onaysız)**")
                                     _motor_rapor_gucu = _el_onayli
@@ -2420,6 +2421,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_katalog_satir"] = tuple(_satir)
                                 st.session_state[f"{_prefix}_katalog_debi_m3h"] = _satir_debi
                                 st.session_state[f"{_prefix}_katalog_gpm"] = _gpm
+                                # GPM değerini rapor modülünün okuyabilmesi için ayrıca rapor alanı olarak sakla.
+                                st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
+                                st.session_state[f"{_prefix}_rapor_katalog_debi_m3h"] = _satir_debi
+                                st.session_state[f"{_prefix}_rapor_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
                                 st.session_state[f"{_prefix}_katalog_basinc_bar"] = _satir_bar
                                 st.session_state[f"{_prefix}_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
                                 st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _el_onayli
@@ -2501,6 +2506,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 # 90–99 m³/h ve 80 mSS kademesi seçilir (1216).
                                 _poz_eslesme = min(_aday_pozlar, key=lambda item: (item[2], item[1])) if _aday_pozlar else None
                             _poz_key = f"{_prefix}_poz"
+                            _katalog_model_var = bool(st.session_state.get(f"{_prefix}_katalog_model"))
+                            _ozel_poz_gerekli = ("jokey" not in _prefix and not _poz_eslesme and _katalog_model_var)
                             if "jokey" in _prefix:
                                 pass
                             elif _poz_eslesme:
@@ -2508,28 +2515,38 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.success(f"Otomatik Bakanlık pozu: **{_poz_eslesme[3]}** — {_poz_eslesme[4]}")
                             else:
                                 _otomatik_poz = ""
-                                st.warning(
-                                    f"Seçilen tipte ({_tip_secim}), {_q_pompa_esas:.2f} m³/h ve "
-                                    f"{_h_pompa_esas:.2f} mSS çalışma noktasını karşılayan doğrulanmış "
-                                    "Bakanlık alt pozu mevcut katalogda bulunamadı. Sistem tahmini poz atamaz. "
-                                    "Resmî tariften kontrol ederek aşağıdan manuel poz girebilirsiniz."
-                                )
+                                if _ozel_poz_gerekli:
+                                    st.warning(
+                                        "Üretici kataloğunda uygun pompa modeli seçildi; ancak bu çalışma noktası için "
+                                        "eşleşen Bakanlık alt pozu bulunamadı. Pompa katalogdan seçili kalacak; "
+                                        "poz otomatik atanmayacak. Özel poz numarasını aşağıya elle girin."
+                                    )
+                                else:
+                                    st.warning(
+                                        f"Seçilen tipte ({_tip_secim}), {_q_pompa_esas:.2f} m³/h ve "
+                                        f"{_h_pompa_esas:.2f} mSS çalışma noktasını karşılayan doğrulanmış "
+                                        "Bakanlık alt pozu bulunamadı. Sistem tahmini poz atamaz."
+                                    )
                             st.caption(f"Bakanlık poz grubu: {_poz_grup}")
+                            if _ozel_poz_gerekli:
+                                # Katalogda model var ama Bakanlık alt pozu yoksa özel poz zorunlu olarak manuel girilir.
+                                st.session_state[f"{_prefix}_poz_manuel_aktif"] = True
                             _manuel_poz_acik = st.checkbox(
-                                f"{_etiket}: poz numarasını elle gir / otomatik seçimi değiştir",
+                                f"{_etiket}: poz numarasını elle gir / özel poz kullan",
                                 key=f"{_prefix}_poz_manuel_aktif",
-                                value=bool(st.session_state.get(f"{_prefix}_poz_manuel_aktif", False)),
+                                disabled=_ozel_poz_gerekli,
                             )
                             if _manuel_poz_acik:
                                 _manuel_poz_degeri = st.text_input(
                                     f"{_etiket} manuel Bakanlık poz numarası",
                                     value=str(st.session_state.get(f"{_prefix}_poz_manuel_giris", st.session_state.get(_poz_key, _otomatik_poz)) or ""),
                                     key=f"{_prefix}_poz_manuel_giris",
-                                    placeholder="Örn. 25.720.1217",
+                                    placeholder="Özel poz numarasını elle girin",
                                 ).strip()
                                 st.session_state[_poz_key] = _manuel_poz_degeri
+                                st.session_state[f"{_prefix}_poz_ozel"] = bool(_ozel_poz_gerekli)
                                 if _manuel_poz_degeri:
-                                    st.info(f"Rapora aktarılacak poz: **{_manuel_poz_degeri}** (manuel seçim)")
+                                    st.info(f"Rapora aktarılacak {'özel ' if _ozel_poz_gerekli else ''}poz: **{_manuel_poz_degeri}** (manuel giriş)")
                             else:
                                 st.session_state[_poz_key] = _otomatik_poz
                             if "jokey" in _prefix:
