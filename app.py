@@ -1684,27 +1684,33 @@ def _toplu_secim_butonlari(anahtarlar, grup_adi=None):
 #   bolum_6_aktif = True
 # olur; fakat 6.3 checkbox'ı kullanıcı arayüzünde zorla işaretlenmez.
 # Böylece TÜMÜNÜ KALDIR sonrası herhangi bir alt bölüm seçilebilir.
-bolum_51_aktif = bool(st.session_state.get("rapor_bolum_51", False))
-bolum_5_aktif = bool(st.session_state.get("rapor_bolum_5", False)) or bolum_51_aktif
+# 5. ana başlık kapatılırsa 5.1 alt başlığı da rapor dışında kalır.
+bolum_5_aktif = bool(st.session_state.get("rapor_bolum_5", False))
+bolum_51_aktif = bolum_5_aktif and bool(st.session_state.get("rapor_bolum_51", False))
 
-bolum_611_aktif = bool(st.session_state.get("rapor_bolum_611", False))
-bolum_61_aktif = bool(st.session_state.get("rapor_bolum_61", False)) or bolum_611_aktif
+# 6. SIHHİ TESİSAT ana seçimi ana anahtardır.
+# Ana bölüm kapatıldığında alt başlıklar session_state içinde işaretli kalsa bile
+# hiçbir sıhhi tesisat alt bölümü rapora dahil edilmez. Tekrar dahil etmek için
+# önce 6. Sıhhi Tesisat ana kutusu açılır; ardından istenen alt bölümler seçilebilir.
+_sihhi_ana_secili = bool(st.session_state.get("rapor_bolum_6", False))
 
-bolum_621_aktif = bool(st.session_state.get("rapor_bolum_621", False))
-bolum_622_aktif = bool(st.session_state.get("rapor_bolum_622", False))
-bolum_623_aktif = bool(st.session_state.get("rapor_bolum_623", False))
-bolum_62_aktif = (
+bolum_611_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_611", False))
+bolum_61_aktif = _sihhi_ana_secili and (
+    bool(st.session_state.get("rapor_bolum_61", False)) or bolum_611_aktif
+)
+
+bolum_621_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_621", False))
+bolum_622_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_622", False))
+bolum_623_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_623", False))
+bolum_62_aktif = _sihhi_ana_secili and (
     bool(st.session_state.get("rapor_bolum_62", False))
     or bolum_621_aktif
     or bolum_622_aktif
     or bolum_623_aktif
 )
 
-# 6.3.1 ana checkbox'ı bu grubun ana aç/kapat kontrolüdür.
-# Alt checkbox'lar kendi alt başlıklarını kontrol eder; ana bölüm kapatıldığında
-# alt seçimler açık kalsa bile 6.3.1 rapora dahil edilmez ve numaralandırmada
-# kardeş bölüm olarak sayılmaz.
-bolum_631_aktif = bool(st.session_state.get("rapor_bolum_631", False))
+# 6.3.1 ana checkbox'ı bu grubun kontrolüdür.
+bolum_631_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_631", False))
 bolum_631_1_aktif = bolum_631_aktif and bool(st.session_state.get("rapor_bolum_631_1", False))
 bolum_631_2_alt_anahtarlar = [
     "rapor_bolum_631_2", "rapor_bolum_631_2_1", "rapor_bolum_631_2_2",
@@ -1714,11 +1720,11 @@ bolum_631_2_alt_anahtarlar = [
 bolum_631_2_aktif = bolum_631_aktif and any(
     bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar
 )
-bolum_632_aktif = bool(st.session_state.get("rapor_bolum_632", False))
-bolum_633_aktif = bool(st.session_state.get("rapor_bolum_633", False))
-bolum_634_aktif = bool(st.session_state.get("rapor_bolum_634", False))
-bolum_635_aktif = bool(st.session_state.get("rapor_bolum_635", False))
-bolum_63_aktif = (
+bolum_632_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_632", False))
+bolum_633_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_633", False))
+bolum_634_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_634", False))
+bolum_635_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_635", False))
+bolum_63_aktif = _sihhi_ana_secili and (
     bool(st.session_state.get("rapor_bolum_63", False))
     or bolum_631_aktif
     or bolum_632_aktif
@@ -1727,11 +1733,10 @@ bolum_63_aktif = (
     or bolum_635_aktif
 )
 
-bolum_6_aktif = (
+# Ana bölüm kapalıysa sıhhi tesisatın tüm başlıkları rapor dışıdır.
+bolum_6_aktif = _sihhi_ana_secili and (
     bool(st.session_state.get("rapor_bolum_6", False))
-    or bolum_61_aktif or bolum_611_aktif
-    or bolum_62_aktif or bolum_621_aktif or bolum_622_aktif or bolum_623_aktif
-    or bolum_63_aktif or bolum_631_aktif or bolum_632_aktif or bolum_633_aktif or bolum_634_aktif or bolum_635_aktif
+    or bolum_61_aktif or bolum_62_aktif or bolum_63_aktif
 )
 
 bolum_2_aktif = bool(st.session_state.get("rapor_bolum_2", False))
@@ -2372,13 +2377,27 @@ with _t_genel:
         st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
 
         iller_listesi = sorted(list(iklim_veritabani.keys()))
+
+        # İl seçimini benzersiz bir session_state anahtarıyla sakla.
+        # Proje kaydedilip yeniden açıldığında bu anahtar proje ayarlarıyla
+        # geri yüklenir; böylece varsayılan ilk il (Adana) seçimi ezmez.
+        _kayitli_il = st.session_state.get("iklim_secilen_il_v1")
+        _il_index = iller_listesi.index(_kayitli_il) if _kayitli_il in iller_listesi else 0
         secilen_il = st.selectbox(
-            "Yapının inşa edileceği ili seçin:", iller_listesi, index=0
+            "Yapının inşa edileceği ili seçin:",
+            iller_listesi,
+            index=_il_index,
+            key="iklim_secilen_il_v1",
         )
 
         ilceler_listesi = sorted(list(iklim_veritabani[secilen_il].keys()))
+        _kayitli_ilce = st.session_state.get("iklim_secilen_ilce_v1")
+        _ilce_index = ilceler_listesi.index(_kayitli_ilce) if _kayitli_ilce in ilceler_listesi else 0
         secilen_ilce = st.selectbox(
-            "Yapının inşa edileceği ilçeyi seçin:", ilceler_listesi
+            "Yapının inşa edileceği ilçeyi seçin:",
+            ilceler_listesi,
+            index=_ilce_index,
+            key="iklim_secilen_ilce_v1",
         )
 
         iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
