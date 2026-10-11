@@ -2375,11 +2375,26 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _eta = float(st.session_state.get(_eta_key, 65.0) or 65.0)
                                 _guc_hesap = (0.002725 * _q_now * _h_now / max(_eta / 100.0, 0.01)) if _q_now > 0 and _h_now > 0 else 0.0
                                 _guc_elle_key = f"{_prefix}_guc_elle"
-                                st.checkbox(f"{_etiket}: motor gücünü elle düzelt", key=_guc_elle_key, value=bool(st.session_state.get(_guc_elle_key, False)))
-                                if not st.session_state.get(_guc_elle_key, False):
-                                    st.session_state[_guc_key] = round(_guc_hesap, 2)
-                                st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help="Otomatik değer yaklaşık güç hesabıdır; kesin motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.")
-                                st.caption(f"Yaklaşık hesaplanan güç: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
+                                st.checkbox(
+                                    f"{_etiket}: motor gücünü elle düzelt",
+                                    key=_guc_elle_key,
+                                    value=bool(st.session_state.get(_guc_elle_key, False)),
+                                )
+                                if st.session_state.get(_guc_elle_key, False):
+                                    # Elle düzenleme açıkken kullanıcı girdisi için tek widget.
+                                    st.number_input(
+                                        f"{_etiket} elektrik/motor gücü (kW)",
+                                        min_value=0.0,
+                                        step=0.5,
+                                        key=_guc_key,
+                                        value=float(st.session_state.get(_guc_key, round(_guc_hesap, 2)) or 0.0),
+                                        help="Nihai motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.",
+                                    )
+                                else:
+                                    # Otomatik modda widget anahtarına doğrudan yazma yapılmaz.
+                                    # Bu, Streamlit'in WidgetAlreadyInstantiatedError hatasını önler.
+                                    st.metric(f"{_etiket} yaklaşık motor gücü", f"{_guc_hesap:.2f} kW")
+                                st.caption(f"Yaklaşık hesap: 0,002725 × Q × H / η")
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
                     st.session_state["yangin_7133_tasarim_debi_ldak"] = float(_q_pompa_m3h / 0.06)
                     st.session_state["yangin_7134_jokey_var"] = bool(_jokey_var)
