@@ -2135,8 +2135,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.markdown(f"#### {_etiket} — {_tahrik}")
                             # Pompa tipi seçimi: motor türüne göre Bakanlık poz grubu ayrımı korunur.
                             _tip_key = f"{_prefix}_tipi"
-                            _tipler = ["Yatay hat (in-line)", "Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey milli çok kademeli"]
-                            _tip_default = st.session_state.get(_tip_key, (_tipler[1] if "jokey" not in _prefix else _tipler[1]))
+                            _tipler = ["Yatay arkadan emişli", "Yatay ayrılabilir gövdeli", "Dikey milli çok kademeli"]
+                            # Önceki kayıtlı projelerde kaldırılan tip seçili kalmış olabilir.
+                            # Widget oluşmadan geçerli tipe aktar.
+                            if st.session_state.get(_tip_key) == "Yatay hat (in-line)":
+                                st.session_state[_tip_key] = _tipler[0]
+                            _tip_default = st.session_state.get(_tip_key, _tipler[0])
                             if "yedek" in _prefix:
                                 _ana_tip_secim = st.session_state.get("yangin_7133_ana_tipi", _tipler[1])
                                 _tip_secim = _ana_tip_secim
@@ -2153,7 +2157,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # Bakanlık 2026 Mayıs Mekanik Tesisat poz grupları.
                             # Kullanıcının doğruladığı başlangıç pozları esas alınır.
                             _poz_grup_map = {
-                                ("Elektrik motorlu", "Yatay hat (in-line)"): "25.720.1101–25.720.1109",
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): "25.720.1201–25.720.1223",
                                 ("Elektrik motorlu", "Yatay ayrılabilir gövdeli"): "25.720.1301–25.720.1306",
                                 ("Elektrik motorlu", "Dikey milli çok kademeli"): "25.720.1401 ve devamı",
@@ -2170,17 +2173,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             # 2026 Mayıs resmî listeden doğrulanmış debi/basma pozları.
                             # Her poz: Qmin, Qmax, H (mSS), poz no, tarif.
                             _poz_katalog = {
-                                ("Elektrik motorlu", "Yatay hat (in-line)"): [
-                                    (12, 12, 60, "25.720.1101", "12 m³/h, 60 mSS"),
-                                    (12, 12, 80, "25.720.1102", "12 m³/h, 80 mSS"),
-                                    (12, 12, 100, "25.720.1103", "12 m³/h, 100 mSS"),
-                                    (60, 66, 60, "25.720.1104", "60–66 m³/h, 60 mSS"),
-                                    (60, 66, 80, "25.720.1105", "60–66 m³/h, 80 mSS"),
-                                    (60, 66, 100, "25.720.1106", "60–66 m³/h, 100 mSS"),
-                                    (120, 126, 60, "25.720.1107", "120–126 m³/h, 60 mSS"),
-                                    (120, 126, 80, "25.720.1108", "120–126 m³/h, 80 mSS"),
-                                    (120, 126, 100, "25.720.1109", "120–126 m³/h, 100 mSS"),
-                                ],
                                 ("Elektrik motorlu", "Yatay arkadan emişli"): [
                                     (12, 12, 60, "25.720.1201", "12 m³/h, 60 mSS"),
                                     (12, 12, 80, "25.720.1202", "12 m³/h, 80 mSS"),
@@ -2336,10 +2328,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.text_input(f"{_etiket} model", key=f"{_prefix}_model")
                                 st.text_input(f"{_etiket} Cihaz Poz No (otomatik)", key=f"{_prefix}_poz", disabled=True)
                             with _c2:
-                                # Motor gücü alanı aşağıda, otomatik hesaplamadan sonra
-                                # yalnızca bir kez oluşturulur. Aynı key'i burada da
-                                # oluşturmak session_state güncellemesinde Streamlit
-                                # StreamlitWidgetAlreadyInstantiatedError hatasına yol açıyordu.
+                                st.number_input(f"{_etiket} motor gücü (kW)", min_value=0.0, step=0.5, key=f"{_prefix}_guc_kw", value=float(st.session_state.get(f"{_prefix}_guc_kw", 0.0) or 0.0))
                                 _qkey, _hkey = f"{_prefix}_debi_m3h", f"{_prefix}_h_mss"
                                 _qauto_key, _hauto_key = f"{_prefix}_debi_elle", f"{_prefix}_h_elle"
                                 _q_default = 6.0 if "jokey" in _prefix else float(_q_pompa_m3h)
