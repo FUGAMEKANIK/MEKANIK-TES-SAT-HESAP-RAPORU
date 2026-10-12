@@ -3746,7 +3746,7 @@ if _rapor_olustur_sidebar:
                       _pompa_satirlari = [
                           (
                               "Ana yangın pompası",
-                              str(st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi") or "Belirtilmedi"),
+                              str(st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi")) or "Belirtilmedi"),
                               _ana_motor_turu,
                               "1 asıl",
                               st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")),
@@ -3758,7 +3758,7 @@ if _rapor_olustur_sidebar:
                           ),
                           (
                               "Yedek yangın pompası",
-                              str(st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi") or "Belirtilmedi"),
+                              str(st.session_state.get("yangin_7133_yedek_tipi_rapor", st.session_state.get("yangin_7133_yedek_tipi", st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi")))) or "Belirtilmedi"),
                               _yedek_motor_turu,
                               "1 yedek",
                               st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")),
