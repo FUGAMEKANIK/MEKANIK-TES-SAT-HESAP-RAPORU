@@ -3331,11 +3331,6 @@ if _rapor_olustur_sidebar:
                       for _ana_r, _drenaj_r in _spr_cap_drenaj_rapor:
                           _cells_d = _spr_drenaj_tbl_rapor.add_row().cells
                           _cells_d[0].text, _cells_d[1].text = _ana_r, _drenaj_r
-                      _src_cap_r = doc.add_paragraph(
-                          "Kaynak: Kullanıcı tarafından sağlanan SPRİNKLER ÇAP TABLOSU.xlsx. "
-                          "Yüksek Tehlike tablosundaki 1½\" DN40 satırı kaynak dosyada 5-4 olarak yazılmıştır; kaynak değer değiştirilmemiştir."
-                      )
-                      _src_cap_r.runs[0].italic = True
 
                       doc.add_heading("7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ", level=4)
                       doc.add_paragraph(
@@ -3794,10 +3789,49 @@ if _rapor_olustur_sidebar:
                           _satir_degerleri = [_tip, _pompa_tipi, _motor_turu, _adet, _gpm_text, _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]
                           for _c, _t in zip(_cells, _satir_degerleri):
                               _c.text = str(_t)
+                      # Yangın pompası tablosunu derli toplu biçimlendir: tüm hücrelerde 10 punto,
+                      # sıkı paragraf aralıkları, dikey ortalama ve kompakt hücre kenar boşlukları.
+                      try:
+                          from docx.shared import Pt as _PompaPt, Inches as _PompaInches
+                          from docx.enum.text import WD_ALIGN_PARAGRAPH as _PompaAlign
+                          from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as _PompaVAlign
+                          from docx.oxml import OxmlElement as _PompaOxml
+                          from docx.oxml.ns import qn as _pompa_qn
+                          for _satir_i, _satir in enumerate(_pompa_tab.rows):
+                              for _hucre_i, _hucre in enumerate(_satir.cells):
+                                  _hucre.vertical_alignment = _PompaVAlign.CENTER
+                                  _tcPr = _hucre._tc.get_or_add_tcPr()
+                                  _mar = _tcPr.first_child_found_in('w:tcMar')
+                                  if _mar is None:
+                                      _mar = _PompaOxml('w:tcMar')
+                                      _tcPr.append(_mar)
+                                  for _kenar in ('top', 'start', 'bottom', 'end'):
+                                      _el = _mar.find(_pompa_qn(f'w:{_kenar}'))
+                                      if _el is None:
+                                          _el = _PompaOxml(f'w:{_kenar}')
+                                          _mar.append(_el)
+                                      _el.set(_pompa_qn('w:w'), '55' if _kenar in ('start','end') else '35')
+                                      _el.set(_pompa_qn('w:type'), 'dxa')
+                                  for _par in _hucre.paragraphs:
+                                      _par.paragraph_format.space_before = _PompaPt(0)
+                                      _par.paragraph_format.space_after = _PompaPt(0)
+                                      _par.paragraph_format.line_spacing = 1.0
+                                      _par.alignment = _PompaAlign.CENTER if _hucre_i >= 3 else _PompaAlign.LEFT
+                                      for _run in _par.runs:
+                                          _run.font.name = 'Arial'
+                                          _run.font.size = _PompaPt(10)
+                                          if _satir_i == 0:
+                                              _run.bold = True
+                          # Sütun başlıkları sonraki sayfaya taşarsa başlık satırını tekrar et.
+                          _trPr = _pompa_tab.rows[0]._tr.get_or_add_trPr()
+                          _tekrar = _PompaOxml('w:tblHeader')
+                          _tekrar.set(_pompa_qn('w:val'), 'true')
+                          _trPr.append(_tekrar)
+                          _pompa_tab.autofit = True
+                      except Exception:
+                          pass
                       # Poz numaraları yalnızca ilgili pompa satırındaki son sütunda gösterilir;
                       # tablonun altında tekrar eden ayrı poz satırları oluşturulmaz.
-                      _sec_not = doc.add_paragraph("Not: Pompa debisi 7.13.2 hesabından, basma yüksekliği 7.13.3 hesabından aktarılır. Pompa çalışma noktası ve motor gücü üretici performans eğrisiyle doğrulanmalıdır.")
-                      _sec_not.paragraph_format.space_after = Pt(6)
 
 
                   else:
