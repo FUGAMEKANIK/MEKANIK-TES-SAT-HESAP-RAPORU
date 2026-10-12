@@ -2434,7 +2434,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 )
                             # Rapor tablosu için pompa tipi ve motor/tahrik bilgilerini her
                             # pompa sekmesinde açıkça sakla (yedek pompa asılın tipini devralır).
-                            st.session_state[f"{_prefix}_tipi"] = _tip_secim
+                            # Widget key'i st.radio oluşturulduktan sonra değiştirilmez;
+                            # seçimi rapor için ayrı anahtara yaz.
                             st.session_state[f"{_prefix}_tipi_rapor"] = _tip_secim
                             st.session_state[f"{_prefix}_tahrik_rapor"] = _tahrik
 
