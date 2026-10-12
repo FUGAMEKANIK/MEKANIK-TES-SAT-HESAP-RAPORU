@@ -321,31 +321,29 @@ if _rapor_olustur_sidebar:
       body_section.footer_distance = Inches(0.25)
   
       # --- 1. GENEL BİLGİLER ---
-      # Ana bölüm 1 kapatıldığında bu başlık ve içeriği rapora eklenmez.
-      if st.session_state.get("rapor_bolum_1", True):
-          ana_baslik_ekle("1. GENEL BİLGİLER")
-          # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
-          p_giris = doc.add_paragraph()
-          p_giris.add_run("Bu raporda ")
-          if aktif_is:
-              _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
-              _r_proje = p_giris.add_run(_genel_proje_ifade)
-              _r_proje.font.name = "Times New Roman"
-              _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-              _r_proje.font.bold = True
-              _r_proje.font.italic = True
-              _r_proje.font.color.rgb = RGBColor(0, 0, 0)
-          else:
-              p_giris.add_run("ilgili proje")
-          p_giris.add_run(
-              " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
-              "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
-              "tesisat sistem çözümleri tespit edilmiştir."
-          )
-          yapi_metni = (
-              f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
-          )
-          doc.add_paragraph(yapi_metni)
+      ana_baslik_ekle("1. GENEL BİLGİLER")
+      # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
+      p_giris = doc.add_paragraph()
+      p_giris.add_run("Bu raporda ")
+      if aktif_is:
+          _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
+          _r_proje = p_giris.add_run(_genel_proje_ifade)
+          _r_proje.font.name = "Times New Roman"
+          _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+          _r_proje.font.bold = True
+          _r_proje.font.italic = True
+          _r_proje.font.color.rgb = RGBColor(0, 0, 0)
+      else:
+          p_giris.add_run("ilgili proje")
+      p_giris.add_run(
+          " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
+          "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
+          "tesisat sistem çözümleri tespit edilmiştir."
+      )
+      yapi_metni = (
+          f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
+      )
+      doc.add_paragraph(yapi_metni)
   
       if bolum_2_aktif:
               # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
@@ -3240,98 +3238,6 @@ if _rapor_olustur_sidebar:
                           "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi."
                       ).italic = True
 
-                      # SPRİNKLER BORU ÇAPI TABLOLARI — raporda yeniden göster
-                      # Tablolar, uygulamadaki kaynak Excel değerleriyle aynı tutulur.
-                      doc.add_heading("7.5.1.1 SPRİNKLER BORU ÇAPI TESPİTİ", level=5)
-                      doc.add_paragraph(
-                          "Sprinkler boru çapı tablosu, 7.2 bölümünde belirlenen yangın tehlike sınıfına göre otomatik seçilir. "
-                          "Uygulamada manuel seçim yapılmışsa raporda manuel seçilen grup ve çap bilgisi gösterilir."
-                      )
-                      _spr_cap_hafif_rapor = [
-                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                          ('2" DN50', '6-10'), ('2½" DN65', '11-30'), ('3" DN80', '31-60'),
-                          ('4" DN100', '61-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _spr_cap_orta_rapor = [
-                          ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
-                          ('2" DN50', '6-10'), ('2½" DN65', '11-20'), ('3" DN80', '21-40'),
-                          ('4" DN100', '41-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _spr_cap_yuksek_rapor = [
-                          ('1" DN25', '1'), ('1¼" DN32', '2-4'), ('1½" DN40', '5-4'),
-                          ('2" DN50', '8-14'), ('2½" DN65', '15-26'), ('3" DN80', '27-54'),
-                          ('4" DN100', '55-89'), ('5" DN125', '90-149'), ('6" DN150', '150-275'),
-                          ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
-                      ]
-                      _spr_cap_drenaj_rapor = [
-                          ('2" hatta kadar', '¾"'), ('3" hatta kadar', '1¼"'), ('4" ve üzeri', '2"'),
-                      ]
-                      _spr_cap_sinif_rapor = str(
-                          st.session_state.get("yangin_722_etkin_sinif", "")
-                          or st.session_state.get("yangin_722_otomatik_sinif", "")
-                      ).strip()
-                      _spr_cap_norm_rapor = _spr_cap_sinif_rapor.lower().replace("–", "-").replace(" ", "")
-                      if _spr_cap_norm_rapor.startswith("düşük"):
-                          _spr_cap_grup_rapor, _spr_cap_liste_rapor = "HAFİF TEHLİKE", _spr_cap_hafif_rapor
-                      elif _spr_cap_norm_rapor.startswith("orta"):
-                          _spr_cap_grup_rapor, _spr_cap_liste_rapor = "ORTA TEHLİKE", _spr_cap_orta_rapor
-                      elif _spr_cap_norm_rapor.startswith("yüksek"):
-                          _spr_cap_grup_rapor, _spr_cap_liste_rapor = "YÜKSEK TEHLİKE", _spr_cap_yuksek_rapor
-                      else:
-                          _spr_cap_grup_rapor, _spr_cap_liste_rapor = "", []
-                      _spr_cap_yontem_rapor = str(st.session_state.get("yangin_75_sprinkler_cap_kaynagi", "Otomatik") or "Otomatik")
-                      if _spr_cap_yontem_rapor.lower() == "manuel":
-                          _spr_cap_manuel_grup_rapor = str(st.session_state.get("yangin_75_sprinkler_manuel_grup", "") or "")
-                          _spr_cap_liste_rapor = {
-                              "HAFİF TEHLİKE": _spr_cap_hafif_rapor,
-                              "ORTA TEHLİKE": _spr_cap_orta_rapor,
-                              "YÜKSEK TEHLİKE": _spr_cap_yuksek_rapor,
-                          }.get(_spr_cap_manuel_grup_rapor, _spr_cap_liste_rapor)
-                          _spr_cap_grup_rapor = _spr_cap_manuel_grup_rapor or _spr_cap_grup_rapor
-                      _spr_cap_secili_rapor = str(
-                          st.session_state.get("yangin_75_sprinkler_cap_final", "")
-                          or st.session_state.get("yangin_75_sprinkler_cap_manuel", "")
-                          or st.session_state.get("yangin_75_sprinkler_cap_oto", "")
-                      ).strip()
-                      _spr_cap_secim_bilgi = doc.add_paragraph()
-                      _spr_cap_secim_bilgi.add_run("Seçim yöntemi: ").bold = True
-                      _spr_cap_secim_bilgi.add_run(_spr_cap_yontem_rapor)
-                      _spr_cap_secim_bilgi.add_run("    Tehlike grubu: ").bold = True
-                      _spr_cap_secim_bilgi.add_run(_spr_cap_grup_rapor or "Seçilmedi")
-                      _spr_cap_secim_bilgi.add_run("    Seçilen çap: ").bold = True
-                      _spr_cap_secim_bilgi.add_run(_spr_cap_secili_rapor or "Seçilmedi")
-                      if _spr_cap_liste_rapor:
-                          doc.add_heading(f"{_spr_cap_grup_rapor} ÇAP TABLOSU", level=6)
-                          _spr_cap_tbl_rapor = doc.add_table(rows=1, cols=2)
-                          _spr_cap_tbl_rapor.style = "Table Grid"
-                          _spr_cap_tbl_rapor.rows[0].cells[0].text = "Boru Çapı"
-                          _spr_cap_tbl_rapor.rows[0].cells[1].text = "Sprinkler Adedi"
-                          for _cap_r, _adet_r in _spr_cap_liste_rapor:
-                              _cells_r = _spr_cap_tbl_rapor.add_row().cells
-                              _cells_r[0].text, _cells_r[1].text = _cap_r, _adet_r
-                              if _cap_r == _spr_cap_secili_rapor:
-                                  for _cell_r in _cells_r:
-                                      _tcPr_r = _cell_r._tc.get_or_add_tcPr()
-                                      _shd_r = _tcPr_r.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
-                                      if _shd_r is None:
-                                          from docx.oxml import OxmlElement as _OxmlElement_r
-                                          _shd_r = _OxmlElement_r('w:shd')
-                                          _tcPr_r.append(_shd_r)
-                                      _shd_r.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'FFF2CC')
-                      else:
-                          doc.add_paragraph("7.2 bölümünde tanınan bir sprinkler tehlike sınıfı bulunamadığından tehlike sınıfı çap tablosu seçilemedi.")
-
-                      doc.add_heading("TEST DRENAJ HATTI ÇAP TABLOSU", level=5)
-                      _spr_drenaj_tbl_rapor = doc.add_table(rows=1, cols=2)
-                      _spr_drenaj_tbl_rapor.style = "Table Grid"
-                      _spr_drenaj_tbl_rapor.rows[0].cells[0].text = "Ana Hat Çapı"
-                      _spr_drenaj_tbl_rapor.rows[0].cells[1].text = "Test-Drenaj Çapı"
-                      for _ana_r, _drenaj_r in _spr_cap_drenaj_rapor:
-                          _cells_d = _spr_drenaj_tbl_rapor.add_row().cells
-                          _cells_d[0].text, _cells_d[1].text = _ana_r, _drenaj_r
-
                       doc.add_heading("7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ", level=4)
                       doc.add_paragraph(
                           "BYKHY Ek-8/B'ye göre yağmurlama sistemi tasarım yoğunluğu ve tasarım alanı, bina tehlike sınıfına göre aşağıdaki tablodan belirlenir. "
@@ -3725,113 +3631,33 @@ if _rapor_olustur_sidebar:
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
-                      # Set konfigürasyonundan asıl/yedek pompanın motor türünü rapora açıkça aktar.
-                      _motor_turu_eslemesi = {
-                          "Elektrikli asıl + elektrikli yedek + jokey pompa": ("Elektrik motorlu", "Elektrik motorlu"),
-                          "Elektrikli asıl + dizel yedek + jokey pompa": ("Elektrik motorlu", "Dizel motorlu"),
-                          "Dizel asıl + dizel yedek + jokey pompa": ("Dizel motorlu", "Dizel motorlu"),
-                          "Paket elektrikli pompa grubu (asıl + yedek)": ("Elektrik motorlu", "Elektrik motorlu"),
-                      }
-                      _ana_motor_turu, _yedek_motor_turu = _motor_turu_eslemesi.get(
-                          _set_tipi_rapor, ("Belirtilmedi", "Belirtilmedi")
-                      )
-                      _pompa_tab = doc.add_table(rows=1, cols=10)
+                      _pompa_tab = doc.add_table(rows=1, cols=8)
                       _pompa_tab.style = "Table Grid"
-                      _pompa_basliklar = ["Pompa", "Pompa tipi", "Motor / tahrik türü", "Adet", "GPM", "GPM karşılığı (m³/h)", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, _pompa_basliklar):
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
                       _pompa_satirlari = [
-                          (
-                              "Ana yangın pompası",
-                              str(st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi")) or "Belirtilmedi"),
-                              _ana_motor_turu,
-                              "1 asıl",
-                              st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")),
-                              st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", st.session_state.get("yangin_7133_ana_katalog_gpm_karsilik_m3h", "—")),
-                              float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0),
-                              float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0),
-                              str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi"),
-                          ),
-                          (
-                              "Yedek yangın pompası",
-                              str(st.session_state.get("yangin_7133_yedek_tipi_rapor", st.session_state.get("yangin_7133_yedek_tipi", st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi")))) or "Belirtilmedi"),
-                              _yedek_motor_turu,
-                              "1 yedek",
-                              st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")),
-                              st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", st.session_state.get("yangin_7133_yedek_katalog_gpm_karsilik_m3h", "—")),
-                              float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0),
-                              float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0),
-                              str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi"),
-                          ),
+                          ("Ana yangın pompası", str(st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi")),
+                          ("Yedek yangın pompası", str(st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi")),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append((
-                              "Jokey pompa",
-                              str(st.session_state.get("yangin_7134_jokey_tipi", "Dikey milli çok kademeli") or "Dikey milli çok kademeli"),
-                              "Elektrik motorlu",
-                              "1 adet",
-                              st.session_state.get("yangin_7134_jokey_rapor_gpm", "—"),
-                              st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"),
-                              float(st.session_state.get("yangin_7134_jokey_debi_m3h", 6.0) or 0.0),
-                              float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7134_jokey_guc_kw", 4.5) or 0.0),
-                              str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi"),
-                          ))
-                      for _tip, _pompa_tipi, _motor_turu, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
+                          _pompa_satirlari.append(("Jokey pompa", str(st.session_state.get("yangin_7134_jokey_tipi", "Jokey / basınç koruma") or "Jokey / basınç koruma"), "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi")))
+                      for _tip, _pompa_tipi, _adet, _marka, _model, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
-                          _gpm_text = str(_gpm) if _gpm not in (None, "", "—") else "—"
-                          _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h or "—")
-                          _satir_degerleri = [_tip, _pompa_tipi, _motor_turu, _adet, _gpm_text, _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]
-                          for _c, _t in zip(_cells, _satir_degerleri):
-                              _c.text = str(_t)
-                      # Yangın pompası tablosunu derli toplu biçimlendir: tüm hücrelerde 10 punto,
-                      # sıkı paragraf aralıkları, dikey ortalama ve kompakt hücre kenar boşlukları.
-                      try:
-                          from docx.shared import Pt as _PompaPt, Inches as _PompaInches
-                          from docx.enum.text import WD_ALIGN_PARAGRAPH as _PompaAlign
-                          from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as _PompaVAlign
-                          from docx.oxml import OxmlElement as _PompaOxml
-                          from docx.oxml.ns import qn as _pompa_qn
-                          for _satir_i, _satir in enumerate(_pompa_tab.rows):
-                              for _hucre_i, _hucre in enumerate(_satir.cells):
-                                  _hucre.vertical_alignment = _PompaVAlign.CENTER
-                                  _tcPr = _hucre._tc.get_or_add_tcPr()
-                                  _mar = _tcPr.first_child_found_in('w:tcMar')
-                                  if _mar is None:
-                                      _mar = _PompaOxml('w:tcMar')
-                                      _tcPr.append(_mar)
-                                  for _kenar in ('top', 'start', 'bottom', 'end'):
-                                      _el = _mar.find(_pompa_qn(f'w:{_kenar}'))
-                                      if _el is None:
-                                          _el = _PompaOxml(f'w:{_kenar}')
-                                          _mar.append(_el)
-                                      _el.set(_pompa_qn('w:w'), '55' if _kenar in ('start','end') else '35')
-                                      _el.set(_pompa_qn('w:type'), 'dxa')
-                                  for _par in _hucre.paragraphs:
-                                      _par.paragraph_format.space_before = _PompaPt(0)
-                                      _par.paragraph_format.space_after = _PompaPt(0)
-                                      _par.paragraph_format.line_spacing = 1.0
-                                      _par.alignment = _PompaAlign.CENTER if _hucre_i >= 3 else _PompaAlign.LEFT
-                                      for _run in _par.runs:
-                                          _run.font.name = 'Arial'
-                                          _run.font.size = _PompaPt(10)
-                                          if _satir_i == 0:
-                                              _run.bold = True
-                          # Sütun başlıkları sonraki sayfaya taşarsa başlık satırını tekrar et.
-                          _trPr = _pompa_tab.rows[0]._tr.get_or_add_trPr()
-                          _tekrar = _PompaOxml('w:tblHeader')
-                          _tekrar.set(_pompa_qn('w:val'), 'true')
-                          _trPr.append(_tekrar)
-                          _pompa_tab.autofit = True
-                      except Exception:
-                          pass
-                      # Poz numaraları yalnızca ilgili pompa satırındaki son sütunda gösterilir;
-                      # tablonun altında tekrar eden ayrı poz satırları oluşturulmaz.
+                          _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
+                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]):
+                              _c.text = _t
+                      _poz_kalemleri = [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]
+                      if st.session_state.get("yangin_7134_jokey_var", False):
+                          _poz_kalemleri.append(("Jokey pompa", "yangin_7134_jokey_poz"))
+                      for _tip, _key in _poz_kalemleri:
+                          _poz_p = doc.add_paragraph()
+                          _poz_p.add_run(f"{_tip} Cihaz Poz No: ").bold = True
+                          _poz_p.add_run(str(st.session_state.get(_key, "") or "Belirtilmedi")).bold = True
+                      _sec_not = doc.add_paragraph("Not: Pompa debisi 7.13.2 hesabından, basma yüksekliği 7.13.3 hesabından aktarılır. Pompa çalışma noktası ve motor gücü üretici performans eğrisiyle doğrulanmalıdır.")
+                      _sec_not.paragraph_format.space_after = Pt(6)
 
 
                   else:
@@ -3840,53 +3666,47 @@ if _rapor_olustur_sidebar:
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
-      # Ana bölüm seçimlerine göre başlık numaralarını yeniden düzenle.
-      # Sıhhi tesisat (6) rapordan çıkarılmışsa yangın bölümü 7 yerine 6 olur;
-      # sonraki ana bölümler de bir basamak kaydırılır. Hesap içindeki sayılar
-      # değiştirilmez; yalnızca Word başlık stilleri üzerinde işlem yapılır.
-      try:
+      # ANA BÖLÜM NUMARALARI — SIHHİ TESİSAT RAPORDAN ÇIKARILDIYSA
+      # Bu modülde sıhhi tesisatın gerçek seçim değişkeni bolum_6_aktif'tir.
+      # rapor_bolum_6 gibi farklı bir session_state anahtarına bakmak, kapatılan
+      # bölümü açık sanıp Yangın Tesisatı başlığını 7 bırakabiliyordu.
+      if not bolum_6_aktif:
           import re as _re_bolum_no
-          _bolum6_var = bool(st.session_state.get("rapor_bolum_6", False))
-          _bolum7_var = bool(st.session_state.get("rapor_bolum_7", False))
-          _kaydirma = 0 if _bolum6_var else 1
-          if _kaydirma:
-              for _p_no in doc.paragraphs:
-                  _stil_no = getattr(_p_no, "style", None)
-                  _stil_adi_no = str(getattr(_stil_no, "name", "") or "").lower()
-                  if not _stil_adi_no.startswith("heading"):
-                      continue
-                  _eski_metin_no = _p_no.text or ""
-                  _m_no = _re_bolum_no.match(r"^(\s*)(7(?:\.\d+)*)(?=\s|$)(.*)$", _eski_metin_no)
-                  if not _m_no:
-                      continue
-                  _eski_num_no = _m_no.group(2)
-                  _yeni_num_no = "6" + _eski_num_no[1:]
-                  _yeni_metin_no = _m_no.group(1) + _yeni_num_no + _m_no.group(3)
-                  for _r_no in _p_no.runs:
-                      _r_no.text = ""
-                  if _p_no.runs:
-                      _p_no.runs[0].text = _yeni_metin_no
-                  else:
-                      _p_no.add_run(_yeni_metin_no)
-      except Exception as _bolum_no_hatasi:
-          st.warning(f"Ana bölüm numaraları güncellenemedi: {_bolum_no_hatasi}")
 
-      # Eski sürümden kalan çağrı eksik fonksiyon nedeniyle raporu durdurmasın.
-      # Temel Word stillerini güvenli biçimde uygula.
-      def rapor_word_stillerini_uygula(_doc):
-          for _style_name in ("Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"):
-              try:
-                  _style = _doc.styles[_style_name]
-                  _style.font.name = "Times New Roman"
-                  _style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  _style.font.size = Pt(12)
-                  _style.paragraph_format.widow_control = True
-              except (KeyError, AttributeError):
-                  pass
-          for _paragraph in _doc.paragraphs:
-              _style = getattr(_paragraph, "style", None)
-              if str(getattr(_style, "name", "") or "").lower().startswith("heading"):
-                  _paragraph.paragraph_format.keep_with_next = True
+          def _yangin_baslik_no_guncelle(_p):
+              _stil = str(getattr(getattr(_p, "style", None), "name", "") or "").lower()
+              _metin = _p.text or ""
+              # Yalnızca başlıkları değiştir: Heading stilleri ve biçimlendirilmiş
+              # büyük harfli alt bölüm başlıkları. Normal açıklama/metin korunur.
+              _baslik_gibi = _stil.startswith("heading") or _metin.strip().isupper()
+              if not _baslik_gibi:
+                  return
+              _m = _re_bolum_no.match(r"^(\s*)7(?:\.\d+)*(?=\s|$)", _metin)
+              if not _m:
+                  return
+              _on_ek_uzunluk = len(_m.group(1))
+              _yeni = _metin[:_on_ek_uzunluk] + "6" + _metin[_on_ek_uzunluk+1:]
+              # Başlıklar genellikle tek run'dan oluşur. İlk run'da değiştirerek
+              # Word biçimlendirmesini koru; bölünmüş run durumunda güvenli yedek kullan.
+              _eski_runs = list(_p.runs)
+              if _eski_runs and _eski_runs[0].text and _eski_runs[0].text.startswith(_m.group(1) + "7"):
+                  _eski_runs[0].text = _eski_runs[0].text[:len(_m.group(1))] + "6" + _eski_runs[0].text[len(_m.group(1))+1:]
+              elif _eski_runs:
+                  _eski_runs[0].text = _yeni
+                  for _run in _eski_runs[1:]:
+                      _run.text = ""
+              else:
+                  _p.add_run(_yeni)
+
+          # Gövde paragrafları
+          for _p_no in doc.paragraphs:
+              _yangin_baslik_no_guncelle(_p_no)
+          # Tablo hücrelerindeki olası başlıklar da kapsansın.
+          for _tbl_no in doc.tables:
+              for _row_no in _tbl_no.rows:
+                  for _cell_no in _row_no.cells:
+                      for _p_no in _cell_no.paragraphs:
+                          _yangin_baslik_no_guncelle(_p_no)
 
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       rapor_word_stillerini_uygula(doc)
