@@ -2632,8 +2632,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_rapor_gpm"] = _gpm
                                 st.session_state[f"{_prefix}_rapor_gpm_karsilik_m3h"] = _gpm_m3h
                                 if _tahrik == "Elektrik motorlu":
-                                    st.write(f"Elektrik motor gücü — katalog: **{_el_onayli} kW (UL/FM onaylı)** / **{_el_onaysiz} kW (onaysız)**")
-                                    _motor_rapor_gucu = _el_onayli
+                                    st.write(f"Elektrik motor gücü — katalog: **{_el_onaysiz} kW (onaysız, varsayılan)** / **{_el_onayli} kW (UL/FM onaylı)**")
+                                    # Varsayılan seçim onaysız motor gücüdür; kullanıcı isterse
+                                    # aşağıdaki elle düzeltme kontrolüyle değeri değiştirebilir.
+                                    _motor_rapor_gucu = _el_onaysiz
                                 else:
                                     st.write(f"Dizel motor — eşanjörlü: **{_diz_es}**, **{_diz_es_guc} kW/HP**; radyatörlü: **{_diz_rad}**, **{_diz_rad_guc} kW/HP**")
                                     _motor_rapor_gucu = _diz_es_guc
@@ -2649,7 +2651,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.session_state[f"{_prefix}_rapor_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
                                 st.session_state[f"{_prefix}_katalog_basinc_bar"] = _satir_bar
                                 st.session_state[f"{_prefix}_katalog_basma_mss"] = round(_satir_bar * 10.197, 2)
-                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _el_onayli
+                                # Güç varsayılanı UL/FM onaylı değil, katalogdaki onaysız değerdir.
+                                # Manuel düzeltme alanı ayrıca kullanılabilir.
+                                st.session_state[f"{_prefix}_katalog_elektrik_kw"] = _el_onaysiz
                                 st.session_state[f"{_prefix}_katalog_dizel_es_kw_hp"] = _diz_es_guc
                                 st.session_state[f"{_prefix}_katalog_dizel_rad_kw_hp"] = _diz_rad_guc
                                 st.session_state[f"{_prefix}_katalog_motor_rapor_gucu"] = _motor_rapor_gucu
@@ -2897,7 +2901,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     f"{_etiket} elektrik/motor gücü (kW)",
                                     min_value=0.0, step=0.5, key=_guc_key,
                                     disabled=not st.session_state.get(_guc_elle_key, False),
-                                    help="SNK/SDS pompasında değer yüklenen üretici kataloğundan; katalog satırı yoksa yaklaşık hidrolik güç hesabından gelir."
+                                    help="Elektrik motorunda varsayılan olarak katalogdaki onaysız güç kullanılır. Elle düzeltme kutusunu açarak gücü değiştirebilirsiniz. Katalog satırı yoksa yaklaşık hidrolik güç hesabı kullanılır."
                                 )
                                 if _katalog_guc_kw is not None:
                                     st.caption(f"Katalog motor gücü: {_katalog_guc_kw:.2f} kW — {_katalog_model_ad}")
