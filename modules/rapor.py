@@ -3728,33 +3728,32 @@ if _rapor_olustur_sidebar:
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
-                      _pompa_tab = doc.add_table(rows=1, cols=8)
+                      _pompa_tab = doc.add_table(rows=1, cols=7)
                       _pompa_tab.style = "Table Grid"
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, ["Pompa", "Pompa tipi", "Adet", "Marka / Model", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]):
+                      _pompa_basliklar = ["Pompa", "Pompa tipi", "Adet", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]
+                      for _c, _t in zip(_pompa_tab.rows[0].cells, _pompa_basliklar):
                           _c.text = _t
                           for _p in _c.paragraphs:
                               for _run in _p.runs:
                                   _run.bold = True
+                                  _run.font.size = Pt(10)
                       _pompa_satirlari = [
-                          ("Ana yangın pompası", str(st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 asıl", str(st.session_state.get("yangin_7133_ana_marka", "") or ""), str(st.session_state.get("yangin_7133_ana_model", "") or ""), float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi")),
-                          ("Yedek yangın pompası", str(st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 yedek", str(st.session_state.get("yangin_7133_yedek_marka", "") or ""), str(st.session_state.get("yangin_7133_yedek_model", "") or ""), float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi")),
+                          ("Ana yangın pompası", str(st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 asıl", float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi")),
+                          ("Yedek yangın pompası", str(st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi") or "Belirtilmedi"), "1 yedek", float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0), float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi")),
                       ]
                       if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append(("Jokey pompa", str(st.session_state.get("yangin_7134_jokey_tipi", "Jokey / basınç koruma") or "Jokey / basınç koruma"), "1 adet", str(st.session_state.get("yangin_7134_jokey_marka", "") or ""), str(st.session_state.get("yangin_7134_jokey_model", "") or ""), float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi")))
-                      for _tip, _pompa_tipi, _adet, _marka, _model, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
+                          _pompa_satirlari.append(("Jokey pompa", str(st.session_state.get("yangin_7134_jokey_tipi", "Jokey / basınç koruma") or "Jokey / basınç koruma"), "1 adet", float(st.session_state.get("yangin_7134_jokey_debi_m3h", 0.0) or 0.0), float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0), float(st.session_state.get("yangin_7134_jokey_guc_kw", 0.0) or 0.0), str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi")))
+                      for _tip, _pompa_tipi, _adet, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
                           _cells = _pompa_tab.add_row().cells
-                          _markamodel = (f"{_marka} / {_model}".strip(" /")) or "Belirtilmedi"
-                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _markamodel, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]):
+                          for _c, _t in zip(_cells, [_tip, _pompa_tipi, _adet, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]):
                               _c.text = _t
-                      _poz_kalemleri = [("Ana yangın pompası", "yangin_7133_ana_poz"), ("Yedek yangın pompası", "yangin_7133_yedek_poz")]
-                      if st.session_state.get("yangin_7134_jokey_var", False):
-                          _poz_kalemleri.append(("Jokey pompa", "yangin_7134_jokey_poz"))
-                      for _tip, _key in _poz_kalemleri:
-                          _poz_p = doc.add_paragraph()
-                          _poz_p.add_run(f"{_tip} Cihaz Poz No: ").bold = True
-                          _poz_p.add_run(str(st.session_state.get(_key, "") or "Belirtilmedi")).bold = True
-                      _sec_not = doc.add_paragraph("Not: Pompa debisi 7.13.2 hesabından, basma yüksekliği 7.13.3 hesabından aktarılır. Pompa çalışma noktası ve motor gücü üretici performans eğrisiyle doğrulanmalıdır.")
-                      _sec_not.paragraph_format.space_after = Pt(6)
+                              for _p in _c.paragraphs:
+                                  for _run in _p.runs:
+                                      _run.font.size = Pt(10)
+                      # Tablo altındaki tekrar eden poz listesi ve açıklama notu kaldırıldı;
+                      # poz numaraları tablonun son sütununda gösterilir.
+
+
 
 
                   else:
