@@ -2484,11 +2484,22 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _q_pompa_esas = float(st.session_state.get(f"{_prefix}_debi_m3h", _q_pompa_m3h) or 0.0)
                                 _h_pompa_esas = float(st.session_state.get(f"{_prefix}_h_mss", _h_pompa_otomatik_mss) or 0.0)
                             _uygun_pozlar = _poz_katalog.get((_tahrik, _tip_secim), [])
-                            _aday_pozlar = [
+                            # Poz seçimi: önce istenen basma yüksekliğini karşılayan
+                            # en düşük H kademesini ara; aynı kademede debi aralığını
+                            # sağlayan poz seçilir. Gerekirse sonraki H kademelerine geç.
+                            _head_candidates = [
                                 item for item in _uygun_pozlar
-                                if item[0] <= _q_pompa_esas <= item[1] and item[2] >= _h_pompa_esas
+                                if item[2] >= _h_pompa_esas
                             ]
-                            _poz_eslesme = min(_aday_pozlar, key=lambda item: item[2]) if _aday_pozlar else None
+                            _poz_eslesme = None
+                            for _head in sorted({item[2] for item in _head_candidates}):
+                                _head_flow_matches = [
+                                    item for item in _head_candidates
+                                    if item[2] == _head and item[0] <= _q_pompa_esas <= item[1]
+                                ]
+                                if _head_flow_matches:
+                                    _poz_eslesme = _head_flow_matches[0]
+                                    break
                             _poz_key = f"{_prefix}_poz"
                             if _poz_eslesme:
                                 _otomatik_poz = _poz_eslesme[3]
