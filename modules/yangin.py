@@ -1399,6 +1399,194 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi.")
 
                     # ----------------------------------------------------------
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">'
+                        "SPRİNKLER BORU ÇAPI TESPİTİ</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(
+                        "7.2 bölümünde belirlenen yangın tehlike sınıfına göre uygun sprinkler çap tablosu otomatik seçilir. "
+                        "Tablo Yönetimi sekmesinden raporda gösterilecek ek tabloları açıp kapatabilirsiniz. "
+                        "Test-drenaj çap tablosu daima aktif kalır."
+                    )
+
+                    _spr_cap_hafif = [
+                        ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
+                        ('2" DN50', '6-10'), ('2½" DN65', '11-30'), ('3" DN80', '31-60'),
+                        ('4" DN100', '61-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
+                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                    ]
+                    _spr_cap_orta = [
+                        ('1" DN25', '1-2'), ('1¼" DN32', '3'), ('1½" DN40', '4-5'),
+                        ('2" DN50', '6-10'), ('2½" DN65', '11-20'), ('3" DN80', '21-40'),
+                        ('4" DN100', '41-100'), ('5" DN125', '101-160'), ('6" DN150', '161-275'),
+                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                    ]
+                    # Kaynak Excel'deki "5-4" gösterimi değiştirilmeden korunmuştur.
+                    _spr_cap_yuksek = [
+                        ('1" DN25', '1'), ('1¼" DN32', '2-4'), ('1½" DN40', '5-4'),
+                        ('2" DN50', '8-14'), ('2½" DN65', '15-26'), ('3" DN80', '27-54'),
+                        ('4" DN100', '55-89'), ('5" DN125', '90-149'), ('6" DN150', '150-275'),
+                        ('8" DN200', 'GEREKSİZ'), ('10" DN250', 'GEREKSİZ'),
+                    ]
+                    _spr_cap_test_drenaj = [
+                        ('2" hatta kadar', '¾"'), ('3" hatta kadar', '1¼"'), ('4" ve üzeri', '2"'),
+                    ]
+                    _spr_cap_tablolar = {
+                        "HAFİF TEHLİKE": _spr_cap_hafif,
+                        "ORTA TEHLİKE": _spr_cap_orta,
+                        "YÜKSEK TEHLİKE": _spr_cap_yuksek,
+                    }
+                    _spr_cap_etkin_sinif = str(
+                        st.session_state.get("yangin_722_etkin_sinif", "")
+                        or st.session_state.get("yangin_722_otomatik_sinif", "")
+                    ).strip()
+                    _spr_cap_s_norm = _spr_cap_etkin_sinif.lower().replace("–", "-").replace(" ", "")
+                    if _spr_cap_s_norm.startswith("düşük"):
+                        _spr_cap_grup_oto = "HAFİF TEHLİKE"
+                    elif _spr_cap_s_norm.startswith("orta"):
+                        _spr_cap_grup_oto = "ORTA TEHLİKE"
+                    elif _spr_cap_s_norm.startswith("yüksek"):
+                        _spr_cap_grup_oto = "YÜKSEK TEHLİKE"
+                    else:
+                        _spr_cap_grup_oto = ""
+                    _spr_cap_tablo_oto = _spr_cap_tablolar.get(_spr_cap_grup_oto, [])
+
+                    # Varsayılan olarak yalnızca 7.2'den otomatik gelen tablo seçilir.
+                    # Kullanıcının sonraki aç/kapat tercihleri rerun'larda korunur.
+                    _spr_cap_anahtarlar = {
+                        "HAFİF TEHLİKE": "yangin_75_cap_hafif_aktif",
+                        "ORTA TEHLİKE": "yangin_75_cap_orta_aktif",
+                        "YÜKSEK TEHLİKE": "yangin_75_cap_yuksek_aktif",
+                    }
+                    for _grup_cap, _key_cap in _spr_cap_anahtarlar.items():
+                        st.session_state.setdefault(
+                            _key_cap, bool(_grup_cap == _spr_cap_grup_oto)
+                        )
+                    st.session_state["yangin_75_test_drenaj_tablosu_aktif"] = True
+
+                    _spr_cap_tab_oto, _spr_cap_tab_duzenle = st.tabs(
+                        ["OTOMATİK ÇAP SEÇİMİ", "TABLO YÖNETİMİ"]
+                    )
+                    with _spr_cap_tab_oto:
+                        st.markdown(
+                            f'<div style="background-color:#FFF2CC; border:1px solid #D6B656; padding:9px 12px; border-radius:4px;">'
+                            f'<b>7.2’den otomatik seçilen tehlike grubu:</b> {_spr_cap_grup_oto or "Seçilmedi"}<br>'
+                            f'<b>Etkin yangın tehlike sınıfı:</b> {_spr_cap_etkin_sinif or "Belirlenemedi"}'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                        _spr_cap_adet_oto = st.number_input(
+                            "Çap seçimine esas sprinkler adedi",
+                            min_value=1, max_value=275, step=1,
+                            value=int(st.session_state.get("yangin_75_sprinkler_adedi", 1) or 1),
+                            key="yangin_75_sprinkler_adedi",
+                        )
+
+                        def _spr_cap_aralik_esle(_liste_cap, _adet_cap):
+                            for _cap, _aralik in _liste_cap:
+                                _aralik_txt = str(_aralik).strip()
+                                _eslesme = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", _aralik_txt)
+                                if _eslesme and int(_eslesme.group(1)) <= int(_adet_cap) <= int(_eslesme.group(2)):
+                                    return _cap, _aralik
+                                if _aralik_txt.isdigit() and int(_aralik_txt) == int(_adet_cap):
+                                    return _cap, _aralik
+                            return "", ""
+
+                        _spr_cap_sec_oto, _spr_cap_aralik_oto = _spr_cap_aralik_esle(
+                            _spr_cap_tablo_oto, _spr_cap_adet_oto
+                        )
+                        st.session_state["yangin_75_sprinkler_cap_oto"] = _spr_cap_sec_oto
+                        st.session_state["yangin_75_sprinkler_cap_kaynagi"] = "Otomatik"
+                        if _spr_cap_sec_oto:
+                            st.success(
+                                f"Otomatik seçilen boru çapı: {_spr_cap_sec_oto} | Adet aralığı: {_spr_cap_aralik_oto}"
+                            )
+                        elif _spr_cap_grup_oto == "YÜKSEK TEHLİKE" and int(_spr_cap_adet_oto) == 5:
+                            st.warning(
+                                'Kaynak tabloda Yüksek Tehlike için 1½" DN40 satırı "5-4" olarak yazılmıştır; '
+                                "bu nedenle 5 adet için otomatik aralık eşleştirmesi yapılamadı. Kaynak gösterimi değiştirilmedi."
+                            )
+                        elif _spr_cap_tablo_oto:
+                            st.warning("Girilen sprinkler adedi kaynak tablodaki bir aralığa karşılık gelmiyor.")
+                        else:
+                            st.warning("7.2 bölümünde geçerli bir yangın tehlike sınıfı seçilmedi.")
+
+                        if _spr_cap_grup_oto and _spr_cap_tablo_oto:
+                            st.markdown(f"**{_spr_cap_grup_oto} ÇAP TABLOSU — OTOMATİK SEÇİM**")
+                            _spr_cap_satirlar = []
+                            for _cap, _aralik in _spr_cap_tablo_oto:
+                                _vurgula_cap = bool(_spr_cap_sec_oto and _cap == _spr_cap_sec_oto)
+                                _spr_cap_satirlar.append({
+                                    "Çap": f"🟨 {_cap}" if _vurgula_cap else _cap,
+                                    "Sprinkler Adedi": f"🟨 {_aralik}" if _vurgula_cap else _aralik,
+                                })
+                            st.table(_spr_cap_satirlar)
+                        else:
+                            st.info("Geçerli bir tehlike sınıfı seçildiğinde ilgili çap tablosu otomatik gösterilir.")
+
+                        _spr_cap_manuel_grup = st.selectbox(
+                            "İsteğe bağlı manuel çap kontrolü için tehlike grubu",
+                            ["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"],
+                            index=(["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"].index(_spr_cap_grup_oto)
+                                   if _spr_cap_grup_oto in ["HAFİF TEHLİKE", "ORTA TEHLİKE", "YÜKSEK TEHLİKE"] else 0),
+                            key="yangin_75_sprinkler_manuel_grup",
+                        )
+                        _spr_cap_manuel_liste = _spr_cap_tablolar[_spr_cap_manuel_grup]
+                        _spr_cap_manuel_cap = st.selectbox(
+                            "Manuel boru çapı seçimi",
+                            [x[0] for x in _spr_cap_manuel_liste],
+                            key="yangin_75_sprinkler_manuel_cap",
+                        )
+                        st.session_state["yangin_75_sprinkler_cap_manuel"] = _spr_cap_manuel_cap
+                        st.session_state["yangin_75_sprinkler_manuel_tablo"] = _spr_cap_manuel_grup
+
+                    with _spr_cap_tab_duzenle:
+                        st.write("Ekranda ve raporda gösterilecek sprinkler çap tablolarını seçin:")
+                        for _grup_cap, _key_cap in _spr_cap_anahtarlar.items():
+                            st.checkbox(f"{_grup_cap} çap tablosunu ekle", key=_key_cap)
+                        st.checkbox(
+                            "Test-drenaj çap tablosunu ekle (daima aktif)",
+                            value=True, disabled=True,
+                            key="yangin_75_test_drenaj_daima_aktif_ui",
+                        )
+                        for _grup_cap, _liste_cap in _spr_cap_tablolar.items():
+                            if st.session_state.get(_spr_cap_anahtarlar[_grup_cap], False):
+                                st.markdown(f"**{_grup_cap} ÇAP TABLOSU**")
+                                _tablo_satirlari = []
+                                for _cap, _aralik in _liste_cap:
+                                    _vurgula_cap = (
+                                        _grup_cap == _spr_cap_grup_oto and
+                                        bool(_spr_cap_sec_oto) and _cap == _spr_cap_sec_oto
+                                    )
+                                    _tablo_satirlari.append({
+                                        "Çap": f"🟨 {_cap}" if _vurgula_cap else _cap,
+                                        "Sprinkler Adedi": f"🟨 {_aralik}" if _vurgula_cap else _aralik,
+                                    })
+                                st.table(_tablo_satirlari)
+                        st.markdown("**TEST DRENAJ HATTI ÇAP TABLOSU — DAİMA AKTİF**")
+                        st.table([
+                            {"Ana Hat": _hat, "Test-Drenaj Çapı": _cap}
+                            for _hat, _cap in _spr_cap_test_drenaj
+                        ])
+
+                    _spr_cap_secili_gruplar = [
+                        _grup_cap for _grup_cap, _key_cap in _spr_cap_anahtarlar.items()
+                        if st.session_state.get(_key_cap, False)
+                    ]
+                    st.session_state["yangin_75_cap_tablosu_secili_gruplar"] = _spr_cap_secili_gruplar
+                    st.session_state["yangin_75_cap_tablolari_veri"] = _spr_cap_tablolar
+                    st.session_state["yangin_75_test_drenaj_veri"] = _spr_cap_test_drenaj
+                    st.session_state["yangin_75_cap_tablosu_otomatik_grup"] = _spr_cap_grup_oto
+                    st.session_state["yangin_75_cap_tablosu_otomatik_cap"] = _spr_cap_sec_oto
+                    st.session_state["yangin_75_cap_tablosu_otomatik_aralik"] = _spr_cap_aralik_oto
+                    st.session_state["yangin_75_cap_tablosu_manuel_grup"] = _spr_cap_manuel_grup
+                    st.session_state["yangin_75_cap_tablosu_manuel_cap"] = _spr_cap_manuel_cap
+                    st.caption(
+                        "Not: Sarı işaret, otomatik seçilen çap satırını belirtir. Yüksek Tehlike tablosundaki "
+                        '"5-4" aralığı kaynak Excel’deki yazımıyla korunmuştur.'
+                    )
+
                     # 7.5.2 - BYKHY EK-8/B
                     # ----------------------------------------------------------
                     st.markdown(
