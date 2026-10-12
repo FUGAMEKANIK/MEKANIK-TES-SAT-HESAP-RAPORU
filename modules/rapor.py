@@ -3628,6 +3628,25 @@ if _rapor_olustur_sidebar:
                       _qsec_ldak = float(st.session_state.get("yangin_7133_tasarim_debi_ldak", _qsec_m3h / 0.06 if _qsec_m3h else 0.0) or 0.0)
                       _hsec = float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0)
                       _set_tipi_rapor = str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "Elektrikli asıl + elektrikli yedek + jokey pompa") or "")
+                      # Rapor tablosunda kullanılan motor türlerini seçilen pompa setinden üret.
+                      # Önceki sürümde bu iki değişken tanımlanmadan tablo satırlarında kullanılıyordu.
+                      _set_tipi_norm = _set_tipi_rapor.casefold()
+                      if "dizel asıl" in _set_tipi_norm or "dizel asilli" in _set_tipi_norm:
+                          _ana_motor_turu = "Dizel motorlu"
+                          _yedek_motor_turu = "Dizel motorlu"
+                      elif "elektrikli asıl + dizel yedek" in _set_tipi_norm or "elektrikli asilli + dizel yedek" in _set_tipi_norm:
+                          _ana_motor_turu = "Elektrik motorlu"
+                          _yedek_motor_turu = "Dizel motorlu"
+                      elif "elektrikli asıl + elektrikli yedek" in _set_tipi_norm or "elektrikli asilli + elektrikli yedek" in _set_tipi_norm:
+                          _ana_motor_turu = "Elektrik motorlu"
+                          _yedek_motor_turu = "Elektrik motorlu"
+                      else:
+                          # Kayıtlı set adı beklenen ifadelerden farklıysa ayrı ana/yedek
+                          # seçimlerini kullan; varsayılan olarak elektrikli set kabul edilir.
+                          _ana_tahrik_kayit = str(st.session_state.get("yangin_7133_ana_tahrik", "Elektrik motorlu") or "Elektrik motorlu")
+                          _yedek_tahrik_kayit = str(st.session_state.get("yangin_7133_yedek_tahrik", _ana_tahrik_kayit) or _ana_tahrik_kayit)
+                          _ana_motor_turu = "Dizel motorlu" if "dizel" in _ana_tahrik_kayit.casefold() else "Elektrik motorlu"
+                          _yedek_motor_turu = "Dizel motorlu" if "dizel" in _yedek_tahrik_kayit.casefold() else "Elektrik motorlu"
                       _set_par = doc.add_paragraph()
                       _set_par.add_run("Seçilen pompa seti: ").bold = True
                       _set_par.add_run(_set_tipi_rapor)
