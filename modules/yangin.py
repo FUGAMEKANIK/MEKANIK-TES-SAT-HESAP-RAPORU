@@ -22,7 +22,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 data=__import__("base64").b64decode(_snk_sds_pdf_b64),
                 file_name="sds-snk-tr.pdf",
                 mime="application/pdf",
-                key="yangin_snk_sds_katalog_pdf_indir",
             )
             st.components.v1.html(
                 '<iframe title="SNK SDS Pompa Kataloğu" '
