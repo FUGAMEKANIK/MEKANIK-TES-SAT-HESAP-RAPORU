@@ -2696,6 +2696,21 @@ if _rapor_olustur_sidebar:
               ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
               ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
           ]
+          # Blok bilgilerini de aynı bina bilgileri tablosuna ekle.
+          # Alanlar yangin.py tarafından kullanılan session_state anahtarlarından okunur.
+          _blok_secim_rapor = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
+          try:
+              _blok_adet_rapor = 1 if _blok_secim_rapor.lower().startswith("tek") else int(_blok_secim_rapor.split()[0])
+          except (ValueError, IndexError):
+              _blok_adet_rapor = 1
+          _blok_adet_rapor = max(1, min(_blok_adet_rapor, 10))
+          _gbi_rapor_verileri.insert(0, ("Blok sayısı", str(_blok_adet_rapor)))
+          for _i_blok_rapor in range(1, _blok_adet_rapor + 1):
+              _ad_blok_rapor = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_adi", f"Blok {_i_blok_rapor}") or f"Blok {_i_blok_rapor}")
+              _alan_blok_rapor = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_alan_m2", 0.0) or 0.0)
+              _gbi_rapor_verileri.insert(_i_blok_rapor, (f"Blok {_i_blok_rapor} adı", _ad_blok_rapor))
+              _gbi_rapor_verileri.insert(_i_blok_rapor + 1, (f"{_ad_blok_rapor} alanı", f"{_alan_blok_rapor:,.2f} m²"))
+
           _gbi_baslik = doc.add_paragraph()
           _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
           _gbi_run.bold = True
