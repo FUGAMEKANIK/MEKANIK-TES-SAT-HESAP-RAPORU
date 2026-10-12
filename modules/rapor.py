@@ -3423,6 +3423,64 @@ if _rapor_olustur_sidebar:
                       )
                       _rk75.italic = True
 
+                      # 7.5 çap tabloları: arayüzde seçilen tabloları rapora da aktar.
+                      # Veri yoksa rapor akışını bozma; mevcut hesap raporu devam etsin.
+                      _cap_gruplar_rapor = st.session_state.get("yangin_75_cap_tablosu_secili_gruplar", []) or []
+                      _cap_veri_rapor = st.session_state.get("yangin_75_cap_tablolari_veri", {}) or {}
+                      _cap_test_rapor = st.session_state.get("yangin_75_test_drenaj_veri", []) or []
+                      _cap_oto_grup_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_grup", "") or "")
+                      _cap_oto_cap_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_cap", "") or "")
+                      _cap_manuel_grup_rapor = str(st.session_state.get("yangin_75_cap_tablosu_manuel_grup", "") or "")
+                      _cap_manuel_cap_rapor = str(st.session_state.get("yangin_75_cap_tablosu_manuel_cap", "") or "")
+                      if _cap_gruplar_rapor or _cap_test_rapor:
+                          doc.add_heading("SPRİNKLER BORU ÇAPI TABLOLARI", level=4)
+                          doc.add_paragraph(
+                              "Aşağıda programda seçilen sprinkler boru çapı tabloları gösterilmiştir. "
+                              "Sarı renkle işaretlenen satır, otomatik veya manuel seçilen çapı belirtir."
+                          )
+                          for _cap_grup_rapor in _cap_gruplar_rapor:
+                              _cap_satirlar_rapor = _cap_veri_rapor.get(_cap_grup_rapor, [])
+                              if not _cap_satirlar_rapor:
+                                  continue
+                              doc.add_heading(f"{_cap_grup_rapor} ÇAP TABLOSU", level=5)
+                              _cap_tab_rapor = doc.add_table(rows=1, cols=2)
+                              _cap_tab_rapor.style = "Table Grid"
+                              for _hc, _ht in zip(_cap_tab_rapor.rows[0].cells, ["Boru Çapı", "Sprinkler Adedi / Aralığı"]):
+                                  _hc.text = _ht
+                                  for _hp in _hc.paragraphs:
+                                      for _hr in _hp.runs:
+                                          _hr.bold = True
+                              _secili_cap_grup_rapor = _cap_manuel_grup_rapor or _cap_oto_grup_rapor
+                              _secili_cap_rapor = _cap_manuel_cap_rapor or _cap_oto_cap_rapor
+                              for _cap_adi_rapor, _cap_aralik_rapor in _cap_satirlar_rapor:
+                                  _cap_hucreler_rapor = _cap_tab_rapor.add_row().cells
+                                  _cap_hucreler_rapor[0].text = str(_cap_adi_rapor)
+                                  _cap_hucreler_rapor[1].text = str(_cap_aralik_rapor)
+                                  if _cap_grup_rapor == _secili_cap_grup_rapor and str(_cap_adi_rapor) == _secili_cap_rapor:
+                                      for _cap_hucre_rapor in _cap_hucreler_rapor:
+                                          _cap_tcpr_rapor = _cap_hucre_rapor._tc.get_or_add_tcPr()
+                                          _cap_shd_rapor = _cap_tcpr_rapor.find(qn("w:shd"))
+                                          if _cap_shd_rapor is None:
+                                              _cap_shd_rapor = OxmlElement("w:shd")
+                                              _cap_tcpr_rapor.append(_cap_shd_rapor)
+                                          _cap_shd_rapor.set("w:fill", "FFF2CC")
+                                          for _cap_p_rapor in _cap_hucre_rapor.paragraphs:
+                                              for _cap_run_rapor in _cap_p_rapor.runs:
+                                                  _cap_run_rapor.bold = True
+                          if _cap_test_rapor:
+                              doc.add_heading("TEST-DRENAJ HATTI ÇAP TABLOSU — DAİMA AKTİF", level=5)
+                              _test_cap_tab_rapor = doc.add_table(rows=1, cols=2)
+                              _test_cap_tab_rapor.style = "Table Grid"
+                              for _hc, _ht in zip(_test_cap_tab_rapor.rows[0].cells, ["Ana Hat", "Test-Drenaj Çapı"]):
+                                  _hc.text = _ht
+                                  for _hp in _hc.paragraphs:
+                                      for _hr in _hp.runs:
+                                          _hr.bold = True
+                              for _hat_rapor, _cap_rapor in _cap_test_rapor:
+                                  _tc = _test_cap_tab_rapor.add_row().cells
+                                  _tc[0].text = str(_hat_rapor)
+                                  _tc[1].text = str(_cap_rapor)
+
                   # 7.12 Yangın Suyu Depolama Sistemi — adetli debi toplamı ve Ek-8/A depo hacmi
                   elif _bk == "bolum_7120":
                       # 7.12 tablosu: dolap/hidrant için debi × süre × adet; sprinkler için yalnız Ek-8/A hacmi.
