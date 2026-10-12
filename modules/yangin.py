@@ -2598,22 +2598,37 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 elif "yedek" in _prefix:
                                     st.caption("Yedek pompa, asıl pompanın tipini ve çalışma noktasını varsayılan olarak aynen kullanır; poz grubu motor türüne göre seçilir.")
 
-                                # Elektrik motor gücü yaklaşık hidrolik güç hesabından otomatik gelir.
-                                # Toplam verim varsayılan %65'tir; nihai üretici motor gücü elle girilebilir.
+                                # Elektrik motor gücü: katalog satırı varsa ONAYSIZ güç varsayılandır.
+                                # Katalog satırı yoksa yaklaşık hidrolik güç hesabı kullanılır.
+                                # Elle düzeltme açıldığında kullanıcının girdiği değer korunur.
                                 _eta_key = f"{_prefix}_verim_yuzde"
                                 _guc_key = f"{_prefix}_guc_kw"
                                 _q_now = float(st.session_state.get(_qkey, 0.0) or 0.0)
                                 _h_now = float(st.session_state.get(_hkey, 0.0) or 0.0)
                                 _eta = float(st.session_state.get(_eta_key, 65.0) or 65.0)
-                                _guc_hesap = (0.002725 * _q_now * _h_now / max(_eta / 100.0, 0.01)) if _q_now > 0 and _h_now > 0 else 0.0
                                 st.number_input(f"{_etiket}: toplam verim (%)", min_value=10.0, max_value=95.0, step=1.0, key=_eta_key, value=_eta, help="Ön seçim hesabı için varsayılan toplam verim %65'tir; üretici verisiyle güncellenebilir.")
                                 _eta = float(st.session_state.get(_eta_key, 65.0) or 65.0)
                                 _guc_hesap = (0.002725 * _q_now * _h_now / max(_eta / 100.0, 0.01)) if _q_now > 0 and _h_now > 0 else 0.0
                                 _guc_elle_key = f"{_prefix}_guc_elle"
                                 st.checkbox(f"{_etiket}: motor gücünü elle düzelt", key=_guc_elle_key, value=bool(st.session_state.get(_guc_elle_key, False)))
+                                _katalog_satir_guc = st.session_state.get(f"{_prefix}_katalog_satir")
+                                _onaysiz_guc_kw = None
+                                try:
+                                    # Üretici katalog satırı sırası: ... [4]=UL/FM onaylı, [5]=onaysız kW.
+                                    if _tahrik == "Elektrik motorlu" and _katalog_satir_guc and len(_katalog_satir_guc) > 5:
+                                        _ham_onaysiz = _katalog_satir_guc[5]
+                                        _onaysiz_guc_kw = float(_ham_onaysiz) if _ham_onaysiz not in (None, "", "-") else None
+                                except (TypeError, ValueError, IndexError):
+                                    _onaysiz_guc_kw = None
+                                _varsayilan_guc_kw = _onaysiz_guc_kw if _onaysiz_guc_kw is not None else _guc_hesap
                                 if not st.session_state.get(_guc_elle_key, False):
-                                    st.session_state[_guc_key] = round(_guc_hesap, 2)
-                                st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help="Otomatik değer yaklaşık güç hesabıdır; kesin motor gücü üretici eğrisi/kataloğundan doğrulanmalıdır.")
+                                    st.session_state[_guc_key] = round(float(_varsayilan_guc_kw), 2)
+                                _guc_help = (
+                                    f"Onaysız katalog motor gücü varsayılan: {_onaysiz_guc_kw:g} kW. Elle düzeltme kutusunu açarak değiştirebilirsiniz."
+                                    if _onaysiz_guc_kw is not None else
+                                    "Bu pompa için katalogda onaysız motor gücü bulunamadı; varsayılan yaklaşık hidrolik güç hesabıdır. Elle düzeltme kutusunu açarak değiştirebilirsiniz."
+                                )
+                                st.number_input(f"{_etiket} elektrik/motor gücü (kW)", min_value=0.0, step=0.5, key=_guc_key, disabled=not st.session_state.get(_guc_elle_key, False), help=_guc_help)
                                 st.caption(f"Yaklaşık hesaplanan güç: {_guc_hesap:.2f} kW = 0,002725 × Q × H / η")
                     st.session_state["yangin_7133_tasarim_debi_m3h"] = float(_q_pompa_m3h)
                     st.session_state["yangin_7133_tasarim_debi_ldak"] = float(_q_pompa_m3h / 0.06)
