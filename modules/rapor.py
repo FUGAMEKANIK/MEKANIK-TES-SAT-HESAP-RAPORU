@@ -3427,6 +3427,52 @@ if _rapor_olustur_sidebar:
                       # Veri yoksa rapor akışını bozma; mevcut hesap raporu devam etsin.
                       _cap_gruplar_rapor = st.session_state.get("yangin_75_cap_tablosu_secili_gruplar", []) or []
                       _cap_veri_rapor = st.session_state.get("yangin_75_cap_tablolari_veri", {}) or {}
+                      # Rapor üretimi sırasında seçili grup listesi boş kalmışsa,
+                      # checkbox durumlarını ve 7.2 tehlike sınıfını kullanarak grubu yeniden belirle.
+                      if not _cap_gruplar_rapor:
+                          _cap_grup_anahtar_fallback = [
+                              ("HAFİF TEHLİKE", "yangin_75_cap_hafif_aktif"),
+                              ("ORTA TEHLİKE", "yangin_75_cap_orta_aktif"),
+                              ("YÜKSEK TEHLİKE", "yangin_75_cap_yuksek_aktif"),
+                          ]
+                          _cap_gruplar_rapor = [
+                              _g for _g, _k in _cap_grup_anahtar_fallback
+                              if bool(st.session_state.get(_k, False))
+                          ]
+                          if not _cap_gruplar_rapor:
+                              _sinif_cap_fallback = str(
+                                  st.session_state.get("yangin_722_etkin_sinif", "")
+                                  or st.session_state.get("yangin_722_otomatik_sinif", "")
+                              ).strip().lower().replace("–", "-")
+                              if _sinif_cap_fallback.startswith("düşük") or _sinif_cap_fallback.startswith("hafif"):
+                                  _cap_gruplar_rapor = ["HAFİF TEHLİKE"]
+                              elif _sinif_cap_fallback.startswith("orta"):
+                                  _cap_gruplar_rapor = ["ORTA TEHLİKE"]
+                              elif _sinif_cap_fallback.startswith("yüksek"):
+                                  _cap_gruplar_rapor = ["YÜKSEK TEHLİKE"]
+                      # UI'daki tablo verisi rapor oluşturulurken yoksa aynı kaynak tabloyu
+                      # burada yedek olarak tanımla; böylece yalnız test-drenaj tablosu kalmaz.
+                      if not _cap_veri_rapor:
+                          _cap_veri_rapor = {
+                              "HAFİF TEHLİKE": [
+                                  ('1" DN25', "1-2"), ('1¼" DN32', "3"), ('1½" DN40', "4-5"),
+                                  ('2" DN50', "6-10"), ('2½" DN65', "11-30"), ('3" DN80', "31-60"),
+                                  ('4" DN100', "61-100"), ('5" DN125', "101-160"), ('6" DN150', "161-275"),
+                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
+                              ],
+                              "ORTA TEHLİKE": [
+                                  ('1" DN25', "1-2"), ('1¼" DN32', "3"), ('1½" DN40', "4-5"),
+                                  ('2" DN50', "6-10"), ('2½" DN65', "11-20"), ('3" DN80', "21-40"),
+                                  ('4" DN100', "41-100"), ('5" DN125', "101-160"), ('6" DN150', "161-275"),
+                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
+                              ],
+                              "YÜKSEK TEHLİKE": [
+                                  ('1" DN25', "1"), ('1¼" DN32', "2-4"), ('1½" DN40', "5-4"),
+                                  ('2" DN50', "8-14"), ('2½" DN65', "15-26"), ('3" DN80', "27-54"),
+                                  ('4" DN100', "55-89"), ('5" DN125', "90-149"), ('6" DN150', "150-275"),
+                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
+                              ],
+                          }
                       _cap_test_rapor = st.session_state.get("yangin_75_test_drenaj_veri", []) or []
                       _cap_oto_grup_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_grup", "") or "")
                       _cap_oto_cap_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_cap", "") or "")
