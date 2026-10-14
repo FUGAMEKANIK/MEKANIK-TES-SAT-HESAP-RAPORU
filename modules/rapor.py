@@ -3014,8 +3014,11 @@ if _rapor_olustur_sidebar:
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
                               ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
                               ("Fan adedi", "", str(_fan_ad79)),
-                              ("Fan Gücü", "Excel Fan Gücü", f"{_motor_kw79:.2f} kW"),
-                              ("SEÇİLEN FAN DEBİSİ", "Q = Q1 + Q2", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
+                              ("SEÇİLEN FAN DEBİSİ", "Poz debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.0f} m³/h"),
+                              ("Fan başına gerekli debi", "Seçim debisi / fan adedi", f"{float(_h79.get('fan_basina_gerekli_debi', _qtop79) or 0):,.0f} m³/h"),
+                              ("Fan başına seçilen debi", "Poz kademesine göre yukarı yuvarlanmış debi", f"{float(_h79.get('fan_basina_secilen_debi', 0) or 0):,.0f} m³/h"),
+                              ("Cihaz Poz No", "", str(_h79.get('fan_poz', '—') or '—')),
+                              ("Fan debisi modu", "", "Elle düzeltildi" if _h79.get('fan_manuel_debi_aktif') else "Otomatik hesap"),
                               ("SEÇİLEN FAN BASINÇ DEĞERİ", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
                               ("SEÇİLEN FAN ELEKTRİK GÜCÜ", "", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or 0):.2f} kW"),
                           ]
