@@ -3015,14 +3015,12 @@ if _rapor_olustur_sidebar:
                               ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
                               ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
-                              ("Fan sayısı / debi bölme sayısı", "Toplam seçim debisi / fan sayısı", str(_fan_ad79)),
-                              ("SEÇİLEN FAN DEBİSİ", "Poz debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.0f} m³/h"),
-                              ("Fan başına gerekli debi", "Toplam seçim debisi / seçilen fan sayısı", f"{float(_h79.get('fan_basina_gerekli_debi', _qtop79) or 0):,.0f} m³/h"),
-                              ("Fan başına seçilen debi", "Poz kademesine göre yukarı yuvarlanmış debi", f"{float(_h79.get('fan_basina_secilen_debi', 0) or 0):,.0f} m³/h"),
-                              ("Cihaz Poz No", "", str(_h79.get('fan_poz', '—') or '—')),
-                              ("Fan debisi modu", "", "Elle düzeltildi" if _h79.get('fan_manuel_debi_aktif') else "Otomatik hesap"),
-                              ("SEÇİLEN FAN BASINÇ DEĞERİ", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
-                              ("SEÇİLEN FAN ELEKTRİK GÜCÜ", "", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or 0):.2f} kW"),
+                              ("Seçilen fan debisi", "Toplam debi / seçilen fan bölme sayısı; POZ kademesine göre seçilir", f"{float(_h79.get('fan_basina_secilen_debi', _h79.get('fan_debisi', _qtop79)) or 0):,.2f} m³/h / fan"),
+                              ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
+                              ("Seçilen Fan Basıncı", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
+                              ("Fan Gücü", "Seçilen fan elektrik gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or _motor_kw79):.2f} kW"),
+                              ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')),
+                              ("Fan bölme sayısı", "Kullanıcının seçtiği fan adedi", str(_fan_ad79)),
                           ]
                           for _etiket79, _formul79, _deger79 in _satirlar79:
                               _c79 = _t79.add_row().cells
