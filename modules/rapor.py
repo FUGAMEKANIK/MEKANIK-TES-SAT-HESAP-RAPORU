@@ -2935,6 +2935,39 @@ if _rapor_olustur_sidebar:
                   _run7.italic = True
                   _run7.font.size = Pt(15)
                   _run7.font.color.rgb = RGBColor(31, 78, 121)
+                  # 7.9 Merdiven basınçlandırma hesap sonuçları
+                  if _bk == "bolum_79":
+                      _hesap79 = st.session_state.get("yangin_79_hesap_sonuclari", {})
+                      if _hesap79:
+                          doc.add_heading("7.9.2 MERDİVEN BASINÇLANDIRMA DEBİ VE BASINÇ KAYBI HESABI", level=4)
+                          _tab79 = doc.add_table(rows=0, cols=2)
+                          _tab79.style = "Table Grid"
+                          _rapor_satirlari79 = [
+                              ("Kapalı kapı sızıntı debisi Q1", f'{_hesap79.get("q1_m3h", 0):,.0f} m³/h'),
+                              ("Açık kapı debisi Q2 (emniyet payı dahil)", f'{_hesap79.get("q2_m3h", 0):,.0f} m³/h'),
+                              ("Toplam tasarım debisi Q1 + Q2", f'{_hesap79.get("q_toplam_m3h", 0):,.0f} m³/h'),
+                              ("Menfez adedi", str(_hesap79.get("menfez_adet", 0))),
+                              ("Menfez başına debi", f'{_hesap79.get("q_menfez_m3h", 0):,.0f} m³/h'),
+                              ("Menfez efektif alanı", f'{_hesap79.get("menfez_efektif_alan_m2", 0):.3f} m²'),
+                              ("Basınç kayıpları toplamı", f'{_hesap79.get("kayip_toplam_pa", 0):,.1f} Pa'),
+                              ("Emniyet payı sonrası basınç", f'{_hesap79.get("kayip_emniyetli_pa", 0):,.1f} Pa'),
+                              ("Seçim için yuvarlanmış basınç", f'{_hesap79.get("secim_basinc_pa", 0):,.0f} Pa'),
+                              ("Fan adedi", str(_hesap79.get("fan_adet", 0))),
+                          ]
+                          for _etiket79, _deger79 in _rapor_satirlari79:
+                              _cells79 = _tab79.add_row().cells
+                              _cells79[0].text = _etiket79
+                              _cells79[1].text = _deger79
+                          doc.add_paragraph(
+                              "Fan çalışma noktası: "
+                              f'{_hesap79.get("q_toplam_m3h", 0):,.0f} m³/h @ '
+                              f'{_hesap79.get("secim_basinc_pa", 0):,.0f} Pa.'
+                          )
+                          doc.add_paragraph(
+                              "Not: Fanın gerçek performans eğrisi, yalnızca doğrulanmış Systemair katalog eğrisi "
+                              "ile eşleştirme yapıldıktan sonra rapora eklenmelidir. Marka/model rapora yazdırılmaz."
+                          )
+
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
                       doc.add_heading("7.3.1 BİNA İÇİ HORTUM SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
