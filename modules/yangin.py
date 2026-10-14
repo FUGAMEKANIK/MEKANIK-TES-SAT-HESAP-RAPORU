@@ -1950,6 +1950,111 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         unsafe_allow_html=True,
                     )
 
+            elif _baslik.startswith("7.9 "):
+                # --------------------------------------------------------------
+                # 7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ
+                # Yönetmelik esasları BYKHY Madde 89 ve mevcut binalar için
+                # Madde 163 üzerinden listelenir. Bu aşamada yalnızca madde
+                # seçimi ve kullanıcı tarafından ek madde girme altyapısıdır.
+                # --------------------------------------------------------------
+                with st.expander("7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=False):
+                    st.markdown(
+                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
+                        "MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _ui_79_rapor_key = "yangin_79_rapor_ui"
+                    st.session_state.setdefault(_ui_79_rapor_key, bool(st.session_state.get("rapor_bolum_79", True)))
+                    st.checkbox(
+                        "7.9 rapora eklensin",
+                        key=_ui_79_rapor_key,
+                        on_change=lambda: st.session_state.__setitem__(
+                            "rapor_bolum_79", bool(st.session_state.get("yangin_79_rapor_ui", True))
+                        ),
+                    )
+
+                    st.markdown(
+                        '<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">'
+                        "7.9.1 MERDİVEN BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _basinc_esaslari_79 = [
+                        ("1", "Basınçlandırma zorunluluğu — yüksek merdiven kovaları", "Konutlar hariç, merdiven kovası yüksekliği 30,50 m'den fazla olan binalarda kaçış merdivenleri basınçlandırılır. Bodrum ve üst katlara hizmet eden merdiven aynı yuvada olsa dahi, gerekli yangına dayanımlı ve duman sızdırmaz ayırma ile ayrı çıkış sağlanmışsa üst katların yüksekliği esas alınır. (BYKHY Madde 89, 1)"),
+                        ("2", "Dört kattan fazla bodrum katı", "Bodrum kat sayısı dörtten fazla olan binalarda bodrum katlara hizmet veren kaçış merdivenleri basınçlandırılır. (BYKHY Madde 89, 2)"),
+                        ("3", "Yüksek konutlarda basınçlandırma", "Yapı yüksekliği 51,50 m'den yüksek olan konutların kaçış merdivenlerinin basınçlandırılması zorunludur. (BYKHY Madde 89, 3)"),
+                        ("4", "Acil durum asansörü kuyusu", "Acil durum asansörü kuyularının yangın etkisi altında kalmaması için basınçlandırılması gerekir. (BYKHY Madde 89, 4)"),
+                        ("5", "Kapalı ve açık kapı durumunda basınç farkı", "Bütün kapılar kapalıyken merdiven yuvası ile bina kullanım alanları arasındaki basınç farkı en az 50 Pa; açık kapı durumu için en az 15 Pa olmalıdır. (BYKHY Madde 89, 5)"),
+                        ("6", "Yangın güvenlik holü ile basınç dağılımı", "Yangın güvenlik holü de basınçlandırılıyorsa merdiven tarafındaki basınç, hol tarafındaki basınçtan daha yüksek olacak şekilde dağılım oluşturulur. (BYKHY Madde 89, 6)"),
+                        ("7", "Kapı açma kuvveti", "Basınçlı hava ve otomatik kapı kapatıcısının etkisi birlikte dikkate alındığında, kapıyı açmak için kapı koluna uygulanması gereken kuvvet 110 N değerini aşmamalıdır. (BYKHY Madde 89, 7)"),
+                        ("8", "Açık kapılarda hava hızı", "Birbirini takip eden iki kat kapısı ile dışarı tahliye kapısı tam açıkken, her bir tam açık kapı için ortalama hava hızı en az 1 m/s olmalıdır. (BYKHY Madde 89, 8)"),
+                        ("9", "Açık kapı ve sızıntı alanlarının tasarıma dahil edilmesi", "Tasarımda en az iki iç kapının ve bir dış tahliye kapısının açık olacağı kabul edilir; diğer kapalı kapıların sızıntı alanları da hesaba katılır ve bina kat sayısına göre açık iç kapı sayısı artırılır. (BYKHY Madde 89, 9)"),
+                        ("10", "Sızıntı debisinin karşılanması", "Basınçlandırma havası debisi, sızıntı alanlarından çevreye oluşan hava akışlarını karşılayacak yeterlilikte olmalıdır. (BYKHY Madde 89, 10)"),
+                        ("11", "Aşırı basıncın sınırlandırılması", "Merdiven içinde aşırı basınç oluşmasını önlemek için aşırı basınç damperi ve frekans kontrollü fan gibi önlemler sağlanır. (BYKHY Madde 89, 11)"),
+                        ("12", "Dış hava emişi ve üfleme noktaları", "Basınçlandırma havası doğrudan dışarıdan alınmalı ve egzoz çıkışlarından en az 5 m uzakta olmalıdır. Yüksekliği 25 m'den fazla kapalı merdivenlerde birden fazla üfleme noktası gerekir; iki noktalı düzende aralarındaki düşey mesafe en az merdiven yüksekliğinin yarısıdır. Yapı yüksekliği 51,50 m'den fazla ise her katta veya en çok üç katta bir üfleme yapılır. (BYKHY Madde 89, 12)"),
+                        ("13", "Dış hava emişinde duman algılama", "Basınçlandırma fanının dış hava emişine algılayıcı yerleştirilir; duman algılanması hâlinde fan otomatik durdurulur. (BYKHY Madde 89, 13)"),
+                        ("14", "Yangın alarm sistemiyle otomatik çalıştırma", "Basınçlandırma sistemi yangın algılama ve uyarı sistemi tarafından otomatik olarak çalıştırılmalıdır. (BYKHY Madde 89, 14)"),
+                        ("15", "Elle çalıştırma ve durdurma", "Basınçlandırma fanının elle çalıştırılıp durdurulabilmesi için açma-kapatma anahtarı bulunmalıdır. (BYKHY Madde 89, 15)"),
+                        ("16", "Basınçlandırma olmayan merdivenlerde havalandırma", "Kaçış merdiveni basınçlandırılmamışsa merdiven bölümünde açılabilir pencere veya sürekli havalandırma sağlayan tepe penceresi bulunmalıdır. (BYKHY Madde 89, 16)"),
+                        ("17", "Mevcut binalarda basınçlandırma", "Mevcut binalarda dörtten fazla bodrum kata hizmet veren kaçış merdivenleri ile merdiven kovası yüksekliği 51,50 m'den fazla olan kaçış merdivenleri, Madde 89 esaslarına göre basınçlandırılır. (BYKHY Madde 163, 1)"),
+                    ]
+
+                    _79_atif_key = "yangin_791_yonetmelik_atiflari"
+                    st.session_state.setdefault(_79_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_79_atif_key)
+                    _tab_79_maddeler, _tab_79_ekle = st.tabs(["Yönetmelik Maddeleri", "Madde Ekleme"])
+
+                    with _tab_79_maddeler:
+                        _79_c1, _79_c2 = st.columns(2)
+                        with _79_c1:
+                            if st.button("✓ 7.9.1 tüm maddeleri seç", key="yangin_791_tum_sec", use_container_width=True):
+                                for _no79, _baslik79, _metin79 in _basinc_esaslari_79:
+                                    st.session_state[f"yangin_791_madde_{_no79}"] = True
+                                st.rerun()
+                        with _79_c2:
+                            if st.button("✕ 7.9.1 tüm maddeleri kaldır", key="yangin_791_tum_kaldir", use_container_width=True):
+                                for _no79, _baslik79, _metin79 in _basinc_esaslari_79:
+                                    st.session_state[f"yangin_791_madde_{_no79}"] = False
+                                st.rerun()
+
+                        for _no79, _baslik79, _metin79 in _basinc_esaslari_79:
+                            _key79 = f"yangin_791_madde_{_no79}"
+                            st.session_state.setdefault(_key79, True)
+                            _metin_goster79 = _metin79 if st.session_state[_79_atif_key] else re.sub(
+                                r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)",
+                                "", _metin79, flags=re.IGNORECASE
+                            ).strip()
+                            with st.container(border=True):
+                                st.checkbox(f"({_no79}) {_baslik79}", key=_key79)
+                                st.caption(_metin_goster79)
+
+                    with _tab_79_ekle:
+                        st.write("Mevzuat listesine ilave edilmesini istediğiniz proje kriterlerini veya ek yönetmelik atıflarını buradan ekleyebilirsiniz.")
+                        st.session_state.setdefault("yangin_791_ek_maddeler", [])
+                        _ek79_liste = st.session_state["yangin_791_ek_maddeler"]
+                        for _i79, _ek79 in enumerate(_ek79_liste, start=len(_basinc_esaslari_79) + 1):
+                            st.markdown(f"**({_i79}) {_ek79.get('baslik', '')}**")
+                            st.write(_ek79.get("metin", ""))
+
+                        # Form yerine benzersiz widget anahtarları kullanılır; bu yaklaşım
+                        # mevcut proje kaydet/yükle akışıyla uyumludur.
+                        _nonce79_key = "yangin_791_ek_madde_nonce"
+                        st.session_state.setdefault(_nonce79_key, 0)
+                        _nonce79 = st.session_state[_nonce79_key]
+                        with st.expander("➕ Yeni madde ekle", expanded=False):
+                            _baslik79_yeni = st.text_input("Ek madde başlığı", key=f"yangin_791_ek_baslik_{_nonce79}_button")
+                            _metin79_yeni = st.text_area("Ek madde açıklaması / yönetmelik atfı", height=100, key=f"yangin_791_ek_metin_{_nonce79}_button")
+                            _ekle79_tik = st.button("Maddeyi ekle", key=f"yangin_791_ek_submit_{_nonce79}_button", type="primary")
+                        if _ekle79_tik:
+                            if _baslik79_yeni.strip() and _metin79_yeni.strip():
+                                _ek79_liste.append({"baslik": _baslik79_yeni.strip(), "metin": _metin79_yeni.strip()})
+                                st.session_state["yangin_791_ek_maddeler"] = _ek79_liste
+                                st.session_state[_nonce79_key] = _nonce79 + 1
+                                st.rerun()
+                            else:
+                                st.warning("Ek madde başlığı ve açıklaması birlikte girilmelidir.")
+
+                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik, Madde 89 ve mevcut binalar için Madde 163. Bu liste yönetmelik kontrol listesi niteliğindedir; uygulama koşulları proje ve yürürlükteki mevzuat üzerinden ayrıca doğrulanmalıdır.")
+
             elif _baslik.startswith("7.12 "):
                 # --------------------------------------------------------------
                 # 7.12 YANGIN SUYU DEPOLAMA SİSTEMİ
