@@ -2118,12 +2118,23 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                         _79_menfez_hiz = float(st.number_input("Menfez hava hızı (m/s)", min_value=0.0, value=5.0, step=0.5, key=f"yangin_79_{_79_slug}_menfez_hiz"))
                                     _79_menfez_basina = (_79_toplam_debi / _79_menfez_adet) if _79_menfez_adet > 0 else 0.0
                                     _79_menfez_alan = (_79_menfez_basina / (_79_menfez_hiz * 3600)) if _79_menfez_hiz > 0 else 0.0
-                                    # Kare menfez kabulü: kenar = sqrt(gerekli alan); cm'ye çevrilir ve en yakın 5 cm'ye yuvarlanır.
-                                    _79_menfez_kenar_cm = (round(((_79_menfez_alan ** 0.5) * 100) / 5) * 5) if _79_menfez_alan > 0 else 0
+                                    # Öneri: kare menfez kenarı sqrt(A); cm'ye çevrilip en yakın 5 cm'ye yuvarlanır.
+                                    _79_onerilen_kenar_cm = (round(((_79_menfez_alan ** 0.5) * 100) / 5) * 5) if _79_menfez_alan > 0 else 0
+                                    _79_menfez_kenar_cm = float(st.number_input(
+                                        "Menfez kenarı (cm) — elle düzeltilebilir", min_value=0.0, step=5.0,
+                                        value=float(_79_onerilen_kenar_cm), key=f"yangin_79_{_79_slug}_menfez_kenar_cm",
+                                        help="Önerilen değer otomatik gelir; ihtiyaca göre değiştirebilirsiniz."
+                                    ))
+                                    _79_secilen_menfez_alan = (_79_menfez_kenar_cm / 100.0) ** 2
+                                    _79_secilen_menfez_toplam_alan = _79_secilen_menfez_alan * _79_menfez_adet
                                     st.metric("Toplam debi", f"{_79_toplam_debi:,.0f} m³/h")
                                     st.metric("Menfez başına debi", f"{_79_menfez_basina:,.0f} m³/h" if _79_menfez_adet else "Menfez adedi giriniz")
                                     st.metric("Gerekli efektif alan / menfez", f"{_79_menfez_alan:.3f} m²" if _79_menfez_adet and _79_menfez_hiz else "Hesaplanamadı")
-                                    st.metric("Önerilen kare menfez ölçüsü", f"{_79_menfez_kenar_cm:.0f} × {_79_menfez_kenar_cm:.0f} cm" if _79_menfez_kenar_cm else "Debi ve menfez adedi giriniz")
+                                    st.metric("Otomatik önerilen ölçü", f"{_79_onerilen_kenar_cm:.0f} × {_79_onerilen_kenar_cm:.0f} cm" if _79_onerilen_kenar_cm else "Debi ve menfez adedi giriniz")
+                                    st.metric("Seçilen menfezin alanı / adet", f"{_79_secilen_menfez_alan:.3f} m²")
+                                    st.metric("Seçilen menfezlerin toplam alanı", f"{_79_secilen_menfez_toplam_alan:.3f} m²")
+                                    if _79_menfez_adet and _79_menfez_alan > 0:
+                                        st.caption("Alan kontrolü: " + ("Seçilen alan gerekli alanı karşılıyor." if _79_secilen_menfez_alan >= _79_menfez_alan else "DİKKAT: Seçilen alan gerekli efektif alanın altında."))
                                 with _79_tabs[3]:
                                     st.markdown('<div style="color:#B54708;font-weight:800;">KANAL VE EKİPMAN BASINÇ KAYIPLARI</div>', unsafe_allow_html=True)
                                     _79_p1, _79_p2 = st.columns(2)
@@ -2134,23 +2145,38 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                         _79_panjur_kayip = float(st.number_input("Panjur ve taze hava alış kanalı kaybı (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_79_{_79_slug}_panjur_kayip"))
                                         _79_pozitif_basinc = float(st.number_input("Gerekli pozitif basınç (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_79_{_79_slug}_pozitif_basinc"))
                                     _79_kayip_toplam = _79_saft_kayip + _79_menfez_kayip + _79_panjur_kayip + _79_pozitif_basinc
-                                    _79_basinc_gerekli = int(__import__("math").ceil((_79_kayip_toplam * 1.1) / 50.0) * 50) if _79_kayip_toplam > 0 else 0
-                                    st.metric("Toplam kayıp (%10 emniyet öncesi)", f"{_79_kayip_toplam:,.0f} Pa")
-                                    st.metric("Fan için gerekli basınç (50 Pa kademesine yuvarlanmış)", f"{_79_basinc_gerekli:,.0f} Pa")
+                                    _79_emniyet_orani = float(st.number_input("Basınç kaybı emniyet oranı (%)", min_value=0.0, max_value=100.0, value=10.0, step=1.0, key=f"yangin_79_{_79_slug}_emniyet_orani"))
+                                    _79_emniyet_degeri = _79_kayip_toplam * _79_emniyet_orani / 100.0
+                                    _79_emniyetli_basinc = _79_kayip_toplam + _79_emniyet_degeri
+                                    _79_basinc_gerekli = int(__import__("math").ceil(_79_emniyetli_basinc / 50.0) * 50) if _79_emniyetli_basinc > 0 else 0
+                                    st.metric("Toplam kayıp (emniyet öncesi)", f"{_79_kayip_toplam:,.0f} Pa")
+                                    st.metric(f"Emniyet payı (%{_79_emniyet_orani:g})", f"{_79_emniyet_degeri:,.1f} Pa")
+                                    st.metric("Emniyet dâhil basınç", f"{_79_emniyetli_basinc:,.1f} Pa")
+                                    st.metric("Fan için gerekli basınç (sonraki 50 Pa kademesine yuvarlanmış)", f"{_79_basinc_gerekli:,.0f} Pa")
                                 with _79_tabs[4]:
                                     st.markdown('<div style="color:#C01048;font-weight:800;">FAN ADEDİ VE SEÇİM BİLGİLERİ</div>', unsafe_allow_html=True)
-                                    _79_fan_adet = int(st.number_input("Fan adedi", min_value=0, step=1, value=0, key=f"yangin_79_{_79_slug}_fan_adedi"))
+                                    _79_fan_adet = int(st.number_input("Fan adedi", min_value=1, step=1, value=1, key=f"yangin_79_{_79_slug}_fan_adedi"))
                                     st.text_input("Fan üreticisi", value="Systemair", disabled=True, key=f"yangin_79_{_79_slug}_fan_uretici")
                                     st.metric("Hesaplanan toplam hava debisi", f"{_79_toplam_debi:,.0f} m³/h")
                                     st.metric("Gerekli fan basıncı", f"{_79_basinc_gerekli:,.0f} Pa")
+                                    # Excel ELEKTRİK sayfasındaki güç bağıntısı ve standart motor aralığı.
+                                    _79_hidrolik_kw = (_79_toplam_debi * _79_basinc_gerekli) / (198000.0 * 9.81) if _79_toplam_debi > 0 and _79_basinc_gerekli > 0 else 0.0
+                                    _79_motor_araliklari = [(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
+                                    _79_motor_kw = next((ust for alt, ust in _79_motor_araliklari if _79_hidrolik_kw >= alt and _79_hidrolik_kw < ust), 75.0 if _79_hidrolik_kw >= 55 else 0.0)
+                                    st.metric("Hesaplanan güç (Excel bağıntısı)", f"{_79_hidrolik_kw:.2f} kW")
+                                    st.metric("Elektrik motoru seçimi (Excel tablosu)", f"{_79_motor_kw:.2f} kW" if _79_motor_kw else "Debi/basınç giriniz")
                                     st.info("Systemair model seçimi, doğrulanmış katalog eğrileri bağlandığında çalışma noktasına göre yapılacaktır.")
                                 _79_rapor_hesaplari.append({
                                     "ad": _79_merdiven_adi, "kapali_adet": _79_kapali_adet,
                                     "q1": _79_q1_m3h, "acik_adet": _79_acik_adet, "q2": _79_q2_m3h,
                                     "toplam_debi": _79_toplam_debi, "menfez_adet": _79_menfez_adet,
                                     "menfez_hiz": _79_menfez_hiz, "menfez_alan": _79_menfez_alan,
-                                    "menfez_kenar_cm": _79_menfez_kenar_cm, "basinc": _79_basinc_gerekli,
-                                    "fan_adet": _79_fan_adet, "kayip": _79_kayip_toplam
+                                    "menfez_kenar_cm": _79_menfez_kenar_cm, "oneri_menfez_kenar_cm": _79_onerilen_kenar_cm,
+                                    "secilen_menfez_alan": _79_secilen_menfez_alan, "secilen_menfez_toplam_alan": _79_secilen_menfez_toplam_alan,
+                                    "basinc": _79_basinc_gerekli, "emniyet_orani": _79_emniyet_orani,
+                                    "emniyet_degeri": _79_emniyet_degeri, "emniyetli_basinc": _79_emniyetli_basinc,
+                                    "fan_adet": _79_fan_adet, "kayip": _79_kayip_toplam,
+                                    "fan_hidrolik_kw": _79_hidrolik_kw, "fan_motor_kw": _79_motor_kw
                                 })
                     st.session_state["yangin_79_rapor_hesaplari"] = _79_rapor_hesaplari
 
