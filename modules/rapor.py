@@ -2972,18 +2972,16 @@ if _rapor_olustur_sidebar:
                               ("Q2 formülü", "Q2 = açık kapı adedi × kapı eni × kapı boyu × hava hızı × 3600 × 1,10"),
                               ("Toplam hava debisi", f"Q = Q1 + Q2 = {float(_h79.get('toplam_debi', 0)):,.0f} m³/h"),
                               ("Gerekli efektif alan / menfez", f"{float(_h79.get('menfez_alan', 0)):.3f} m²"),
-                              ("Otomatik önerilen menfez", f"{float(_h79.get('oneri_menfez_kenar_cm', _h79.get('menfez_kenar_cm', 0))):.0f} × {float(_h79.get('oneri_menfez_kenar_cm', _h79.get('menfez_kenar_cm', 0))):.0f} cm"),
-                              ("Elle seçilen menfez ölçüsü", f"{float(_h79.get('menfez_kenar_cm', 0)):.0f} × {float(_h79.get('menfez_kenar_cm', 0)):.0f} cm"),
+                              ("Seçilen menfez ölçüsü", f"{float(_h79.get('menfez_kenar_cm', 0)):.0f} × {float(_h79.get('menfez_kenar_cm', 0)):.0f} cm"),
                               ("Seçilen menfez alanı / adet", f"{float(_h79.get('secilen_menfez_alan', 0)):.3f} m²"),
                               ("Seçilen menfez toplam alanı", f"{float(_h79.get('secilen_menfez_toplam_alan', 0)):.3f} m²"),
                               ("Basınç kaybı toplamı (emniyet öncesi)", f"{float(_h79.get('kayip', 0)):,.1f} Pa"),
                               ("Emniyet oranı", f"%{float(_h79.get('emniyet_orani', 10)):g}"),
                               ("Emniyet payı", f"{float(_h79.get('emniyet_degeri', 0)):,.1f} Pa"),
                               ("Emniyet dâhil basınç", f"{float(_h79.get('emniyetli_basinc', 0)):,.1f} Pa"),
-                              ("50 Pa kademesine yuvarlanan fan basıncı", f"{int(_h79.get('basinc', 0)):,.0f} Pa"),
+                              ("Seçilen Fan Basıncı", f"{int(_h79.get('basinc', 0)):,.0f} Pa"),
                               ("Fan adedi", _h79.get("fan_adet", 1)),
-                              ("Hesaplanan fan gücü", f"{float(_h79.get('fan_hidrolik_kw', 0)):.2f} kW"),
-                              ("Excel motor tablosuna göre motor gücü", f"{float(_h79.get('fan_motor_kw', 0)):.2f} kW"),
+                              ("Fan Gücü", f"{float(_h79.get('fan_motor_kw', 0)):.2f} kW"),
                           ]:
                               _c79 = _t79.add_row().cells
                               _c79[0].text = str(_etiket79)
