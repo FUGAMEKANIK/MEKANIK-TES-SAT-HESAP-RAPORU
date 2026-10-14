@@ -2957,6 +2957,8 @@ if _rapor_olustur_sidebar:
                       _79_rapor_hesaplari = st.session_state.get("yangin_79_rapor_hesaplari", [])
                       if not _79_rapor_hesaplari:
                           doc.add_paragraph("Merdiven hesaplaması yapılmamış veya rapora aktarılacak merdiven seçilmemiştir.")
+                      # Her seçili merdiven, yangin.py tarafından ayrı bir kayıt olarak aktarılır.
+                      # Kayıtlar birleştirilmeden kendi başlıkları ve hesap tablolarıyla yazdırılır.
                       for _h79 in _79_rapor_hesaplari:
                           doc.add_heading(str(_h79.get("ad", "YAN. MER.")), level=5)
                           # Excel'deki hesap sıralamasına benzer ayrıntılı rapor tablosu:
@@ -3013,9 +3015,9 @@ if _rapor_olustur_sidebar:
                               ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
                               ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
-                              ("Fan adedi", "", str(_fan_ad79)),
+                              ("Fan sayısı / debi bölme sayısı", "Toplam seçim debisi / fan sayısı", str(_fan_ad79)),
                               ("SEÇİLEN FAN DEBİSİ", "Poz debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.0f} m³/h"),
-                              ("Fan başına gerekli debi", "Seçim debisi / fan adedi", f"{float(_h79.get('fan_basina_gerekli_debi', _qtop79) or 0):,.0f} m³/h"),
+                              ("Fan başına gerekli debi", "Toplam seçim debisi / seçilen fan sayısı", f"{float(_h79.get('fan_basina_gerekli_debi', _qtop79) or 0):,.0f} m³/h"),
                               ("Fan başına seçilen debi", "Poz kademesine göre yukarı yuvarlanmış debi", f"{float(_h79.get('fan_basina_secilen_debi', 0) or 0):,.0f} m³/h"),
                               ("Cihaz Poz No", "", str(_h79.get('fan_poz', '—') or '—')),
                               ("Fan debisi modu", "", "Elle düzeltildi" if _h79.get('fan_manuel_debi_aktif') else "Otomatik hesap"),
