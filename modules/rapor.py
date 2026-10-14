@@ -2988,7 +2988,7 @@ if _rapor_olustur_sidebar:
                           _motor_kw79 = float(_h79.get("fan_motor_kw", 0) or 0)
                           _satirlar79 = [
                               ("Kapalı kapı adedi", "", str(_kapali79)),
-                              ("Kapı başına sızıntı alanı", "Excel girdisi: Ae", f"{float(_h79.get('sizinti_alani', 0) or 0):.4f} m²"),
+                              ("Kapı başına sızıntı alanı", "Ae", f"{float(_h79.get('sizinti_alani', 0) or 0):.4f} m²"),
                               ("Kapalı kapı basınç farkı", "ΔP = 50 Pa", f"{float(_h79.get('kapali_delta_p', 50) or 50):.1f} Pa"),
                               ("Q1 — Sızıntı debisi (emniyet dâhil)", "Q1 = 0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_q1_79:,.2f} m³/h"),
                               ("Açık kapı adedi", "", str(_acik79)),
@@ -3014,7 +3014,10 @@ if _rapor_olustur_sidebar:
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
                               ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
                               ("Fan adedi", "", str(_fan_ad79)),
-                              ("Fan Gücü", "Excel: Nmot = Q × H / (198000 × 9,81)", f"{_motor_kw79:.2f} kW"),
+                              ("Fan Gücü", "Excel Fan Gücü", f"{_motor_kw79:.2f} kW"),
+                              ("SEÇİLEN FAN DEBİSİ", "Q = Q1 + Q2", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
+                              ("SEÇİLEN FAN BASINÇ DEĞERİ", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
+                              ("SEÇİLEN FAN ELEKTRİK GÜCÜ", "Excel Fan Gücü / seçilen motor gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or 0):.2f} kW"),
                           ]
                           for _etiket79, _formul79, _deger79 in _satirlar79:
                               _c79 = _t79.add_row().cells
