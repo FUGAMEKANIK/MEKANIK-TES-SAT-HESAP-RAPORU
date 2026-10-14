@@ -2964,10 +2964,10 @@ if _rapor_olustur_sidebar:
                           _t79 = doc.add_table(rows=1, cols=3)
                           _t79.style = "Table Grid"
                           _t79.autofit = True
-                          _baslik_hucreleri79 = _t79.rows[0].cells
-                          _baslik_hucreleri79[0].text = "HESAP KALEMİ / GİRDİ"
-                          _baslik_hucreleri79[1].text = "FORMÜL / İŞLEM"
-                          _baslik_hucreleri79[2].text = "DEĞER / SONUÇ"
+                          _bas79 = _t79.rows[0].cells
+                          _bas79[0].text = "HESAP KALEMİ / GİRDİ"
+                          _bas79[1].text = "FORMÜL / İŞLEM"
+                          _bas79[2].text = "DEĞER / SONUÇ"
                           _gen_cm79 = float(_h79.get("menfez_genislik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
                           _yuk_cm79 = float(_h79.get("menfez_yukseklik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
                           _menfez_m279 = float(_h79.get("secilen_menfez_alan", 0) or 0)
@@ -2987,33 +2987,33 @@ if _rapor_olustur_sidebar:
                           _hid_kw79 = float(_h79.get("fan_hidrolik_kw", 0) or 0)
                           _motor_kw79 = float(_h79.get("fan_motor_kw", 0) or 0)
                           _satirlar79 = [
-                              ("Kapalı kapı adedi", "Kullanıcı girdisi", str(_kapali79)),
+                              ("Kapalı kapı adedi", "", str(_kapali79)),
                               ("Kapı başına sızıntı alanı", "Excel girdisi: Ae", f"{float(_h79.get('sizinti_alani', 0) or 0):.4f} m²"),
                               ("Kapalı kapı basınç farkı", "ΔP = 50 Pa", f"{float(_h79.get('kapali_delta_p', 50) or 50):.1f} Pa"),
                               ("Q1 — Sızıntı debisi (emniyet dâhil)", "Q1 = 0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_q1_79:,.2f} m³/h"),
-                              ("Açık kapı adedi", "Kullanıcı girdisi", str(_acik79)),
-                              ("Kapı genişliği", "Kullanıcı girdisi", f"{float(_h79.get('kapi_genislik_m', 1) or 0):.2f} m"),
-                              ("Kapı yüksekliği", "Kullanıcı girdisi", f"{float(_h79.get('kapi_yukseklik_m', 2.4) or 0):.2f} m"),
-                              ("Açık kapı hava hızı", "Excel tasarım girdisi", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
+                              ("Açık kapı adedi", "", str(_acik79)),
+                              ("Kapı genişliği", "", f"{float(_h79.get('kapi_genislik_m', 1) or 0):.2f} m"),
+                              ("Kapı yüksekliği", "", f"{float(_h79.get('kapi_yukseklik_m', 2.4) or 0):.2f} m"),
+                              ("Açık kapı hava hızı", "Tasarım girdisi", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
                               ("Q2 — Açık kapı debisi", "Q2 = N × genişlik × yükseklik × hız × 3600 × 1,10", f"{_q2_79:,.2f} m³/h"),
                               ("Toplam hava debisi", "Q = Q1 + Q2", f"{_qtop79:,.2f} m³/h"),
-                              ("Menfez adedi", "Kullanıcı girdisi", str(_men_ad79)),
+                              ("Menfez adedi", "", str(_men_ad79)),
                               ("Menfez başına debi", "Q / menfez adedi", f"{(_qtop79 / _men_ad79 if _men_ad79 else 0):,.2f} m³/h"),
-                              ("Menfez tasarım hava hızı", "Excel tasarım girdisi", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
+                              ("Menfez tasarım hava hızı", "Tasarım girdisi", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
                               ("Gerekli efektif alan / menfez", "A = (Q / adet) / (v × 3600)", f"{float(_h79.get('menfez_alan', 0) or 0):.4f} m²"),
                               ("Seçilen menfez ölçüsü", "Genişlik × yükseklik", f"{_gen_cm79:.0f} × {_yuk_cm79:.0f} cm"),
                               ("Seçilen menfez alanı / adet", "(genişlik × yükseklik) / 10.000", f"{_menfez_m279:.4f} m²"),
                               ("Seçilen menfez toplam alanı", "Alan / adet × menfez adedi", f"{_menfez_top_m279:.4f} m²"),
-                              ("Şaft kanal kayıpları", "Kullanıcı girdisi", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
-                              ("Menfez basınç kaybı", "Kullanıcı girdisi", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
-                              ("Panjur ve taze hava alış kaybı", "Kullanıcı girdisi", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
-                              ("Pozitif basınç", "Kullanıcı girdisi", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
+                              ("Şaft kanal kayıpları", "", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
+                              ("Menfez basınç kaybı", "", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
+                              ("Panjur ve taze hava alış kaybı", "", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
+                              ("Pozitif basınç", "", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
                               ("Basınç kayıpları toplamı", "Şaft + menfez + panjur + pozitif basınç", f"{_kayip79:,.1f} Pa"),
-                              ("Emniyet oranı", "Kullanıcı tarafından ayarlanabilir", f"%{_em_or79:g}"),
+                              ("Emniyet oranı", "", f"%{_em_or79:g}"),
                               ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
                               ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
-                              ("Fan adedi", "Kullanıcı girdisi", str(_fan_ad79)),
+                              ("Fan adedi", "", str(_fan_ad79)),
                               ("Fan Gücü", "Excel: Nmot = Q × H / (198000 × 9,81)", f"{_motor_kw79:.2f} kW"),
                           ]
                           for _etiket79, _formul79, _deger79 in _satirlar79:
@@ -3021,7 +3021,7 @@ if _rapor_olustur_sidebar:
                               _c79[0].text = str(_etiket79)
                               _c79[1].text = str(_formul79)
                               _c79[2].text = str(_deger79)
-                          for _c79 in _baslik_hucreleri79:
+                          for _c79 in _bas79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
                                       _r79.bold = True
