@@ -2055,80 +2055,88 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
                     st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik, Madde 89 ve mevcut binalar için Madde 163. Bu liste yönetmelik kontrol listesi niteliğindedir; uygulama koşulları proje ve yürürlükteki mevzuat üzerinden ayrıca doğrulanmalıdır.")
 
-                    # 7.9.2 Hesap ve fan seçim girdileri — yalnızca bu bölüme eklenmiştir.
+                    # 7.9.2 hesap girişleri — mevcut diğer yangın bölümlerinden bağımsız session-state anahtarları.
                     st.markdown(
-                        '<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;margin-top:18px;">'
-                        '7.9.2 MERDİVEN BASINÇLANDIRMA DEBİ VE BASINÇ KAYBI HESABI</div>',
+                        '<div style="font-size:18px;font-weight:800;color:#1F4E79;margin-top:18px;">'
+                        '7.9.2 MERDİVEN BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True
+                    )
+                    st.markdown(
+                        '<div style="padding:9px 12px;border-left:5px solid #E0A000;background:#FFF4CE;'
+                        'color:#7A4B00;font-weight:700;border-radius:4px;">'
+                        'Sarı alanlar kullanıcı girişidir. Hesap yapmadan önce proje değerlerini giriniz. '
+                        'Kapalı kapı, menfez ve fan adetleri başlangıçta 0 olarak gelir.</div>',
                         unsafe_allow_html=True,
                     )
-                    st.caption("Başlangıç değerleri, yüklenen MERDİVEN BASINÇLANDIRMA Excel dosyasındaki A BLOK hesabından alınmıştır; proje koşullarına göre değiştirilebilir.")
-
-                    _c79a, _c79b = st.columns(2)
-                    with _c79a:
-                        _kapali79 = float(st.number_input("Kapalı kapı adedi", min_value=0, value=int(st.session_state.get("yangin_79_kapali_kapi", 29)), step=1, key="yangin_79_kapali_kapi"))
-                        _sizinti79 = float(st.number_input("Kapı başına sızıntı alanı (m²)", min_value=0.0, value=float(st.session_state.get("yangin_79_sizinti_alani", 0.02)), step=0.005, format="%.3f", key="yangin_79_sizinti_alani"))
-                        _dp_kapali79 = float(st.number_input("Kapalı kapı basınç farkı (Pa)", min_value=0.0, value=float(st.session_state.get("yangin_79_dp_kapali", 50.0)), step=5.0, key="yangin_79_dp_kapali"))
-                        _emniyet_q179 = float(st.number_input("Q1 emniyet payı (%)", min_value=0.0, value=float(st.session_state.get("yangin_79_emniyet_q1", 50.0)), step=5.0, key="yangin_79_emniyet_q1"))
-                        _acik79 = float(st.number_input("Açık kapı adedi", min_value=0, value=int(st.session_state.get("yangin_79_acik_kapi", 3)), step=1, key="yangin_79_acik_kapi"))
-                        _kapi_gen79 = float(st.number_input("Kapı genişliği (m)", min_value=0.0, value=float(st.session_state.get("yangin_79_kapi_gen", 1.0)), step=0.1, key="yangin_79_kapi_gen"))
-                        _kapi_yuk79 = float(st.number_input("Kapı yüksekliği (m)", min_value=0.0, value=float(st.session_state.get("yangin_79_kapi_yuk", 2.4)), step=0.1, key="yangin_79_kapi_yuk"))
-                        _hiz79 = float(st.number_input("Açık kapı hava hızı (m/s)", min_value=0.0, value=float(st.session_state.get("yangin_79_hava_hizi", 1.0)), step=0.1, key="yangin_79_hava_hizi"))
-                        _emniyet_q279 = float(st.number_input("Q2 emniyet payı (%)", min_value=0.0, value=float(st.session_state.get("yangin_79_emniyet_q2", 10.0)), step=5.0, key="yangin_79_emniyet_q2"))
-                    with _c79b:
-                        _menfez_adet79 = int(st.number_input("Menfez adedi", min_value=1, value=int(st.session_state.get("yangin_79_menfez_adet", 25)), step=1, key="yangin_79_menfez_adet"))
-                        _menfez_hiz79 = float(st.number_input("Menfez hava hızı (m/s)", min_value=0.1, value=float(st.session_state.get("yangin_79_menfez_hiz", 5.0)), step=0.5, key="yangin_79_menfez_hiz"))
-                        _kayip_saft79 = float(st.number_input("Şaft/kanal kaybı (Pa)", min_value=0.0, value=float(st.session_state.get("yangin_79_kayip_saft", 135.0)), step=5.0, key="yangin_79_kayip_saft"))
-                        _kayip_menfez79 = float(st.number_input("Menfez kaybı (Pa)", min_value=0.0, value=float(st.session_state.get("yangin_79_kayip_menfez", 35.0)), step=5.0, key="yangin_79_kayip_menfez"))
-                        _kayip_panjur79 = float(st.number_input("Panjur ve taze hava emiş kaybı (Pa)", min_value=0.0, value=float(st.session_state.get("yangin_79_kayip_panjur", 100.0)), step=5.0, key="yangin_79_kayip_panjur"))
-                        _pozitif79 = float(st.number_input("Gerekli pozitif basınç (Pa)", min_value=0.0, value=float(st.session_state.get("yangin_79_pozitif", 100.0)), step=5.0, key="yangin_79_pozitif"))
-                        _emniyet_p79 = float(st.number_input("Basınç kaybı emniyet payı (%)", min_value=0.0, value=float(st.session_state.get("yangin_79_emniyet_p", 10.0)), step=1.0, key="yangin_79_emniyet_p"))
-                        _fan_adet79 = int(st.number_input("Fan adedi", min_value=1, value=int(st.session_state.get("yangin_79_fan_adet", 2)), step=1, key="yangin_79_fan_adet"))
-
-                    # Excel formülleri: Q1 = 0.83 x (kapalı kapı adedi x sızıntı alanı) x sqrt(ΔP), emniyet payı dahil.
-                    _q1_m3s79 = 0.83 * (_kapali79 * _sizinti79) * (_dp_kapali79 ** 0.5) * (1 + _emniyet_q179 / 100.0)
-                    _q1_m3h79 = _q1_m3s79 * 3600.0
-                    _q2_m3s79 = _acik79 * _kapi_gen79 * _kapi_yuk79 * _hiz79
-                    _q2_m3h79 = _q2_m3s79 * 3600.0 * (1 + _emniyet_q279 / 100.0)
-                    _q_toplam79 = _q1_m3h79 + _q2_m3h79
-                    _q_menfez79 = _q_toplam79 / _menfez_adet79
-                    _alan_menfez79 = (_q_menfez79 / 3600.0) / _menfez_hiz79
-                    _kayip_toplam79 = _kayip_saft79 + _kayip_menfez79 + _kayip_panjur79 + _pozitif79
-                    _kayip_emniyet79 = _kayip_toplam79 * (1 + _emniyet_p79 / 100.0)
-                    _basinc_sec79 = int((_kayip_emniyet79 + 49.999999) // 50) * 50
-                    _guc_hidrolik79 = (_q_toplam79 / 3600.0) * _basinc_sec79 / 1000.0
-
-                    st.markdown("#### Hesap sonuçları")
-                    _sonuc79 = st.columns(3)
-                    _sonuc79[0].metric("Q1 — kapalı kapı sızıntısı", f"{_q1_m3h79:,.0f} m³/h")
-                    _sonuc79[1].metric("Q2 — açık kapı debisi", f"{_q2_m3h79:,.0f} m³/h")
-                    _sonuc79[2].metric("Toplam tasarım debisi", f"{_q_toplam79:,.0f} m³/h")
-                    _sonuc79b = st.columns(3)
-                    _sonuc79b[0].metric("Menfez başına debi", f"{_q_menfez79:,.0f} m³/h")
-                    _sonuc79b[1].metric("Menfez efektif alanı", f"{_alan_menfez79:.3f} m²")
-                    _sonuc79b[2].metric("Seçim basıncı", f"{_basinc_sec79:,.0f} Pa")
-                    st.caption(
-                        f"Basınç kayıpları toplamı: {_kayip_toplam79:,.1f} Pa; "
-                        f"%{_emniyet_p79:g} emniyet payı sonrası: {_kayip_emniyet79:,.1f} Pa. "
-                        "Fan seçimi için bu tasarım debisi ve basınç birlikte kullanılmalıdır."
-                    )
-
-                    # Değerleri rapor üreticisinin okuyabilmesi için session_state'te sakla.
-                    st.session_state["yangin_79_hesap_sonuclari"] = {
-                        "q1_m3h": _q1_m3h79, "q2_m3h": _q2_m3h79, "q_toplam_m3h": _q_toplam79,
-                        "menfez_adet": _menfez_adet79, "q_menfez_m3h": _q_menfez79,
-                        "menfez_efektif_alan_m2": _alan_menfez79,
-                        "kayip_toplam_pa": _kayip_toplam79, "kayip_emniyetli_pa": _kayip_emniyet79,
-                        "secim_basinc_pa": _basinc_sec79, "fan_adet": _fan_adet79,
-                        "fan_gerekli_debi_m3h": _q_toplam79, "fan_hidrolik_guc_kw": _guc_hidrolik79,
-                    }
-                    st.markdown("#### Systemair fan seçimi")
-                    st.info(
-                        "Debi ve basınç çalışma noktası hesaplandı. Otomatik model seçimi ve gerçek fan performans eğrisi "
-                        "ancak ilgili Systemair modelinin doğrulanmış katalog eğrisiyle eşleştirildiğinde güvenilir olur. "
-                        "Bu nedenle doğrulanmamış bir model veya eğri bu aşamada rapora konulmamıştır."
-                    )
-                    st.link_button("Systemair Türkiye ürün seçicileri", "https://www.systemair.com/tr-tr", use_container_width=False)
-
+                    _79_tabs = st.tabs([
+                        "🟨 Kapalı Kapı", "🟦 Açık Kapı", "🟩 Menfez", "🟧 Basınç Kaybı", "🟥 Fan Seçimi"
+                    ])
+                    with _79_tabs[0]:
+                        st.markdown('<div style="color:#9A6700;font-weight:800;">KAPALI KAPILARDAN OLUŞAN SIZINTI DEBİSİ (Q1)</div>', unsafe_allow_html=True)
+                        _79_k1, _79_k2, _79_k3 = st.columns(3)
+                        with _79_k1:
+                            _79_kapali_adet = int(st.number_input("Kapalı kapı adedi", min_value=0, step=1, value=0, key="yangin_79_kapali_kapi_adedi"))
+                        with _79_k2:
+                            _79_dp_kapali = float(st.number_input("Kapalı kapı basınç farkı (Pa)", min_value=0.0, value=50.0, step=5.0, key="yangin_79_dp_kapali"))
+                        with _79_k3:
+                            _79_sizinti_alan = float(st.number_input("Kapı başına sızıntı alanı (m²)", min_value=0.0, value=0.02, step=0.005, format="%.3f", key="yangin_79_sizinti_alan"))
+                        _79_q1_m3s = 0.83 * (_79_kapali_adet * _79_sizinti_alan) * (_79_dp_kapali ** 0.5) * 1.5
+                        _79_q1_m3h = _79_q1_m3s * 3600
+                        st.metric("Q1 — Sızıntı debisi", f"{_79_q1_m3h:,.0f} m³/h")
+                    with _79_tabs[1]:
+                        st.markdown('<div style="color:#175CD3;font-weight:800;">AÇIK KAPILARDAN OLUŞAN DEBİ (Q2)</div>', unsafe_allow_html=True)
+                        _79_a1, _79_a2, _79_a3, _79_a4 = st.columns(4)
+                        with _79_a1:
+                            _79_acik_adet = int(st.number_input("Açık kapı adedi", min_value=0, step=1, value=3, key="yangin_79_acik_kapi_adedi"))
+                        with _79_a2:
+                            _79_kapi_en = float(st.number_input("Kapı eni (m)", min_value=0.0, value=1.0, step=0.1, key="yangin_79_kapi_en"))
+                        with _79_a3:
+                            _79_kapi_boy = float(st.number_input("Kapı boyu (m)", min_value=0.0, value=2.4, step=0.1, key="yangin_79_kapi_boy"))
+                        with _79_a4:
+                            _79_hava_hizi = float(st.number_input("Kapı hava hızı (m/s)", min_value=0.0, value=1.0, step=0.1, key="yangin_79_hava_hizi"))
+                        _79_q2_m3h = _79_acik_adet * _79_kapi_en * _79_kapi_boy * _79_hava_hizi * 3600 * 1.1
+                        st.metric("Q2 — Açık kapı debisi (%10 emniyet dâhil)", f"{_79_q2_m3h:,.0f} m³/h")
+                    _79_toplam_debi = _79_q1_m3h + _79_q2_m3h
+                    with _79_tabs[2]:
+                        st.markdown('<div style="color:#16803D;font-weight:800;">MENFEZ BOYUTLANDIRMASI</div>', unsafe_allow_html=True)
+                        _79_m1, _79_m2, _79_m3 = st.columns(3)
+                        with _79_m1:
+                            _79_menfez_adet = int(st.number_input("Menfez adedi", min_value=0, step=1, value=0, key="yangin_79_menfez_adedi"))
+                        with _79_m2:
+                            _79_menfez_hiz = float(st.number_input("Menfez hava hızı (m/s)", min_value=0.0, value=5.0, step=0.5, key="yangin_79_menfez_hiz"))
+                        with _79_m3:
+                            _79_menfez_en = float(st.number_input("Menfez eni (cm)", min_value=0.0, value=40.0, step=5.0, key="yangin_79_menfez_en"))
+                        _79_menfez_boy = float(st.number_input("Menfez boyu (cm)", min_value=0.0, value=25.0, step=5.0, key="yangin_79_menfez_boy"))
+                        _79_menfez_basina = (_79_toplam_debi / _79_menfez_adet) if _79_menfez_adet > 0 else 0.0
+                        _79_menfez_alan = (_79_menfez_basina / (_79_menfez_hiz * 3600)) if _79_menfez_hiz > 0 else 0.0
+                        st.metric("Toplam debi", f"{_79_toplam_debi:,.0f} m³/h")
+                        st.metric("Menfez başına debi", f"{_79_menfez_basina:,.0f} m³/h" if _79_menfez_adet else "Menfez adedi giriniz")
+                        st.metric("Gerekli efektif alan / menfez", f"{_79_menfez_alan:.3f} m²" if _79_menfez_adet and _79_menfez_hiz else "Hesaplanamadı")
+                    with _79_tabs[3]:
+                        st.markdown('<div style="color:#B54708;font-weight:800;">KANAL VE EKİPMAN BASINÇ KAYIPLARI</div>', unsafe_allow_html=True)
+                        _79_p1, _79_p2 = st.columns(2)
+                        with _79_p1:
+                            _79_saft_kayip = float(st.number_input("Şaft kanal kaybı (Pa)", min_value=0.0, value=135.0, step=5.0, key="yangin_79_saft_kayip"))
+                            _79_menfez_kayip = float(st.number_input("Menfez kaybı (Pa)", min_value=0.0, value=35.0, step=5.0, key="yangin_79_menfez_kayip"))
+                        with _79_p2:
+                            _79_panjur_kayip = float(st.number_input("Panjur ve taze hava alış kanalı kaybı (Pa)", min_value=0.0, value=100.0, step=5.0, key="yangin_79_panjur_kayip"))
+                            _79_pozitif_basinc = float(st.number_input("Gerekli pozitif basınç (Pa)", min_value=0.0, value=100.0, step=5.0, key="yangin_79_pozitif_basinc"))
+                        _79_kayip_toplam = _79_saft_kayip + _79_menfez_kayip + _79_panjur_kayip + _79_pozitif_basinc
+                        _79_basinc_gerekli = int(__import__("math").ceil((_79_kayip_toplam * 1.1) / 50.0) * 50) if _79_kayip_toplam > 0 else 0
+                        st.metric("Toplam kayıp (%10 emniyet öncesi)", f"{_79_kayip_toplam:,.0f} Pa")
+                        st.metric("Fan için gerekli basınç (50 Pa kademesine yuvarlanmış)", f"{_79_basinc_gerekli:,.0f} Pa")
+                    with _79_tabs[4]:
+                        st.markdown('<div style="color:#C01048;font-weight:800;">FAN ADEDİ VE SEÇİM BİLGİLERİ</div>', unsafe_allow_html=True)
+                        _79_f1, _79_f2 = st.columns(2)
+                        with _79_f1:
+                            _79_fan_adet = int(st.number_input("Fan adedi", min_value=0, step=1, value=0, key="yangin_79_fan_adedi"))
+                        with _79_f2:
+                            st.text_input("Fan üreticisi", value="Systemair", disabled=True, key="yangin_79_fan_uretici")
+                        st.metric("Hesaplanan toplam hava debisi", f"{_79_toplam_debi:,.0f} m³/h")
+                        st.metric("Gerekli fan basıncı", f"{_79_basinc_gerekli:,.0f} Pa")
+                        if _79_fan_adet == 0:
+                            st.info("Fan adedini proje tasarımına göre giriniz. Fan modeli, doğrulanmış Systemair performans eğrisi üzerinden seçilecektir.")
+                        else:
+                            st.info("Fan adedi girildi. Otomatik model seçimi ve performans eğrisi, doğrulanmış Systemair katalog verileri bağlandığında etkinleştirilecektir.")
 
             elif _baslik.startswith("7.12 "):
                 # --------------------------------------------------------------
