@@ -2987,6 +2987,7 @@ if _rapor_olustur_sidebar:
                           _hid_kw79 = float(_h79.get("fan_hidrolik_kw", 0) or 0)
                           _motor_kw79 = float(_h79.get("fan_motor_kw", 0) or 0)
                           _satirlar79 = [
+                              ("__BOLUM__", "1. HAVA DEBİSİ HESABI", ""),
                               ("Kapalı kapı adedi", "", str(_kapali79)),
                               ("Kapı başına sızıntı alanı", "Ae", f"{float(_h79.get('sizinti_alani', 0) or 0):.4f} m²"),
                               ("Kapalı kapı basınç farkı", "ΔP = 50 Pa", f"{float(_h79.get('kapali_delta_p', 50) or 50):.1f} Pa"),
@@ -2997,6 +2998,7 @@ if _rapor_olustur_sidebar:
                               ("Açık kapı hava hızı", "Tasarım girdisi", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
                               ("Q2 — Açık kapı debisi", "Q2 = N × genişlik × yükseklik × hız × 3600 × 1,10", f"{_q2_79:,.2f} m³/h"),
                               ("Toplam hava debisi", "Q = Q1 + Q2", f"{_qtop79:,.2f} m³/h"),
+                              ("__BOLUM__", "2. MENFEZ BOYUTLANDIRMASI", ""),
                               ("Menfez adedi", "", str(_men_ad79)),
                               ("Menfez başına debi", "Q / menfez adedi", f"{(_qtop79 / _men_ad79 if _men_ad79 else 0):,.2f} m³/h"),
                               ("Menfez tasarım hava hızı", "Tasarım girdisi", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
@@ -3004,26 +3006,43 @@ if _rapor_olustur_sidebar:
                               ("Seçilen menfez ölçüsü", "Genişlik × yükseklik", f"{_gen_cm79:.0f} × {_yuk_cm79:.0f} cm"),
                               ("Seçilen menfez alanı / adet", "(genişlik × yükseklik) / 10.000", f"{_menfez_m279:.4f} m²"),
                               ("Seçilen menfez toplam alanı", "Alan / adet × menfez adedi", f"{_menfez_top_m279:.4f} m²"),
-                              ("Şaft kanal kayıpları", "Tasarım girdisi: şaft kanalındaki toplam kayıp", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
-                              ("Menfez basınç kaybı", "Tasarım girdisi: menfez basınç kaybı", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
-                              ("Panjur ve taze hava alış kaybı", "Tasarım girdisi: panjur ve taze hava alış hattı kaybı", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
-                              ("Pozitif basınç", "Tasarım girdisi: gerekli pozitif basınç", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
+                              ("__BOLUM__", "3. BASINÇ KAYIPLARI VE EMNİYET", ""),
+                              ("Şaft kanal kayıpları", "Şaft kanalındaki toplam kayıp", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
+                              ("Menfez basınç kaybı", "Menfez basınç kaybı", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
+                              ("Panjur ve taze hava alış kaybı", "Panjur ve taze hava alış hattı kaybı", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
+                              ("Pozitif basınç", "Gerekli pozitif basınç", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
                               ("Basınç kayıpları toplamı", "Şaft + menfez + panjur + pozitif basınç", f"{_kayip79:,.1f} Pa"),
                               ("Emniyet oranı", "", f"%{_em_or79:g}"),
                               ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
-                              ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
+                              ("__BOLUM__", "4. FAN SEÇİMİ — SONUÇ ÖZETİ", ""),
+                              ("Seçilen fan debisi", "Q = Q1 + Q2", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
+                              ("Seçilen Fan Basıncı", "Emniyet dâhil basıncın seçilen üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
+                              ("Seçilen fan elektrik gücü", "Excel Fan Gücü / seçilen motor gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or 0):.2f} kW"),
                               ("Fan adedi", "", str(_fan_ad79)),
-                              ("Fan Gücü", "Excel Fan Gücü", f"{_motor_kw79:.2f} kW"),
-                              ("SEÇİLEN FAN DEBİSİ", "Q = Q1 + Q2", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
-                              ("SEÇİLEN FAN BASINÇ DEĞERİ", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
-                              ("SEÇİLEN FAN ELEKTRİK GÜCÜ", "Excel Fan Gücü / seçilen motor gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or 0):.2f} kW"),
                           ]
                           for _etiket79, _formul79, _deger79 in _satirlar79:
                               _c79 = _t79.add_row().cells
-                              _c79[0].text = str(_etiket79)
-                              _c79[1].text = str(_formul79)
-                              _c79[2].text = str(_deger79)
+                              if _etiket79 == "__BOLUM__":
+                                  _c79[0].merge(_c79[2])
+                                  _c79[0].text = str(_formul79)
+                                  for _psec79 in _c79[0].paragraphs:
+                                      for _rsec79 in _psec79.runs:
+                                          _rsec79.bold = True
+                                          _rsec79.font.color.rgb = RGBColor(31, 78, 121)
+                                  _tcPr79 = _c79[0]._tc.get_or_add_tcPr()
+                                  _shd79 = OxmlElement("w:shd")
+                                  _shd79.set(qn("w:fill"), "DCE6F1")
+                                  _tcPr79.append(_shd79)
+                              else:
+                                  _c79[0].text = str(_etiket79)
+                                  _c79[1].text = str(_formul79)
+                                  _c79[2].text = str(_deger79)
+                                  if str(_etiket79).lower().startswith("seçilen fan"):
+                                      for _cf79 in _c79:
+                                          for _pf79 in _cf79.paragraphs:
+                                              for _rf79 in _pf79.runs:
+                                                  _rf79.bold = True
                           for _c79 in _baslik_hucreleri79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
