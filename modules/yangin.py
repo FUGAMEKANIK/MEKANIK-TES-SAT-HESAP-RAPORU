@@ -2177,14 +2177,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     st.info("Systemair model seçimi, doğrulanmış katalog eğrileri bağlandığında çalışma noktasına göre yapılacaktır.")
                                 _79_rapor_hesaplari.append({
                                     "ad": _79_merdiven_adi, "kapali_adet": _79_kapali_adet,
-                                    "q1": _79_q1_m3h, "acik_adet": _79_acik_adet, "q2": _79_q2_m3h,
+                                    "sizinti_alani": _79_sizinti_alan, "kapali_delta_p": _79_dp_kapali,
+                                    "kapi_genislik_m": _79_kapi_genislik_m, "kapi_yukseklik_m": _79_kapi_yukseklik_m,
+                                    "kapi_hava_hizi": _79_kapi_hizi, "q1": _79_q1_m3h,
+                                    "acik_adet": _79_acik_adet, "q2": _79_q2_m3h,
                                     "toplam_debi": _79_toplam_debi, "menfez_adet": _79_menfez_adet,
                                     "menfez_hiz": _79_menfez_hiz, "menfez_alan": _79_menfez_alan,
                                     "menfez_kenar_cm": _79_menfez_kenar_cm, "menfez_genislik_cm": _79_menfez_genislik_cm, "menfez_yukseklik_cm": _79_menfez_yukseklik_cm, "oneri_menfez_kenar_cm": _79_onerilen_kenar_cm,
                                     "secilen_menfez_alan": _79_secilen_menfez_alan, "secilen_menfez_toplam_alan": _79_secilen_menfez_toplam_alan,
                                     "basinc": _79_basinc_gerekli, "emniyet_orani": _79_emniyet_orani,
                                     "emniyet_degeri": _79_emniyet_degeri, "emniyetli_basinc": _79_emniyetli_basinc,
-                                    "fan_adet": _79_fan_adet, "kayip": _79_kayip_toplam,
+                                    "fan_adet": _79_fan_adet, "fan_debisi": _79_toplam_debi,
+                                    "fan_secilen_basinc": _79_basinc_gerekli, "fan_elektrik_gucu": _79_motor_kw,
+                                    "kayip": _79_kayip_toplam,
                                     "saft_kaybi": _79_saft_kayip, "menfez_kaybi": _79_menfez_kayip,
                                     "panjur_kaybi": _79_panjur_kayip, "pozitif_basinc": _79_pozitif_basinc,
                                     "fan_hidrolik_kw": _79_hidrolik_kw, "fan_motor_kw": _79_motor_kw
