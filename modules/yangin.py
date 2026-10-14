@@ -2120,17 +2120,26 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     _79_menfez_alan = (_79_menfez_basina / (_79_menfez_hiz * 3600)) if _79_menfez_hiz > 0 else 0.0
                                     # Öneri: kare menfez kenarı sqrt(A); cm'ye çevrilip en yakın 5 cm'ye yuvarlanır.
                                     _79_onerilen_kenar_cm = (round(((_79_menfez_alan ** 0.5) * 100) / 5) * 5) if _79_menfez_alan > 0 else 0
-                                    _79_menfez_kenar_cm = float(st.number_input(
-                                        "Menfez kenarı (cm) — elle düzeltilebilir", min_value=0.0, step=5.0,
-                                        value=float(_79_onerilen_kenar_cm), key=f"yangin_79_{_79_slug}_menfez_kenar_cm",
-                                        help="Önerilen değer otomatik gelir; ihtiyaca göre değiştirebilirsiniz."
-                                    ))
-                                    _79_secilen_menfez_alan = (_79_menfez_kenar_cm / 100.0) ** 2
+                                    _79_boyut_col1, _79_boyut_col2 = st.columns(2)
+                                    with _79_boyut_col1:
+                                        _79_menfez_genislik_cm = float(st.number_input(
+                                            "Menfez genişliği (cm)", min_value=0.0, step=5.0,
+                                            value=float(_79_onerilen_kenar_cm), key=f"yangin_79_{_79_slug}_menfez_genislik_cm",
+                                            help="İhtiyaca göre genişliği değiştirebilirsiniz."
+                                        ))
+                                    with _79_boyut_col2:
+                                        _79_menfez_yukseklik_cm = float(st.number_input(
+                                            "Menfez yüksekliği (cm)", min_value=0.0, step=5.0,
+                                            value=float(_79_onerilen_kenar_cm), key=f"yangin_79_{_79_slug}_menfez_yukseklik_cm",
+                                            help="Dikdörtgen veya kare menfez ölçüsü girebilirsiniz."
+                                        ))
+                                    _79_menfez_kenar_cm = _79_menfez_genislik_cm  # Geriye dönük rapor/veri uyumluluğu
+                                    _79_secilen_menfez_alan = (_79_menfez_genislik_cm / 100.0) * (_79_menfez_yukseklik_cm / 100.0)
                                     _79_secilen_menfez_toplam_alan = _79_secilen_menfez_alan * _79_menfez_adet
                                     st.metric("Toplam debi", f"{_79_toplam_debi:,.0f} m³/h")
                                     st.metric("Menfez başına debi", f"{_79_menfez_basina:,.0f} m³/h" if _79_menfez_adet else "Menfez adedi giriniz")
                                     st.metric("Gerekli efektif alan / menfez", f"{_79_menfez_alan:.3f} m²" if _79_menfez_adet and _79_menfez_hiz else "Hesaplanamadı")
-                                    st.metric("Otomatik önerilen ölçü", f"{_79_onerilen_kenar_cm:.0f} × {_79_onerilen_kenar_cm:.0f} cm" if _79_onerilen_kenar_cm else "Debi ve menfez adedi giriniz")
+                                    st.metric("Hesaplanan kare ölçü önerisi", f"{_79_onerilen_kenar_cm:.0f} × {_79_onerilen_kenar_cm:.0f} cm" if _79_onerilen_kenar_cm else "Debi ve menfez adedi giriniz")
                                     st.metric("Seçilen menfezin alanı / adet", f"{_79_secilen_menfez_alan:.3f} m²")
                                     st.metric("Seçilen menfezlerin toplam alanı", f"{_79_secilen_menfez_toplam_alan:.3f} m²")
                                     if _79_menfez_adet and _79_menfez_alan > 0:
@@ -2171,7 +2180,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "q1": _79_q1_m3h, "acik_adet": _79_acik_adet, "q2": _79_q2_m3h,
                                     "toplam_debi": _79_toplam_debi, "menfez_adet": _79_menfez_adet,
                                     "menfez_hiz": _79_menfez_hiz, "menfez_alan": _79_menfez_alan,
-                                    "menfez_kenar_cm": _79_menfez_kenar_cm, "oneri_menfez_kenar_cm": _79_onerilen_kenar_cm,
+                                    "menfez_kenar_cm": _79_menfez_kenar_cm, "menfez_genislik_cm": _79_menfez_genislik_cm, "menfez_yukseklik_cm": _79_menfez_yukseklik_cm, "oneri_menfez_kenar_cm": _79_onerilen_kenar_cm,
                                     "secilen_menfez_alan": _79_secilen_menfez_alan, "secilen_menfez_toplam_alan": _79_secilen_menfez_toplam_alan,
                                     "basinc": _79_basinc_gerekli, "emniyet_orani": _79_emniyet_orani,
                                     "emniyet_degeri": _79_emniyet_degeri, "emniyetli_basinc": _79_emniyetli_basinc,
