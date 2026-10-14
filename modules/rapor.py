@@ -2935,39 +2935,49 @@ if _rapor_olustur_sidebar:
                   _run7.italic = True
                   _run7.font.size = Pt(15)
                   _run7.font.color.rgb = RGBColor(31, 78, 121)
-                  # 7.9 Merdiven basınçlandırma hesap sonuçları
+                  # 7.9 Merdiven basınçlandırma — seçilen mevzuat maddeleri ve her merdivenin hesabı
                   if _bk == "bolum_79":
-                      _hesap79 = st.session_state.get("yangin_79_hesap_sonuclari", {})
-                      if _hesap79:
-                          doc.add_heading("7.9.2 MERDİVEN BASINÇLANDIRMA DEBİ VE BASINÇ KAYBI HESABI", level=4)
-                          _tab79 = doc.add_table(rows=0, cols=2)
-                          _tab79.style = "Table Grid"
-                          _rapor_satirlari79 = [
-                              ("Kapalı kapı sızıntı debisi Q1", f'{_hesap79.get("q1_m3h", 0):,.0f} m³/h'),
-                              ("Açık kapı debisi Q2 (emniyet payı dahil)", f'{_hesap79.get("q2_m3h", 0):,.0f} m³/h'),
-                              ("Toplam tasarım debisi Q1 + Q2", f'{_hesap79.get("q_toplam_m3h", 0):,.0f} m³/h'),
-                              ("Menfez adedi", str(_hesap79.get("menfez_adet", 0))),
-                              ("Menfez başına debi", f'{_hesap79.get("q_menfez_m3h", 0):,.0f} m³/h'),
-                              ("Menfez efektif alanı", f'{_hesap79.get("menfez_efektif_alan_m2", 0):.3f} m²'),
-                              ("Basınç kayıpları toplamı", f'{_hesap79.get("kayip_toplam_pa", 0):,.1f} Pa'),
-                              ("Emniyet payı sonrası basınç", f'{_hesap79.get("kayip_emniyetli_pa", 0):,.1f} Pa'),
-                              ("Seçim için yuvarlanmış basınç", f'{_hesap79.get("secim_basinc_pa", 0):,.0f} Pa'),
-                              ("Fan adedi", str(_hesap79.get("fan_adet", 0))),
-                          ]
-                          for _etiket79, _deger79 in _rapor_satirlari79:
-                              _cells79 = _tab79.add_row().cells
-                              _cells79[0].text = _etiket79
-                              _cells79[1].text = _deger79
-                          doc.add_paragraph(
-                              "Fan çalışma noktası: "
-                              f'{_hesap79.get("q_toplam_m3h", 0):,.0f} m³/h @ '
-                              f'{_hesap79.get("secim_basinc_pa", 0):,.0f} Pa.'
-                          )
-                          doc.add_paragraph(
-                              "Not: Fanın gerçek performans eğrisi, yalnızca doğrulanmış Systemair katalog eğrisi "
-                              "ile eşleştirme yapıldıktan sonra rapora eklenmelidir. Marka/model rapora yazdırılmaz."
-                          )
-
+                      _79_rapor_maddeleri = [('1', 'Basınçlandırma zorunluluğu — yüksek merdiven kovaları', "Konutlar hariç, merdiven kovası yüksekliği 30,50 m'den fazla olan binalarda kaçış merdivenleri basınçlandırılır. Bodrum ve üst katlara hizmet eden merdiven aynı yuvada olsa dahi, gerekli yangına dayanımlı ve duman sızdırmaz ayırma ile ayrı çıkış sağlanmışsa üst katların yüksekliği esas alınır. (BYKHY Madde 89, 1)"), ('2', 'Dört kattan fazla bodrum katı', 'Bodrum kat sayısı dörtten fazla olan binalarda bodrum katlara hizmet veren kaçış merdivenleri basınçlandırılır. (BYKHY Madde 89, 2)'), ('3', 'Yüksek konutlarda basınçlandırma', "Yapı yüksekliği 51,50 m'den yüksek olan konutların kaçış merdivenlerinin basınçlandırılması zorunludur. (BYKHY Madde 89, 3)"), ('4', 'Acil durum asansörü kuyusu', 'Acil durum asansörü kuyularının yangın etkisi altında kalmaması için basınçlandırılması gerekir. (BYKHY Madde 89, 4)'), ('5', 'Kapalı ve açık kapı durumunda basınç farkı', 'Bütün kapılar kapalıyken merdiven yuvası ile bina kullanım alanları arasındaki basınç farkı en az 50 Pa; açık kapı durumu için en az 15 Pa olmalıdır. (BYKHY Madde 89, 5)'), ('6', 'Yangın güvenlik holü ile basınç dağılımı', 'Yangın güvenlik holü de basınçlandırılıyorsa merdiven tarafındaki basınç, hol tarafındaki basınçtan daha yüksek olacak şekilde dağılım oluşturulur. (BYKHY Madde 89, 6)'), ('7', 'Kapı açma kuvveti', 'Basınçlı hava ve otomatik kapı kapatıcısının etkisi birlikte dikkate alındığında, kapıyı açmak için kapı koluna uygulanması gereken kuvvet 110 N değerini aşmamalıdır. (BYKHY Madde 89, 7)'), ('8', 'Açık kapılarda hava hızı', 'Birbirini takip eden iki kat kapısı ile dışarı tahliye kapısı tam açıkken, her bir tam açık kapı için ortalama hava hızı en az 1 m/s olmalıdır. (BYKHY Madde 89, 8)'), ('9', 'Açık kapı ve sızıntı alanlarının tasarıma dahil edilmesi', 'Tasarımda en az iki iç kapının ve bir dış tahliye kapısının açık olacağı kabul edilir; diğer kapalı kapıların sızıntı alanları da hesaba katılır ve bina kat sayısına göre açık iç kapı sayısı artırılır. (BYKHY Madde 89, 9)'), ('10', 'Sızıntı debisinin karşılanması', 'Basınçlandırma havası debisi, sızıntı alanlarından çevreye oluşan hava akışlarını karşılayacak yeterlilikte olmalıdır. (BYKHY Madde 89, 10)'), ('11', 'Aşırı basıncın sınırlandırılması', 'Merdiven içinde aşırı basınç oluşmasını önlemek için aşırı basınç damperi ve frekans kontrollü fan gibi önlemler sağlanır. (BYKHY Madde 89, 11)'), ('12', 'Dış hava emişi ve üfleme noktaları', "Basınçlandırma havası doğrudan dışarıdan alınmalı ve egzoz çıkışlarından en az 5 m uzakta olmalıdır. Yüksekliği 25 m'den fazla kapalı merdivenlerde birden fazla üfleme noktası gerekir; iki noktalı düzende aralarındaki düşey mesafe en az merdiven yüksekliğinin yarısıdır. Yapı yüksekliği 51,50 m'den fazla ise her katta veya en çok üç katta bir üfleme yapılır. (BYKHY Madde 89, 12)"), ('13', 'Dış hava emişinde duman algılama', 'Basınçlandırma fanının dış hava emişine algılayıcı yerleştirilir; duman algılanması hâlinde fan otomatik durdurulur. (BYKHY Madde 89, 13)'), ('14', 'Yangın alarm sistemiyle otomatik çalıştırma', 'Basınçlandırma sistemi yangın algılama ve uyarı sistemi tarafından otomatik olarak çalıştırılmalıdır. (BYKHY Madde 89, 14)'), ('15', 'Elle çalıştırma ve durdurma', 'Basınçlandırma fanının elle çalıştırılıp durdurulabilmesi için açma-kapatma anahtarı bulunmalıdır. (BYKHY Madde 89, 15)'), ('16', 'Basınçlandırma olmayan merdivenlerde havalandırma', 'Kaçış merdiveni basınçlandırılmamışsa merdiven bölümünde açılabilir pencere veya sürekli havalandırma sağlayan tepe penceresi bulunmalıdır. (BYKHY Madde 89, 16)'), ('17', 'Mevcut binalarda basınçlandırma', "Mevcut binalarda dörtten fazla bodrum kata hizmet veren kaçış merdivenleri ile merdiven kovası yüksekliği 51,50 m'den fazla olan kaçış merdivenleri, Madde 89 esaslarına göre basınçlandırılır. (BYKHY Madde 163, 1)")]
+                      doc.add_heading("7.9.1 MERDİVEN BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI", level=4)
+                      for _no79, _baslik79, _metin79 in _79_rapor_maddeleri:
+                          if not bool(st.session_state.get(f"yangin_791_madde_{_no79}", True)):
+                              continue
+                          if not bool(st.session_state.get("yangin_791_yonetmelik_atiflari", True)):
+                              _metin79 = _yangin_mevzuat_atiflarini_kaldir(_metin79)
+                          _p79 = doc.add_paragraph()
+                          _r79 = _p79.add_run(f"({_no79}) {_baslik79}: ")
+                          _r79.bold = True
+                          _p79.add_run(_metin79)
+                      for _ekno79, _ek79 in enumerate(st.session_state.get("yangin_791_ek_maddeler", []), start=len(_79_rapor_maddeleri)+1):
+                          _p79 = doc.add_paragraph()
+                          _r79 = _p79.add_run(f"({_ekno79}) {_ek79.get('baslik', '')}: ")
+                          _r79.bold = True
+                          _p79.add_run(str(_ek79.get("metin", "")))
+                      doc.add_heading("7.9.2 MERDİVEN BASINÇLANDIRMA HESAPLARI", level=4)
+                      _79_rapor_hesaplari = st.session_state.get("yangin_79_rapor_hesaplari", [])
+                      if not _79_rapor_hesaplari:
+                          doc.add_paragraph("Merdiven hesaplaması yapılmamış veya rapora aktarılacak merdiven seçilmemiştir.")
+                      for _h79 in _79_rapor_hesaplari:
+                          doc.add_heading(str(_h79.get("ad", "YAN. MER.")), level=5)
+                          _t79 = doc.add_table(rows=0, cols=2)
+                          _t79.style = "Table Grid"
+                          for _etiket79, _deger79 in [
+                              ("Kapalı kapı adedi", _h79.get("kapali_adet", 0)),
+                              ("Q1 — Kapalı kapı sızıntı debisi", f"{float(_h79.get('q1', 0)):,.0f} m³/h"),
+                              ("Açık kapı adedi", _h79.get("acik_adet", 0)),
+                              ("Q2 — Açık kapı debisi", f"{float(_h79.get('q2', 0)):,.0f} m³/h"),
+                              ("Toplam hava debisi (Q1 + Q2)", f"{float(_h79.get('toplam_debi', 0)):,.0f} m³/h"),
+                              ("Menfez adedi", _h79.get("menfez_adet", 0)),
+                              ("Gerekli efektif alan / menfez", f"{float(_h79.get('menfez_alan', 0)):.3f} m²"),
+                              ("Önerilen kare menfez ölçüsü", f"{float(_h79.get('menfez_kenar_cm', 0)):.0f} × {float(_h79.get('menfez_kenar_cm', 0)):.0f} cm"),
+                              ("Toplam basınç kaybı (emniyet öncesi)", f"{float(_h79.get('kayip', 0)):,.0f} Pa"),
+                              ("Gerekli fan basıncı", f"{int(_h79.get('basinc', 0)):,.0f} Pa"),
+                              ("Fan adedi", _h79.get("fan_adet", 0)),
+                          ]:
+                              _c79 = _t79.add_row().cells
+                              _c79[0].text = str(_etiket79)
+                              _c79[1].text = str(_deger79)
+                      doc.add_paragraph("Fan marka/model bilgisi rapora aktarılmamıştır. Systemair fan performans eğrisi, doğrulanmış katalog verileriyle seçim modülü tamamlandığında eklenecektir.")
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
                       doc.add_heading("7.3.1 BİNA İÇİ HORTUM SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
