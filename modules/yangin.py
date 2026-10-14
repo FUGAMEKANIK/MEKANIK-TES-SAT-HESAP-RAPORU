@@ -2178,8 +2178,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _79_rapor_hesaplari.append({
                                     "ad": _79_merdiven_adi, "kapali_adet": _79_kapali_adet,
                                     "sizinti_alani": _79_sizinti_alan, "kapali_delta_p": _79_dp_kapali,
-                                    "kapi_genislik_m": _79_kapi_genislik_m, "kapi_yukseklik_m": _79_kapi_yukseklik_m,
-                                    "kapi_hava_hizi": _79_kapi_hizi, "q1": _79_q1_m3h,
+                                    "kapi_genislik_m": _79_kapi_en, "kapi_yukseklik_m": _79_kapi_boy,
+                                    "kapi_hava_hizi": _79_hava_hizi, "q1": _79_q1_m3h,
                                     "acik_adet": _79_acik_adet, "q2": _79_q2_m3h,
                                     "toplam_debi": _79_toplam_debi, "menfez_adet": _79_menfez_adet,
                                     "menfez_hiz": _79_menfez_hiz, "menfez_alan": _79_menfez_alan,
