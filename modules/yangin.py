@@ -1,3 +1,4 @@
+import math
 import re
 # Yangın modülü aynı app.py çalıştırması içinde iki kez çağrılırsa
 # Streamlit aynı widget key'lerini ikinci kez oluşturmasın.
@@ -2166,15 +2167,59 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     st.markdown('<div style="color:#C01048;font-weight:800;">FAN ADEDİ VE SEÇİM BİLGİLERİ</div>', unsafe_allow_html=True)
                                     _79_fan_adet = int(st.number_input("Fan adedi", min_value=1, step=1, value=1, key=f"yangin_79_{_79_slug}_fan_adedi"))
                                     st.text_input("Fan üreticisi", value="Systemair", disabled=True, key=f"yangin_79_{_79_slug}_fan_uretici")
-                                    st.metric("Hesaplanan toplam hava debisi", f"{_79_toplam_debi:,.0f} m³/h")
-                                    st.metric("Gerekli fan basıncı", f"{_79_basinc_gerekli:,.0f} Pa")
-                                    # Excel ELEKTRİK sayfasındaki güç bağıntısı ve standart motor aralığı.
-                                    _79_hidrolik_kw = (_79_toplam_debi * _79_basinc_gerekli) / (198000.0 * 9.81) if _79_toplam_debi > 0 and _79_basinc_gerekli > 0 else 0.0
+                                    _79_manuel_key = f"yangin_79_{_79_slug}_fan_debisi_manuel_aktif"
+                                    st.checkbox("Fan debisini elle düzelt", value=False, key=_79_manuel_key)
+                                    _79_debi_manuel_aktif = bool(st.session_state.get(_79_manuel_key, False))
+                                    _79_debi_manuel = float(st.number_input(
+                                        "Elle belirlenen toplam fan debisi (m³/h)", min_value=0.0,
+                                        value=float(_79_toplam_debi), step=100.0,
+                                        key=f"yangin_79_{_79_slug}_fan_debisi_manuel",
+                                        disabled=not _79_debi_manuel_aktif
+                                    ))
+                                    _79_secim_toplam_debi = _79_debi_manuel if _79_debi_manuel_aktif else _79_toplam_debi
+                                    _79_fan_basina_gerekli = (_79_secim_toplam_debi / _79_fan_adet) if _79_fan_adet > 0 else 0.0
+                                    _79_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000, 20000, 25000, 30000, 35000]
+                                    _79_basinc_poz_gruplari = (
+                                        (500, "25.452.21", "25.452.2110/A"),
+                                        (750, "25.452.22", "25.452.2210/A"),
+                                        (1100, "25.452.23", "25.452.2310/A"),
+                                    )
+                                    _79_poz_on_ek = None
+                                    _79_poz_a = None
+                                    for _79_limit, _79_on_ek, _79_a_poz in _79_basinc_poz_gruplari:
+                                        if _79_basinc_gerekli <= _79_limit:
+                                            _79_poz_on_ek, _79_poz_a = _79_on_ek, _79_a_poz
+                                            break
+                                    _79_secilen_fan_debisi = 0
+                                    _79_fan_poz = "Uygun poz bulunamadı"
+                                    if _79_fan_basina_gerekli > 0 and _79_poz_on_ek:
+                                        if _79_fan_basina_gerekli > 35000:
+                                            _79_secilen_fan_debisi = int(math.ceil(_79_fan_basina_gerekli / 1000.0) * 1000)
+                                            _79_fan_poz = _79_poz_a
+                                        else:
+                                            _79_secilen_fan_debisi = next((q for q in _79_debi_kademeleri if q >= _79_fan_basina_gerekli), 0)
+                                            if _79_secilen_fan_debisi:
+                                                _79_poz_sira = _79_debi_kademeleri.index(_79_secilen_fan_debisi) + 1
+                                                _79_fan_poz = f"{_79_poz_on_ek}{_79_poz_sira:02d}"
+                                            else:
+                                                _79_fan_poz = "Debi poz aralığının dışında"
+                                    elif _79_basinc_gerekli > 1100:
+                                        _79_fan_poz = "Basınç 1100 Pa sınırını aşıyor"
+                                    _79_secilen_toplam_fan_debisi = _79_secilen_fan_debisi * _79_fan_adet
+                                    _79_hidrolik_kw = (_79_fan_basina_gerekli * _79_basinc_gerekli) / (198000.0 * 9.81) if _79_fan_basina_gerekli > 0 and _79_basinc_gerekli > 0 else 0.0
                                     _79_motor_araliklari = [(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                     _79_motor_kw = next((ust for alt, ust in _79_motor_araliklari if _79_hidrolik_kw >= alt and _79_hidrolik_kw < ust), 75.0 if _79_hidrolik_kw >= 55 else 0.0)
-                                    st.metric("Hesaplanan güç (Excel bağıntısı)", f"{_79_hidrolik_kw:.2f} kW")
-                                    st.metric("Elektrik motoru seçimi (Excel tablosu)", f"{_79_motor_kw:.2f} kW" if _79_motor_kw else "Debi/basınç giriniz")
-                                    st.info("Systemair model seçimi, doğrulanmış katalog eğrileri bağlandığında çalışma noktasına göre yapılacaktır.")
+                                    st.metric("Hesaplanan toplam hava debisi", f"{_79_toplam_debi:,.0f} m³/h")
+                                    if _79_debi_manuel_aktif:
+                                        st.metric("Elle düzeltilen toplam fan debisi", f"{_79_secim_toplam_debi:,.0f} m³/h")
+                                    st.metric("Fan başına gerekli debi", f"{_79_fan_basina_gerekli:,.0f} m³/h")
+                                    st.metric("Seçilen fan debisi (fan başına)", f"{_79_secilen_fan_debisi:,.0f} m³/h" if _79_secilen_fan_debisi else "Uygun poz bulunamadı")
+                                    st.metric("Seçilen fan basıncı", f"{_79_basinc_gerekli:,.0f} Pa")
+                                    st.metric("Seçilen fan elektrik gücü (hesaplanan)", f"{_79_motor_kw:.2f} kW" if _79_motor_kw else "Debi/basınç giriniz")
+                                    st.write(f"**Cihaz Poz No:** {_79_fan_poz}")
+                                    if _79_basinc_gerekli > 1100:
+                                        st.warning("Seçilen fan basıncı 1100 Pa üzerindedir; tanımlı poz aralıklarında otomatik seçim yapılamaz.")
+                                    st.caption("Poz debisi fan başına seçilir. Toplam seçilen fan debisi, fan başına poz debisi × fan adedi olarak hesaplanır.")
                                 _79_rapor_hesaplari.append({
                                     "ad": _79_merdiven_adi, "kapali_adet": _79_kapali_adet,
                                     "sizinti_alani": _79_sizinti_alan, "kapali_delta_p": _79_dp_kapali,
@@ -2187,7 +2232,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "secilen_menfez_alan": _79_secilen_menfez_alan, "secilen_menfez_toplam_alan": _79_secilen_menfez_toplam_alan,
                                     "basinc": _79_basinc_gerekli, "emniyet_orani": _79_emniyet_orani,
                                     "emniyet_degeri": _79_emniyet_degeri, "emniyetli_basinc": _79_emniyetli_basinc,
-                                    "fan_adet": _79_fan_adet, "fan_debisi": _79_toplam_debi,
+                                    "fan_adet": _79_fan_adet, "fan_debisi": _79_secilen_toplam_fan_debisi,
+                                    "fan_hesaplanan_debi": _79_toplam_debi, "fan_manuel_debi_aktif": _79_debi_manuel_aktif,
+                                    "fan_manuel_debi": _79_secim_toplam_debi, "fan_basina_gerekli_debi": _79_fan_basina_gerekli,
+                                    "fan_basina_secilen_debi": _79_secilen_fan_debisi, "fan_poz": _79_fan_poz,
                                     "fan_secilen_basinc": _79_basinc_gerekli, "fan_elektrik_gucu": _79_motor_kw,
                                     "kayip": _79_kayip_toplam,
                                     "saft_kaybi": _79_saft_kayip, "menfez_kaybi": _79_menfez_kayip,
