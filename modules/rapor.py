@@ -2988,7 +2988,7 @@ if _rapor_olustur_sidebar:
                               _c79 = _t79.add_row().cells
                               _c79[0].text = str(_etiket79)
                               _c79[1].text = str(_deger79)
-                      doc.add_paragraph("Fan marka/model bilgisi rapora aktarılmamıştır. Systemair fan performans eğrisi, doğrulanmış katalog verileriyle seçim modülü tamamlandığında eklenecektir.")
+
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
                       doc.add_heading("7.3.1 BİNA İÇİ HORTUM SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
@@ -3924,7 +3924,7 @@ if _rapor_olustur_sidebar:
 
                   else:
                       _body7 = doc.add_paragraph(
-                          "Bu bölümün tasarım ve hesaplama içeriği sonraki aşamada ayrı olarak geliştirilecektir."
+                          ""
                       )
                       _body7.paragraph_format.space_after = Pt(6)
   
