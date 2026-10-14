@@ -2185,6 +2185,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "basinc": _79_basinc_gerekli, "emniyet_orani": _79_emniyet_orani,
                                     "emniyet_degeri": _79_emniyet_degeri, "emniyetli_basinc": _79_emniyetli_basinc,
                                     "fan_adet": _79_fan_adet, "kayip": _79_kayip_toplam,
+                                    "saft_kaybi": _79_saft_kayip, "menfez_kaybi": _79_menfez_kayip,
+                                    "panjur_kaybi": _79_panjur_kayip, "pozitif_basinc": _79_pozitif_basinc,
                                     "fan_hidrolik_kw": _79_hidrolik_kw, "fan_motor_kw": _79_motor_kw
                                 })
                     st.session_state["yangin_79_rapor_hesaplari"] = _79_rapor_hesaplari
