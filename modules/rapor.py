@@ -2964,10 +2964,10 @@ if _rapor_olustur_sidebar:
                           _t79 = doc.add_table(rows=1, cols=3)
                           _t79.style = "Table Grid"
                           _t79.autofit = True
-                          _bas79 = _t79.rows[0].cells
-                          _bas79[0].text = "HESAP KALEMİ / GİRDİ"
-                          _bas79[1].text = "FORMÜL / İŞLEM"
-                          _bas79[2].text = "DEĞER / SONUÇ"
+                          _baslik_hucreleri79 = _t79.rows[0].cells
+                          _baslik_hucreleri79[0].text = "HESAP KALEMİ / GİRDİ"
+                          _baslik_hucreleri79[1].text = "FORMÜL / İŞLEM"
+                          _baslik_hucreleri79[2].text = "DEĞER / SONUÇ"
                           _gen_cm79 = float(_h79.get("menfez_genislik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
                           _yuk_cm79 = float(_h79.get("menfez_yukseklik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
                           _menfez_m279 = float(_h79.get("secilen_menfez_alan", 0) or 0)
@@ -3021,7 +3021,7 @@ if _rapor_olustur_sidebar:
                               _c79[0].text = str(_etiket79)
                               _c79[1].text = str(_formul79)
                               _c79[2].text = str(_deger79)
-                          for _c79 in _bas79:
+                          for _c79 in _baslik_hucreleri79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
                                       _r79.bold = True
