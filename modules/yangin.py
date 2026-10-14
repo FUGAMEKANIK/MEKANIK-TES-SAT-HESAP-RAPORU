@@ -2069,14 +2069,18 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         unsafe_allow_html=True,
                     )
                     _79_tum_merdivenler = [f"YAN. MER. {i:02d}" for i in range(1, 21)]
+                    # Çoklu merdiven seçimi: widget kendi session_state anahtarıyla seçimi korur.
+                    # Her merdivenin tüm girdileri aşağıda _79_slug içeren ayrı anahtarlar kullanır.
                     _79_secili_merdivenler = st.multiselect(
                         "Hesaplanacak merdivenleri seçiniz",
                         options=_79_tum_merdivenler,
-                        default=st.session_state.get("yangin_79_secili_merdivenler", ["YAN. MER. 01"]),
+                        default=["YAN. MER. 01"],
                         key="yangin_79_secili_merdivenler",
-                        help="Binada birden fazla merdiven varsa birden fazla başlık seçebilirsiniz."
+                        help="Birden fazla merdiven seçebilirsiniz; her merdivenin hesabı ve raporu bağımsız tutulur."
                     )
                     _79_rapor_hesaplari = []
+                    if not _79_secili_merdivenler:
+                        st.info("Hesaplama yapmak için en az bir merdiven seçiniz. Önceden kaydedilmiş merdiven hesapları raporda korunur.")
                     if _79_secili_merdivenler:
                         _79_merdiven_tabs = st.tabs(_79_secili_merdivenler)
                         for _79_idx, (_79_merdiven_adi, _79_merdiven_tab) in enumerate(zip(_79_secili_merdivenler, _79_merdiven_tabs)):
@@ -2165,7 +2169,14 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     st.metric("Fan için gerekli basınç (sonraki 50 Pa kademesine yuvarlanmış)", f"{_79_basinc_gerekli:,.0f} Pa")
                                 with _79_tabs[4]:
                                     st.markdown('<div style="color:#C01048;font-weight:800;">FAN ADEDİ VE SEÇİM BİLGİLERİ</div>', unsafe_allow_html=True)
-                                    _79_fan_adet = int(st.number_input("Fan adedi", min_value=1, step=1, value=1, key=f"yangin_79_{_79_slug}_fan_adedi"))
+                                    _79_fan_adet = int(st.selectbox(
+                                        "Toplam debiyi kaç fana bölelim?",
+                                        options=[1, 2, 3, 4, 5],
+                                        index=0,
+                                        key=f"yangin_79_{_79_slug}_fan_debi_bolme_sayisi",
+                                        help="Hesaplanan veya elle girilen toplam debi seçtiğiniz fan sayısına bölünür. Fan başına uygun POZ debisi ayrıca seçilir."
+                                    ))
+                                    st.caption(f"Debi bölme sayısı: {_79_fan_adet} fan. Toplam debi, fan başına gerekli debiyi bulmak için { _79_fan_adet }'e bölünecek.")
                                     st.text_input("Fan üreticisi", value="Systemair", disabled=True, key=f"yangin_79_{_79_slug}_fan_uretici")
                                     _79_manuel_key = f"yangin_79_{_79_slug}_fan_debisi_manuel_aktif"
                                     st.checkbox("Fan debisini elle düzelt", value=False, key=_79_manuel_key)
@@ -2219,7 +2230,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     st.write(f"**Cihaz Poz No:** {_79_fan_poz}")
                                     if _79_basinc_gerekli > 1100:
                                         st.warning("Seçilen fan basıncı 1100 Pa üzerindedir; tanımlı poz aralıklarında otomatik seçim yapılamaz.")
-                                    st.caption("Poz debisi fan başına seçilir. Toplam seçilen fan debisi, fan başına poz debisi × fan adedi olarak hesaplanır.")
+                                    st.caption("Seçtiğiniz 1–5 fan sayısı toplam debiyi bölmek için kullanılır. POZ debisi fan başına seçilir; toplam seçilen kapasite = fan başına seçilen POZ debisi × fan sayısı.")
                                 _79_rapor_hesaplari.append({
                                     "ad": _79_merdiven_adi, "kapali_adet": _79_kapali_adet,
                                     "sizinti_alani": _79_sizinti_alan, "kapali_delta_p": _79_dp_kapali,
