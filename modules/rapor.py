@@ -3109,7 +3109,7 @@ if _rapor_olustur_sidebar:
                           _r710.bold = True
                           _p710.add_run(str(_ek710.get("metin", "")))
                       _h710 = st.session_state.get("yangin_710_rapor_hesap", {})
-                      doc.add_heading("7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI", level=4)
+                      doc.add_heading("7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI", level=4)
                       if not _h710:
                           doc.add_paragraph("Asansör basınçlandırma hesabı henüz yapılmamıştır.")
                       else:
