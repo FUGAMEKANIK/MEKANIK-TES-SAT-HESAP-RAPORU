@@ -2087,8 +2087,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     else:
                                         _asr_poz_no = "Poz aralığı tanımlı değil (>1100 Pa)"
                                     _asr_poz_debisi = 0
-                                # Poz debisi fan başına kapasitedir; >15.000 m³/h/fan için /A poz önerilir.
-                                qsec = _asr_poz_debisi if _q_fan_gerekli <= 15000 else _q_fan_gerekli
+                                # Poz aralığında gereken debi bir üst standart poz kapasitesine yuvarlanır.
+                                # 15.000 m³/h üzerindeyse /A poz kullanılır ve debi en yakın 2.500 katına yuvarlanır.
+                                if _q_fan_gerekli <= 15000:
+                                    qsec = _asr_poz_debisi
+                                else:
+                                    qsec = max(15000, int(math.floor(_q_fan_gerekli / 2500.0 + 0.5)) * 2500)
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                 motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
