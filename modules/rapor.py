@@ -3142,13 +3142,17 @@ if _rapor_olustur_sidebar:
                                   ("Menfez kaybı", "", f"{_fan710.get('menfez', 0):.1f} Pa"),
                                   ("Panjur ve taze hava alış kaybı", "", f"{_fan710.get('panjur', 0):.1f} Pa"),
                                   ("Pozitif basınç", "", f"{_fan710.get('pozitif', 0):.1f} Pa"),
-                                  ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('kayip', 0):.1f} / {_fan710.get('emniyet', 0):.1f} Pa"),
-                                  ("Seçim basıncı", "", f"{_fan710.get('basinc', 0):.0f} Pa"),
+                                  ("Basınç kayıpları toplamı", "", f"{_fan710.get('saft', 0) + _fan710.get('menfez', 0) + _fan710.get('panjur', 0) + _fan710.get('pozitif', 0):.1f} Pa"),
+                                  ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('emniyet', 0):.1f} Pa"),
+                                  ("Emniyet dahil basınç", "Kayıp toplamı + emniyet payı", f"{_fan710.get('kayip', 0) + _fan710.get('emniyet', 0):.1f} Pa"),
+                                  ("Seçilen Fan Basıncı", "", f"{_fan710.get('basinc', 0):.0f} Pa"),
                                   ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
                                   ("Seçilen fan debisi", "", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
-                                  ("Fan poz numarası", "Basınç grubuna göre; >15.000 m³/h için isteğe bağlı /A", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
-                                  ("Motor gücü", "", f"{_fan710.get('motor', 0):.2f} kW"),
-                                  ("Fan tipi", "", str(_fan710.get("fan_tip", ""))),
+                                  ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_fan710.get('qsec', 0) or 0) * max(1, int(_fan710.get('fan_adedi', 1) or 1)):,.0f} m³/h"),
+                                  ("Seçilen Fan Basıncı", "Emniyet dahil basınç", f"{_fan710.get('basinc', 0):.0f} Pa"),
+                                  ("Fan Gücü", "Seçilen fan elektrik gücü", f"{_fan710.get('motor', 0):.2f} kW"),
+                                  ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
+                                  ("Fan tipi", "", str(_fan710.get("fan_tip", "Asansör basınçlandırma fanı"))),
                               ]
                               _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
                               for _rowdata in _rows710:
