@@ -2003,8 +2003,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                     with _tab710_h:
-                        st.markdown("#### 7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI")
-                        st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
+                        st.markdown("#### 7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI")
+                        st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
                         st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
                         c1,c2,c3=st.columns(3)
                         with c1: n_kapali=float(st.number_input("Kapalı kapı adedi",min_value=0.0,value=0.0,step=1.0,key="yangin_710_n_kapali"))
@@ -2037,10 +2037,17 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                         _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                         motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
-                        fan_ad=int(st.number_input("Fan adedi",min_value=1,max_value=10,value=1,step=1,key="yangin_710_fan_adet"))
+                        fan_ad=int(st.number_input("Asansör basınçlandırma fanı seçimi adedi",min_value=1,max_value=10,value=1,step=1,key="yangin_710_fan_adet"))
+                        _asr_fan_adlari=[f"ASR. BAS.{i:02d}" for i in range(1,fan_ad+1)]
+                        _asr_tabs=st.tabs(_asr_fan_adlari)
                         fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key="yangin_710_fan_tip")
-                        st.dataframe([{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Üst 1.000 m³/h değeri","Değer / sonuç":f"{qsec:,.0f} m³/h"},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan adedi / tip","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":f"{fan_ad} adet — {fan_tip}"}],use_container_width=True,hide_index=True)
-                        st.session_state["yangin_710_rapor_hesap"]={"n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_adet":fan_ad,"fan_tip":fan_tip}
+                        _asr_fan_rapor=[]
+                        for _i, (_asr_ad, _asr_tab) in enumerate(zip(_asr_fan_adlari,_asr_tabs),start=1):
+                            with _asr_tab:
+                                st.markdown(f"#### {_asr_ad}")
+                                st.dataframe([{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Üst 1.000 m³/h değeri","Değer / sonuç":f"{qsec:,.0f} m³/h"},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
+                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","debi":qsec,"basinc":basinc,"motor":motor,"tip":fan_tip})
+                        st.session_state["yangin_710_rapor_hesap"]={"n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_adet":fan_ad,"fan_tip":fan_tip,"fanlar":_asr_fan_rapor}
                     st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
             elif _baslik.startswith("7.9 "):
