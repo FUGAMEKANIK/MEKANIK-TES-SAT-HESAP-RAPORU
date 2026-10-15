@@ -1952,74 +1952,79 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     )
 
             elif _baslik.startswith("7.10 "):
-                # 7.10 Asansör basınçlandırma: mevzuat kontrol listesi ve kullanıcı ekleri.
-                with st.expander("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ — YÖNETMELİK KONTROL LİSTESİ", expanded=True):
-                    st.markdown('<div style="font-size:22px;font-weight:800;font-style:italic;color:#1F4E79;">ASANSÖR BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI</div>', unsafe_allow_html=True)
+                # 7.10 Asansör basınçlandırma: Excel'deki hesap sırası ve 7.9'daki sekmeli hesap/rapor mantığı.
+                with st.expander("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                    st.markdown('<div style="font-size:22px;font-weight:800;font-style:italic;color:#1F4E79;">ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI</div>', unsafe_allow_html=True)
                     _ui710 = "yangin_710_rapor_ui"
                     st.session_state.setdefault(_ui710, bool(st.session_state.get("rapor_bolum_710", True)))
-                    st.checkbox("7.10 rapora eklensin", key=_ui710, on_change=lambda: st.session_state.__setitem__("rapor_bolum_710", bool(st.session_state.get(_ui710, True))) )
-                    _maddeler710 = [
-                        ("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)"),
-                    ]
+                    st.checkbox("7.10 rapora eklensin", key=_ui710, on_change=lambda: st.session_state.__setitem__("rapor_bolum_710", bool(st.session_state.get(_ui710, True))))
+                    _tab710_m, _tab710_p, _tab710_e, _tab710_h = st.tabs(["Yönetmelik Maddeleri", "Yönetmelik (Parantez)", "Madde Ekleme", "Hesaplama"])
+                    _maddeler710 = [("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)")]
                     _atif710 = "yangin_710_yonetmelik_atiflari"
                     st.session_state.setdefault(_atif710, True)
-                    _tab710_m, _tab710_p, _tab710_e = st.tabs(["Yönetmelik Maddeleri", "Yönetmelik (Parantez)", "Madde Ekleme"])
                     with _tab710_m:
-                        st.caption("Maddeler aşağıda tek tek sıralanır. Raporunuzda yer almasını istediğiniz maddeleri işaretleyin.")
-                        c710a, c710b = st.columns(2)
-                        with c710a:
-                            if st.button("✓ Tüm maddeleri seç", key="yangin_710_tum_sec", use_container_width=True):
-                                for no, bas, met in _maddeler710: st.session_state[f"yangin_710_madde_{no}"] = True
-                                st.rerun()
-                        with c710b:
-                            if st.button("✕ Tüm maddeleri kaldır", key="yangin_710_tum_kaldir", use_container_width=True):
-                                for no, bas, met in _maddeler710: st.session_state[f"yangin_710_madde_{no}"] = False
-                                st.rerun()
+                        st.caption("Maddeler alt alta listelenir. Rapor için istediğiniz maddeleri işaretleyin.")
                         for no, bas, met in _maddeler710:
-                            key = f"yangin_710_madde_{no}"
-                            st.session_state.setdefault(key, True)
-                            shown = met if st.session_state[_atif710] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", met, flags=re.IGNORECASE).strip()
-                            with st.container(border=True):
-                                st.checkbox(f"{no}. {bas}", key=key)
-                                st.write(shown)
-                    with _tab710_p:
-                        st.markdown("**Parantez içi yönetmelik atıfları**")
-                        st.write("Bu sekmeden raporda mevzuat atıflarının parantez içinde gösterilip gösterilmeyeceğini seçebilirsiniz.")
-                        st.checkbox("Parantez içindeki yönetmelik madde numaralarını rapora ekle", key=_atif710)
-                        for no, bas, met in _maddeler710:
-                            eslesme = re.findall(r"\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", met, flags=re.IGNORECASE)
-                            if eslesme:
-                                st.markdown(f"**{no}. {bas}**")
-                                st.caption("Mevcut atıf: " + " ".join(eslesme))
-                        st.caption("Atıfları kaldırmak için yukarıdaki seçeneği kapatın; eklemek için açık bırakın. Yeni atıf içeren metinleri ‘Madde Ekleme’ sekmesinden girebilirsiniz.")
-                    with _tab710_e:
-                        st.write("Bu bölüme özel yönetmelik maddesi veya proje kriteri ekleyebilirsiniz.")
-                        st.session_state.setdefault("yangin_710_ek_maddeler", [])
-                        ekler = st.session_state["yangin_710_ek_maddeler"]
-                        for i, ek in enumerate(ekler, start=len(_maddeler710)+1):
-                            st.markdown(f"**({i}) {ek.get('baslik','')}**")
+                            k = f"yangin_710_madde_{no}"; st.session_state.setdefault(k, True)
+                            st.checkbox(f"{no}. {bas}", key=k)
+                            st.write(met if st.session_state[_atif710] else re.sub(r"\s*\([^)]*\)", "", met).strip())
+                        for i, ek in enumerate(st.session_state.get("yangin_710_ek_maddeler", []), start=2):
+                            st.checkbox(f"{i}. {ek.get('baslik','')}", key=f"yangin_710_ek_sec_{i}", value=True)
                             st.write(ek.get("metin", ""))
-                        nonce_key = "yangin_710_ek_nonce"
-                        st.session_state.setdefault(nonce_key, 0)
-                        nonce = st.session_state[nonce_key]
-                        with st.expander("➕ Yeni madde ekle", expanded=False):
-                            baslik_y = st.text_input("Ek madde başlığı", key=f"yangin_710_ek_baslik_{nonce}")
-                            metin_y = st.text_area("Ek madde açıklaması / mevzuat atfı", key=f"yangin_710_ek_metin_{nonce}", height=100)
-                            # Proje kaydından eski bir buton değeri geri yüklenmişse
-                            # Streamlit bunu widget oluşturulurken reddeder. Buton
-                            # durumları kalıcı proje verisi değildir; oluşturmadan önce temizle.
-                            _submit_key710 = f"yangin_710_ek_submit_{nonce}"
-                            if _submit_key710 in st.session_state:
-                                del st.session_state[_submit_key710]
-                            ekle_y = st.button("Maddeyi ekle", key=_submit_key710, type="primary")
-                        if ekle_y:
-                            if baslik_y.strip() and metin_y.strip():
-                                ekler.append({"baslik": baslik_y.strip(), "metin": metin_y.strip()})
-                                st.session_state["yangin_710_ek_maddeler"] = ekler
-                                st.session_state[nonce_key] = nonce + 1
+                    with _tab710_p:
+                        st.checkbox("Parantez içindeki yönetmelik atıflarını rapora ekle", key=_atif710)
+                        st.caption("Açık: madde sonundaki parantez içi atıflar görünür. Kapalı: atıflar kaldırılır.")
+                    with _tab710_e:
+                        st.session_state.setdefault("yangin_710_ek_maddeler", [])
+                        _nonce = int(st.session_state.get("yangin_710_ek_nonce", 0))
+                        with st.form(f"yangin_710_ek_form_{_nonce}", clear_on_submit=True):
+                            _bas = st.text_input("Madde başlığı")
+                            _met = st.text_area("Madde açıklaması ve varsa parantez içi atıf")
+                            _ekle = st.form_submit_button("Maddeyi ekle")
+                        if _ekle:
+                            if _bas.strip() and _met.strip():
+                                st.session_state["yangin_710_ek_maddeler"].append({"baslik":_bas.strip(),"metin":_met.strip()})
+                                st.session_state["yangin_710_ek_nonce"] = _nonce + 1
                                 st.rerun()
-                            else: st.warning("Ek madde başlığı ve açıklaması birlikte girilmelidir.")
-                    st.caption("Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik, Madde 89/4. Liste, kaynakta açıkça desteklenen maddeyle sınırlıdır; diğer asansör kuyusu hükümleri ayrıca mevzuat kontrolü gerektirir.")
+                            else: st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+                    with _tab710_h:
+                        st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
+                        c1,c2,c3=st.columns(3)
+                        with c1: n_kapali=float(st.number_input("Kapalı kapı adedi",min_value=0.0,value=0.0,step=1.0,key="yangin_710_n_kapali"))
+                        with c2: dp1=float(st.number_input("Basınç farkı ΔP (Pa)",min_value=0.0,value=50.0,step=5.0,key="yangin_710_dp1"))
+                        with c3: ae=float(st.number_input("Kapı başına sızıntı alanı (m²)",min_value=0.0,value=0.06,step=0.01,format="%.3f",key="yangin_710_ae"))
+                        q1_ms=0.83*(n_kapali*ae)*math.sqrt(dp1)*1.5
+                        q1=q1_ms*3600
+                        st.dataframe([{"Hesap kalemi":"Q1 (emniyet dâhil)","Formül / işlem":"0,83 × (N × Ae) × √ΔP × 1,5 × 3600","Değer / sonuç":f"{q1:,.2f} m³/h"}],use_container_width=True,hide_index=True)
+                        st.markdown("### 2. Kapılar açıkken hava debisi — Q2")
+                        c1,c2,c3,c4=st.columns(4)
+                        with c1: n_acik=float(st.number_input("Açık kapı adedi",min_value=0.0,value=2.0,step=1.0,key="yangin_710_n_acik"))
+                        with c2: hiz=float(st.number_input("Hava hızı (m/s)",min_value=0.0,value=1.0,step=0.1,key="yangin_710_hiz"))
+                        with c3: kw=float(st.number_input("Kapı genişliği (m)",min_value=0.0,value=1.0,step=0.1,key="yangin_710_kapi_gen"))
+                        with c4: kh=float(st.number_input("Kapı yüksekliği (m)",min_value=0.0,value=2.2,step=0.1,key="yangin_710_kapi_yuk"))
+                        ae2=kw*kh; q2_ms=hiz*ae2*n_acik; q2=q2_ms*3600; q2_em=q2*1.1
+                        st.dataframe([{"Hesap kalemi":"Kapı alanı (Ae)","Formül / işlem":"Genişlik × yükseklik","Değer / sonuç":f"{ae2:.3f} m²"},{"Hesap kalemi":"Q2 (emniyet öncesi)","Formül / işlem":"V × Ae × açık kapı adedi × 3600","Değer / sonuç":f"{q2:,.2f} m³/h"},{"Hesap kalemi":"Q2 (%10 emniyet)","Formül / işlem":"Q2 × 1,10","Değer / sonuç":f"{q2_em:,.2f} m³/h"}],use_container_width=True,hide_index=True)
+                        qtop=q1+q2_em; qsec=math.ceil(qtop/1000)*1000 if qtop>0 else 0
+                        st.markdown("### 3. Toplam hava debisi")
+                        st.metric("Q1 + Q2",f"{qtop:,.2f} m³/h"); st.metric("Seçim debisi (üst 1.000 m³/h)",f"{qsec:,.0f} m³/h")
+                        st.markdown("### 4. Kanal basınç kayıpları ve emniyet")
+                        c1,c2,c3,c4=st.columns(4)
+                        with c1: saft=float(st.number_input("Şaft kanal kaybı (Pa)",min_value=0.0,value=50.0,step=5.0,key="yangin_710_saft"))
+                        with c2: menfez=float(st.number_input("Menfez kaybı (Pa)",min_value=0.0,value=35.0,step=5.0,key="yangin_710_menfez"))
+                        with c3: panjur=float(st.number_input("Panjur ve taze hava alış kaybı (Pa)",min_value=0.0,value=100.0,step=5.0,key="yangin_710_panjur"))
+                        with c4: poz=float(st.number_input("Pozitif basınç (Pa)",min_value=0.0,value=100.0,step=5.0,key="yangin_710_pozitif"))
+                        em=float(st.number_input("Basınç kaybı emniyet oranı (%)",min_value=0.0,value=10.0,step=1.0,key="yangin_710_emniyet"))
+                        kayip=saft+menfez+panjur+poz; emniyet=kayip*em/100; basinc=math.ceil((kayip+emniyet)/50)*50 if kayip+emniyet>0 else 0
+                        st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
+                        st.markdown("### 5. Fan seçimi — sonuç özeti")
+                        motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
+                        _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
+                        motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
+                        fan_ad=int(st.number_input("Fan adedi",min_value=1,max_value=10,value=1,step=1,key="yangin_710_fan_adet"))
+                        fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key="yangin_710_fan_tip")
+                        st.dataframe([{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Üst 1.000 m³/h değeri","Değer / sonuç":f"{qsec:,.0f} m³/h"},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan adedi / tip","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":f"{fan_ad} adet — {fan_tip}"}],use_container_width=True,hide_index=True)
+                        st.session_state["yangin_710_rapor_hesap"]={"n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_adet":fan_ad,"fan_tip":fan_tip}
+                    st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
             elif _baslik.startswith("7.9 "):
                 # --------------------------------------------------------------
