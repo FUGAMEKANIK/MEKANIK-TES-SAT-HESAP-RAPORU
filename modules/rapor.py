@@ -3022,15 +3022,66 @@ if _rapor_olustur_sidebar:
                               ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')),
                               ("Fan bölme sayısı", "Kullanıcının seçtiği fan adedi", str(_fan_ad79)),
                           ]
+                          # Görseldeki önceki rapor düzeni: sabit sütun oranları,
+                          # açık mavi bölüm bantları, sıkı hücre boşlukları ve küçük yazı.
+                          from docx.shared import Cm, Pt
+                          from docx.enum.text import WD_ALIGN_PARAGRAPH
+                          from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+                          from docx.oxml import OxmlElement
+                          from docx.oxml.ns import qn
+                          _t79.alignment = WD_TABLE_ALIGNMENT.CENTER
+                          _t79.autofit = False
+                          _genislikler79 = [Cm(5.0), Cm(5.0), Cm(5.0)]
+                          for _satir79 in _t79.rows:
+                              for _i79, _hucre79 in enumerate(_satir79.cells):
+                                  _hucre79.width = _genislikler79[_i79]
+                                  _hucre79.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                          for _i79, _baslik_hucre79 in enumerate(_baslik_hucreleri79):
+                              _baslik_hucre79.width = _genislikler79[_i79]
+                              _baslik_hucre79.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                              _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _baslik_hucre79._tc.get_or_add_tcPr().append(_shd79)
+                          _bolumler79 = {
+                              'Kapalı kapı adedi': '1. HAVA DEBİSİ HESABI',
+                              'Menfez adedi': '2. MENFEZ BOYUTLANDIRMASI',
+                              'Şaft kanal kayıpları': '3. BASINÇ KAYIPLARI VE EMNİYET',
+                              'Seçilen fan debisi': '4. FAN SEÇİMİ — SONUÇ ÖZETİ',
+                          }
                           for _etiket79, _formul79, _deger79 in _satirlar79:
+                              if _etiket79 in _bolumler79:
+                                  _bolum_satir79 = _t79.add_row()
+                                  _bolum_hucre79 = _bolum_satir79.cells
+                                  _bolum_hucre79[0].merge(_bolum_hucre79[1]).merge(_bolum_hucre79[2])
+                                  _bolum_hucre79[0].text = _bolumler79[_etiket79]
+                                  _bolum_hucre79[0].width = Cm(15.0)
+                                  _bolum_hucre79[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                                  _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _bolum_hucre79[0]._tc.get_or_add_tcPr().append(_shd79)
+                                  for _p79 in _bolum_hucre79[0].paragraphs:
+                                      _p79.paragraph_format.space_before = Pt(0); _p79.paragraph_format.space_after = Pt(0)
+                                      for _r79 in _p79.runs:
+                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
                               _c79 = _t79.add_row().cells
-                              _c79[0].text = str(_etiket79)
-                              _c79[1].text = str(_formul79)
-                              _c79[2].text = str(_deger79)
+                              for _i79, _icerik79 in enumerate((_etiket79, _formul79, _deger79)):
+                                  _c79[_i79].text = str(_icerik79)
+                                  _c79[_i79].width = _genislikler79[_i79]
+                                  _c79[_i79].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                          # Tablo başlığı ve gövdesinde aynı font/boşluk; sonuç sütunu hizalı.
+                          for _satir79 in _t79.rows:
+                              for _i79, _hucre79 in enumerate(_satir79.cells):
+                                  for _p79 in _hucre79.paragraphs:
+                                      _p79.paragraph_format.space_before = Pt(0)
+                                      _p79.paragraph_format.space_after = Pt(0)
+                                      _p79.paragraph_format.line_spacing = 1.0
+                                      if _i79 == 2 and len(_satir79.cells) == 3:
+                                          _p79.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                                      for _r79 in _p79.runs:
+                                          _r79.font.name = 'Times New Roman'
+                                          _r79._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
+                                          _r79.font.size = Pt(8.5)
                           for _c79 in _baslik_hucreleri79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
                                       _r79.bold = True
+                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
 
 
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
