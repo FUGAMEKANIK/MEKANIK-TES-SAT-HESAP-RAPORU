@@ -3025,9 +3025,11 @@ if _rapor_olustur_sidebar:
                               ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
                               ("Seçilen Fan Basıncı", "Emniyet dâhil", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
                               ("Fan Gücü", "Seçilen fan elektrik gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or _motor_kw79):.2f} kW"),
-                              ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')),
                               ("Fan Adeti", "", str(_fan_ad79)),
                           ]
+                          if _h79.get("fan_poz_rapora_ekle", True):
+                              _poz_index79 = next((i for i, row in enumerate(_satirlar79) if row[0] == "Fan Adeti"), len(_satirlar79))
+                              _satirlar79.insert(_poz_index79, ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')))
                           # Görseldeki önceki rapor düzeni: sabit sütun oranları,
                           # açık mavi bölüm bantları, sıkı hücre boşlukları ve küçük yazı.
                           from docx.shared import Cm, Pt
