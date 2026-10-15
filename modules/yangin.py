@@ -2255,6 +2255,71 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 })
                     st.session_state["yangin_79_rapor_hesaplari"] = _79_rapor_hesaplari
 
+            elif _baslik.startswith("7.10 "):
+                # --------------------------------------------------------------
+                # 7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ
+                # Bu aşamada sekme ve madde altyapısı oluşturulur; hesaplama
+                # mantığı sonraki adımda eklenecektir.
+                # --------------------------------------------------------------
+                with st.expander("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=True):
+                    st.markdown(
+                        '<div style="font-size:22px; font-weight:800; font-style:italic; color:#1F4E79;">'
+                        "ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _ui_710_rapor_key = "yangin_710_rapor_ui"
+                    st.session_state.setdefault(_ui_710_rapor_key, bool(st.session_state.get("rapor_bolum_710", True)))
+                    st.checkbox(
+                        "7.10 rapora eklensin",
+                        key=_ui_710_rapor_key,
+                        on_change=lambda: st.session_state.__setitem__(
+                            "rapor_bolum_710", bool(st.session_state.get("yangin_710_rapor_ui", True))
+                        ),
+                    )
+
+                    _710_sekmeler = [
+                        ("Yönetmelik Esasları", [
+                            "Asansör basınçlandırmasının gerekliliğinin belirlenmesi",
+                            "İlgili yönetmelik ve standart maddelerinin kontrolü",
+                            "Yangın anında çalışma ve otomatik devreye girme koşulları",
+                            "Dumanın asansör kuyusuna girişinin önlenmesine ilişkin esaslar",
+                        ]),
+                        ("Tasarım Girdileri", [
+                            "Bina ve asansör kuyusu geometrisi",
+                            "Kuyu yüksekliği ve kat sayısı",
+                            "Kuyu kapıları ve sızıntı noktaları",
+                            "Tasarım basıncı ve çalışma senaryosu",
+                        ]),
+                        ("Hava Debisi Hesabı", [
+                            "Kapalı kapı sızıntı debisi",
+                            "Açık kapı hava debisi",
+                            "Toplam tasarım hava debisi",
+                        ]),
+                        ("Basınç Kayıpları", [
+                            "Kuyu ve kanal basınç kayıpları",
+                            "Menfez ve panjur basınç kayıpları",
+                            "Emniyet payı ve seçilen tasarım basıncı",
+                        ]),
+                        ("Fan Seçimi", [
+                            "Fan debisi ve basınç gereksinimi",
+                            "Fan adedi ve bölme seçimi",
+                            "Motor gücü ve cihaz poz numarası",
+                        ]),
+                        ("Sonuç ve Rapor", [
+                            "Hesap sonuçlarının kontrolü",
+                            "Seçim özetinin rapora aktarılması",
+                        ]),
+                    ]
+                    _710_tabs = st.tabs([x[0] for x in _710_sekmeler])
+                    for _710_i, (_710_baslik, _710_maddeler) in enumerate(_710_sekmeler):
+                        with _710_tabs[_710_i]:
+                            st.markdown(f"**{_710_baslik.upper()}**")
+                            for _710_j, _710_madde in enumerate(_710_maddeler):
+                                _710_key = f"yangin_710_madde_{_710_i}_{_710_j}"
+                                st.session_state.setdefault(_710_key, True)
+                                st.checkbox(_710_madde, key=_710_key)
+                            st.caption("Bu sekmenin hesaplama ve seçim ayrıntıları sonraki aşamada eklenecektir.")
+
             elif _baslik.startswith("7.12 "):
                 # --------------------------------------------------------------
                 # 7.12 YANGIN SUYU DEPOLAMA SİSTEMİ
