@@ -1997,7 +1997,13 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         with st.expander("➕ Yeni madde ekle", expanded=False):
                             baslik_y = st.text_input("Ek madde başlığı", key=f"yangin_710_ek_baslik_{nonce}")
                             metin_y = st.text_area("Ek madde açıklaması / mevzuat atfı", key=f"yangin_710_ek_metin_{nonce}", height=100)
-                            ekle_y = st.button("Maddeyi ekle", key=f"yangin_710_ek_submit_{nonce}", type="primary")
+                            # Proje kaydından eski bir buton değeri geri yüklenmişse
+                            # Streamlit bunu widget oluşturulurken reddeder. Buton
+                            # durumları kalıcı proje verisi değildir; oluşturmadan önce temizle.
+                            _submit_key710 = f"yangin_710_ek_submit_{nonce}"
+                            if _submit_key710 in st.session_state:
+                                del st.session_state[_submit_key710]
+                            ekle_y = st.button("Maddeyi ekle", key=_submit_key710, type="primary")
                         if ekle_y:
                             if baslik_y.strip() and metin_y.strip():
                                 ekler.append({"baslik": baslik_y.strip(), "metin": metin_y.strip()})
