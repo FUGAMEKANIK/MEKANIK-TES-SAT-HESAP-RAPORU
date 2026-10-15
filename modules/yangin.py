@@ -1977,16 +1977,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     with _tab710_e:
                         st.session_state.setdefault("yangin_710_ek_maddeler", [])
                         _nonce = int(st.session_state.get("yangin_710_ek_nonce", 0))
-                        with st.form(f"yangin_710_ek_form_{_nonce}", clear_on_submit=True):
-                            _bas = st.text_input("Madde başlığı")
-                            _met = st.text_area("Madde açıklaması ve varsa parantez içi atıf")
-                            _ekle = st.form_submit_button("Maddeyi ekle")
-                        if _ekle:
-                            if _bas.strip() and _met.strip():
-                                st.session_state["yangin_710_ek_maddeler"].append({"baslik":_bas.strip(),"metin":_met.strip()})
+                        _bas_key = f"yangin_710_ek_baslik_input_{_nonce}"
+                        _met_key = f"yangin_710_ek_metin_input_{_nonce}"
+                        st.text_input("Madde başlığı", key=_bas_key)
+                        st.text_area("Madde açıklaması ve varsa parantez içi atıf", key=_met_key)
+                        if st.button("Maddeyi ekle", key=f"yangin_710_ek_submit_{_nonce}"):
+                            _bas = str(st.session_state.get(_bas_key, "")).strip()
+                            _met = str(st.session_state.get(_met_key, "")).strip()
+                            if _bas and _met:
+                                st.session_state["yangin_710_ek_maddeler"].append({"baslik": _bas, "metin": _met})
                                 st.session_state["yangin_710_ek_nonce"] = _nonce + 1
                                 st.rerun()
-                            else: st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
+                            else:
+                                st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                     with _tab710_h:
                         st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
                         st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
