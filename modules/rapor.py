@@ -2960,7 +2960,13 @@ if _rapor_olustur_sidebar:
                       # Her seçili merdiven, yangin.py tarafından ayrı bir kayıt olarak aktarılır.
                       # Kayıtlar birleştirilmeden kendi başlıkları ve hesap tablolarıyla yazdırılır.
                       for _h79 in _79_rapor_hesaplari:
-                          doc.add_heading(str(_h79.get("ad", "YAN. MER.")), level=5)
+                          _ham_merdiven_adi79 = str(_h79.get("ad", "YAN. MER. 01"))
+                          _merdiven_sira79 = "01"
+                          import re as _re_merdiven79
+                          _m79 = _re_merdiven79.search(r"(\d+)\s*$", _ham_merdiven_adi79)
+                          if _m79:
+                              _merdiven_sira79 = _m79.group(1).zfill(2)
+                          doc.add_heading(f"YANGIN MERDİVENİ BASINÇLANDIRMA FANI {_merdiven_sira79}", level=5)
                           # Excel'deki hesap sıralamasına benzer ayrıntılı rapor tablosu:
                           # Girdi, formül/işlem ve sonuç ayrı sütunlarda gösterilir.
                           _t79 = doc.add_table(rows=1, cols=3)
@@ -2996,31 +3002,31 @@ if _rapor_olustur_sidebar:
                               ("Açık kapı adedi", "", str(_acik79)),
                               ("Kapı genişliği", "", f"{float(_h79.get('kapi_genislik_m', 1) or 0):.2f} m"),
                               ("Kapı yüksekliği", "", f"{float(_h79.get('kapi_yukseklik_m', 2.4) or 0):.2f} m"),
-                              ("Açık kapı hava hızı", "Tasarım girdisi", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
+                              ("Açık kapı hava hızı", "", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
                               ("Q2 — Açık kapı debisi", "Q2 = N × genişlik × yükseklik × hız × 3600 × 1,10", f"{_q2_79:,.2f} m³/h"),
                               ("Toplam hava debisi", "Q = Q1 + Q2", f"{_qtop79:,.2f} m³/h"),
                               ("Menfez adedi", "", str(_men_ad79)),
                               ("Menfez başına debi", "Q / menfez adedi", f"{(_qtop79 / _men_ad79 if _men_ad79 else 0):,.2f} m³/h"),
-                              ("Menfez tasarım hava hızı", "Tasarım girdisi", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
+                              ("Menfez tasarım hava hızı", "", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
                               ("Gerekli efektif alan / menfez", "A = (Q / adet) / (v × 3600)", f"{float(_h79.get('menfez_alan', 0) or 0):.4f} m²"),
                               ("Seçilen menfez ölçüsü", "Genişlik × yükseklik", f"{_gen_cm79:.0f} × {_yuk_cm79:.0f} cm"),
                               ("Seçilen menfez alanı / adet", "(genişlik × yükseklik) / 10.000", f"{_menfez_m279:.4f} m²"),
                               ("Seçilen menfez toplam alanı", "Alan / adet × menfez adedi", f"{_menfez_top_m279:.4f} m²"),
-                              ("Şaft kanal kayıpları", "Tasarım girdisi: şaft kanalındaki toplam kayıp", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
-                              ("Menfez basınç kaybı", "Tasarım girdisi: menfez basınç kaybı", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
-                              ("Panjur ve taze hava alış kaybı", "Tasarım girdisi: panjur ve taze hava alış hattı kaybı", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
-                              ("Pozitif basınç", "Tasarım girdisi: gerekli pozitif basınç", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
+                              ("Şaft kanal kayıpları", "", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
+                              ("Menfez basınç kaybı", "", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
+                              ("Panjur ve taze hava alış kaybı", "", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
+                              ("Pozitif basınç", "", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
                               ("Basınç kayıpları toplamı", "Şaft + menfez + panjur + pozitif basınç", f"{_kayip79:,.1f} Pa"),
                               ("Emniyet oranı", "", f"%{_em_or79:g}"),
                               ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
                               ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
-                              ("Seçilen Fan Basıncı", "Gerekli basıncın 50 Pa üst kademesi", f"{_bas79:,.0f} Pa"),
-                              ("Seçilen fan debisi", "Toplam debi / seçilen fan bölme sayısı; POZ kademesine göre seçilir", f"{float(_h79.get('fan_basina_secilen_debi', _h79.get('fan_debisi', _qtop79)) or 0):,.2f} m³/h / fan"),
+                              ("Seçilen Fan Basıncı", "", f"{_bas79:,.0f} Pa"),
+                              ("Seçilen fan debisi", "", f"{float(_h79.get('fan_basina_secilen_debi', _h79.get('fan_debisi', _qtop79)) or 0):,.2f} m³/h / fan"),
                               ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
-                              ("Seçilen Fan Basıncı", "Emniyet dâhil basıncın 50 Pa üst kademesi", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
+                              ("Seçilen Fan Basıncı", "Emniyet dâhil", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
                               ("Fan Gücü", "Seçilen fan elektrik gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or _motor_kw79):.2f} kW"),
                               ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')),
-                              ("Fan bölme sayısı", "Kullanıcının seçtiği fan adedi", str(_fan_ad79)),
+                              ("Fan Adeti", "", str(_fan_ad79)),
                           ]
                           # Görseldeki önceki rapor düzeni: sabit sütun oranları,
                           # açık mavi bölüm bantları, sıkı hücre boşlukları ve küçük yazı.
@@ -3031,7 +3037,7 @@ if _rapor_olustur_sidebar:
                           from docx.oxml.ns import qn
                           _t79.alignment = WD_TABLE_ALIGNMENT.CENTER
                           _t79.autofit = False
-                          _genislikler79 = [Cm(5.0), Cm(5.0), Cm(5.0)]
+                          _genislikler79 = [Cm(4.8), Cm(5.4), Cm(5.6)]
                           for _satir79 in _t79.rows:
                               for _i79, _hucre79 in enumerate(_satir79.cells):
                                   _hucre79.width = _genislikler79[_i79]
@@ -3052,13 +3058,13 @@ if _rapor_olustur_sidebar:
                                   _bolum_hucre79 = _bolum_satir79.cells
                                   _bolum_hucre79[0].merge(_bolum_hucre79[1]).merge(_bolum_hucre79[2])
                                   _bolum_hucre79[0].text = _bolumler79[_etiket79]
-                                  _bolum_hucre79[0].width = Cm(15.0)
+                                  _bolum_hucre79[0].width = Cm(15.8)
                                   _bolum_hucre79[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                                   _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _bolum_hucre79[0]._tc.get_or_add_tcPr().append(_shd79)
                                   for _p79 in _bolum_hucre79[0].paragraphs:
                                       _p79.paragraph_format.space_before = Pt(0); _p79.paragraph_format.space_after = Pt(0)
                                       for _r79 in _p79.runs:
-                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
+                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
                               _c79 = _t79.add_row().cells
                               for _i79, _icerik79 in enumerate((_etiket79, _formul79, _deger79)):
                                   _c79[_i79].text = str(_icerik79)
@@ -3076,13 +3082,32 @@ if _rapor_olustur_sidebar:
                                       for _r79 in _p79.runs:
                                           _r79.font.name = 'Times New Roman'
                                           _r79._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-                                          _r79.font.size = Pt(8.5)
+                                          _r79.font.size = Pt(9.5)
                           for _c79 in _baslik_hucreleri79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
                                       _r79.bold = True
-                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
+                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
 
+
+                  # 7.10 Asansör basınçlandırma — seçilen mevzuat maddeleri ve kullanıcı ekleri
+                  if _bk == "bolum_710":
+                      doc.add_heading("7.10.1 ASANSÖR BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI", level=4)
+                      _maddeler710_rapor = [("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)")]
+                      for _no710, _bas710, _met710 in _maddeler710_rapor:
+                          if not bool(st.session_state.get(f"yangin_710_madde_{_no710}", True)):
+                              continue
+                          if not bool(st.session_state.get("yangin_710_yonetmelik_atiflari", True)):
+                              _met710 = _yangin_mevzuat_atiflarini_kaldir(_met710)
+                          _p710 = doc.add_paragraph()
+                          _r710 = _p710.add_run(f"({_no710}) {_bas710}: ")
+                          _r710.bold = True
+                          _p710.add_run(_met710)
+                      for _ekno710, _ek710 in enumerate(st.session_state.get("yangin_710_ek_maddeler", []), start=len(_maddeler710_rapor)+1):
+                          _p710 = doc.add_paragraph()
+                          _r710 = _p710.add_run(f"({_ekno710}) {_ek710.get('baslik', '')}: ")
+                          _r710.bold = True
+                          _p710.add_run(str(_ek710.get("metin", "")))
 
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
@@ -3692,61 +3717,6 @@ if _rapor_olustur_sidebar:
                                   _tc[1].text = str(_cap_rapor)
 
                   # 7.12 Yangın Suyu Depolama Sistemi — adetli debi toplamı ve Ek-8/A depo hacmi
-                  elif _bk == "bolum_710":
-                      _710_rapor_sekmeleri = [
-                          ("7.10.1 YÖNETMELİK ESASLARI", [
-                              "Asansör basınçlandırmasının gerekliliğinin belirlenmesi",
-                              "İlgili yönetmelik ve standart maddelerinin kontrolü",
-                              "Yangın anında çalışma ve otomatik devreye girme koşulları",
-                              "Dumanın asansör kuyusuna girişinin önlenmesine ilişkin esaslar",
-                          ], 0),
-                          ("7.10.2 TASARIM GİRDİLERİ", [
-                              "Bina ve asansör kuyusu geometrisi",
-                              "Kuyu yüksekliği ve kat sayısı",
-                              "Kuyu kapıları ve sızıntı noktaları",
-                              "Tasarım basıncı ve çalışma senaryosu",
-                          ], 1),
-                          ("7.10.3 HAVA DEBİSİ HESABI", [
-                              "Kapalı kapı sızıntı debisi",
-                              "Açık kapı hava debisi",
-                              "Toplam tasarım hava debisi",
-                          ], 2),
-                          ("7.10.4 BASINÇ KAYIPLARI", [
-                              "Kuyu ve kanal basınç kayıpları",
-                              "Menfez ve panjur basınç kayıpları",
-                              "Emniyet payı ve seçilen tasarım basıncı",
-                          ], 3),
-                          ("7.10.5 FAN SEÇİMİ", [
-                              "Fan debisi ve basınç gereksinimi",
-                              "Fan adedi ve bölme seçimi",
-                              "Motor gücü ve cihaz poz numarası",
-                          ], 4),
-                          ("7.10.6 SONUÇ VE RAPOR", [
-                              "Hesap sonuçlarının kontrolü",
-                              "Seçim özetinin rapora aktarılması",
-                          ], 5),
-                      ]
-                      _710_any = False
-                      for _710_baslik, _710_maddeler, _710_i in _710_rapor_sekmeleri:
-                          _710_secili = [m for j, m in enumerate(_710_maddeler) if bool(st.session_state.get(f"yangin_710_madde_{_710_i}_{j}", True))]
-                          if not _710_secili:
-                              continue
-                          _710_any = True
-                          _p710 = doc.add_paragraph()
-                          _p710.paragraph_format.space_before = Pt(6)
-                          _p710.paragraph_format.space_after = Pt(3)
-                          _r710 = _p710.add_run(_710_baslik)
-                          _r710.bold = True
-                          _r710.italic = True
-                          _r710.font.size = Pt(11)
-                          _r710.font.color.rgb = RGBColor(31, 78, 121)
-                          for _710_madde in _710_secili:
-                              _p710m = doc.add_paragraph(style="List Bullet")
-                              _p710m.paragraph_format.space_after = Pt(1)
-                              _p710m.add_run(_710_madde)
-                      if not _710_any:
-                          _p710 = doc.add_paragraph("7.10 Asansör basınçlandırma bölümü için henüz rapora aktarılacak madde seçilmemiştir.")
-
                   elif _bk == "bolum_7120":
                       # 7.12 tablosu: dolap/hidrant için debi × süre × adet; sprinkler için yalnız Ek-8/A hacmi.
                       _q73_712 = float(st.session_state.get("yangin_712_yangin_dolabi_birim_debisi_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
