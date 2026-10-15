@@ -2070,21 +2070,19 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= qtop), 0) if qtop > 0 else 0
                                 _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}" if _poz_on_ek and _asr_poz_debisi else ("Basınç 1100 Pa sınırını aşıyor" if not _poz_on_ek else "Debi poz aralığının dışında")
                                 _asr_poz_ekle = False
+                                # 15.000 m³/h üstünde, kullanıcı tarafından bildirilen /A pozları otomatik önerilir.
+                                # Pozun rapora eklenmesi aşağıdaki ayrı onay kutusuyla kontrol edilir.
                                 if qtop > 15000:
-                                    st.info("Hesaplanan toplam debi 15.000 m³/h değerini aşıyor. İsterseniz aşağıdaki /A pozunu rapora ekleyebilirsiniz.")
-                                    _asr_poz_ekle = st.checkbox("15.000 m³/h üzeri fan için /A poz numarasını rapora ekle", value=False, key=_k+"poz_a_ekle")
                                     if basinc <= 500:
-                                        _asr_poz_a_varsayilan = "25.452.2406/A"
+                                        _asr_poz_no = "25.452.2406/A"
                                     elif basinc <= 750:
-                                        _asr_poz_a_varsayilan = "25.452.2506/A"
+                                        _asr_poz_no = "25.452.2506/A"
                                     elif basinc <= 1000:
-                                        _asr_poz_a_varsayilan = "25.452.2506/A"
+                                        _asr_poz_no = "25.452.2506/A"
                                     else:
-                                        _asr_poz_a_varsayilan = "Poz aralığı tanımlı değil (>1000 Pa)"
-                                    _asr_poz_a = st.text_input("Poz numarası (isteğe bağlı düzenlenebilir)", value=_asr_poz_a_varsayilan, key=_k+"poz_a_degeri", disabled=not _asr_poz_ekle)
-                                    _asr_poz_no = _asr_poz_a if _asr_poz_ekle else "Eklenmedi"
+                                        _asr_poz_no = "Poz aralığı tanımlı değil (>1000 Pa)"
                                     _asr_poz_debisi = 0
-                                # Poz debisi 15.000 m³/h'ye kadar seçilen poz kapasitesidir; >15.000 için /A poz seçimi isteğe bağlıdır.
+                                # Poz debisi 15.000 m³/h'ye kadar poz kapasitesidir; daha yüksek debide gerçek Q1+Q2 korunur.
                                 qsec = _asr_poz_debisi if qtop <= 15000 else qtop
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
