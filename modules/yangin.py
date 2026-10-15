@@ -2070,14 +2070,37 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 else:
                                     _poz_on_ek, _poz_son, _poz_limit = None, 0, 1100
                                 _asr_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000]
-                                _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= _q_fan_gerekli), 0) if _q_fan_gerekli > 0 else 0
-                                _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}" if _poz_on_ek and _asr_poz_debisi else ("Basınç 1100 Pa sınırını aşıyor" if not _poz_on_ek else "Debi poz aralığının dışında")
+                                # Fan debisi otomatikte daima 2.500 m³/h katının üst değerine yuvarlanır.
+                                _asr_debi_otomatik = (int(math.ceil(_q_fan_gerekli / 2500.0) * 2500)
+                                                       if _q_fan_gerekli > 0 else 0)
+                                _asr_debi_manuel_aktif = st.checkbox(
+                                    "Fan debisini elle düzelt",
+                                    value=False,
+                                    key=_k + "fan_debisi_manuel_aktif",
+                                )
+                                if _asr_debi_manuel_aktif:
+                                    _debi_giris_onceki = st.session_state.get(
+                                        _k + "fan_debisi_manuel_deger", float(_asr_debi_otomatik or 2500)
+                                    )
+                                    _debi_giris_onceki = max(0.0, float(_debi_giris_onceki))
+                                    _debi_manuel_girdi = float(st.number_input(
+                                        "Elle girilen fan debisi (m³/h)",
+                                        min_value=0.0,
+                                        value=_debi_giris_onceki,
+                                        step=2500.0,
+                                        key=_k + "fan_debisi_manuel_deger",
+                                        help="Elle giriş açıldığında yazdığınız debi aynen kullanılır; poz numarası ve motor gücü bu değere göre yeniden hesaplanır.",
+                                    ))
+                                    qsec = _debi_manuel_girdi
+                                else:
+                                    # Elle giriş kapalıyken otomatik debi her yeniden hesaplamada güncellenir.
+                                    qsec = _asr_debi_otomatik
+                                    st.session_state[_k + "fan_debisi_manuel_deger"] = float(qsec)
+
+                                # Poz, seçilen fan debisi ve basınca göre otomatik belirlenir.
+                                _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= qsec), 0) if qsec > 0 else 0
                                 _asr_poz_ekle = False
-                                # 15.000 m³/h üstünde, kullanıcı tarafından bildirilen /A pozları otomatik önerilir.
-                                # Pozun rapora eklenmesi aşağıdaki ayrı onay kutusuyla kontrol edilir.
-                                if _q_fan_gerekli > 15000:
-                                    # /A pozunu her rerun'da mevcut basınç değerinden yeniden belirle.
-                                    # Böylece 2406/A seçiliyken basınç 500 Pa üstüne çıkarsa poz da değişir.
+                                if qsec > 15000:
                                     if basinc <= 500:
                                         _asr_poz_no = "25.452.2406/A"
                                     elif basinc <= 750:
@@ -2086,13 +2109,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                         _asr_poz_no = "25.452.2606/A"
                                     else:
                                         _asr_poz_no = "Poz aralığı tanımlı değil (>1100 Pa)"
-                                    _asr_poz_debisi = 0
-                                # Poz aralığında gereken debi bir üst standart poz kapasitesine yuvarlanır.
-                                # 15.000 m³/h üzerindeyse /A poz kullanılır ve debi en yakın 2.500 katına yuvarlanır.
-                                if _q_fan_gerekli <= 15000:
-                                    qsec = _asr_poz_debisi
+                                elif qsec > 0 and _poz_on_ek:
+                                    _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}"
+                                elif not _poz_on_ek:
+                                    _asr_poz_no = "Basınç 1100 Pa sınırını aşıyor"
                                 else:
-                                    qsec = max(15000, int(math.floor(_q_fan_gerekli / 2500.0 + 0.5)) * 2500)
+                                    _asr_poz_no = "Debi poz aralığının dışında"
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                 motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
