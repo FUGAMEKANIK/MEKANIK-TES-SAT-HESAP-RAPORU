@@ -2082,10 +2082,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                         _asr_poz_no = "25.452.2406/A"
                                     elif basinc <= 750:
                                         _asr_poz_no = "25.452.2506/A"
-                                    elif basinc <= 1000:
-                                        _asr_poz_no = "25.452.2506/A"
+                                    elif basinc <= 1100:
+                                        _asr_poz_no = "25.452.2606/A"
                                     else:
-                                        _asr_poz_no = "Poz aralığı tanımlı değil (>1000 Pa)"
+                                        _asr_poz_no = "Poz aralığı tanımlı değil (>1100 Pa)"
                                     _asr_poz_debisi = 0
                                 # Poz debisi fan başına kapasitedir; >15.000 m³/h/fan için /A poz önerilir.
                                 qsec = _asr_poz_debisi if _q_fan_gerekli <= 15000 else _q_fan_gerekli
