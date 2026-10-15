@@ -2423,6 +2423,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     st.metric("Seçilen fan basıncı", f"{_79_basinc_gerekli:,.0f} Pa")
                                     st.metric("Seçilen fan elektrik gücü (hesaplanan)", f"{_79_motor_kw:.2f} kW" if _79_motor_kw else "Debi/basınç giriniz")
                                     st.write(f"**Cihaz Poz No:** {_79_fan_poz}")
+                                    _79_poz_rapor_key = f"yangin_79_{_79_slug}_poz_rapora_ekle"
+                                    _79_poz_rapora_ekle = st.checkbox(
+                                        "Poz numarasını rapora ekle", value=True, key=_79_poz_rapor_key
+                                    )
                                     if _79_basinc_gerekli > 1100:
                                         st.warning("Seçilen fan basıncı 1100 Pa üzerindedir; tanımlı poz aralıklarında otomatik seçim yapılamaz.")
                                     st.caption("Seçtiğiniz 1–5 fan sayısı toplam debiyi bölmek için kullanılır. POZ debisi fan başına seçilir; toplam seçilen kapasite = fan başına seçilen POZ debisi × fan sayısı.")
@@ -2442,6 +2446,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "fan_hesaplanan_debi": _79_toplam_debi, "fan_manuel_debi_aktif": _79_debi_manuel_aktif,
                                     "fan_manuel_debi": _79_secim_toplam_debi, "fan_basina_gerekli_debi": _79_fan_basina_gerekli,
                                     "fan_basina_secilen_debi": _79_secilen_fan_debisi, "fan_poz": _79_fan_poz,
+                                    "fan_poz_rapora_ekle": bool(st.session_state.get(f"yangin_79_{_79_slug}_poz_rapora_ekle", True)),
                                     "fan_secilen_basinc": _79_basinc_gerekli, "fan_elektrik_gucu": _79_motor_kw,
                                     "kayip": _79_kayip_toplam,
                                     "saft_kaybi": _79_saft_kayip, "menfez_kaybi": _79_menfez_kayip,
