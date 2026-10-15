@@ -2047,8 +2047,15 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 with c4: poz=float(st.number_input("Pozitif basınç (Pa)",min_value=0.0,value=100.0,step=5.0,key=_k+"pozitif"))
                                 em=float(st.number_input("Basınç kaybı emniyet oranı (%)",min_value=0.0,value=10.0,step=1.0,key=_k+"emniyet"))
                                 kayip=saft+menfez+panjur+poz; emniyet=kayip*em/100; basinc=math.ceil((kayip+emniyet)/50)*50 if kayip+emniyet>0 else 0
-                                st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Hesaplanan seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
-                                basinc = float(st.number_input("Fan toplam basıncı (Pa) — elle düzeltilebilir", min_value=0.0, value=float(basinc), step=50.0, key=_k+"basinc_manuel"))
+                                st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Otomatik hesaplanan seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
+                                _manuel_basinc_aktif = st.checkbox("Basınç değerini elle gir", value=False, key=_k+"basinc_manuel_aktif")
+                                if _manuel_basinc_aktif:
+                                    basinc = float(st.number_input("Elle girilen fan toplam basıncı (Pa)", min_value=0.0, value=float(st.session_state.get(_k+"basinc_manuel_deger", basinc)), step=50.0, key=_k+"basinc_manuel_deger"))
+                                    st.caption(f"Sonuçlarda kullanılacak basınç: {basinc:.0f} Pa")
+                                else:
+                                    # Override kapalıyken otomatik hesaplanan basıncı her rerun'da güncelle.
+                                    basinc = float(basinc)
+                                    st.session_state[_k+"basinc_manuel_deger"] = basinc
                                 st.markdown("#### 5. Fan seçimi — poz numarası ve sonuç özeti")
                                 # Basınç grubuna göre Bakanlık poz aralığı; debi kademeleri 7.9 fan seçimindeki mantıkla bir üst değere seçilir.
                                 if basinc <= 500:
