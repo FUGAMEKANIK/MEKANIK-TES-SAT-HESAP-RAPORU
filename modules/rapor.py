@@ -3145,7 +3145,8 @@ if _rapor_olustur_sidebar:
                                   ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('kayip', 0):.1f} / {_fan710.get('emniyet', 0):.1f} Pa"),
                                   ("Seçim basıncı", "Üst 50 Pa değerine yuvarlama", f"{_fan710.get('basinc', 0):.0f} Pa"),
                                   ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
-                                  ("Seçilen fan debisi", "Üst 1.000 m³/h değeri", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
+                                  ("Seçilen fan debisi", "Seçilen pozun debi değeri", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
+                                  ("Fan poz numarası", "Basınç grubu ve debi kademesine göre", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
                                   ("Motor gücü", "Excel elektrik motoru kademe tablosu", f"{_fan710.get('motor', 0):.2f} kW"),
                                   ("Fan tipi", "Kullanıcı seçimi", str(_fan710.get("fan_tip", ""))),
                               ]
