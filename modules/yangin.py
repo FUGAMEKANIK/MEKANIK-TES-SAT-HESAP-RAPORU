@@ -2004,61 +2004,58 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                     with _tab710_h:
                         st.markdown("#### 7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI")
-                        st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
-                        st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
-                        c1,c2,c3=st.columns(3)
-                        with c1: n_kapali=float(st.number_input("Kapalı kapı adedi",min_value=0.0,value=0.0,step=1.0,key="yangin_710_n_kapali"))
-                        with c2: dp1=float(st.number_input("Basınç farkı ΔP (Pa)",min_value=0.0,value=50.0,step=5.0,key="yangin_710_dp1"))
-                        with c3: ae=float(st.number_input("Kapı başına sızıntı alanı (m²)",min_value=0.0,value=0.06,step=0.01,format="%.3f",key="yangin_710_ae"))
-                        q1_ms=0.83*(n_kapali*ae)*math.sqrt(dp1)*1.5
-                        q1=q1_ms*3600
-                        st.dataframe([{"Hesap kalemi":"Q1 (emniyet dâhil)","Formül / işlem":"0,83 × (N × Ae) × √ΔP × 1,5 × 3600","Değer / sonuç":f"{q1:,.2f} m³/h"}],use_container_width=True,hide_index=True)
-                        st.markdown("### 2. Kapılar açıkken hava debisi — Q2")
-                        c1,c2,c3,c4=st.columns(4)
-                        with c1: n_acik=float(st.number_input("Açık kapı adedi",min_value=0.0,value=2.0,step=1.0,key="yangin_710_n_acik"))
-                        with c2: hiz=float(st.number_input("Hava hızı (m/s)",min_value=0.0,value=1.0,step=0.1,key="yangin_710_hiz"))
-                        with c3: kw=float(st.number_input("Kapı genişliği (m)",min_value=0.0,value=1.0,step=0.1,key="yangin_710_kapi_gen"))
-                        with c4: kh=float(st.number_input("Kapı yüksekliği (m)",min_value=0.0,value=2.2,step=0.1,key="yangin_710_kapi_yuk"))
-                        ae2=kw*kh; q2_ms=hiz*ae2*n_acik; q2=q2_ms*3600; q2_em=q2*1.1
-                        st.dataframe([{"Hesap kalemi":"Kapı alanı (Ae)","Formül / işlem":"Genişlik × yükseklik","Değer / sonuç":f"{ae2:.3f} m²"},{"Hesap kalemi":"Q2 (emniyet öncesi)","Formül / işlem":"V × Ae × açık kapı adedi × 3600","Değer / sonuç":f"{q2:,.2f} m³/h"},{"Hesap kalemi":"Q2 (%10 emniyet)","Formül / işlem":"Q2 × 1,10","Değer / sonuç":f"{q2_em:,.2f} m³/h"}],use_container_width=True,hide_index=True)
-                        qtop=q1+q2_em; qsec=math.ceil(qtop/1000)*1000 if qtop>0 else 0
-                        st.markdown("### 3. Toplam hava debisi")
-                        st.metric("Q1 + Q2",f"{qtop:,.2f} m³/h"); st.metric("Seçim debisi (üst 1.000 m³/h)",f"{qsec:,.0f} m³/h")
-                        st.markdown("### 4. Kanal basınç kayıpları ve emniyet")
-                        c1,c2,c3,c4=st.columns(4)
-                        with c1: saft=float(st.number_input("Şaft kanal kaybı (Pa)",min_value=0.0,value=50.0,step=5.0,key="yangin_710_saft"))
-                        with c2: menfez=float(st.number_input("Menfez kaybı (Pa)",min_value=0.0,value=35.0,step=5.0,key="yangin_710_menfez"))
-                        with c3: panjur=float(st.number_input("Panjur ve taze hava alış kaybı (Pa)",min_value=0.0,value=100.0,step=5.0,key="yangin_710_panjur"))
-                        with c4: poz=float(st.number_input("Pozitif basınç (Pa)",min_value=0.0,value=100.0,step=5.0,key="yangin_710_pozitif"))
-                        em=float(st.number_input("Basınç kaybı emniyet oranı (%)",min_value=0.0,value=10.0,step=1.0,key="yangin_710_emniyet"))
-                        kayip=saft+menfez+panjur+poz; emniyet=kayip*em/100; basinc=math.ceil((kayip+emniyet)/50)*50 if kayip+emniyet>0 else 0
-                        st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
-                        st.markdown("### 5. Fan seçimi — sonuç özeti")
-                        motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
-                        _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
-                        motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
                         _asr_tum_fanlar=[f"ASR. BAS.{i:02d}" for i in range(1,21)]
                         _asr_secili_fanlar=st.multiselect(
                             "Hesaplanacak asansör basınçlandırma fanlarını seçiniz",
-                            options=_asr_tum_fanlar,
-                            default=["ASR. BAS.01"],
+                            options=_asr_tum_fanlar, default=["ASR. BAS.01"],
                             key="yangin_710_secili_fanlar",
-                            help="7.9'daki merdiven seçimindeki gibi birden fazla fan seçebilirsiniz."
+                            help="Her seçilen fanın hesap girdileri birbirinden bağımsızdır."
                         )
-                        fan_ad=len(_asr_secili_fanlar)
-                        _asr_fan_adlari=_asr_secili_fanlar
-                        _asr_tabs=st.tabs(_asr_fan_adlari) if _asr_fan_adlari else []
-                        if not _asr_fan_adlari:
+                        if not _asr_secili_fanlar:
                             st.info("Hesaplama ve rapor için en az bir asansör basınçlandırma fanı seçiniz.")
-                        fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key="yangin_710_fan_tip")
+                        _asr_tabs=st.tabs(_asr_secili_fanlar) if _asr_secili_fanlar else []
                         _asr_fan_rapor=[]
-                        for _asr_ad, _asr_tab in zip(_asr_fan_adlari,_asr_tabs):
+                        for _asr_ad, _asr_tab in zip(_asr_secili_fanlar, _asr_tabs):
                             _i=int(_asr_ad.rsplit(".",1)[-1])
+                            _k=f"yangin_710_{_i:02d}_"
                             with _asr_tab:
-                                st.markdown(f"#### {_asr_ad}")
+                                st.markdown(f"### {_asr_ad}")
+                                st.markdown("#### 1. Kapalı kapılardan sızıntı debisi — Q1")
+                                c1,c2,c3=st.columns(3)
+                                with c1: n_kapali=float(st.number_input("Kapalı kapı adedi",min_value=0.0,value=0.0,step=1.0,key=_k+"n_kapali"))
+                                with c2: dp1=float(st.number_input("Basınç farkı ΔP (Pa)",min_value=0.0,value=50.0,step=5.0,key=_k+"dp1"))
+                                with c3: ae=float(st.number_input("Kapı başına sızıntı alanı (m²)",min_value=0.0,value=0.06,step=0.01,format="%.3f",key=_k+"ae"))
+                                q1_ms=0.83*(n_kapali*ae)*math.sqrt(dp1)*1.5
+                                q1=q1_ms*3600
+                                st.dataframe([{"Hesap kalemi":"Q1 (emniyet dâhil)","Formül / işlem":"0,83 × (N × Ae) × √ΔP × 1,5 × 3600","Değer / sonuç":f"{q1:,.2f} m³/h"}],use_container_width=True,hide_index=True)
+                                st.markdown("#### 2. Kapılar açıkken hava debisi — Q2")
+                                c1,c2,c3,c4=st.columns(4)
+                                with c1: n_acik=float(st.number_input("Açık kapı adedi",min_value=0.0,value=2.0,step=1.0,key=_k+"n_acik"))
+                                with c2: hiz=float(st.number_input("Hava hızı (m/s)",min_value=0.0,value=1.0,step=0.1,key=_k+"hiz"))
+                                with c3: kw=float(st.number_input("Kapı genişliği (m)",min_value=0.0,value=1.0,step=0.1,key=_k+"kapi_gen"))
+                                with c4: kh=float(st.number_input("Kapı yüksekliği (m)",min_value=0.0,value=2.2,step=0.1,key=_k+"kapi_yuk"))
+                                ae2=kw*kh; q2_ms=hiz*ae2*n_acik; q2=q2_ms*3600; q2_em=q2*1.1
+                                st.dataframe([{"Hesap kalemi":"Kapı alanı (Ae)","Formül / işlem":"Genişlik × yükseklik","Değer / sonuç":f"{ae2:.3f} m²"},{"Hesap kalemi":"Q2 (emniyet öncesi)","Formül / işlem":"V × Ae × açık kapı adedi × 3600","Değer / sonuç":f"{q2:,.2f} m³/h"},{"Hesap kalemi":"Q2 (%10 emniyet)","Formül / işlem":"Q2 × 1,10","Değer / sonuç":f"{q2_em:,.2f} m³/h"}],use_container_width=True,hide_index=True)
+                                qtop=q1+q2_em; qsec=math.ceil(qtop/1000)*1000 if qtop>0 else 0
+                                st.markdown("#### 3. Toplam hava debisi")
+                                st.metric("Q1 + Q2",f"{qtop:,.2f} m³/h"); st.metric("Seçim debisi (üst 1.000 m³/h)",f"{qsec:,.0f} m³/h")
+                                st.markdown("#### 4. Kanal basınç kayıpları ve emniyet")
+                                c1,c2,c3,c4=st.columns(4)
+                                with c1: saft=float(st.number_input("Şaft kanal kaybı (Pa)",min_value=0.0,value=50.0,step=5.0,key=_k+"saft"))
+                                with c2: menfez=float(st.number_input("Menfez kaybı (Pa)",min_value=0.0,value=35.0,step=5.0,key=_k+"menfez"))
+                                with c3: panjur=float(st.number_input("Panjur ve taze hava alış kaybı (Pa)",min_value=0.0,value=100.0,step=5.0,key=_k+"panjur"))
+                                with c4: poz=float(st.number_input("Pozitif basınç (Pa)",min_value=0.0,value=100.0,step=5.0,key=_k+"pozitif"))
+                                em=float(st.number_input("Basınç kaybı emniyet oranı (%)",min_value=0.0,value=10.0,step=1.0,key=_k+"emniyet"))
+                                kayip=saft+menfez+panjur+poz; emniyet=kayip*em/100; basinc=math.ceil((kayip+emniyet)/50)*50 if kayip+emniyet>0 else 0
+                                st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
+                                st.markdown("#### 5. Fan seçimi — sonuç özeti")
+                                motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
+                                _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
+                                motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
+                                fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key=_k+"fan_tip")
                                 st.dataframe([{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Üst 1.000 m³/h değeri","Değer / sonuç":f"{qsec:,.0f} m³/h"},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
-                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","debi":qsec,"basinc":basinc,"motor":motor,"tip":fan_tip})
-                        st.session_state["yangin_710_rapor_hesap"]={"n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_adet":fan_ad,"fan_tip":fan_tip,"secili_fanlar":_asr_secili_fanlar,"fanlar":_asr_fan_rapor}
+                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
+                        st.session_state["yangin_710_rapor_hesap"]={"fan_adet":len(_asr_fan_rapor),"secili_fanlar":_asr_secili_fanlar,"fanlar":_asr_fan_rapor}
                     st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
             elif _baslik.startswith("7.9 "):
