@@ -2057,7 +2057,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     basinc = float(basinc)
                                     st.session_state[_k+"basinc_manuel_deger"] = basinc
                                 st.markdown("#### 5. Fan seçimi — poz numarası ve sonuç özeti")
-                                # Basınç grubuna göre Bakanlık poz aralığı; debi kademeleri 7.9 fan seçimindeki mantıkla bir üst değere seçilir.
+                                fan_adedi=int(st.number_input("Bu seçim için fan adedi", min_value=1, max_value=10, value=1, step=1, key=_k+"fan_adedi"))
+                                _q_fan_gerekli = qtop / fan_adedi if fan_adedi > 0 else qtop
+                                st.caption(f"Toplam gerekli debi: {qtop:,.2f} m³/h ÷ {fan_adedi} fan = fan başına {_q_fan_gerekli:,.2f} m³/h")
+                                # Basınç grubuna göre Bakanlık poz aralığı; debi seçimi fan başına gereken debiye göre yapılır.
                                 if basinc <= 500:
                                     _poz_on_ek, _poz_son, _poz_limit = "25.452.24", 6, 500
                                 elif basinc <= 750:
@@ -2067,12 +2070,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 else:
                                     _poz_on_ek, _poz_son, _poz_limit = None, 0, 1100
                                 _asr_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000]
-                                _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= qtop), 0) if qtop > 0 else 0
+                                _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= _q_fan_gerekli), 0) if _q_fan_gerekli > 0 else 0
                                 _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}" if _poz_on_ek and _asr_poz_debisi else ("Basınç 1100 Pa sınırını aşıyor" if not _poz_on_ek else "Debi poz aralığının dışında")
                                 _asr_poz_ekle = False
                                 # 15.000 m³/h üstünde, kullanıcı tarafından bildirilen /A pozları otomatik önerilir.
                                 # Pozun rapora eklenmesi aşağıdaki ayrı onay kutusuyla kontrol edilir.
-                                if qtop > 15000:
+                                if _q_fan_gerekli > 15000:
                                     if basinc <= 500:
                                         _asr_poz_no = "25.452.2406/A"
                                     elif basinc <= 750:
@@ -2082,12 +2085,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     else:
                                         _asr_poz_no = "Poz aralığı tanımlı değil (>1000 Pa)"
                                     _asr_poz_debisi = 0
-                                # Poz debisi 15.000 m³/h'ye kadar poz kapasitesidir; daha yüksek debide gerçek Q1+Q2 korunur.
-                                qsec = _asr_poz_debisi if qtop <= 15000 else qtop
+                                # Poz debisi fan başına kapasitedir; >15.000 m³/h/fan için /A poz önerilir.
+                                qsec = _asr_poz_debisi if _q_fan_gerekli <= 15000 else _q_fan_gerekli
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                 motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
-                                fan_adedi=int(st.number_input("Bu seçim için fan adedi", min_value=1, max_value=10, value=1, step=1, key=_k+"fan_adedi"))
                                 fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key=_k+"fan_tip")
                                 st.markdown("##### Fan sonuçları ve poz seçimi")
                                 st.caption("Poz numarası burada seçilir; isterseniz rapora eklenmesini kapatabilirsiniz.")
