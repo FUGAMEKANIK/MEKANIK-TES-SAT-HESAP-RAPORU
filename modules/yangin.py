@@ -1958,7 +1958,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     _ui710 = "yangin_710_rapor_ui"
                     st.session_state.setdefault(_ui710, bool(st.session_state.get("rapor_bolum_710", True)))
                     st.checkbox("7.10 rapora eklensin", key=_ui710, on_change=lambda: st.session_state.__setitem__("rapor_bolum_710", bool(st.session_state.get(_ui710, True))))
-                    _tab710_m, _tab710_p, _tab710_e, _tab710_h = st.tabs(["Yönetmelik Maddeleri", "Yönetmelik (Parantez)", "Madde Ekleme", "Hesaplama"])
+                    _tab710_m, _tab710_p, _tab710_e, _tab710_h = st.tabs(["7.10.1 Yönetmelik Maddeleri", "7.10.1 Yönetmelik (Parantez)", "7.10.1 Madde Ekleme", "7.10.2 Hesaplamalar"])
                     _maddeler710 = [("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)")]
                     _atif710 = "yangin_710_yonetmelik_atiflari"
                     st.session_state.setdefault(_atif710, True)
@@ -1988,6 +1988,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.rerun()
                             else: st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                     with _tab710_h:
+                        st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
                         st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
                         c1,c2,c3=st.columns(3)
                         with c1: n_kapali=float(st.number_input("Kapalı kapı adedi",min_value=0.0,value=0.0,step=1.0,key="yangin_710_n_kapali"))
