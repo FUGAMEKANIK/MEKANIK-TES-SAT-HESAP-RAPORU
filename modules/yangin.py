@@ -2061,14 +2061,29 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _asr_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000]
                                 _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= qtop), 0) if qtop > 0 else 0
                                 _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}" if _poz_on_ek and _asr_poz_debisi else ("Basınç 1100 Pa sınırını aşıyor" if not _poz_on_ek else "Debi poz aralığının dışında")
-                                # Poz debisi nihai fan debisidir; seçilen basınç (50 Pa katına yuvarlanmış) korunur.
-                                qsec = _asr_poz_debisi
+                                _asr_poz_ekle = False
+                                if qtop > 15000:
+                                    st.info("Hesaplanan toplam debi 15.000 m³/h değerini aşıyor. İsterseniz aşağıdaki /A pozunu rapora ekleyebilirsiniz.")
+                                    _asr_poz_ekle = st.checkbox("15.000 m³/h üzeri fan için /A poz numarasını rapora ekle", value=False, key=_k+"poz_a_ekle")
+                                    if basinc <= 500:
+                                        _asr_poz_a_varsayilan = "25.452.2406/A"
+                                    elif basinc <= 750:
+                                        _asr_poz_a_varsayilan = "25.452.2506/A"
+                                    elif basinc <= 1000:
+                                        _asr_poz_a_varsayilan = "25.452.2506/A"
+                                    else:
+                                        _asr_poz_a_varsayilan = "Poz aralığı tanımlı değil (>1000 Pa)"
+                                    _asr_poz_a = st.text_input("Poz numarası (isteğe bağlı düzenlenebilir)", value=_asr_poz_a_varsayilan, key=_k+"poz_a_degeri", disabled=not _asr_poz_ekle)
+                                    _asr_poz_no = _asr_poz_a if _asr_poz_ekle else "Eklenmedi"
+                                    _asr_poz_debisi = 0
+                                # Poz debisi 15.000 m³/h'ye kadar seçilen poz kapasitesidir; >15.000 için /A poz seçimi isteğe bağlıdır.
+                                qsec = _asr_poz_debisi if qtop <= 15000 else qtop
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                 motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
                                 fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key=_k+"fan_tip")
                                 st.dataframe([{"Hesap kalemi":"Q1 + Q2 toplam debisi","Formül / işlem":"Q1 + Q2 (%10 emniyet dâhil)","Değer / sonuç":f"{qtop:,.2f} m³/h"},{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Gerekli debiye eşit veya bir üst poz debisi","Değer / sonuç":f"{qsec:,.0f} m³/h" if qsec else "Uygun poz bulunamadı"},{"Hesap kalemi":"Fan poz numarası","Formül / işlem":f"Basınç grubu ≤ {_poz_limit} Pa" if _poz_on_ek else "Basınç poz aralığı dışında","Değer / sonuç":_asr_poz_no},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet; üst 50 Pa'ya yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
-                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"poz_no":_asr_poz_no,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
+                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"poz_no":_asr_poz_no,"poz_a_ekle":_asr_poz_ekle,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
                         st.session_state["yangin_710_rapor_hesap"]={"fan_adet":len(_asr_fan_rapor),"secili_fanlar":_asr_secili_fanlar,"fanlar":_asr_fan_rapor}
                     st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
