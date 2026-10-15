@@ -1981,6 +1981,15 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         _met_key = f"yangin_710_ek_metin_input_{_nonce}"
                         st.text_input("Madde başlığı", key=_bas_key)
                         st.text_area("Madde açıklaması ve varsa parantez içi atıf", key=_met_key)
+                        # Bu butonun widget anahtarı proje ayarlarından session_state'e
+                        # geri yüklenmişse Streamlit ValueAssignmentNotAllowedError verir.
+                        # Buton anahtarları kalıcı veri değildir; widget kurulmadan önce temizle.
+                        for _sk in list(st.session_state.keys()):
+                            if str(_sk).startswith("yangin_710_ek_submit_"):
+                                try:
+                                    del st.session_state[_sk]
+                                except Exception:
+                                    pass
                         if st.button("Maddeyi ekle", key=f"yangin_710_ek_submit_{_nonce}"):
                             _bas = str(st.session_state.get(_bas_key, "")).strip()
                             _met = str(st.session_state.get(_met_key, "")).strip()
