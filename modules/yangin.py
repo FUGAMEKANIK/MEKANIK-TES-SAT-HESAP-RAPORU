@@ -2048,13 +2048,27 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 em=float(st.number_input("Basınç kaybı emniyet oranı (%)",min_value=0.0,value=10.0,step=1.0,key=_k+"emniyet"))
                                 kayip=saft+menfez+panjur+poz; emniyet=kayip*em/100; basinc=math.ceil((kayip+emniyet)/50)*50 if kayip+emniyet>0 else 0
                                 st.dataframe([{"Hesap kalemi":"Basınç kayıpları toplamı","Formül / işlem":"Şaft + menfez + panjur + pozitif basınç","Değer / sonuç":f"{kayip:.1f} Pa"},{"Hesap kalemi":"Emniyet payı","Formül / işlem":f"Toplam × %{em:g}","Değer / sonuç":f"{emniyet:.1f} Pa"},{"Hesap kalemi":"Seçim basıncı","Formül / işlem":"Emniyet dâhil, üst 50 Pa değerine yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"}],use_container_width=True,hide_index=True)
-                                st.markdown("#### 5. Fan seçimi — sonuç özeti")
+                                st.markdown("#### 5. Fan seçimi — poz numarası ve sonuç özeti")
+                                # Basınç grubuna göre Bakanlık poz aralığı; debi kademeleri 7.9 fan seçimindeki mantıkla bir üst değere seçilir.
+                                if basinc <= 500:
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.240", 6, 500
+                                elif basinc <= 750:
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.250", 6, 750
+                                elif basinc <= 1100:
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.260", 6, 1100
+                                else:
+                                    _poz_on_ek, _poz_son, _poz_limit = None, 0, 1100
+                                _asr_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000]
+                                _asr_poz_debisi = next((d for d in _asr_debi_kademeleri if d >= qtop), 0) if qtop > 0 else 0
+                                _asr_poz_no = f"{_poz_on_ek}{_asr_debi_kademeleri.index(_asr_poz_debisi)+1:02d}" if _poz_on_ek and _asr_poz_debisi else ("Basınç 1100 Pa sınırını aşıyor" if not _poz_on_ek else "Debi poz aralığının dışında")
+                                # Poz debisi nihai fan debisidir; seçilen basınç (50 Pa katına yuvarlanmış) korunur.
+                                qsec = _asr_poz_debisi
                                 motor_hid=qsec*basinc/(198000*9.81) if qsec and basinc else 0.0
                                 _motor_kademeleri=[(0,0.25),(0.25,0.37),(0.37,0.55),(0.55,0.75),(0.75,1.1),(1.1,1.5),(1.5,2.2),(2.2,3),(3,4),(4,5.5),(5.5,7.5),(7.5,11),(11,15),(15,18.5),(18.5,22),(22,30),(30,37),(37,45),(45,55),(55,75)]
                                 motor=next((b for a,b in _motor_kademeleri if motor_hid<=b), math.ceil(motor_hid)) if motor_hid>0 else 0
                                 fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key=_k+"fan_tip")
-                                st.dataframe([{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Üst 1.000 m³/h değeri","Değer / sonuç":f"{qsec:,.0f} m³/h"},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
-                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
+                                st.dataframe([{"Hesap kalemi":"Q1 + Q2 toplam debisi","Formül / işlem":"Q1 + Q2 (%10 emniyet dâhil)","Değer / sonuç":f"{qtop:,.2f} m³/h"},{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Gerekli debiye eşit veya bir üst poz debisi","Değer / sonuç":f"{qsec:,.0f} m³/h" if qsec else "Uygun poz bulunamadı"},{"Hesap kalemi":"Fan poz numarası","Formül / işlem":f"Basınç grubu ≤ {_poz_limit} Pa" if _poz_on_ek else "Basınç poz aralığı dışında","Değer / sonuç":_asr_poz_no},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Basınç kaybı + emniyet; üst 50 Pa'ya yuvarlama","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
+                                _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"poz_no":_asr_poz_no,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
                         st.session_state["yangin_710_rapor_hesap"]={"fan_adet":len(_asr_fan_rapor),"secili_fanlar":_asr_secili_fanlar,"fanlar":_asr_fan_rapor}
                     st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
