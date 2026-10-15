@@ -2092,9 +2092,14 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _poz_secenekleri.extend(["25.452.2406/A", "25.452.2506/A"])
                                 if _asr_poz_no not in _poz_secenekleri:
                                     _poz_secenekleri.insert(0, str(_asr_poz_no))
-                                _poz_default_index = _poz_secenekleri.index(_asr_poz_no) if _asr_poz_no in _poz_secenekleri else 0
-                                _poz_secim = st.selectbox("Fan poz numarası", options=_poz_secenekleri, index=_poz_default_index, key=_k+"poz_secim", on_change=lambda: st.session_state.__setitem__(_k+"poz_manuel", st.session_state.get(_k+"poz_secim", "")))
-                                _asr_poz_no = st.text_input("Poz numarası (elle düzenleme)", value=str(_poz_secim), key=_k+"poz_manuel")
+                                # Selectbox state is the single source of truth; do not mirror it into a second widget key.
+                                _poz_secim = st.selectbox(
+                                    "Fan poz numarası",
+                                    options=_poz_secenekleri,
+                                    index=_poz_default_index,
+                                    key=_k+"poz_secim",
+                                )
+                                _asr_poz_no = str(_poz_secim)
                                 _poz_rapora_ekle = st.checkbox("Poz numarasını rapora ekle", value=True, key=_k+"poz_rapora_ekle")
                                 st.dataframe([{"Hesap kalemi":"Q1 + Q2 toplam debisi","Formül / işlem":"Q1 + Q2 (%10 emniyet dâhil)","Değer / sonuç":f"{qtop:,.2f} m³/h"},{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Gerekli debiye eşit veya bir üst poz debisi","Değer / sonuç":f"{qsec:,.0f} m³/h" if qsec else "Uygun poz bulunamadı"},{"Hesap kalemi":"Fan poz numarası","Formül / işlem":f"Basınç grubu ≤ {_poz_limit} Pa" if _poz_on_ek else "Elle seçilebilir","Değer / sonuç":_asr_poz_no if _poz_rapora_ekle else "Rapora eklenmeyecek"},{"Hesap kalemi":"Fan adedi","Formül / işlem":"Kullanıcı girişi","Değer / sonuç":str(fan_adedi)},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Elle düzeltilebilir; başlangıç değeri 50 Pa katı","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
                                 _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"poz_no":_asr_poz_no,"poz_rapora_ekle":_poz_rapora_ekle,"poz_a_ekle":_asr_poz_ekle,"fan_adedi":fan_adedi,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
