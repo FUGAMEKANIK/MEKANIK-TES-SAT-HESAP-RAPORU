@@ -2092,6 +2092,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 _poz_secenekleri.extend(["25.452.2406/A", "25.452.2506/A"])
                                 if _asr_poz_no not in _poz_secenekleri:
                                     _poz_secenekleri.insert(0, str(_asr_poz_no))
+                                _poz_default_index = _poz_secenekleri.index(_asr_poz_no) if _asr_poz_no in _poz_secenekleri else 0
                                 # Selectbox state is the single source of truth; do not mirror it into a second widget key.
                                 _poz_secim = st.selectbox(
                                     "Fan poz numarası",
