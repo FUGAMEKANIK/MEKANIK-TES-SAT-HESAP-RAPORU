@@ -2051,11 +2051,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.markdown("#### 5. Fan seçimi — poz numarası ve sonuç özeti")
                                 # Basınç grubuna göre Bakanlık poz aralığı; debi kademeleri 7.9 fan seçimindeki mantıkla bir üst değere seçilir.
                                 if basinc <= 500:
-                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.240", 6, 500
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.24", 6, 500
                                 elif basinc <= 750:
-                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.250", 6, 750
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.25", 6, 750
                                 elif basinc <= 1100:
-                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.260", 6, 1100
+                                    _poz_on_ek, _poz_son, _poz_limit = "25.452.26", 6, 1100
                                 else:
                                     _poz_on_ek, _poz_son, _poz_limit = None, 0, 1100
                                 _asr_debi_kademeleri = [2500, 5000, 7500, 10000, 12500, 15000]
