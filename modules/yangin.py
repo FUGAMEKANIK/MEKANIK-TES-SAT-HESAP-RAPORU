@@ -1958,11 +1958,12 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     _ui710 = "yangin_710_rapor_ui"
                     st.session_state.setdefault(_ui710, bool(st.session_state.get("rapor_bolum_710", True)))
                     st.checkbox("7.10 rapora eklensin", key=_ui710, on_change=lambda: st.session_state.__setitem__("rapor_bolum_710", bool(st.session_state.get(_ui710, True))))
-                    _tab710_m, _tab710_p, _tab710_e, _tab710_h = st.tabs(["7.10.1 Yönetmelik Maddeleri", "7.10.1 Yönetmelik (Parantez)", "7.10.1 Madde Ekleme", "7.10.2 Hesaplamalar"])
+                    _tab710_m, _tab710_p, _tab710_e, _tab710_h =  [st.container() for _ in range(4)]
                     _maddeler710 = [("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)")]
                     _atif710 = "yangin_710_yonetmelik_atiflari"
                     st.session_state.setdefault(_atif710, True)
                     with _tab710_m:
+                        st.markdown("#### 7.10.1 Yönetmelik Maddeleri")
                         st.caption("Maddeler alt alta listelenir. Rapor için istediğiniz maddeleri işaretleyin.")
                         for no, bas, met in _maddeler710:
                             k = f"yangin_710_madde_{no}"; st.session_state.setdefault(k, True)
@@ -1972,9 +1973,11 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.checkbox(f"{i}. {ek.get('baslik','')}", key=f"yangin_710_ek_sec_{i}", value=True)
                             st.write(ek.get("metin", ""))
                     with _tab710_p:
+                        st.markdown("#### 7.10.1 Yönetmelik (Parantez)")
                         st.checkbox("Parantez içindeki yönetmelik atıflarını rapora ekle", key=_atif710)
                         st.caption("Açık: madde sonundaki parantez içi atıflar görünür. Kapalı: atıflar kaldırılır.")
                     with _tab710_e:
+                        st.markdown("#### 7.10.1 Madde Ekleme")
                         st.session_state.setdefault("yangin_710_ek_maddeler", [])
                         _nonce = int(st.session_state.get("yangin_710_ek_nonce", 0))
                         _bas_key = f"yangin_710_ek_baslik_input_{_nonce}"
@@ -2000,6 +2003,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             else:
                                 st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                     with _tab710_h:
+                        st.markdown("#### 7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI")
                         st.markdown('<div style="font-size:18px;font-weight:800;font-style:italic;color:#1F4E79;">7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI</div>', unsafe_allow_html=True)
                         st.markdown("### 1. Kapalı kapılardan sızıntı debisi — Q1")
                         c1,c2,c3=st.columns(3)
