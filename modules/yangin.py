@@ -1953,7 +1953,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
 
             elif _baslik.startswith("7.10 "):
                 # 7.10 Asansör basınçlandırma: mevzuat kontrol listesi ve kullanıcı ekleri.
-                with st.expander("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ — YÖNETMELİK KONTROL LİSTESİ", expanded=False):
+                with st.expander("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ — YÖNETMELİK KONTROL LİSTESİ", expanded=True):
                     st.markdown('<div style="font-size:22px;font-weight:800;font-style:italic;color:#1F4E79;">ASANSÖR BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI</div>', unsafe_allow_html=True)
                     _ui710 = "yangin_710_rapor_ui"
                     st.session_state.setdefault(_ui710, bool(st.session_state.get("rapor_bolum_710", True)))
@@ -1965,6 +1965,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.session_state.setdefault(_atif710, True)
                     _tab710_m, _tab710_p, _tab710_e = st.tabs(["Yönetmelik Maddeleri", "Yönetmelik (Parantez)", "Madde Ekleme"])
                     with _tab710_m:
+                        st.caption("Maddeler aşağıda tek tek sıralanır. Raporunuzda yer almasını istediğiniz maddeleri işaretleyin.")
                         c710a, c710b = st.columns(2)
                         with c710a:
                             if st.button("✓ Tüm maddeleri seç", key="yangin_710_tum_sec", use_container_width=True):
@@ -1979,11 +1980,18 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             st.session_state.setdefault(key, True)
                             shown = met if st.session_state[_atif710] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", met, flags=re.IGNORECASE).strip()
                             with st.container(border=True):
-                                st.checkbox(f"({no}) {bas}", key=key)
-                                st.caption(shown)
+                                st.checkbox(f"{no}. {bas}", key=key)
+                                st.write(shown)
                     with _tab710_p:
-                        st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_atif710)
-                        st.caption("Bu seçenek, rapor metinlerinin sonundaki parantez içi mevzuat atıflarını gösterir veya gizler.")
+                        st.markdown("**Parantez içi yönetmelik atıfları**")
+                        st.write("Bu sekmeden raporda mevzuat atıflarının parantez içinde gösterilip gösterilmeyeceğini seçebilirsiniz.")
+                        st.checkbox("Parantez içindeki yönetmelik madde numaralarını rapora ekle", key=_atif710)
+                        for no, bas, met in _maddeler710:
+                            eslesme = re.findall(r"\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", met, flags=re.IGNORECASE)
+                            if eslesme:
+                                st.markdown(f"**{no}. {bas}**")
+                                st.caption("Mevcut atıf: " + " ".join(eslesme))
+                        st.caption("Atıfları kaldırmak için yukarıdaki seçeneği kapatın; eklemek için açık bırakın. Yeni atıf içeren metinleri ‘Madde Ekleme’ sekmesinden girebilirsiniz.")
                     with _tab710_e:
                         st.write("Bu bölüme özel yönetmelik maddesi veya proje kriteri ekleyebilirsiniz.")
                         st.session_state.setdefault("yangin_710_ek_maddeler", [])
