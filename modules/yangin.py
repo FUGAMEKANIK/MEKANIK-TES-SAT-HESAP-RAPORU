@@ -2146,6 +2146,48 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         st.session_state["yangin_710_rapor_hesap"]={"fan_adet":len(_asr_fan_rapor),"secili_fanlar":_asr_secili_fanlar,"fanlar":_asr_fan_rapor}
                     st.caption("Hesap sırası ve başlangıç değerleri, sağlanan ASANSÖR BASINÇLANDIRMA HESABI.xlsx dosyasından alınmıştır. Birimler raporda tutarlı gösterilir.")
 
+            elif _baslik.startswith("7.11 "):
+                # 7.11.1 Duman tahliye sistemi yönetmelik esasları
+                with st.expander("7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=False):
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI</div>', unsafe_allow_html=True)
+                    _ui_711_rapor_key = "yangin_711_rapor_ui"
+                    st.session_state.setdefault(_ui_711_rapor_key, bool(st.session_state.get("rapor_bolum_7110", True)))
+                    st.checkbox("7.11.1 yönetmelik esasları rapora eklensin", key=_ui_711_rapor_key, on_change=lambda: st.session_state.__setitem__("rapor_bolum_7110", bool(st.session_state.get("yangin_711_rapor_ui", True))))
+                    _duman_esaslari_711 = [
+                        ("1", "Tasarım ilkeleri", "Duman kontrol sistemi olarak yapılan basınçlandırma, havalandırma ve duman tahliye tesisatı; binada bulunanlara zarar vermeyecek, paniği önleyecek ve binanın güvenli boşaltılmasını sağlayacak şekilde tasarlanmalı, tesis edilmeli ve çalışır durumda tutulmalıdır. (BYKHY Madde 85)"),
+                        ("2", "Duman kontrolünün esasları", "Doğal duman tahliyesinde duman çekiş bacaları, duman kesicileri ve duman bölmeleri kullanılabilir. Mekanik duman kontrolünde iklimlendirme sistemi özel düzenlemelerle kullanılabilir veya ayrı mekanik havalandırma/duman kontrol sistemi kurulabilir. Duman tahliye ağızları sürekli açık veya yangında otomatik/elle açılabilir olmalı ve bakımları yapılmalıdır. (BYKHY Madde 86)"),
+                        ("3", "İklimlendirme ve havalandırma tesisatının kullanımı", "Mevcut iklimlendirme ve havalandırma tesisatı duman kontrolü için kullanılacaksa mekanik duman kontrol sistemine ilişkin şartlar uygulanır. Kanallar uygun metal malzemeden yapılmalı, yeterli askılarla bağlanmalı, kaplama malzemesi zor alevlenici olmalı ve yangın güvenliği koşullarına uygun düzenlenmelidir. (BYKHY Madde 87)"),
+                        ("4", "Özel mahallerde duman kontrolü", "Kazan dairesi, jeneratör odası, mutfak, otopark ve benzeri özel mahallerin havalandırma ve duman tahliye düzenleri, ilgili mahal için yönetmelikte belirtilen bağımsızlık, hava emişi, egzoz atışı ve yangın güvenliği koşullarına uygun tasarlanmalıdır. (BYKHY Madde 88)"),
+                    ]
+                    _711_atif_key = "yangin_711_yonetmelik_atiflari"
+                    st.session_state.setdefault(_711_atif_key, True)
+                    st.checkbox("Yönetmelik madde atıfları (parantez içindekiler) rapora eklensin", key=_711_atif_key)
+                    _tab_711_maddeler, _tab_711_ekle = st.tabs(["Yönetmelik Maddeleri", "Madde Ekleme"])
+                    with _tab_711_maddeler:
+                        _711_c1, _711_c2 = st.columns(2)
+                        with _711_c1:
+                            if st.button("✓ 7.11.1 tüm maddeleri seç", key="yangin_7111_tum_sec", use_container_width=True):
+                                for _n711, _b711, _m711 in _duman_esaslari_711: st.session_state[f"yangin_7111_madde_{_n711}"] = True
+                                st.rerun()
+                        with _711_c2:
+                            if st.button("✕ 7.11.1 tüm maddeleri kaldır", key="yangin_7111_tum_kaldir", use_container_width=True):
+                                for _n711, _b711, _m711 in _duman_esaslari_711: st.session_state[f"yangin_7111_madde_{_n711}"] = False
+                                st.rerun()
+                        for _n711, _b711, _m711 in _duman_esaslari_711:
+                            _k711 = f"yangin_7111_madde_{_n711}"; st.session_state.setdefault(_k711, True)
+                            _g711 = _m711 if st.session_state[_711_atif_key] else re.sub(r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)", "", _m711, flags=re.IGNORECASE).strip()
+                            with st.container(border=True): st.checkbox(f"({_n711}) {_b711}", key=_k711); st.caption(_g711)
+                    with _tab_711_ekle:
+                        st.markdown("#### 7.11.1 Madde Ekleme")
+                        _ekler711 = st.session_state.setdefault("yangin_7111_ek_maddeler", [])
+                        with st.form("yangin_7111_madde_ekle_form"):
+                            _eb711 = st.text_input("Madde başlığı", key="yangin_7111_yeni_baslik")
+                            _em711 = st.text_area("Madde açıklaması", key="yangin_7111_yeni_metin")
+                            _ekle711 = st.form_submit_button("Maddeyi ekle")
+                        if _ekle711 and _eb711.strip() and _em711.strip():
+                            _ekler711.append({"baslik": _eb711.strip(), "metin": _em711.strip()}); st.session_state["yangin_7111_ek_maddeler"] = _ekler711; st.rerun()
+                        for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
+
             elif _baslik.startswith("7.9 "):
                 # --------------------------------------------------------------
                 # 7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ
