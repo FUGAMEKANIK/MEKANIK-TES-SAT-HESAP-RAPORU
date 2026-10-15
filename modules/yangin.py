@@ -2076,6 +2076,8 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 # 15.000 m³/h üstünde, kullanıcı tarafından bildirilen /A pozları otomatik önerilir.
                                 # Pozun rapora eklenmesi aşağıdaki ayrı onay kutusuyla kontrol edilir.
                                 if _q_fan_gerekli > 15000:
+                                    # /A pozunu her rerun'da mevcut basınç değerinden yeniden belirle.
+                                    # Böylece 2406/A seçiliyken basınç 500 Pa üstüne çıkarsa poz da değişir.
                                     if basinc <= 500:
                                         _asr_poz_no = "25.452.2406/A"
                                     elif basinc <= 750:
