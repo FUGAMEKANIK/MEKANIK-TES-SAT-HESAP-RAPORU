@@ -3109,7 +3109,7 @@ if _rapor_olustur_sidebar:
                           _r710.bold = True
                           _p710.add_run(str(_ek710.get("metin", "")))
                       _h710 = st.session_state.get("yangin_710_rapor_hesap", {})
-                      doc.add_heading("7.10.2 MERDİVEN BASINÇLANDIRMA HESAPLARI", level=4)
+                      doc.add_heading("7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI", level=4)
                       if not _h710:
                           doc.add_paragraph("Asansör basınçlandırma hesabı henüz yapılmamıştır.")
                       else:
@@ -3146,6 +3146,7 @@ if _rapor_olustur_sidebar:
                               ("Seçilen fan debisi", "Üst 1.000 m³/h değeri", f"{_h710.get('qsec', 0):,.0f} m³/h"),
                               ("Motor gücü", "Excel elektrik motoru kademe tablosu", f"{_h710.get('motor', 0):.2f} kW"),
                               ("Fan adedi / tipi", "Kullanıcı seçimi", f"{_h710.get('fan_adet', 1)} adet — {_h710.get('fan_tip', '')}"),
+                              *[(f.get("rapor_adi", f.get("kod", "ASANSÖR BASINÇLANDIRMA FANI")), "Debi / Basınç / Motor", f"{f.get('debi', 0):,.0f} m³/h / {f.get('basinc', 0):,.0f} Pa / {f.get('motor', 0):.2f} kW") for f in _h710.get("fanlar", [])],
                           ]
                           _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
                           for _row in _t710.rows:
