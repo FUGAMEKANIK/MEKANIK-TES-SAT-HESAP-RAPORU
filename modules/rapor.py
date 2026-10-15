@@ -3110,64 +3110,66 @@ if _rapor_olustur_sidebar:
                           _p710.add_run(str(_ek710.get("metin", "")))
                       _h710 = st.session_state.get("yangin_710_rapor_hesap", {})
                       doc.add_heading("7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI", level=4)
-                      if not _h710:
-                          doc.add_paragraph("Asansör basınçlandırma hesabı henüz yapılmamıştır.")
+                      if not _h710 or not _h710.get("fanlar"):
+                          doc.add_paragraph("Asansör basınçlandırma fanı seçilmemiş veya hesap yapılmamıştır.")
                       else:
                           from docx.shared import Cm, Pt
-                          from docx.enum.text import WD_ALIGN_PARAGRAPH
-                          from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+                          from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
                           from docx.oxml import OxmlElement
                           from docx.oxml.ns import qn
-                          _t710 = doc.add_table(rows=1, cols=3); _t710.style = "Table Grid"; _t710.autofit = False
-                          _head710 = _t710.rows[0].cells
-                          for _i, _txt in enumerate(("HESAP KALEMİ / GİRDİ", "FORMÜL / İŞLEM", "DEĞER / SONUÇ")):
-                              _head710[_i].text = _txt
-                          _rows710 = [
-                              ("1. HAVA DEBİSİ HESABI", "", ""),
-                              ("Kapalı kapı adedi", "N", str(_h710.get("n_kapali", 0))),
-                              ("Basınç farkı", "ΔP", f"{_h710.get('dp1', 50):.1f} Pa"),
-                              ("Kapı başına sızıntı alanı", "Ae", f"{_h710.get('ae', .06):.3f} m²"),
-                              ("Q1 — Sızıntı debisi (%50 emniyet dâhil)", "0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_h710.get('q1', 0):,.2f} m³/h"),
-                              ("2. AÇIK KAPI DEBİSİ", "", ""),
-                              ("Açık kapı adedi", "N", str(_h710.get("n_acik", 0))),
-                              ("Kapı ölçüsü", "Genişlik × yükseklik", f"{_h710.get('kapi_gen', 0):.2f} × {_h710.get('kapi_yuk', 0):.2f} m"),
-                              ("Kapı alanı", "Ae = genişlik × yükseklik", f"{_h710.get('ae2', 0):.3f} m²"),
-                              ("Açık kapı debisi Q2", "V × Ae × N × 3600", f"{_h710.get('q2', 0):,.2f} m³/h"),
-                              ("Q2 (%10 emniyet dâhil)", "Q2 × 1,10", f"{_h710.get('q2_em', 0):,.2f} m³/h"),
-                              ("3. TOPLAM HAVA DEBİSİ", "Q1 + Q2", f"{_h710.get('qtop', 0):,.2f} m³/h; seçim: {_h710.get('qsec', 0):,.0f} m³/h"),
-                              ("4. BASINÇ KAYIPLARI VE EMNİYET", "", ""),
-                              ("Şaft kanal kaybı", "Girdi", f"{_h710.get('saft', 0):.1f} Pa"),
-                              ("Menfez kaybı", "Girdi", f"{_h710.get('menfez', 0):.1f} Pa"),
-                              ("Panjur ve taze hava alış kaybı", "Girdi", f"{_h710.get('panjur', 0):.1f} Pa"),
-                              ("Pozitif basınç", "Girdi", f"{_h710.get('pozitif', 0):.1f} Pa"),
-                              ("Toplam kayıp / emniyet payı", f"Emniyet %{_h710.get('emniyet_orani', 10):g}", f"{_h710.get('kayip', 0):.1f} / {_h710.get('emniyet', 0):.1f} Pa"),
-                              ("Seçim basıncı", "Üst 50 Pa değerine yuvarlama", f"{_h710.get('basinc', 0):.0f} Pa"),
-                              ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
-                              ("Seçilen fan debisi", "Üst 1.000 m³/h değeri", f"{_h710.get('qsec', 0):,.0f} m³/h"),
-                              ("Motor gücü", "Excel elektrik motoru kademe tablosu", f"{_h710.get('motor', 0):.2f} kW"),
-                              ("Fan adedi / tipi", "Kullanıcı seçimi", f"{_h710.get('fan_adet', 1)} adet — {_h710.get('fan_tip', '')}"),
-                              *[(f.get("rapor_adi", f.get("kod", "ASANSÖR BASINÇLANDIRMA FANI")), "Debi / Basınç / Motor", f"{f.get('debi', 0):,.0f} m³/h / {f.get('basinc', 0):,.0f} Pa / {f.get('motor', 0):.2f} kW") for f in _h710.get("fanlar", [])],
-                          ]
-                          _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
-                          for _row in _t710.rows:
-                              for _i,_cell in enumerate(_row.cells): _cell.width=_width710[_i]; _cell.vertical_alignment=WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                          for _rowdata in _rows710:
-                              _cells=_t710.add_row().cells
-                              if _rowdata[1]=="" and _rowdata[2]=="":
-                                  _cells[0].merge(_cells[1]).merge(_cells[2]); _cells[0].text=_rowdata[0]
-                                  _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cells[0]._tc.get_or_add_tcPr().append(_sh)
-                                  for _p in _cells[0].paragraphs:
-                                      for _r in _p.runs: _r.bold=True
-                              else:
-                                  for _i,_v in enumerate(_rowdata): _cells[_i].text=str(_v)
-                          for _row in _t710.rows:
-                              for _cell in _row.cells:
-                                  for _p in _cell.paragraphs:
-                                      _p.paragraph_format.space_before=Pt(0); _p.paragraph_format.space_after=Pt(0); _p.paragraph_format.line_spacing=1.0
-                                      for _r in _p.runs: _r.font.name='Times New Roman'; _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'),'Times New Roman'); _r.font.size=Pt(9.5)
-                          for _cell in _head710:
-                              _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cell._tc.get_or_add_tcPr().append(_sh)
-                              for _r in _cell.paragraphs[0].runs: _r.bold=True
+                          for _fan710 in _h710.get("fanlar", []):
+                              _fanhead = doc.add_heading(_fan710.get("rapor_adi", "ASANSÖR BASINÇLANDIRMA FANI"), level=5)
+                              _fanhead.paragraph_format.space_before = Pt(6)
+                              _t710 = doc.add_table(rows=1, cols=3); _t710.style = "Table Grid"; _t710.autofit = False
+                              _head710 = _t710.rows[0].cells
+                              for _i, _txt in enumerate(("HESAP KALEMİ / GİRDİ", "FORMÜL / İŞLEM", "DEĞER / SONUÇ")):
+                                  _head710[_i].text = _txt
+                              _rows710 = [
+                                  ("1. HAVA DEBİSİ HESABI", "", ""),
+                                  ("Kapalı kapı adedi", "N", str(_fan710.get("n_kapali", 0))),
+                                  ("Basınç farkı", "ΔP", f"{_fan710.get('dp1', 50):.1f} Pa"),
+                                  ("Kapı başına sızıntı alanı", "Ae", f"{_fan710.get('ae', .06):.3f} m²"),
+                                  ("Q1 — Sızıntı debisi (%50 emniyet dâhil)", "0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_fan710.get('q1', 0):,.2f} m³/h"),
+                                  ("2. AÇIK KAPI DEBİSİ", "", ""),
+                                  ("Açık kapı adedi", "N", str(_fan710.get("n_acik", 0))),
+                                  ("Kapı ölçüsü", "Genişlik × yükseklik", f"{_fan710.get('kapi_gen', 0):.2f} × {_fan710.get('kapi_yuk', 0):.2f} m"),
+                                  ("Kapı alanı", "Ae = genişlik × yükseklik", f"{_fan710.get('ae2', 0):.3f} m²"),
+                                  ("Açık kapı debisi Q2", "V × Ae × N × 3600", f"{_fan710.get('q2', 0):,.2f} m³/h"),
+                                  ("Q2 (%10 emniyet dâhil)", "Q2 × 1,10", f"{_fan710.get('q2_em', 0):,.2f} m³/h"),
+                                  ("3. TOPLAM HAVA DEBİSİ", "Q1 + Q2", f"{_fan710.get('qtop', 0):,.2f} m³/h; seçim: {_fan710.get('qsec', 0):,.0f} m³/h"),
+                                  ("4. BASINÇ KAYIPLARI VE EMNİYET", "", ""),
+                                  ("Şaft kanal kaybı", "Girdi", f"{_fan710.get('saft', 0):.1f} Pa"),
+                                  ("Menfez kaybı", "Girdi", f"{_fan710.get('menfez', 0):.1f} Pa"),
+                                  ("Panjur ve taze hava alış kaybı", "Girdi", f"{_fan710.get('panjur', 0):.1f} Pa"),
+                                  ("Pozitif basınç", "Girdi", f"{_fan710.get('pozitif', 0):.1f} Pa"),
+                                  ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('kayip', 0):.1f} / {_fan710.get('emniyet', 0):.1f} Pa"),
+                                  ("Seçim basıncı", "Üst 50 Pa değerine yuvarlama", f"{_fan710.get('basinc', 0):.0f} Pa"),
+                                  ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
+                                  ("Seçilen fan debisi", "Üst 1.000 m³/h değeri", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
+                                  ("Motor gücü", "Excel elektrik motoru kademe tablosu", f"{_fan710.get('motor', 0):.2f} kW"),
+                                  ("Fan tipi", "Kullanıcı seçimi", str(_fan710.get("fan_tip", ""))),
+                              ]
+                              _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
+                              for _rowdata in _rows710:
+                                  _cells=_t710.add_row().cells
+                                  if _rowdata[1]=="" and _rowdata[2]=="":
+                                      _cells[0].merge(_cells[1]).merge(_cells[2]); _cells[0].text=_rowdata[0]
+                                      _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cells[0]._tc.get_or_add_tcPr().append(_sh)
+                                      for _p in _cells[0].paragraphs:
+                                          for _rr in _p.runs: _rr.bold=True
+                                  else:
+                                      for _i,_v in enumerate(_rowdata): _cells[_i].text=str(_v)
+                              for _row in _t710.rows:
+                                  for _i,_cell in enumerate(_row.cells):
+                                      _cell.width=_width710[_i]; _cell.vertical_alignment=WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                                      for _p in _cell.paragraphs:
+                                          _p.paragraph_format.space_before=Pt(0); _p.paragraph_format.space_after=Pt(0); _p.paragraph_format.line_spacing=1.0
+                                          for _rr in _p.runs:
+                                              _rr.font.name='Times New Roman'; _rr._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'),'Times New Roman'); _rr.font.size=Pt(9.5)
+                              for _cell in _head710:
+                                  _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cell._tc.get_or_add_tcPr().append(_sh)
+                                  for _rr in _cell.paragraphs[0].runs: _rr.bold=True
+
 
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
                   if _bk == "bolum_73":
