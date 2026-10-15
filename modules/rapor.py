@@ -2960,7 +2960,13 @@ if _rapor_olustur_sidebar:
                       # Her seçili merdiven, yangin.py tarafından ayrı bir kayıt olarak aktarılır.
                       # Kayıtlar birleştirilmeden kendi başlıkları ve hesap tablolarıyla yazdırılır.
                       for _h79 in _79_rapor_hesaplari:
-                          doc.add_heading(str(_h79.get("ad", "YAN. MER.")), level=5)
+                          _ham_merdiven_adi79 = str(_h79.get("ad", "YAN. MER. 01"))
+                          _merdiven_sira79 = "01"
+                          import re as _re_merdiven79
+                          _m79 = _re_merdiven79.search(r"(\d+)\s*$", _ham_merdiven_adi79)
+                          if _m79:
+                              _merdiven_sira79 = _m79.group(1).zfill(2)
+                          doc.add_heading(f"YANGIN MERDİVENİ BASINÇLANDIRMA FANI {_merdiven_sira79}", level=5)
                           # Excel'deki hesap sıralamasına benzer ayrıntılı rapor tablosu:
                           # Girdi, formül/işlem ve sonuç ayrı sütunlarda gösterilir.
                           _t79 = doc.add_table(rows=1, cols=3)
@@ -3031,7 +3037,7 @@ if _rapor_olustur_sidebar:
                           from docx.oxml.ns import qn
                           _t79.alignment = WD_TABLE_ALIGNMENT.CENTER
                           _t79.autofit = False
-                          _genislikler79 = [Cm(5.0), Cm(5.0), Cm(5.0)]
+                          _genislikler79 = [Cm(4.8), Cm(5.4), Cm(5.6)]
                           for _satir79 in _t79.rows:
                               for _i79, _hucre79 in enumerate(_satir79.cells):
                                   _hucre79.width = _genislikler79[_i79]
@@ -3052,13 +3058,13 @@ if _rapor_olustur_sidebar:
                                   _bolum_hucre79 = _bolum_satir79.cells
                                   _bolum_hucre79[0].merge(_bolum_hucre79[1]).merge(_bolum_hucre79[2])
                                   _bolum_hucre79[0].text = _bolumler79[_etiket79]
-                                  _bolum_hucre79[0].width = Cm(15.0)
+                                  _bolum_hucre79[0].width = Cm(15.8)
                                   _bolum_hucre79[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                                   _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _bolum_hucre79[0]._tc.get_or_add_tcPr().append(_shd79)
                                   for _p79 in _bolum_hucre79[0].paragraphs:
                                       _p79.paragraph_format.space_before = Pt(0); _p79.paragraph_format.space_after = Pt(0)
                                       for _r79 in _p79.runs:
-                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
+                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
                               _c79 = _t79.add_row().cells
                               for _i79, _icerik79 in enumerate((_etiket79, _formul79, _deger79)):
                                   _c79[_i79].text = str(_icerik79)
@@ -3076,12 +3082,12 @@ if _rapor_olustur_sidebar:
                                       for _r79 in _p79.runs:
                                           _r79.font.name = 'Times New Roman'
                                           _r79._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-                                          _r79.font.size = Pt(8.5)
+                                          _r79.font.size = Pt(9.5)
                           for _c79 in _baslik_hucreleri79:
                               for _p79 in _c79.paragraphs:
                                   for _r79 in _p79.runs:
                                       _r79.bold = True
-                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(8.5)
+                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
 
 
                   # 7.3 Yangın Dolabı Sistemi — rapor içeriği
