@@ -2093,21 +2093,25 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 fan_tip=st.text_input("Fan tipi / açıklama",value="Asansör basınçlandırma fanı",key=_k+"fan_tip")
                                 st.markdown("##### Fan sonuçları ve poz seçimi")
                                 st.caption("Poz numarası burada seçilir; isterseniz rapora eklenmesini kapatabilirsiniz.")
-                                _poz_secenekleri = []
-                                for _prefix in ("25.452.24", "25.452.25", "25.452.26"):
-                                    _poz_secenekleri.extend([f"{_prefix}{_j:02d}" for _j in range(1, 7)])
-                                _poz_secenekleri.extend(["25.452.2406/A", "25.452.2506/A"])
-                                if _asr_poz_no not in _poz_secenekleri:
-                                    _poz_secenekleri.insert(0, str(_asr_poz_no))
-                                _poz_default_index = _poz_secenekleri.index(_asr_poz_no) if _asr_poz_no in _poz_secenekleri else 0
-                                # Selectbox state is the single source of truth; do not mirror it into a second widget key.
-                                _poz_secim = st.selectbox(
-                                    "Fan poz numarası",
-                                    options=_poz_secenekleri,
-                                    index=_poz_default_index,
-                                    key=_k+"poz_secim",
+                                _poz_manuel_aktif_key = _k + "poz_manuel_aktif"
+                                _poz_manuel_key = _k + "poz_manuel_deger"
+                                _poz_manuel_aktif = st.checkbox(
+                                    "Poz numarasını elle gir / düzelt",
+                                    value=False,
+                                    key=_poz_manuel_aktif_key,
                                 )
-                                _asr_poz_no = str(_poz_secim)
+                                # Elle giriş kapalıyken otomatik poz her hesap yenilemesinde güncellenir.
+                                # Böylece önceki hesaplamadan kalan poz, yeni basınç/debi sonucunu ezmez.
+                                if not _poz_manuel_aktif:
+                                    st.session_state[_poz_manuel_key] = str(_asr_poz_no)
+                                _poz_manuel_deger = st.text_input(
+                                    "Fan poz numarası",
+                                    key=_poz_manuel_key,
+                                    disabled=not _poz_manuel_aktif,
+                                    help="Elle giriş kapalıysa otomatik seçilen poz kullanılır.",
+                                )
+                                if _poz_manuel_aktif and str(_poz_manuel_deger).strip():
+                                    _asr_poz_no = str(_poz_manuel_deger).strip()
                                 _poz_rapora_ekle = st.checkbox("Poz numarasını rapora ekle", value=True, key=_k+"poz_rapora_ekle")
                                 st.dataframe([{"Hesap kalemi":"Q1 + Q2 toplam debisi","Formül / işlem":"Q1 + Q2 (%10 emniyet dâhil)","Değer / sonuç":f"{qtop:,.2f} m³/h"},{"Hesap kalemi":"Seçilen fan debisi","Formül / işlem":"Gerekli debiye eşit veya bir üst poz debisi","Değer / sonuç":f"{qsec:,.0f} m³/h" if qsec else "Uygun poz bulunamadı"},{"Hesap kalemi":"Fan poz numarası","Formül / işlem":f"Basınç grubu ≤ {_poz_limit} Pa" if _poz_on_ek else "Elle seçilebilir","Değer / sonuç":_asr_poz_no if _poz_rapora_ekle else "Rapora eklenmeyecek"},{"Hesap kalemi":"Fan adedi","Formül / işlem":"Kullanıcı girişi","Değer / sonuç":str(fan_adedi)},{"Hesap kalemi":"Seçilen fan basıncı","Formül / işlem":"Elle düzeltilebilir; başlangıç değeri 50 Pa katı","Değer / sonuç":f"{basinc:.0f} Pa"},{"Hesap kalemi":"Motor gücü","Formül / işlem":"Q × P / (198000 × 9,81), sonraki motor kademesi","Değer / sonuç":f"{motor:.2f} kW"},{"Hesap kalemi":"Fan tipi","Formül / işlem":"Kullanıcı seçimi","Değer / sonuç":fan_tip}],use_container_width=True,hide_index=True)
                                 _asr_fan_rapor.append({"kod":_asr_ad,"rapor_adi":f"ASANSÖR BASINÇLANDIRMA FANI-{_i:02d}","n_kapali":n_kapali,"dp1":dp1,"ae":ae,"q1":q1,"n_acik":n_acik,"hiz":hiz,"kapi_gen":kw,"kapi_yuk":kh,"ae2":ae2,"q2":q2,"q2_em":q2_em,"qtop":qtop,"qsec":qsec,"poz_no":_asr_poz_no,"poz_rapora_ekle":_poz_rapora_ekle,"poz_a_ekle":_asr_poz_ekle,"fan_adedi":fan_adedi,"saft":saft,"menfez":menfez,"panjur":panjur,"pozitif":poz,"kayip":kayip,"emniyet_orani":em,"emniyet":emniyet,"basinc":basinc,"motor":motor,"fan_tip":fan_tip})
