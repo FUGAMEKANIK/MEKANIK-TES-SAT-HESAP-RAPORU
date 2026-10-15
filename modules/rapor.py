@@ -3122,7 +3122,7 @@ if _rapor_olustur_sidebar:
                               _fanhead.paragraph_format.space_before = Pt(6)
                               _t710 = doc.add_table(rows=1, cols=3); _t710.style = "Table Grid"; _t710.autofit = False
                               _head710 = _t710.rows[0].cells
-                              for _i, _txt in enumerate(("HESAP KALEMİ / GİRDİ", "FORMÜL / İŞLEM", "DEĞER / SONUÇ")):
+                              for _i, _txt in enumerate(("HESAP KALEMİ", "FORMÜL / İŞLEM", "DEĞER / SONUÇ")):
                                   _head710[_i].text = _txt
                               _rows710 = [
                                   ("1. HAVA DEBİSİ HESABI", "", ""),
@@ -3138,21 +3138,18 @@ if _rapor_olustur_sidebar:
                                   ("Q2 (%10 emniyet dâhil)", "Q2 × 1,10", f"{_fan710.get('q2_em', 0):,.2f} m³/h"),
                                   ("3. TOPLAM HAVA DEBİSİ", "Q1 + Q2", f"{_fan710.get('qtop', 0):,.2f} m³/h; seçim: {_fan710.get('qsec', 0):,.0f} m³/h"),
                                   ("4. BASINÇ KAYIPLARI VE EMNİYET", "", ""),
-                                  ("Şaft kanal kaybı", "Girdi", f"{_fan710.get('saft', 0):.1f} Pa"),
-                                  ("Menfez kaybı", "Girdi", f"{_fan710.get('menfez', 0):.1f} Pa"),
-                                  ("Panjur ve taze hava alış kaybı", "Girdi", f"{_fan710.get('panjur', 0):.1f} Pa"),
-                                  ("Pozitif basınç", "Girdi", f"{_fan710.get('pozitif', 0):.1f} Pa"),
+                                  ("Şaft kanal kaybı", "", f"{_fan710.get('saft', 0):.1f} Pa"),
+                                  ("Menfez kaybı", "", f"{_fan710.get('menfez', 0):.1f} Pa"),
+                                  ("Panjur ve taze hava alış kaybı", "", f"{_fan710.get('panjur', 0):.1f} Pa"),
+                                  ("Pozitif basınç", "", f"{_fan710.get('pozitif', 0):.1f} Pa"),
                                   ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('kayip', 0):.1f} / {_fan710.get('emniyet', 0):.1f} Pa"),
-                                  ("Seçim basıncı", "Üst 50 Pa değerine yuvarlama", f"{_fan710.get('basinc', 0):.0f} Pa"),
+                                  ("Seçim basıncı", "", f"{_fan710.get('basinc', 0):.0f} Pa"),
                                   ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
-                                  ("Seçilen fan debisi", "Seçilen pozun debi değeri", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
-                                  ("Fan poz numarası", "Seçilen poz numarası", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
-                                  ("Fan adedi", "Kullanıcı girişi", str(_fan710.get("fan_adedi", 1))),
-                                  ("Motor gücü", "Excel elektrik motoru kademe tablosu", f"{_fan710.get('motor', 0):.2f} kW"),
-                                  ("Fan tipi", "Kullanıcı seçimi", str(_fan710.get("fan_tip", ""))),
+                                  ("Seçilen fan debisi", "", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
+                                  ("Fan poz numarası", "Basınç grubuna göre; >15.000 m³/h için isteğe bağlı /A", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
+                                  ("Motor gücü", "", f"{_fan710.get('motor', 0):.2f} kW"),
+                                  ("Fan tipi", "", str(_fan710.get("fan_tip", ""))),
                               ]
-                              if not _fan710.get("poz_rapora_ekle", True):
-                                  _rows710 = [row for row in _rows710 if row[0] != "Fan poz numarası"]
                               _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
                               for _rowdata in _rows710:
                                   _cells=_t710.add_row().cells
