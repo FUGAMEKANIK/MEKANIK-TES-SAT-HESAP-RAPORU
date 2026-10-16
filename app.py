@@ -444,7 +444,14 @@ def _proje_widget_anahtari_mi(anahtar):
     anahtar = str(anahtar)
     if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
         return True
-    if "_btn_" in anahtar or anahtar.endswith("_btn"):
+    # Türkçe adlandırılmış buton anahtarları da proje JSON'undan geri
+    # yüklenmemelidir. Örnek: yangin_7111_ekle_buton_0.
+    if (
+        "_btn_" in anahtar
+        or anahtar.endswith("_btn")
+        or "_buton_" in anahtar
+        or anahtar.endswith("_buton")
+    ):
         return True
     if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
         return True
@@ -472,8 +479,16 @@ def _proje_widget_anahtari_mi(anahtar):
         return True
 
     # Genel güvenlik: Streamlit aksiyon widget'ı isimlerinde sık kullanılan
-    # buton/aksiyon ifadelerini proje verisi olarak geri yükleme.
-    if _alt.endswith("_button") or "_button_" in _alt:
+    # buton/aksiyon ifadelerini proje verisi olarak geri yükleme. Türkçe
+    # "_buton_" anahtarları da kapsanmalıdır; aksi halde eski proje kayıtlarında
+    # saklanan st.button anahtarı geri yüklenip StreamlitValueAssignmentNotAllowedError
+    # oluşturabilir (ör. yangin_7111_ekle_buton_0).
+    if (
+        _alt.endswith("_button")
+        or "_button_" in _alt
+        or "_buton_" in _alt
+        or _alt.endswith("_buton")
+    ):
         return True
     # _toplu_secim_butonlari() dinamik olarak oluşturduğu st.button anahtarları
     # eski proje kayıtlarında bulunabilir. Bunlar session_state'e geri yazılırsa
