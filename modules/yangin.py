@@ -514,155 +514,6 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                 st.session_state.setdefault(_r721, True)
                 st.session_state.setdefault(_r722, True)
 
-                # ------------------------------------------------------------------
-                # GENEL BİNA BİLGİLERİ
-                # Bu bilgiler 7.3 ve sonraki yangın tesisatı modüllerinin ortak
-                # veri kaynağıdır. Şimdilik yalnızca program ekranında kullanılır;
-                # rapor üretimine aktarılmaz.
-                # ------------------------------------------------------------------
-                with st.expander("GENEL BİNA BİLGİLERİ", expanded=False):
-                    st.markdown(
-                        '<div style="font-size:16px;font-weight:700;font-style:italic;">'
-                        'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
-                        unsafe_allow_html=True,
-                    )
-                    st.caption(
-                        "Bu bilgiler, aşağıdaki yangın tesisatı bölümlerinde yapılacak "
-                        "ön değerlendirme ve hesaplamalarda ortak veri olarak kullanılacaktır. "
-                        "Şimdilik rapora aktarılmaz."
-                    )
-
-                    with st.expander("ⓘ BİNA YÜKSEKLİĞİ VE YAPI YÜKSEKLİĞİ TANIMI / ŞEKLİ", expanded=False):
-                        st.markdown(
-                            "**Bina yüksekliği:** Binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir."
-                        )
-                        st.markdown(
-                            "**Yapı yüksekliği:** Bodrum katlar, asma katlar ve çatı arası piyesler dâhil olmak üzere, yapının inşa edilen bütün katlarının toplam yüksekliğidir."
-                        )
-                        # Şema dosyası GitHub/Streamlit ortamında isim veya uzantı farkı
-                        # nedeniyle bulunamazsa, aynı klasördeki uygun PNG dosyasını da ara.
-                        _sema_kok = Path(__file__).resolve().parent.parent
-                        _sema_adaylari = [
-                            _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
-                            *_sema_kok.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
-                        ]
-                        _sema_yolu = next((p for p in _sema_adaylari if p.is_file()), None)
-                        _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu else None
-                        if _sema_verisi:
-                            st.image(_sema_verisi, caption="Bina yüksekliği ve yapı yüksekliği — şematik gösterim", use_container_width=True)
-                        else:
-                            st.warning("Bina yüksekliği / yapı yüksekliği şeması bulunamadı. PNG dosyasının app.py ile aynı kökte olduğundan emin olun.")
-                        st.caption(
-                            "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
-                        )
-
-                    # BLOK BİLGİLERİ: blok adedi, her bloğun adı ve alanı.
-                    # Eski tek toplam alan değeri ilk blok için başlangıç değeri olarak korunur.
-                    _blok_secenekleri = ["Tek blok"] + [f"{_i} blok" for _i in range(2, 11)]
-                    _mevcut_toplam_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
-                    st.session_state.setdefault("yangin_genel_blok_sayisi", "Tek blok")
-                    st.selectbox(
-                        "Blok sayısı",
-                        options=_blok_secenekleri,
-                        key="yangin_genel_blok_sayisi",
-                        help="Projede bulunan blok sayısını seçiniz. Her blok için ad ve m² bilgisi ayrı girilir.",
-                    )
-                    _blok_adet = 1 if st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") == "Tek blok" else int(str(st.session_state["yangin_genel_blok_sayisi"]).split()[0])
-                    _blok_sekmeleri = st.tabs([f"Blok {_i}" for _i in range(1, _blok_adet + 1)])
-                    _blok_alanlari = []
-                    for _i, _blok_sekme in enumerate(_blok_sekmeleri, start=1):
-                        _ad_key = f"yangin_genel_blok_{_i}_adi"
-                        _alan_key = f"yangin_genel_blok_{_i}_alan_m2"
-                        if _i == 1:
-                            st.session_state.setdefault(_ad_key, "Blok 1")
-                            st.session_state.setdefault(_alan_key, _mevcut_toplam_alan)
-                        else:
-                            st.session_state.setdefault(_ad_key, f"Blok {_i}")
-                            st.session_state.setdefault(_alan_key, 0.0)
-                        with _blok_sekme:
-                            _bk1, _bk2 = st.columns([2, 1])
-                            with _bk1:
-                                st.text_input(f"Blok {_i} adı", key=_ad_key, help="Örnek: A Blok, B Blok, C Blok")
-                            with _bk2:
-                                st.number_input(f"Blok {_i} alanı (m²)", min_value=0.0, step=10.0, key=_alan_key)
-                        _blok_alanlari.append(float(st.session_state.get(_alan_key, 0.0) or 0.0))
-                    _blok_toplam_alan = round(sum(_blok_alanlari), 2)
-                    # Var olan toplam alan anahtarı güncellenir; diğer hesaplamalar bu toplamı kullanmaya devam eder.
-                    st.session_state["yangin_genel_toplam_alan_m2"] = _blok_toplam_alan
-                    st.info(f"**Blokların toplam alanı: {_blok_toplam_alan:,.2f} m²**".replace(",", "X").replace(".", ",").replace("X", "."))
-
-                    _b1, _b2, _b3 = st.columns(3)
-                    with _b1:
-                        st.number_input(
-                            "Toplam yapı / kapalı kullanım alanı (m²)",
-                            min_value=0.0, step=10.0,
-                            key="yangin_genel_toplam_alan_m2",
-                            disabled=True,
-                            help="Bu değer, yukarıda girilen blok alanlarının toplamından otomatik hesaplanır.",
-                        )
-                        st.number_input(
-                            "Kat sayısı", min_value=0, step=1,
-                            key="yangin_genel_kat_sayisi",
-                            help="Binanın toplam kat sayısını giriniz. İlgili yangın güvenliği değerlendirmelerinde kullanılacaktır.",
-                        )
-                        st.number_input(
-                            "Bodrum kat sayısı", min_value=0, step=1,
-                            key="yangin_genel_bodrum_kat_sayisi",
-                            help="Binada bulunan bodrum kat adedini giriniz.",
-                        )
-                    with _b2:
-                        st.number_input(
-                            "Bina yüksekliği (m)", min_value=0.0, step=0.10,
-                            key="yangin_genel_bina_yuksekligi_m",
-                            help="BYKHY tanımına göre binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
-                        )
-                        st.number_input(
-                            "Yapı yüksekliği (m)", min_value=0.0, step=0.10,
-                            key="yangin_genel_yapi_yuksekligi_m",
-                            help="BYKHY tanımına göre bodrum katlar, asma katlar ve çatı arası piyesler dâhil yapının inşa edilen bütün katlarının toplam yüksekliğidir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
-                        )
-                        st.number_input(
-                            "Merdiven kovası yüksekliği (m)", min_value=0.0, step=0.10,
-                            key="yangin_genel_merdiven_kovasi_yuksekligi_m",
-                            help="Merdiven kovası / merdiven basınçlandırması değerlendirmesinde kullanılacak yaklaşık yüksekliği metre olarak giriniz.",
-                        )
-                    with _b3:
-                        st.number_input(
-                            "Toplam kişi sayısı", min_value=0, step=1,
-                            key="yangin_genel_kisi_sayisi",
-                            help="Binada bulunan veya hesapta esas alınacak toplam kişi sayısını giriniz.",
-                        )
-                        st.number_input(
-                            "Otopark sayısı / araç kapasitesi", min_value=0, step=1,
-                            key="yangin_genel_otopark_arac_sayisi",
-                            help="Kapalı otoparkta bulunabilecek toplam araç kapasitesini giriniz.",
-                        )
-                        st.number_input(
-                            "Kapalı otopark alanı (m²)", min_value=0.0, step=10.0,
-                            key="yangin_genel_kapali_otopark_alan_m2",
-                            help="Kapalı otoparkın yangın güvenliği değerlendirmesinde kullanılacak toplam alanını m² olarak giriniz.",
-                        )
-
-                    _b4, _b5, _b6 = st.columns(3)
-                    with _b4:
-                        st.number_input(
-                            "Yatak sayısı (varsa)", min_value=0, step=1,
-                            key="yangin_genel_yatak_sayisi",
-                            help="Hastane, otel, yurt vb. yapılarda varsa toplam yatak sayısını giriniz.",
-                        )
-                    with _b5:
-                        st.number_input(
-                            "İmar planlama / yerleşim alanı (m²)", min_value=0.0, step=10.0,
-                            key="yangin_genel_imar_alani_m2",
-                            help="Proje kapsamında kullanılacak yerleşim / imar alanını m² olarak giriniz.",
-                        )
-                    with _b6:
-                        st.checkbox(
-                            "Acil durum asansörü bulunuyor",
-                            key="yangin_genel_acil_durum_asansoru",
-                            help="Binada acil durum asansörü bulunup bulunmadığını belirtiniz.",
-                        )
-
                 _genel_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
                 _kat = int(st.session_state.get("yangin_genel_kat_sayisi", 0) or 0)
                 _bodrum = int(st.session_state.get("yangin_genel_bodrum_kat_sayisi", 0) or 0)
@@ -882,7 +733,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
             elif _baslik.startswith("7.3 "):
                 # ------------------------------------------------------------------
                 # 7.3 YANGIN DOLABI SİSTEMİ
-                # 7.2 GENEL BİNA BİLGİLERİ ve seçilen etkin yangın tehlike sınıfı
+                # Genel Bilgiler sekmesinden gelen bina verileri ve seçilen etkin yangın tehlike sınıfı
                 # bu bölümün ortak veri kaynağıdır.
                 # ------------------------------------------------------------------
                 with st.expander("7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI", expanded=False):
@@ -1389,15 +1240,14 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     _sprinkler_esaslari = [
                         ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
                         ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
-                        ("3", "600 m²’den büyük kapalı otoparklarda sprinkler zorunluluğu", "Alanlarının toplamı 600 m²’den büyük olan kapalı otoparklarda otomatik yağmurlama (sprinkler) sistemi, yangın dolabı sistemi ve itfaiye su alma ağızları yapılmalıdır. (BYKHY Madde 60/1)"),
-                        ("4", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su sprey ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
-                        ("5", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
-                        ("6", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
-                        ("7", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
-                        ("8", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
-                        ("9", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
-                        ("10", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
-                        ("11", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
+                        ("3", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su sprey ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
+                        ("4", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
+                        ("5", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
+                        ("6", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
+                        ("7", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
+                        ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
+                        ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
+                        ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
                     ]
                     _spr_atif_key = "yangin_751_yonetmelik_atiflari"
                     st.session_state.setdefault(_spr_atif_key, True)
@@ -2198,24 +2048,21 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.rerun()
                             else:
                                 st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
-                        for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711) + 7}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
+                        for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
 
-                    # Zorunluluk bulunan bina ve mahaller, önceki maddelerin devamı olarak (5)'ten başlar.
+                    # 7.11.2 — Zorunlulukların mahal ve kullanım koşullarına göre açıklanması
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">ZORUNLULUK BULUNAN BİNA VE MAHALLER</div>', unsafe_allow_html=True)
                     _7112_rapor_key = "yangin_7112_rapora_ekle"
                     st.session_state.setdefault(_7112_rapor_key, True)
                     st.checkbox("Zorunluluk bulunan bina ve mahal açıklamaları rapora eklensin", key=_7112_rapor_key)
                     _zorunluluk_711 = [
-                        ('1', 'Koridorlar ve yüksek binaların ortak alanları', "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. Koridorların kaçış yolu niteliği, kompartımanlama ve duman kontrol gereklilikleri bina kullanımına ve ilgili yönetmelik hükümlerine göre ayrıca değerlendirilmelidir. (BYKHY Madde 87/12)"),
-                        ('2', 'Sığınaklarda duman tahliyesi ve çıkışlar', "İlgili mevzuatına uygun olarak 100 m²'den büyük sığınaklarda duman tahliye sistemi kurulmalı ve en az iki çıkış sağlanmalıdır. Yönetmeliğe göre algılama, uyarı ve söndürme sistemlerinin zorunlu olduğu binaların sığınaklarında bu sistemler de kurulmalıdır. (BYKHY Madde 59/1)"),
-                        ('3', 'Otoparkın açık veya kapalı kabul edilmesi — %5 açıklık şartı', "Bir otoparkın açık otopark kabul edilebilmesi için dışarıya olan toplam açık alan, döşeme alanının %5'inden fazla olmalıdır. Bu şart sağlanmıyorsa otopark kapalı otopark kabul edilir. (BYKHY Madde 60/1)"),
-                        ('4', 'Açık otoparklarda karşılıklı cephe açıklıkları', 'Açık otoparkta dışarıya olan açıklıklar iki cephede bulunuyorsa, bu açıklıklar karşılıklı iki cephede yer almalı ve her bir açıklık gerekli toplam açıklık alanının yarısından büyük olmalıdır. Kuranglez şeklindeki boşluklarda genişlik en az otopark kat yüksekliği kadar olmalı; ilave her kat için en az kat yüksekliğinin yarısı kadar artırılmalıdır. (BYKHY Madde 60/1)'),
-                        ('6', "2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliyesi", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi yapılmalıdır. Sistem binanın diğer bölümlerine hizmet veren sistemlerden bağımsız olmalı ve saatte en az 10 hava değişimi sağlamalıdır. (BYKHY Madde 60/2)"),
-                        ('7', 'Asansörle erişilen kapalı otoparklarda havalandırma', 'Araçların asansör ile alındığı kapalı otoparklarda doğal veya mekanik havalandırma sistemi yapılmalıdır. (BYKHY Madde 60/3)'),
-                        ('8', 'Kapalı otoparklarda LPG/CNG araç kısıtlaması', 'LPG veya sıkıştırılmış doğal gaz (CNG) yakıt sistemli araçlar kapalı otoparklara alınamaz. Alışveriş merkezlerindeki belirli otoparklar için yönetmelikte tanımlanan istisna ve koşullar ayrıca kontrol edilmelidir. (BYKHY Madde 60/4)'),
-                        ('9', 'Dizel yangın pompası ve acil durum jeneratörü mahalleri', 'Bu mahallerde gerekli havalandırma/duman kontrol düzenleri, diğer bölümlere hizmet veren sistemlerden bağımsız olarak tasarlanmalı; dış hava emişi ve egzoz atışı konumları ilgili mevzuat ve üretici şartlarına göre düzenlenmelidir. (BYKHY Madde 88)'),
-                        ('10', 'Mutfak pişirme alanları', 'Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden gerekli mesafede konumlandırılmalıdır. (BYKHY Madde 88)'),
-                        ('11', 'Kazan dairesi, bodrum depoları ve özel mahaller', 'Kazan dairesi, bodrum depoları ve benzeri özel mahallerin havalandırma ve duman tahliye düzenleri, mahalin kullanımına özgü yönetmelik hükümleri ve ilgili standartlara göre tasarlanmalıdır. Her mahal için aynı hava değişim katsayısı otomatik olarak uygulanmamalıdır. (BYKHY Madde 88)'),
-                        ('12', 'Parlayıcı organik toz bulunan mahaller', 'Parlayıcı organik toz bulunan üretim veya depolama alanlarında yangın ve patlama riskine uygun havalandırma ve duman kontrol önlemleri ilgili özel hükümlere göre değerlendirilmelidir. (BYKHY Madde 88)'),
+                        ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
+                        ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
+                        ("3", "Sığınaklar", "100 m²'den büyük sığınaklarda duman tahliye sistemi düzenlenmesi gerekir. Mahal alanı, kullanım amacı ve ilgili diğer hükümler proje özelinde kontrol edilmelidir. (BYKHY Madde 59/1)"),
+                        ("4", "Dizel yangın pompası ve acil durum jeneratörü mahalleri", "Mekanik havalandırmanın gerekli olduğu bu mahallerin duman tahliye/havalandırma sistemleri diğer bölümlere hizmet veren sistemlerden bağımsız tasarlanır. Dış hava emişi ve egzoz atış noktaları arasında yönetmelikte belirtilen en az 5 m mesafe sağlanır. (BYKHY Madde 88/1)"),
+                        ("5", "Mutfak pişirme alanları", "Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden en az 5 m uzakta olmalıdır. (BYKHY Madde 88/2)"),
+                        ("6", "Kazan dairesi, bodrum depoları ve otoparklar", "Bu mahaller için özel havalandırma/duman tahliye koşulları, mahallin niteliği ve ilgili fıkra kapsamı doğrulanarak uygulanır; bütün mahallere koşulsuz aynı debi katsayısı uygulanmamalıdır. (BYKHY Madde 88/3)"),
+                        ("7", "Parlayıcı organik toz bulunan mahaller", "Parlayıcı organik tozların bulunduğu üretim veya depolama alanlarında, ilgili özel hükümlere göre duman kontrolü ve havalandırma ihtiyacı değerlendirilir. (BYKHY Madde 88/4)"),
                     ]
                     _7112_atif_key = "yangin_7112_atiflari"
                     st.session_state.setdefault(_7112_atif_key, True)
@@ -2232,144 +2079,24 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     for _n, _b, _m in _zorunluluk_711:
                         _key = f"yangin_7112_madde_{_n}"; st.session_state.setdefault(_key, True)
                         _display = _m if st.session_state[_7112_atif_key] else re.sub(r"\s*\([^)]*(?:BYKHY|Madde)[^)]*\)", "", _m, flags=re.IGNORECASE).strip()
-                        with st.container(border=True): st.checkbox(f"({int(_n) + 4}) {_b}", key=_key); st.caption(_display)
+                        with st.container(border=True): st.checkbox(f"7.11.1.{int(_n) + 4} {_b}", key=_key); st.caption(_display)
 
                     # 7.11.3 — Hava değişim katsayısıyla debi hesabı; yalnızca ilgili mevzuat şartı geçerliyse kullanılır.
                     st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.2 DUMAN TAHLİYE DEBİSİ HESABI</div>', unsafe_allow_html=True)
                     _7113_rapor_key = "yangin_7113_rapora_ekle"
                     st.session_state.setdefault(_7113_rapor_key, True)
                     st.checkbox("7.11.2 debi hesabı rapora eklensin", key=_7113_rapor_key)
-                    _mahal_secenekleri7113 = [
-                        "Kapalı otopark",
-                        "Koridorlar",
-                        "Sığınak",
-                        "Kazan dairesi / bodrum depo",
-                        "Diğer mahal",
-                    ]
-                    _onceki_mahal7113 = st.session_state.get("yangin_7113_mahal", [_mahal_secenekleri7113[0]])
-                    if isinstance(_onceki_mahal7113, str):
-                        _onceki_mahal7113 = [_onceki_mahal7113]
-                    _oda_turu = st.multiselect(
-                        "Hesaplanacak mahaller (birden fazla seçebilirsiniz)",
-                        _mahal_secenekleri7113,
-                        default=[_m for _m in _onceki_mahal7113 if _m in _mahal_secenekleri7113],
-                        key="yangin_7113_mahal",
-                    )
-                    if _oda_turu:
-                        # Her mahal kendi sekmesinde ve kendi giriş anahtarlarıyla hesaplanır.
-                        _mahal_sekmeleri7113 = st.tabs(_oda_turu)
-                        _mahal_hesaplari7113 = []
-                        for _idx7113, (_mahal7113, _sekme7113) in enumerate(zip(_oda_turu, _mahal_sekmeleri7113)):
-                            _slug7113 = re.sub(r"[^a-zA-Z0-9]+", "_", _mahal7113).strip("_").lower()
-                            with _sekme7113:
-                                st.markdown(f"**{_mahal7113.upper()} — AYRI HESAP**")
-                                _vcol1, _vcol2, _vcol3 = st.columns(3)
-                                with _vcol1:
-                                    _alan7113 = st.number_input(
-                                        "Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0,
-                                        key=f"yangin_7113_{_slug7113}_alan",
-                                    )
-                                with _vcol2:
-                                    _yukseklik7113 = st.number_input(
-                                        "Mahal yüksekliği (m)", min_value=0.0, value=3.0, step=0.1,
-                                        key=f"yangin_7113_{_slug7113}_yukseklik",
-                                    )
-                                with _vcol3:
-                                    _varsayilan_n7113 = 10.0 if _mahal7113 == "Kapalı otopark" else 0.0
-                                    _n7113 = st.number_input(
-                                        "Hava değişim sayısı N (1/h)", min_value=0.0,
-                                        value=_varsayilan_n7113, step=1.0,
-                                        key=f"yangin_7113_{_slug7113}_n",
-                                    )
-                                _hacim7113 = _alan7113 * _yukseklik7113
-                                _q7113_m3h = _hacim7113 * _n7113
-                                _q7113_m3s = _q7113_m3h / 3600.0
-                                st.markdown(
-                                    f"**Mahal hacmi:** {_hacim7113:,.2f} m³  |  "
-                                    f"**Hesap debisi:** {_q7113_m3h:,.0f} m³/h "
-                                    f"({_q7113_m3s:,.3f} m³/s)"
-                                )
-                                st.caption(
-                                    "Formül: Q = V × N. Q m³/h cinsindedir; m³/s için 3600'e bölünür. "
-                                    "10 hava değişimi yalnızca ilgili yönetmelik koşulları sağlanan kapalı "
-                                    "otopark için başlangıç değeridir. Sığınak ve diğer mahallerin N değeri "
-                                    "ilgili mevzuat/standart veya onaylı tasarım kriterine göre girilmelidir."
-                                )
-                                _koridor_ek7113 = {}
-                                if _mahal7113 == "Koridorlar":
-                                    st.markdown("#### Koridor Duman Tahliye Fanı — Excel hesap yöntemi")
-                                    _fan_debi7113 = st.number_input(
-                                        "Fan kapasitesi (m³/h)", min_value=0.0,
-                                        value=float(_q7113_m3h * 3), step=100.0,
-                                        key=f"yangin_7113_{_slug7113}_fan_debi",
-                                    )
-                                    _menfez_adet7113 = st.number_input(
-                                        "Menfez adedi", min_value=1, value=1, step=1,
-                                        key=f"yangin_7113_{_slug7113}_menfez_adet",
-                                    )
-                                    _menfez_en7113 = st.number_input(
-                                        "Menfez genişliği (cm)", min_value=1.0, value=30.0, step=5.0,
-                                        key=f"yangin_7113_{_slug7113}_menfez_en",
-                                    )
-                                    _menfez_boy7113 = st.number_input(
-                                        "Menfez yüksekliği (cm)", min_value=1.0, value=30.0, step=5.0,
-                                        key=f"yangin_7113_{_slug7113}_menfez_boy",
-                                    )
-                                    _kayip_saft7113 = st.number_input("Şaft/kanal kaybı (Pa)", min_value=0.0, value=0.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_saft")
-                                    _kayip_menfez7113 = st.number_input("Menfez kaybı (Pa)", min_value=0.0, value=35.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_menfez")
-                                    _kayip_panjur7113 = st.number_input("Panjur ve egzost atış kanalı kaybı (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_panjur")
-                                    _kayip_neg7113 = st.number_input("Negatif basınç (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_neg")
-                                    _emniyet_yuzde7113 = st.number_input("Basınç kaybı emniyet faktörü (%)", min_value=0.0, value=10.0, step=1.0, key=f"yangin_7113_{_slug7113}_emniyet")
-                                    _menfez_tek_debi7113 = _q7113_m3h / max(float(_menfez_adet7113), 1.0)
-                                    _menfez_alan7113 = (_menfez_en7113 * _menfez_boy7113) / 10000.0
-                                    _menfez_hiz7113 = (_menfez_tek_debi7113 / 3600.0 / _menfez_alan7113) if _menfez_alan7113 else 0.0
-                                    _kayip_top7113 = _kayip_saft7113 + _kayip_menfez7113 + _kayip_panjur7113 + _kayip_neg7113
-                                    _kayip_emn7113 = _kayip_top7113 * _emniyet_yuzde7113 / 100.0
-                                    _fan_basinc7113 = math.ceil((_kayip_top7113 + _kayip_emn7113) / 50.0) * 50.0 if (_kayip_top7113 + _kayip_emn7113) > 0 else 0.0
-                                    _motor_ham7113 = (_fan_debi7113 * _fan_basinc7113) / (198000.0 * 9.81) if _fan_debi7113 > 0 else 0.0
-                                    _motor_kademeler7113 = [0.25,0.37,0.55,0.75,1.1,1.5,2.2,3,4,5.5,7.5,11,15,18.5,22,30,37,45,55,75]
-                                    _motor_sec7113 = next((x for x in _motor_kademeler7113 if x >= _motor_ham7113), _motor_ham7113)
-                                    st.markdown(
-                                        f"**Menfez başına debi:** {_menfez_tek_debi7113:,.2f} m³/h  |  "
-                                        f"**Menfez hızı:** {_menfez_hiz7113:,.2f} m/s  |  "
-                                        f"**Toplam basınç kaybı:** {_kayip_top7113:,.0f} Pa  |  "
-                                        f"**Seçilen fan basıncı:** {_fan_basinc7113:,.0f} Pa  |  "
-                                        f"**Motor gücü:** {_motor_sec7113:,.2f} kW"
-                                    )
-                                    _koridor_ek7113 = {
-                                        "fan_debisi_m3h": _fan_debi7113, "menfez_adet": int(_menfez_adet7113),
-                                        "menfez_en_cm": _menfez_en7113, "menfez_boy_cm": _menfez_boy7113,
-                                        "menfez_basina_debi_m3h": _menfez_tek_debi7113, "menfez_hizi_ms": _menfez_hiz7113,
-                                        "kayip_saft_pa": _kayip_saft7113, "kayip_menfez_pa": _kayip_menfez7113,
-                                        "kayip_panjur_pa": _kayip_panjur7113, "kayip_negatif_pa": _kayip_neg7113,
-                                        "kayip_toplam_pa": _kayip_top7113, "emniyet_yuzde": _emniyet_yuzde7113,
-                                        "emniyet_pa": _kayip_emn7113, "fan_basinc_pa": _fan_basinc7113,
-                                        "motor_ham_kw": _motor_ham7113, "motor_secilen_kw": _motor_sec7113,
-                                    }
-                                _mahal_hesaplari7113.append({
-                                    "mahal": _mahal7113,
-                                    "alan_m2": _alan7113,
-                                    "yukseklik_m": _yukseklik7113,
-                                    "hacim_m3": _hacim7113,
-                                    "hava_degisimi_1h": _n7113,
-                                    "debi_m3h": _q7113_m3h,
-                                    "debi_m3s": _q7113_m3s,
-                                    "koridor_fan_hesabi": _koridor_ek7113,
-                                })
-                        st.session_state["yangin_7113_hesap"] = {
-                            "mahal": _oda_turu,
-                            "mahal_hesaplari": _mahal_hesaplari7113,
-                            "alan_m2": sum(x["alan_m2"] for x in _mahal_hesaplari7113),
-                            "yukseklik_m": None,
-                            "hacim_m3": sum(x["hacim_m3"] for x in _mahal_hesaplari7113),
-                            "hava_degisimi_1h": None,
-                            "debi_m3h": sum(x["debi_m3h"] for x in _mahal_hesaplari7113),
-                            "debi_m3s": sum(x["debi_m3s"] for x in _mahal_hesaplari7113),
-                        }
-                    else:
-                        st.info("Hesap yapmak için en az bir mahal seçin.")
-                        st.session_state["yangin_7113_hesap"] = {}
-
+                    _oda_turu = st.selectbox("Hesaplanan mahal", ["Kapalı otopark (BYKHY Madde 60/2 şartları sağlanıyorsa)", "Sığınak (uygulanacak debi kriteri ayrıca doğrulanmalı)", "Kazan dairesi / bodrum depo (ilgili hüküm kapsamındaysa)", "Diğer mahal (katsayı proje standardına göre girilir)"], key="yangin_7113_mahal")
+                    _vcol1, _vcol2, _vcol3 = st.columns(3)
+                    with _vcol1: _alan7113 = st.number_input("Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0, key="yangin_7113_alan")
+                    with _vcol2: _yukseklik7113 = st.number_input("Mahal yüksekliği (m)", min_value=0.0, value=3.0, step=0.1, key="yangin_7113_yukseklik")
+                    with _vcol3: _n7113 = st.number_input("Hava değişim sayısı N (1/h)", min_value=0.0, value=10.0 if _oda_turu.startswith("Kapalı otopark") else 0.0, step=1.0, key="yangin_7113_n")
+                    _hacim7113 = _alan7113 * _yukseklik7113
+                    _q7113_m3h = _hacim7113 * _n7113
+                    _q7113_m3s = _q7113_m3h / 3600.0
+                    st.markdown(f"**Mahal hacmi:** {_hacim7113:,.2f} m³  |  **Hesap debisi:** {_q7113_m3h:,.0f} m³/h ({_q7113_m3s:,.3f} m³/s)")
+                    st.caption("Formül: Q = V × N. Q m³/h cinsindedir; m³/s için 3600'e bölünür. 10 hava değişimi yalnızca ilgili yönetmelik koşulu sağlanan kapalı otopark gibi mevzuatta açıkça belirtilen durumlarda kullanılmalıdır. Sığınak ve diğer mahaller için N değeri ilgili mevzuat/standart veya onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2; genel tasarım ilkeleri Madde 85)")
+                    st.session_state["yangin_7113_hesap"] = {"mahal": _oda_turu, "alan_m2": _alan7113, "yukseklik_m": _yukseklik7113, "hacim_m3": _hacim7113, "hava_degisimi_1h": _n7113, "debi_m3h": _q7113_m3h, "debi_m3s": _q7113_m3s}
 
             elif _baslik.startswith("7.9 "):
                 # --------------------------------------------------------------
