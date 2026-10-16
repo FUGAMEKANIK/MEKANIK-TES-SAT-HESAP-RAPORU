@@ -2149,7 +2149,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
             elif _baslik.startswith("7.11 "):
                 # 7.11.1 Duman tahliye sistemi yönetmelik esasları
                 with st.expander("7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI", expanded=False):
-                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:12px;">7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ</div>', unsafe_allow_html=True)
                     _ui_711_rapor_key = "yangin_711_rapor_ui"
                     st.session_state.setdefault(_ui_711_rapor_key, bool(st.session_state.get("rapor_bolum_7110", True)))
                     st.checkbox("7.11.1 yönetmelik esasları rapora eklensin", key=_ui_711_rapor_key, on_change=lambda: st.session_state.__setitem__("rapor_bolum_7110", bool(st.session_state.get("yangin_711_rapor_ui", True))))
@@ -2189,10 +2189,10 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                         for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
 
                     # 7.11.2 — Zorunlulukların mahal ve kullanım koşullarına göre açıklanması
-                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.2 DUMAN KONTROLÜ GEREKEN BİNA VE MAHALLER</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">ZORUNLULUK BULUNAN BİNA VE MAHALLER</div>', unsafe_allow_html=True)
                     _7112_rapor_key = "yangin_7112_rapora_ekle"
                     st.session_state.setdefault(_7112_rapor_key, True)
-                    st.checkbox("7.11.2 zorunluluk açıklamaları rapora eklensin", key=_7112_rapor_key)
+                    st.checkbox("Zorunluluk bulunan bina ve mahal açıklamaları rapora eklensin", key=_7112_rapor_key)
                     _zorunluluk_711 = [
                         ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
                         ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
@@ -2204,26 +2204,26 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     ]
                     _7112_atif_key = "yangin_7112_atiflari"
                     st.session_state.setdefault(_7112_atif_key, True)
-                    st.checkbox("7.11.2 mevzuat atıfları rapora eklensin", key=_7112_atif_key)
+                    st.checkbox("Zorunluluk maddeleri mevzuat atıfları rapora eklensin", key=_7112_atif_key)
                     _t7112_1, _t7112_2 = st.columns(2)
                     with _t7112_1:
-                        if st.button("✓ 7.11.2 tüm maddeleri seç", key="yangin_7112_tum_sec", use_container_width=True):
+                        if st.button("✓ Tüm zorunluluk maddelerini seç", key="yangin_7112_tum_sec", use_container_width=True):
                             for _n, _b, _m in _zorunluluk_711: st.session_state[f"yangin_7112_madde_{_n}"] = True
                             st.rerun()
                     with _t7112_2:
-                        if st.button("✕ 7.11.2 tüm maddeleri kaldır", key="yangin_7112_tum_kaldir", use_container_width=True):
+                        if st.button("✕ Tüm zorunluluk maddelerini kaldır", key="yangin_7112_tum_kaldir", use_container_width=True):
                             for _n, _b, _m in _zorunluluk_711: st.session_state[f"yangin_7112_madde_{_n}"] = False
                             st.rerun()
                     for _n, _b, _m in _zorunluluk_711:
                         _key = f"yangin_7112_madde_{_n}"; st.session_state.setdefault(_key, True)
                         _display = _m if st.session_state[_7112_atif_key] else re.sub(r"\s*\([^)]*(?:BYKHY|Madde)[^)]*\)", "", _m, flags=re.IGNORECASE).strip()
-                        with st.container(border=True): st.checkbox(f"7.11.2.{_n} {_b}", key=_key); st.caption(_display)
+                        with st.container(border=True): st.checkbox(f"7.11.1.{int(_n) + 4} {_b}", key=_key); st.caption(_display)
 
                     # 7.11.3 — Hava değişim katsayısıyla debi hesabı; yalnızca ilgili mevzuat şartı geçerliyse kullanılır.
-                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.3 DUMAN TAHLİYE DEBİSİ HESABI</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.2 DUMAN TAHLİYE DEBİSİ HESABI</div>', unsafe_allow_html=True)
                     _7113_rapor_key = "yangin_7113_rapora_ekle"
                     st.session_state.setdefault(_7113_rapor_key, True)
-                    st.checkbox("7.11.3 debi hesabı rapora eklensin", key=_7113_rapor_key)
+                    st.checkbox("7.11.2 debi hesabı rapora eklensin", key=_7113_rapor_key)
                     _oda_turu = st.selectbox("Hesaplanan mahal", ["Kapalı otopark (BYKHY Madde 60/2 şartları sağlanıyorsa)", "Sığınak (uygulanacak debi kriteri ayrıca doğrulanmalı)", "Kazan dairesi / bodrum depo (ilgili hüküm kapsamındaysa)", "Diğer mahal (katsayı proje standardına göre girilir)"], key="yangin_7113_mahal")
                     _vcol1, _vcol2, _vcol3 = st.columns(3)
                     with _vcol1: _alan7113 = st.number_input("Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0, key="yangin_7113_alan")
