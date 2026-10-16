@@ -1,4330 +1,2680 @@
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
+from datetime import datetime
+import io
+import base64
+import json
+import math
+import os
 import re
+import subprocess
+import tempfile
+import shutil
+import urllib.request
+from pathlib import Path
+from copy import deepcopy
+from docx import Document
+from docx.enum.text import WD_COLOR_INDEX, WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
+import matplotlib.pyplot as plt
+import pandas as pd
+import streamlit as st
+from modules.fragment_runner import run_fragment
+from proje_yonetimi import ProjeYoneticisi, guvenli_dosya_adi
 
-def _yangin_mevzuat_atiflarini_kaldir(metin):
-    """Metindeki parantez içindeki BYKHY/yönetmelik madde atıflarını kaldırır."""
-    return re.sub(
-        r"\s*\((?:BYKHY|Binaların Yangından Korunması Hakkında Yönetmelik|Madde \d|İlgili yönetmelik)[^)]*\)",
-        "",
-        str(metin or ""),
-        flags=re.IGNORECASE,
-    ).strip()
 
-import re
-# Rapor Oluştur Butonu
-_proje_otomatik_kaydet()
+# ---------------------------------------------------------------------------
+# MGM YAĞIŞ VERİSİ
+# ---------------------------------------------------------------------------
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_gunluk_en_yuksek_yagis_mm(il_adi):
+    """MGM Resmi İklim İstatistikleri sayfasından ilin günlük toplam en
+    yüksek yağış miktarını (mm) ve gerçekleşme tarihini çeker.
 
-_rapor_olustur_sidebar = st.session_state.pop("_rapor_olustur_istegi_v134", False)
-if _rapor_olustur_sidebar:
-  # Önceki raporu temizle; yeni rapor başarısız olursa eski dosya yanlışlıkla
-  # "hazır" görünmesin.
-  st.session_state.pop("_rapor_hazir_docx_v134", None)
-  st.session_state.pop("_rapor_hazir_adi_v134", None)
-  try:
-  
-    _re_sirk_rapor_kontrol = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
-    gecersiz_var = any(
-        str(p.get("poz_durumu", "")).strip().upper() in {"UYGUN DEĞİL", "UYGUN DEGIL", "GEÇERSİZ", "GECERSIZ"}
-        for p in (psp_parametreleri or {}).values()
-        if isinstance(p, dict)
-    ) or (
-        bolum_634_aktif
-        and isinstance(_re_sirk_rapor_kontrol, dict)
-        and str(_re_sirk_rapor_kontrol.get("poz_durumu", "")).strip().upper() in {"UYGUN DEĞİL", "UYGUN DEGIL", "GEÇERSİZ", "GECERSIZ"}
+    MGM'nin bazı il sayfalarında bağlantı/HTML yapısı zaman zaman farklı
+    dönebildiği için birden fazla URL biçimi, yeniden deneme ve iki farklı
+    metin deseni kullanılır. Böylece rapordaki "Veri alınamadı" sayısı
+    mümkün olduğunca azaltılır.
+    """
+    import re as _re
+    import unicodedata as _unicodedata
+    import html as _html_lib
+    import time as _time
+
+    il_adi = str(il_adi or "").strip()
+    if not il_adi:
+        return None, None, None
+
+    _il_url = "".join(
+        ch for ch in _unicodedata.normalize("NFKD", il_adi)
+        if not _unicodedata.combining(ch)
+    ).upper()
+    _il_url = (
+        _il_url.replace("Ç", "C").replace("Ğ", "G")
+        .replace("İ", "I").replace("Ö", "O")
+        .replace("Ş", "S").replace("Ü", "U")
     )
-    if gecersiz_var:
-      st.error(
-          "❌ Rapor oluşturulamadı! Seçilen pompalardan biri veya daha fazlasının"
-          " tek pompa debisi poz sınırları dışındadır."
-      )
-    else:
-      if not is_adi:
-        st.warning(
-            "⚠️ Dikkat: İşin Adı / Proje Başlığı girilmedi. Rapor oluşturuluyor"
-            " ancak kapak başlığı boş bırakılacak."
-        )
-  
-      aktif_sirket = (
-          sirket_adi
-          if sirket_adi
-          else "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ"
-      )
-      aktif_is = is_adi if is_adi else ""
-  
-      # Rapor belgesi: KAPAK.doc örneği doğrudan şablon olarak kullanılır.
-      # Böylece punto, karakter aralığı, çizgi, boşluklar ve sayfa yerleşimi
-      # örnek dosyayla aynı kalır. Şablon bulunamazsa program bozulmasın diye
-      # güvenli bir Word belgesi oluşturulur.
-      _kapak_sablon_yolu = Path(__file__).resolve().parent / "KAPAK_SABLON.docx"
-      _kapak_sablon_kullanildi = _kapak_sablon_yolu.exists()
-      doc = Document(str(_kapak_sablon_yolu)) if _kapak_sablon_kullanildi else Document()
 
-      def ana_baslik_ekle(metin):
-          """Ana bölüm başlığını yeni sayfadan başlatır ve altındaki içerikle birlikte tutar."""
-          p = doc.add_heading(metin, level=1)
-          p.paragraph_format.page_break_before = True
-          p.paragraph_format.keep_with_next = True
-          p.paragraph_format.keep_together = True
-          p.paragraph_format.widow_control = True
-          return p
+    # MGM'de aynı il istatistiğine ulaşabilen alternatif URL biçimleri.
+    _base1 = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+    _base2 = "https://www.mgm.gov.tr/Veridegerlendirme/Il-Ve-Ilceler-Istatistik.Aspx"
+    _urls = [
+        f"{_base1}?k=&m={_il_url}",
+        f"{_base2}?k=&m={_il_url}",
+        f"{_base1}?m={_il_url}",
+        f"{_base1}?k=undefined&m={_il_url}",
+    ]
 
-      _kurum_adi = str(
-          st.session_state.get("isveren_adi", "")
-          or st.session_state.get("isveren", "")
-          or aktif_sirket
-          or "KURUM ADI"
-      ).strip()
+    _baslik = "Günlük Toplam En Yüksek Yağış Miktarı"
+    _headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/140.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.7",
+        "Connection": "close",
+    }
 
-      if _kapak_sablon_kullanildi:
-          # KAPAK: Şablonun genel sırası korunur. Ancak FUGA metni yerine
-          # kullanıcının verdiği gerçek logo resmi yerleştirilir ve boş
-          # paragraflar otomatik sıkıştırılarak kapağın tamamı A4 tek sayfaya
-          # sığdırılır.
-          _kapak_paragraflari = doc.paragraphs
+    def _parse_html(_html, _url):
+        # HTML entity'lerini gerçek karakterlere çevir; bazı MGM sayfalarında
+        # başlık/değerler entity olarak gelebiliyor.
+        _metin = _html_lib.unescape(_html or "")
+        _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _metin, flags=_re.I | _re.S)
+        _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I | _re.S)
+        _metin = _re.sub(r"<[^>]+>", " ", _metin)
+        _metin = _re.sub(r"\s+", " ", _metin).strip()
 
-          def _kapak_otomatik_punto(metin, temel=18, alt=10):
-              _uzunluk = len(str(metin or '').strip())
-              if _uzunluk <= 35:
-                  return temel
-              if _uzunluk <= 50:
-                  return 16
-              if _uzunluk <= 70:
-                  return 14
-              if _uzunluk <= 95:
-                  return 12
-              return alt
+        _pos = _metin.lower().find(_baslik.lower())
+        if _pos < 0:
+            return None, None, _url
 
-          def _kapak_run_ayarla(_p, _metin, _punto, _bold=True):
-              _p.clear()
-              _r = _p.add_run(str(_metin or ''))
-              _r.font.size = Pt(_punto)
-              _r.font.name = 'Times New Roman'
-              _r._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-              _r.font.bold = _bold
-              _r.font.italic = False
-              return _r
-
-          def _kapak_bosluk(_p, _pt):
-              # Boş paragrafı gerçek bir boş satır olmaktan çıkarıp yalnızca
-              # kontrollü dikey mesafe olarak kullan.
-              _p.clear()
-              _p.paragraph_format.space_before = Pt(0)
-              _p.paragraph_format.space_after = Pt(0)
-              _p.paragraph_format.line_spacing = Pt(max(0.5, _pt))
-              _p.paragraph_format.keep_together = False
-              _p.paragraph_format.keep_with_next = False
-              _p.paragraph_format.widow_control = False
-              _r = _p.add_run(' ')
-              _r.font.size = Pt(1)
-              _r.font.name = 'Times New Roman'
-
-          if len(_kapak_paragraflari) >= 34:
-              _kurum_metni = (_kurum_adi or 'KURUM ADI').upper()
-              _is_metni = (aktif_is or 'İŞİN ADI').upper()
-              _toplam_uzunluk = len(_kurum_metni) + len(_is_metni)
-
-              # -----------------------------------------------------------
-              # 1) FUGA YERİNE SADECE VERİLEN LOGO
-              # -----------------------------------------------------------
-              _logo_yolu = Path(__file__).resolve().parent / 'LOGO.png'
-              _p_logo = _kapak_paragraflari[0]
-              _p_logo.clear()
-              _p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _p_logo.paragraph_format.space_before = Pt(0)
-              _p_logo.paragraph_format.space_after = Pt(0)
-              _p_logo.paragraph_format.line_spacing = Pt(1)
-              if _logo_yolu.exists():
-                  _logo_run = _p_logo.add_run()
-                  # Orijinal oran korunur; yalnızca genişlik kontrol edilir.
-                  _logo_genislik = Inches(2.35 if _toplam_uzunluk <= 110 else 2.15)
-                  _logo_run.add_picture(str(_logo_yolu), width=_logo_genislik)
-              else:
-                  # Logo bulunamazsa rapor bozulmasın; yalnızca FUGA yazısı
-                  # yerine boş alan bırak.
-                  _p_logo.add_run('')
-
-              # -----------------------------------------------------------
-              # 2) ALTTAKİ MEVCUT YAZILAR KALIR
-              # -----------------------------------------------------------
-              _kapak_run_ayarla(_kapak_paragraflari[1], 'mekanik müşavİrlİk mühendİslİk', 11, True)
-              _kapak_paragraflari[1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _kapak_run_ayarla(_kapak_paragraflari[2], 'TİCARET LİMİTED ŞİRKETİ', 11, True)
-              _kapak_paragraflari[2].alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-              # Uzun metinlerde punto küçültme + boşlukların kademeli azaltılması.
-              _kurum_punto = _kapak_otomatik_punto(_kurum_metni, 18, 10)
-              _is_punto = _kapak_otomatik_punto(_is_metni, 18, 10)
-
-              if _toplam_uzunluk <= 100:
-                  _ust_gap = 4.0
-                  _orta_gap = 5.0
-                  _alt_gap = 4.0
-                  _baslik_punto = 16
-                  _haz_punto = 10
-              elif _toplam_uzunluk <= 150:
-                  _ust_gap = 3.0
-                  _orta_gap = 3.0
-                  _alt_gap = 2.5
-                  _baslik_punto = 15
-                  _haz_punto = 9.5
-              elif _toplam_uzunluk <= 220:
-                  _ust_gap = 2.0
-                  _orta_gap = 2.0
-                  _alt_gap = 1.5
-                  _baslik_punto = 14
-                  _haz_punto = 9
-              else:
-                  _ust_gap = 1.0
-                  _orta_gap = 1.0
-                  _alt_gap = 0.8
-                  _baslik_punto = 12
-                  _haz_punto = 8.5
-
-              # İlk 3 paragrafın hemen altındaki boşluklar.
-              for _i in range(3, 11):
-                  _kapak_bosluk(_kapak_paragraflari[_i], _ust_gap)
-
-              # -----------------------------------------------------------
-              # 3) KURUM ADI / İŞİN ADI
-              # -----------------------------------------------------------
-              _kapak_run_ayarla(_kapak_paragraflari[11], _kurum_metni, _kurum_punto, True)
-              _kapak_paragraflari[11].alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _kapak_paragraflari[11].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[11].paragraph_format.space_after = Pt(0)
-              _kapak_paragraflari[11].paragraph_format.line_spacing = Pt(_kurum_punto + 1)
-              _kapak_paragraflari[11].paragraph_format.keep_together = True
-
-              for _i in range(12, 15):
-                  _kapak_bosluk(_kapak_paragraflari[_i], _orta_gap)
-
-              _kapak_run_ayarla(_kapak_paragraflari[15], _is_metni, _is_punto, True)
-              _kapak_paragraflari[15].alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _kapak_paragraflari[15].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[15].paragraph_format.space_after = Pt(0)
-              _kapak_paragraflari[15].paragraph_format.line_spacing = Pt(_is_punto + 1)
-              _kapak_paragraflari[15].paragraph_format.keep_together = True
-
-              _kapak_bosluk(_kapak_paragraflari[16], _alt_gap)
-
-              # -----------------------------------------------------------
-              # 4) RAPOR BAŞLIĞI
-              # -----------------------------------------------------------
-              _kapak_run_ayarla(_kapak_paragraflari[17], 'MEKANİK TESİSAT UYGULAMA PROJESİ', _baslik_punto, True)
-              _kapak_run_ayarla(_kapak_paragraflari[18], 'HESAP RAPORU', _baslik_punto, True)
-              for _i in (17, 18):
-                  _kapak_paragraflari[_i].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                  _kapak_paragraflari[_i].paragraph_format.space_before = Pt(0)
-                  _kapak_paragraflari[_i].paragraph_format.space_after = Pt(0)
-                  _kapak_paragraflari[_i].paragraph_format.line_spacing = Pt(_baslik_punto + 1)
-                  _kapak_paragraflari[_i].paragraph_format.keep_together = True
-                  _kapak_paragraflari[_i].paragraph_format.keep_with_next = (_i == 17)
-
-              # -----------------------------------------------------------
-              # 5) ALT BOŞLUKLAR + HAZIRLAYAN BLOĞU
-              # -----------------------------------------------------------
-              for _i in range(19, 33):
-                  _kapak_bosluk(_kapak_paragraflari[_i], _alt_gap)
-
-              _hazirlayan_metni = (
-                  f'Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\n'
-                  f'MMO Oda No: {mmo_no}\n\nTarih:\n{tarih}'
-              )
-              _kapak_run_ayarla(_kapak_paragraflari[33], _hazirlayan_metni, _haz_punto, False)
-              _kapak_paragraflari[33].alignment = WD_ALIGN_PARAGRAPH.CENTER
-              _kapak_paragraflari[33].paragraph_format.space_before = Pt(0)
-              _kapak_paragraflari[33].paragraph_format.space_after = Pt(0)
-              _kapak_paragraflari[33].paragraph_format.line_spacing = Pt(_haz_punto + 1)
-              _kapak_paragraflari[33].paragraph_format.keep_together = True
-
-              # -----------------------------------------------------------
-              # 6) A4 SAYFA AYARI
-              # -----------------------------------------------------------
-              _cover_section = doc.sections[0]
-              _cover_section.page_width = Inches(8.267716535)
-              _cover_section.page_height = Inches(11.692913386)
-              _cover_section.top_margin = Inches(0.55)
-              _cover_section.bottom_margin = Inches(0.55)
-              _cover_section.left_margin = Inches(0.75)
-              _cover_section.right_margin = Inches(0.75)
-              _cover_section.header_distance = Inches(0.2)
-              _cover_section.footer_distance = Inches(0.2)
-
-              # Tüm kapak paragrafları bölünmez; fakat boşluklar küçüldüğü için
-              # toplam kapak yüksekliği metin uzunluğundan bağımsız olarak tek
-              # A4 sayfada kalacak şekilde kontrol edilir.
-              for _kp in _kapak_paragraflari[:34]:
-                  _kp.paragraph_format.widow_control = False
-
-      if not _kapak_sablon_kullanildi:
-          # Şablon dosyası taşınmamışsa rapor yine üretilebilsin. Bu bölüm
-          # yalnızca güvenli geri dönüş yoludur; normal kullanımda çalışmaz.
-          cover_section = doc.sections[0]
-          cover_section.top_margin = Inches(0.8861111111)
-          cover_section.bottom_margin = Inches(0.7875)
-          cover_section.left_margin = Inches(0.9847222222)
-          cover_section.right_margin = Inches(0.6881944444)
-          cover_section.header_distance = Inches(0.25)
-          cover_section.footer_distance = Inches(0.25)
-
-          def _kapak_fallback_paragraf(metin='', boyut=12, bold=True, hizalama=WD_ALIGN_PARAGRAPH.CENTER):
-              _p = doc.add_paragraph()
-              _p.alignment = hizalama
-              _r = _p.add_run(str(metin))
-              _r.font.name = "Times New Roman"
-              _r._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-              _r.font.size = Pt(boyut)
-              _r.bold = bold
-              return _p
-
-          _p_logo_fb = doc.add_paragraph()
-          _p_logo_fb.alignment = WD_ALIGN_PARAGRAPH.CENTER
-          _logo_fb = Path(__file__).resolve().parent / 'LOGO.png'
-          if _logo_fb.exists():
-              _p_logo_fb.add_run().add_picture(str(_logo_fb), width=Inches(2.35))
-          _kapak_fallback_paragraf("MEKANİK MÜŞAVİRLİK MÜHENDİSLİK", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
-          _kapak_fallback_paragraf("TİCARET LİMİTED ŞİRKETİ", 11, True, WD_ALIGN_PARAGRAPH.CENTER)
-          for _ in range(5): _kapak_fallback_paragraf("", 11)
-          for _ in range(3): _kapak_fallback_paragraf("", 25)
-          _kapak_fallback_paragraf(_kurum_adi.upper(), 18)
-          for _ in range(3): _kapak_fallback_paragraf("", 25)
-          _kapak_fallback_paragraf((aktif_is or "İŞİN ADI").upper(), 18)
-          for _ in range(1): _kapak_fallback_paragraf("", 11)
-          _p_rapor = _kapak_fallback_paragraf("MEKANİK TESİSAT UYGULAMA PROJESİ", 18, True)
-          _tcpr = _p_rapor._p.get_or_add_pPr()
-          _pbdr = OxmlElement("w:pBdr")
-          _ptop = OxmlElement("w:top")
-          _ptop.set(qn("w:val"), "single"); _ptop.set(qn("w:sz"), "6"); _ptop.set(qn("w:space"), "13"); _ptop.set(qn("w:color"), "808080")
-          _pbdr.append(_ptop); _tcpr.append(_pbdr)
-          _kapak_fallback_paragraf("HESAP RAPORU", 18, True)
-          for _ in range(9): _kapak_fallback_paragraf("", 13, True, WD_ALIGN_PARAGRAPH.LEFT)
-          _kapak_fallback_paragraf(
-              f"Hazırlayan:\n{hazirlayan} (Makine Mühendisi)\nMMO Oda No: {mmo_no}\n\nTarih:\n{tarih}",
-              11, False
-          )
-
-      # Word açılışında başlık alanları ve içindekiler otomatik güncellensin
-      enable_update_fields_on_open(doc)
-  
-      # 2. SAYFA: İÇİNDEKİLER
-      doc.add_page_break()
-      doc.add_heading("İÇİNDEKİLER", level=1)
-      p_toc = doc.add_paragraph()
-      add_toc(p_toc)
-  
-  
-      # 3. SAYFA: GÖVDE
-      doc.add_page_break()
-      body_section = doc.add_section()
-      body_section.top_margin = Inches(0.85)
-      body_section.bottom_margin = Inches(0.75)
-      body_section.left_margin = Inches(1.0)
-      body_section.right_margin = Inches(1.0)
-      body_section.header_distance = Inches(0.25)
-      body_section.footer_distance = Inches(0.25)
-  
-      # --- 1. GENEL BİLGİLER ---
-      ana_baslik_ekle("1. GENEL BİLGİLER")
-      # Genel Bilgiler içindeki proje ifadesi: tırnaksız, siyah, kalın ve italik.
-      p_giris = doc.add_paragraph()
-      p_giris.add_run("Bu raporda ")
-      if aktif_is:
-          _genel_proje_ifade = str(aktif_is).strip().strip("'‘’").strip()
-          _r_proje = p_giris.add_run(_genel_proje_ifade)
-          _r_proje.font.name = "Times New Roman"
-          _r_proje._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-          _r_proje.font.bold = True
-          _r_proje.font.italic = True
-          _r_proje.font.color.rgb = RGBColor(0, 0, 0)
-      else:
-          p_giris.add_run("ilgili proje")
-      p_giris.add_run(
-          " için tasarlanan mekanik tesisatlar açıklanmış ve tüm uygulama ve "
-          "detay projelerine esas teşkil eden tasarım kriterleri ve mekanik "
-          "tesisat sistem çözümleri tespit edilmiştir."
-      )
-      yapi_metni = (
-          f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
-      )
-      doc.add_paragraph(yapi_metni)
-  
-      if bolum_2_aktif:
-              # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
-              ana_baslik_ekle("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
-              standart_giris = (
-                  "Bu projenin tasarım ve uygulamasında seçilen ulusal ve uluslararası"
-                  " standartlar ile yönetmelikler esas alınmıştır:"
-              )
-              doc.add_paragraph(standart_giris)
-  
-              secilen_standartlar = []
-              if std_ts_825:
-                secilen_standartlar.append("TS 825 - BİNALARDA ISI YALITIM KURALLARI")
-              if std_yangin:
-                secilen_standartlar.append(
-                    '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
-                    ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"'
-                )
-              if std_bep_2008_2010:
-                secilen_standartlar.append(
-                    "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
-                    " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı"
-                    " resmi gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”"
-                )
-              if std_ts_1258:
-                secilen_standartlar.append("TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI")
-              if std_ts_826:
-                secilen_standartlar.append(
-                    "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI"
-                )
-              if std_ts_2164:
-                secilen_standartlar.append(
-                    "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI"
-                )
-              if std_ts_3419:
-                secilen_standartlar.append(
-                    "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
-                    " KURALLARI"
-                )
-              if std_ts_en_12056_2:
-                secilen_standartlar.append(
-                    "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE"
-                    " HESAPLAMA"
-                )
-              if std_ts_en_12845:
-                secilen_standartlar.append(
-                    "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
-                    " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM"
-                )
-              if std_mmo_84:
-                secilen_standartlar.append(
-                    "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)"
-                )
-              if std_mmo_352_5:
-                secilen_standartlar.append("MMO KALORİFER TESİSATI (Y.NO:352/5)")
-              if std_mmo_122:
-                secilen_standartlar.append(
-                    "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)"
-                )
-              if std_mmo_133:
-                secilen_standartlar.append(
-                    "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)"
-                )
-              if std_mmo_155:
-                secilen_standartlar.append("MMO KAZAN VE BACA(Y.NO:155)")
-              if std_ashrae:
-                secilen_standartlar.append("ASHRAE Standartları")
-              if std_su:
-                secilen_standartlar.append(
-                    "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları"
-                )
-              if std_klima:
-                secilen_standartlar.append(
-                    "Klima ve Havalandırma Tesisatı Yönetmelikleri"
-                )
-              if std_tesisat:
-                secilen_standartlar.append(
-                    "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
-                    " Paylaştırılmasına İlişkin Yönetmelik"
-                )
-              if std_kanal:
-                secilen_standartlar.append(
-                    "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar"
-                )
-              if std_asansor:
-                secilen_standartlar.append(
-                    "Asansör Yönetmeliği ve İlgili Standartlar"
-                )
-              if std_deprem:
-                secilen_standartlar.append(
-                    "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)"
-                )
-              if std_akustik:
-                secilen_standartlar.append(
-                    "Binaların Gürültüye Karşı Korunması Yönetmeliği"
-                )
-              if std_isg:
-                secilen_standartlar.append(
-                    "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler"
-                )
-  
-              if ek_standartlar.strip():
-                for ek in ek_standartlar.split("\n"):
-                  if ek.strip():
-                    secilen_standartlar.append(ek.strip())
-  
-              secilen_standartlar.sort()
-  
-              if secilen_standartlar:
-                for std in secilen_standartlar:
-                  doc.add_paragraph(std, style="List Bullet")
-              else:
-                doc.add_paragraph("Herhangi bir standart seçilmemiştir.", style="Italic")
-  
-      if bolum_3_aktif:
-              # --- 3. MEKANİK TESİSAT PROJE KAPSAMI ---
-              ana_baslik_ekle("3. MEKANİK TESİSAT PROJE KAPSAMI")
-              doc.add_paragraph(
-                  "Yapılarda aşağıdaki mekanik tesisat sistemleri uygulanacaktır."
-              )
-  
-              secilen_kapsam = []
-              if kapsam_isitma:
-                secilen_kapsam.append("Isıtma tesisatı,")
-              if kapsam_sogutma:
-                secilen_kapsam.append("Soğutma tesisatı,")
-              if kapsam_soguk_su:
-                secilen_kapsam.append("Kullanma soğuk suyu tesisatı,")
-              if kapsam_sicak_su:
-                secilen_kapsam.append("Kullanma sıcak suyu tesisatı,")
-              if kapsam_yangin_depo:
-                secilen_kapsam.append("Yangın ve kullanma suyu depolaması ve dağıtımı,")
-              if kapsam_atik_su:
-                secilen_kapsam.append("Yapı içinde atık su tesisatı (Yapı çıkış rögarına),")
-              if kapsam_yangin_dagitim:
-                secilen_kapsam.append("Yangın suyu iç ve dış dağıtım sistemleri,")
-              if kapsam_kazan_dairesi:
-                secilen_kapsam.append(
-                    "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,"
-                )
-              if kapsam_havalandirma:
-                secilen_kapsam.append("Havalandırma Tesisatı")
-              if kapsam_basinc_hava:
-                secilen_kapsam.append("Basınçlı hava tesisatı,")
-              if kapsam_medikal_gaz:
-                secilen_kapsam.append("Medikal gaz tesisatı")
-              if kapsam_otomatik:
-                secilen_kapsam.append("Otomatik kontrol sistemi kavramı tanımı,")
-  
-              if ek_kapsam.strip():
-                for ekk in ek_kapsam.split("\n"):
-                  if ekk.strip():
-                    secilen_kapsam.append(ekk.strip())
-  
-              if secilen_kapsam:
-                for k in secilen_kapsam:
-                  doc.add_paragraph(k, style="List Bullet")
-              else:
-                doc.add_paragraph(
-                    "Herhangi bir proje kapsam maddesi seçilmemiştir.", style="Italic"
-                )
-  
-      if bolum_4_aktif:
-              # --- 4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
-              ana_baslik_ekle("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
-              doc.add_paragraph(
-                  "Tesisat sistemlerinde aşağıdaki ısı iletim akışkanları ve sıcaklık"
-                  " rejimleri kullanılacaktır:"
-              )
-  
-              akiskan_maddeleri = []
-              if chk_kalorifer:
-                akiskan_maddeleri.append(
-                    f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
-                )
-              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_elektrik", True):
-                akiskan_maddeleri.append("Kalorifer tesisatında elektrik.")
-              if chk_fco_ist:
-                akiskan_maddeleri.append(
-                    f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su."
-                )
-              if chk_fco_sog:
-                akiskan_maddeleri.append(
-                    f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
-                )
-              if chk_ks_ist:
-                akiskan_maddeleri.append(
-                    f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
-                )
-              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_elektrik", True):
-                akiskan_maddeleri.append("Klima santrali ısıtma tesisatında elektrik.")
-              if chk_ks_sog:
-                akiskan_maddeleri.append(
-                    f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
-                )
-              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_elektrik", True):
-                akiskan_maddeleri.append("Klima santrali soğutma tesisatında elektrik.")
-              if chk_boyler:
-                akiskan_maddeleri.append(
-                    f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
-                )
-              if chk_boyler and st.session_state.get("akiskan_boyler_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_boyler and st.session_state.get("akiskan_boyler_elektrik", True):
-                akiskan_maddeleri.append("Boyler ısıtma tesisatında elektrik.")
-              if chk_k_sicak:
-                akiskan_maddeleri.append(
-                    f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
-                )
-              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_elektrik", True):
-                akiskan_maddeleri.append("Kullanma sıcak suyunda elektrik.")
-              if chk_doseme:
-                akiskan_maddeleri.append(
-                    f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
-                )
-              if chk_buhar:
-                akiskan_maddeleri.append(f"Buhar tesisatında {rej_buhar} buhar.")
-              if chk_kizgin:
-                akiskan_maddeleri.append(
-                    f"Kızgın su tesisatında {rej_kizgin} °C sıcak su."
-                )
-  
-              if akiskan_maddeleri:
-                for akiskan in akiskan_maddeleri:
-                  doc.add_paragraph(akiskan, style="List Bullet")
-              else:
-                doc.add_paragraph(
-                    "Herhangi bir ısı iletim akışkanı seçilmemiştir.", style="Italic"
-                )
-  
-      if bolum_5_aktif:
-              # --- 5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
-              ana_baslik_ekle("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
-              doc.add_heading("5.1 DIŞ HAVA TASARIM KRİTERLERİ", level=2)
-              doc.add_paragraph(
-                  f"Yapının inşa edileceği ''{secilen_il}'' için kabul edilen dış hava"
-                  " koşulları aşağıdaki gibidir:"
-              )
-              doc.add_paragraph(
-                  f"• KIŞ: {iklim_veri['kis_kt']} °C Kuru Termometre (KT) ,"
-                  f" {iklim_veri['kis_yt']} °C Yaş Termometre (YT)"
-              )
-              doc.add_paragraph(
-                  f"• YAZ: {iklim_veri['yaz_kt']} °C Kuru Termometre (KT) ,"
-                  f" {iklim_veri['yaz_yt']} °C Yaş Termometre (YT)"
-              )
-              doc.add_paragraph(f"• Enlem: {iklim_veri['enlem']}")
-              doc.add_paragraph(f"• Boylam: {iklim_veri['boylam']}")
-              doc.add_paragraph(
-                  f"• Deniz seviyesinden yüksekliği (Rakım): {iklim_veri['rakim']} m."
-              )
-              doc.add_paragraph(f"• Günlük Sıcaklık Farkı (GSF): {iklim_veri['gsf']} °C")
-  
-      if bolum_6_aktif:
-        # --- 6. SIHHİ TESİSAT ---
-        ana_baslik_ekle("6. SIHHİ TESİSAT")
-        if bolum_61_aktif:
-          doc.add_heading("6.1 SIHHİ TESİSAT ÖN BİLGİLER", level=2)
-  
-          sihhi_maddeler = []
-          if sih_sec_1:
-            sihhi_maddeler.append(
-                "Bütün tesisin kullanma soğuk su ihtiyacı şehir şebekesinden"
-                " sağlanacaktır."
-            )
-          if sih_sec_2:
-            sihhi_maddeler.append(
-                "Bütün tesisin kullanma soğuk su ihtiyacı kampüs içi su deposu dağıtım"
-                " hattından sağlanacaktır."
-            )
-          if sih_sec_3:
-            sihhi_maddeler.append(
-                "Temiz su boru çapları yükleme birimine verilmiştir. 3/8” ’lik bir"
-                " musluğun su verimi olan 0.25 lt/sn yükleme birimi olarak"
-                " alınacaktır. Diğer bütün sarfiyatlar bu birime tamamlanacaktır."
-            )
-  
-          if sih_sec_4 and sih_depo_konumlari:
-            if len(sih_depo_konumlari) == 1:
-              konum_str = sih_depo_konumlari[0].lower()
-            elif len(sih_depo_konumlari) == 2:
-              konum_str = (
-                  f"{sih_depo_konumlari[0].lower()} ve"
-                  f" {sih_depo_konumlari[1].lower()}"
-              )
+        _parca = _metin[_pos:_pos + 1200]
+        _desenler = [
+            # Standart MGM görünümü: 11.06.1997 88,9 mm
+            r"(\d{1,2}\.\d{1,2}\.\d{4})\s*[:|]?\s*([0-9]+(?:[.,][0-9]+)?)\s*mm\b",
+            # Bazı HTML varyasyonlarında değer önce gelebilir.
+            r"([0-9]+(?:[.,][0-9]+)?)\s*mm\b\s*[:|]?\s*(\d{1,2}\.\d{1,2}\.\d{4})",
+        ]
+        for _i, _desen in enumerate(_desenler):
+            _eslesme = _re.search(_desen, _parca, flags=_re.I)
+            if not _eslesme:
+                continue
+            if _i == 0:
+                _tarih = _eslesme.group(1)
+                _deger = float(_eslesme.group(2).replace(",", "."))
             else:
-              ilkler = ", ".join([k.lower() for k in sih_depo_konumlari[:-1]])
-              son = sih_depo_konumlari[-1].lower()
-              konum_str = f"{ilkler} ve {son}"
-  
-            sihhi_maddeler.append(
-                f"Bütün binanın kullanma soğuk su ihtiyacı {konum_str} soğuk"
-                " su deposundan sağlanacaktır. Basıncın yetersizliği ve su"
-                " kesilmelerine karşın depo hidrofor sistemi uygulanmıştır. TS 1258 ve"
-                " ilgili standartlar esas alınacaktır."
+                _deger = float(_eslesme.group(1).replace(",", "."))
+                _tarih = _eslesme.group(2)
+            return _deger, _tarih, _url
+        return None, None, _url
+
+    _son_url = _urls[0]
+    for _url in _urls:
+        _son_url = _url
+        for _deneme in range(3):
+            try:
+                _req = urllib.request.Request(_url, headers=_headers)
+                with urllib.request.urlopen(_req, timeout=5) as _response:
+                    _html = _response.read().decode("utf-8", errors="ignore")
+                _deger, _tarih, _parsed_url = _parse_html(_html, _url)
+                if _deger is not None:
+                    return _deger, _tarih, _parsed_url
+            except Exception:
+                pass
+            if _deneme < 2:
+                _time.sleep(0.7 * (_deneme + 1))
+
+    return None, None, _son_url
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_aylik_ortalama_yagis_mm(il_adi):
+    """MGM resmi iklim istatistiklerinden 12 aylık ortalama yağışları
+    doğrudan HTML tablo satırından okur.
+
+    Dönen değer: (aylik_dict, olcum_periyodu, url).
+    """
+    import re as _re
+    import unicodedata as _unicodedata
+    from html.parser import HTMLParser
+
+    il_adi = str(il_adi or "").strip()
+    if not il_adi:
+        return {}, "", None
+
+    _il_url = "".join(
+        ch for ch in _unicodedata.normalize("NFKD", il_adi)
+        if not _unicodedata.combining(ch)
+    ).upper()
+    _il_url = (
+        _il_url.replace("Ç", "C").replace("Ğ", "G").replace("İ", "I")
+        .replace("Ö", "O").replace("Ş", "S").replace("Ü", "U")
+    )
+    _il_url = MGM_IL_URL_KODU.get(il_adi, _il_url)
+
+    _base = "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+    # MGM'de kullanılan farklı çalışan URL biçimleri. k=H özellikle
+    # Resmi İklim İstatistikleri tablosunu doğrudan döndürmektedir.
+    _urls = [
+        f"{_base}?k=&m={_il_url}",
+        f"{_base}?k=H&m={_il_url}",
+        f"{_base}?m={_il_url}",
+        f"{_base}?k=undefined&m={_il_url}",
+    ]
+    _headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/140.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.7",
+        "Connection": "close",
+    }
+    _aylar = [
+        "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ]
+    _baslik = "Aylık Toplam Yağış Miktarı Ortalaması (mm)"
+
+    class _MGMTableParser(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.rows = []
+            self._row = None
+            self._cell = None
+            self._buf = []
+
+        def handle_starttag(self, tag, attrs):
+            tag = tag.lower()
+            if tag == "tr":
+                self._row = []
+            elif tag in ("td", "th") and self._row is not None:
+                self._cell = tag
+                self._buf = []
+
+        def handle_data(self, data):
+            if self._cell is not None:
+                self._buf.append(data)
+
+        def handle_endtag(self, tag):
+            tag = tag.lower()
+            if tag in ("td", "th") and self._cell is not None:
+                self._row.append(" ".join("".join(self._buf).split()))
+                self._cell = None
+                self._buf = []
+            elif tag == "tr" and self._row is not None:
+                if self._row:
+                    self.rows.append(self._row)
+                self._row = None
+
+    def _sayiya_cevir(_text):
+        _t = str(_text or "").strip().replace(" ", "")
+        # MGM Türkçe ondalık gösterimini destekle.
+        _t = _t.replace("mm", "").strip()
+        if not _re.fullmatch(r"[-+]?\d+(?:[.,]\d+)?", _t):
+            return None
+        try:
+            return float(_t.replace(",", "."))
+        except ValueError:
+            return None
+
+    for _url in _urls:
+        try:
+            _req = urllib.request.Request(_url, headers=_headers)
+            with urllib.request.urlopen(_req, timeout=5) as _response:
+                _html = _response.read().decode("utf-8", errors="ignore")
+
+            # 1) Önce gerçek HTML tablosunu parse et.
+            _parser = _MGMTableParser()
+            _parser.feed(_html)
+            for _row in _parser.rows:
+                _etiket = " ".join(str(_x) for _x in _row[:2])
+                if _baslik.lower() in _etiket.lower():
+                    _sayilar = []
+                    for _hucre in _row[1:]:
+                        _n = _sayiya_cevir(_hucre)
+                        if _n is not None:
+                            _sayilar.append(_n)
+                    if len(_sayilar) >= 12:
+                        _aylik = dict(zip(_aylar, _sayilar[:12]))
+                        _metin = " ".join(_row)
+                        _donem = ""
+                        _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _metin, flags=_re.I)
+                        if _m:
+                            _donem = _m.group(1).strip()
+                        # Dönem çoğunlukla ayrı bir satırda olduğundan HTML
+                        # genelinde de ara.
+                        if not _donem:
+                            _m = _re.search(r"Ölçüm Periyodu\s*\(\s*([^\)]+)", _html, flags=_re.I)
+                            if _m:
+                                _donem = _m.group(1).strip()
+                        return _aylik, _donem, _url
+
+            # 2) HTML yapısı değişirse, yalnızca ilgili satırı düz metinden
+            # yakalayan güvenli bir geri dönüş yöntemi kullan.
+            _metin = _re.sub(r"<script\b[^>]*>.*?</script>", " ", _html, flags=_re.I | _re.S)
+            _metin = _re.sub(r"<style\b[^>]*>.*?</style>", " ", _metin, flags=_re.I | _re.S)
+            _metin = _re.sub(r"<[^>]+>", " | ", _metin)
+            _metin = _re.sub(r"\s+", " ", _metin).strip()
+            _pos = _metin.lower().find(_baslik.lower())
+            if _pos >= 0:
+                _parca = _metin[_pos:_pos + 1200]
+                _vals = _re.findall(r"(?<![\d.,])\d+(?:[.,]\d+)?", _parca)
+                _nums = [float(v.replace(",", ".")) for v in _vals]
+                if len(_nums) >= 12:
+                    return dict(zip(_aylar, _nums[:12])), "", _url
+        except Exception:
+            continue
+
+    return {}, "", _urls[0]
+
+
+# MGM'nin il seçimindeki resmi 81 il listesi.
+# Rapor tablosu yalnızca Word raporu oluşturulurken kullanılır; arayüzde gösterilmez.
+MGM_81_IL = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
+    "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
+    "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
+    "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
+    "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
+    "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+    "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
+    "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
+    "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli",
+    "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin",
+    "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize",
+    "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa",
+    "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van",
+    "Yalova", "Yozgat", "Zonguldak",
+]
+
+# MGM URL parametresinde kullanılan ve il adından farklı olan özel kodlar.
+MGM_IL_URL_KODU = {"Mersin": "ICEL"}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def mgm_81_il_yagis_tablosu():
+    """81 ilin MGM günlük maksimum yağış verisini rapor için toplar.
+
+    Sonuç Word raporunda tablo olarak kullanılır; Streamlit arayüzüne
+    herhangi bir tablo basılmaz. Paralel istekler rapor oluşturma süresini
+    kısaltır.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _tek_il(il):
+        _kod = MGM_IL_URL_KODU.get(il, il)
+        deger, tarih, url = mgm_gunluk_en_yuksek_yagis_mm(_kod)
+        # Yardımcı fonksiyon özel kodla çağrıldığında mgm_il alanının
+        # raporda gerçek il adı olarak görünmesi için gerçek URL'yi üret.
+        if _kod != il:
+            url = (
+                "https://www.mgm.gov.tr/veridegerlendirme/il-ve-ilceler-istatistik.aspx"
+                f"?k=undefined&m={_kod}"
             )
-  
-          if sih_sec_depo_tipi and sih_depo_tipleri:
-            if len(sih_depo_tipleri) == 1:
-              tip_str = sih_depo_tipleri[0].lower()
-            elif len(sih_depo_tipleri) == 2:
-              tip_str = (
-                  f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
-              )
-            else:
-              ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
-              son = sih_depo_tipleri[-1].lower()
-              tip_str = f"{ilkler} ve {son}"
-  
-            sihhi_maddeler.append(
-                "Binada kullanım soğuk su depolaması için "
-                f"{tip_str} tipinde su deposu kullanılmıştır."
-            )
-  
-          if sih_sec_yagmur_depo_tipi and sih_yagmur_depo_tipleri:
-            if len(sih_yagmur_depo_tipleri) == 1:
-              yagmur_tip_str = sih_yagmur_depo_tipleri[0].lower()
-            elif len(sih_yagmur_depo_tipleri) == 2:
-              yagmur_tip_str = (
-                  f"{sih_yagmur_depo_tipleri[0].lower()} ve "
-                  f"{sih_yagmur_depo_tipleri[1].lower()}"
-              )
-            else:
-              ilkler = ", ".join([t.lower() for t in sih_yagmur_depo_tipleri[:-1]])
-              son = sih_yagmur_depo_tipleri[-1].lower()
-              yagmur_tip_str = f"{ilkler} ve {son}"
-  
-            sihhi_maddeler.append(
-                "Binada yağmur suyu depolaması için "
-                f"{yagmur_tip_str} tipinde su deposu kullanılmıştır."
-            )
-  
-          if sih_sec_5:
-            sihhi_maddeler.append(
-                "Binada kullanılacak sıhhi tesisat elemanları birinci sınıf beyaz"
-                " vitrifiye seramik olacaktır."
-            )
-          if sih_sec_6:
-            sihhi_maddeler.append(
-                "Tesisatta kullanılacak malzemeler ekstra sınıf olacak ve mimari"
-                " projede belirtilen yerlere techiz edilecektir."
-            )
-  
-          if sih_sec_7 and sih_sicak_su_yontemleri:
-            if len(sih_sicak_su_yontemleri) == 1:
-              secilenler_str = sih_sicak_su_yontemleri[0].lower()
-            elif len(sih_sicak_su_yontemleri) == 2:
-              secilenler_str = (
-                  f"{sih_sicak_su_yontemleri[0].lower()} ve"
-                  f" {sih_sicak_su_yontemleri[1].lower()}"
-              )
-            else:
-              ilkler = ", ".join([y.lower() for y in sih_sicak_su_yontemleri[:-1]])
-              son = sih_sicak_su_yontemleri[-1].lower()
-              secilenler_str = f"{ilkler} ve {son}"
-  
-            sihhi_maddeler.append(
-                "Kullanma Sıcak suyu üretimi ısı merkezindeki "
-                f"{secilenler_str} vasıtasıyla yapılacaktır."
-            )
-  
-          if sih_sec_8:
-            sihhi_maddeler.append(
-                "Sıhhi tesisat işlerinde ana dağıtım boruları galvaniz çelik, mahal"
-                " içi dağıtım boruları PPRC tipte seçilecektir."
-            )
-  
-          if sih_sec_9:
-            secilen_mahaller = [
-                m.lower() for m in sih_yumusak_su_mahalleri if m != "Diğer"
-            ]
-            if sih_yumusak_su_diger.strip():
-              secilen_mahaller.append(sih_yumusak_su_diger.strip().lower())
-  
-            if secilen_mahaller:
-              if len(secilen_mahaller) == 1:
-                mahal_str = secilen_mahaller[0]
-              elif len(secilen_mahaller) == 2:
-                mahal_str = f"{secilen_mahaller[0]} ve {secilen_mahaller[1]}"
-              else:
-                ilkler = ", ".join(secilen_mahaller[:-1])
-                son = secilen_mahaller[-1]
-                mahal_str = f"{ilkler} ve {son}"
-  
-              sihhi_maddeler.append(
-                  f"{mahal_str.capitalize()} mahallerinde yumuşak su kullanılacaktır."
-              )
-  
-          if sih_sec_10 and sih_sicak_su_isitma_sistemleri:
-            if len(sih_sicak_su_isitma_sistemleri) == 1:
-              isitma_str = sih_sicak_su_isitma_sistemleri[0].lower()
-            elif len(sih_sicak_su_isitma_sistemleri) == 2:
-              isitma_str = (
-                  f"{sih_sicak_su_isitma_sistemleri[0].lower()} ve"
-                  f" {sih_sicak_su_isitma_sistemleri[1].lower()}"
-              )
-            else:
-              ilkler = ", ".join(
-                  [s.lower() for s in sih_sicak_su_isitma_sistemleri[:-1]]
-              )
-              son = sih_sicak_su_isitma_sistemleri[-1].lower()
-              isitma_str = f"{ilkler} ve {son}"
-  
-            sihhi_maddeler.append(
-                f"Kullanım sıcak suyunun ısıtılması {isitma_str} vasıtasıyla"
-                " yapılacaktır."
-            )
-  
-          if sih_sec_12:
-            sihhi_maddeler.append(
-                "Yağmur suyu toplama yönetmeliğine göre 2 bin metrekareden büyük"
-                " parsellerde inşa edilecek tüm binaların çatılarında toplanan yağmur"
-                " sularının, bahçe sulama veya arıtılarak bina ihtiyacında kullanılmak"
-                " üzere bahçe zemini altında bir depoda toplaması amacıyla 'yağmur"
-                " suyu toplama sistemi' yapılması zorunluluğu getirildiği için yağmur"
-                " hasadı tesisatı yapılmıştır."
-            )
-  
-          if ek_sihhi_on_bilgi.strip():
-            for es in ek_sihhi_on_bilgi.split("\n"):
-              if es.strip():
-                sihhi_maddeler.append(es.strip())
-  
-          for sm in sihhi_maddeler:
-            doc.add_paragraph(sm, style="List Bullet")
-  
-          # --- 6.1.1 TEMİZ SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-          doc.add_heading(
-              "6.1.1 Temiz Su Sarfiyat Yükleme Birimleri ve Çap Tayini", level=2
-          )
-          doc.add_paragraph(
-              "Sıhhi tesisat boru çaplarının tespitinde ve kullanım yerlerine ait"
-              " yükleme birimleri ile debi değerlerinde aşağıdaki tablolar esas"
-              " alınmıştır."
-          )
-  
-          t1_data = [
-              ("DN", "PLASTİK", "ÇELİK", "Yükleme Birimi"),
-              ("15", "Ø20", '1/2"', "(0-3.0)"),
-              ("20", "Ø25", '3/4"', "(3.0-8.0)"),
-              ("25", "Ø32", '1"', "(8.0-20.0)"),
-              ("32", "Ø40", '1 1/4"', "(20.0-35.0)"),
-              ("40", "Ø50", '1 1/2"', "(35.0-50.0)"),
-              ("50", "Ø63", '2"', "(50.0-144.0)"),
-              ("65", "Ø75", '2 1/2"', "(144.0-368.0)"),
-              ("80", "Ø90", '3"', "(368.0-1156.0)"),
-              ("100", "Ø125", '4"', "(1156-4900)"),
-              ("125", "-", '5"', "(4.900-14.400)"),
-              ("150", "-", '6"', "(14.400-40.000)"),
-              ("200", "-", '8"', "(40.000-484.000)"),
-              ("250", "-", '10"', "(484.000-518.400)"),
-              ("300", "-", '12"', "(518.400-1.440.000)"),
-          ]
-          t1 = doc.add_table(rows=len(t1_data), cols=4)
-          t1.style = "Table Grid"
-          for r_idx, row in enumerate(t1_data):
-            for c_idx, val in enumerate(row):
-              t1.cell(r_idx, c_idx).text = val
-  
-          doc.add_paragraph()
-  
-          # --- 6.2 PİS SU TESİSATI ---
-        if bolum_62_aktif:
-          doc.add_heading("6.2 PİS SU TESİSATI", level=2)
-  
-          pis_su_maddeleri = []
-  
-          if pissu_sec_1 and pis_su_konumlari and pis_su_gecisler:
-            if len(pis_su_konumlari) == 1:
-              konum_s = pis_su_konumlari[0].lower()
-            else:
-              konum_s = (
-                  f"{', '.join([k.lower() for k in pis_su_konumlari[:-1]])} ve"
-                  f" {pis_su_konumlari[-1].lower()}"
-              )
-  
-            if len(pis_su_gecisler) == 1:
-              gecis_s = pis_su_gecisler[0].lower()
-            else:
-              gecis_s = (
-                  f"{', '.join([g.lower() for g in pis_su_gecisler[:-1]])} ve"
-                  f" {pis_su_gecisler[-1].lower()}"
-              )
-  
-            pis_su_maddeleri.append(
-                f"Yapının atık suları binanın pik kolonlarla toplanarak {konum_s}"
-                f" {gecis_s} rögarlara iletilecektir."
-            )
-  
-          if pissu_sec_2:
-            pis_su_maddeleri.append(
-                "Pis su kolonları üzerinde gerekli yerlere temizleme kapakları"
-                " yerleştirilmiştir."
-            )
-  
-          if pissu_sec_3:
-            pis_su_maddeleri.append(
-                "Tüm teknik hacimlerde, su tahliyesi için ızgaralı kanallar"
-                " yapılacaktır."
-            )
-  
-          if pissu_sec_4:
-            pis_su_maddeleri.append(
-                "Atık su boruları sessiz PVC boru gibi son teknoloji ürünü borular"
-                " kullanılacaktır."
-            )
-  
-          if pissu_sec_5:
-            pis_su_maddeleri.append(
-                "Pis su boru çapları yükleme birimi yöntemine göre belirlenmiştir."
-            )
-  
-          if pissu_sec_6:
-            pis_su_maddeleri.append(
-                "Pis su akar kotunun kurtarmayan katları bodrum katta pis su çukurunda"
-                " toplanıp, pompa vasıtasıyla yol kotundaki rögara aktarılacaktır."
-            )
-  
-          if pissu_sec_7:
-            pis_su_maddeleri.append(
-                "Pis su vaziyette de görüldüğü gibi rögarlar vasıtasıyla yoldan geçen"
-                " pis su kanalına bağlanacaktır."
-            )
-  
-          if ek_pissu_on_bilgi.strip():
-            for ep in ek_pissu_on_bilgi.split("\n"):
-              if ep.strip():
-                pis_su_maddeleri.append(ep.strip())
-  
-          for psm in pis_su_maddeleri:
-            doc.add_paragraph(psm, style="List Bullet")
-  
-          # --- 6.2.1 PİS SU SARFİYAT YÜKLEME BİRİMLERİ VE ÇAP TAYİNİ ---
-          doc.add_heading("6.2.1 Pis Su Sarfiyat Yükleme Birimleri", level=2)
-          doc.add_paragraph(
-              "TS 826'ya göre pis su sarfiyat ve yükleme birimleri ile boru çapı"
-              " tayinlerinde aşağıdaki tablolar esas alınmıştır."
-          )
-  
-          doc.add_paragraph(
-              "Tablo: TS 826'ya göre Pis Su Sarfiyat ve Yükleme Birimleri Cetveli"
-          )
-          t_pissu1 = doc.add_table(rows=len(pissu_t1_data), cols=2)
-          t_pissu1.style = "Table Grid"
-          for r_idx, row in enumerate(pissu_t1_data):
-            for c_idx, val in enumerate(row):
-              t_pissu1.cell(r_idx, c_idx).text = val
-  
-          doc.add_paragraph()
-          doc.add_paragraph("Tablo: Yükleme Birimi ve Boru Çapı Esasları")
-          t_pissu2 = doc.add_table(rows=len(pissu_t2_data), cols=3)
-          t_pissu2.style = "Table Grid"
-          for r_idx, row in enumerate(pissu_t2_data):
-            for c_idx, val in enumerate(row):
-              t_pissu2.cell(r_idx, c_idx).text = val
-  
-          doc.add_paragraph()
-          doc.add_paragraph(
-              "NOT: Lavabo yatay hatları Ø70, Lavabo inişleri Ø"
-              " 50,her tuvalet çıkışı Ø100 olacaktır."
-          )
-  
-          # --- 6.2.2 PİS SU TERFİ POMPALARI SEÇİM RAPORU ---
-          if psp_parametreleri:
-            doc.add_heading("6.2.2 PİS SU TERFİ POMPALARI SEÇİMİ", level=2)
-  
-            doc.add_paragraph(
-                "Pis Su Terfi Pompası Genel Esasları ve Tasarım Kriterleri:"
-            )
-            terfi_maddeleri = []
-            if terfi_sec_1:
-              terfi_maddeleri.append(
-                  "Kot kurtarmayan bodrum kat atık suları için paslanmaz gövdeli,"
-                  " parçalayıcı bıçaklı pis su atık su terfi pompaları seçilmiştir."
-              )
-            if terfi_sec_2:
-              terfi_maddeleri.append(
-                  "Pompalar yedekli çalışacak şekilde otomasyona bağlanacaktır."
-              )
-            if terfi_sec_3:
-              terfi_maddeleri.append(
-                  "Terfi çukurunda sıvı seviye şalterleri (şamandıra) bulunacak, su"
-                  " seviyesine göre pompalar otomatik devreye girip çıkacaktır."
-              )
-            if terfi_sec_4:
-              terfi_maddeleri.append(
-                  "Pompa basma hatlarında geri akışı önlemek için çekvalf ve bakım"
-                  " kolaylığı için sürgülü/kelebek vana kullanılacaktır."
-              )
-  
-            if ek_terfi_notu.strip():
-              for etn in ek_terfi_notu.split("\n"):
-                if etn.strip():
-                  terfi_maddeleri.append(etn.strip())
-  
-            if terfi_maddeleri:
-              for tm in terfi_maddeleri:
-                doc.add_paragraph(tm, style="List Bullet")
-  
-            doc.add_paragraph(
-                "Pis su terfi pompalarının çalışma noktaları; bina kullanım türü,"
-                " armatür yükleme birimleri ve asıl pompa sayılarına göre ayrı ayrı"
-                " hesaplanmıştır."
-            )
-  
-            for idx, (psp, pp) in enumerate(psp_parametreleri.items(), start=1):
-              doc.add_heading(f"6.2.2.{idx} {psp} TERFİ POMPASI SEÇİMİ", level=3)
-  
-              doc.add_paragraph(f"• Bina Kullanım Türü: {pp['bina_tipi']}")
-              doc.add_paragraph(
-                  "• Seçilen Armatür Adetleri ve Yükleme Birimleri (Tablo):"
-              )
-  
-              arm_tablo = doc.add_table(rows=1, cols=4)
-              arm_tablo.style = "Table Grid"
-              arm_tablo.rows[0].cells[0].text = "Armatür Cinsi"
-              arm_tablo.rows[0].cells[1].text = "Yükleme Birimi (Y.B.)"
-              arm_tablo.rows[0].cells[2].text = "Adet"
-              arm_tablo.rows[0].cells[3].text = "Toplam Çarpım (Y.B.)"
-  
-              for satirlik in pp["tablo_satirlari"]:
-                cinsi, birim_yb, adet_sayisi, carpim_yb = satirlik
-                row_cells = arm_tablo.add_row().cells
-                row_cells[0].text = cinsi
-                row_cells[1].text = str(birim_yb)
-                row_cells[2].text = str(adet_sayisi)
-                row_cells[3].text = str(carpim_yb)
-  
-              doc.add_paragraph(
-                  f"• Toplam Yükleme Birimi (Y.B.) Toplamı = {pp['toplam_yb']} Y.B."
-              )
-  
-              net_satir = (
-                  f"• Toplam Sistem Debisi Q_toplam = k * √Y.B ="
-                  f" {pp['k_katsayisi']} * √{pp['toplam_yb']} ="
-                  f" {pp['net_q_m3h']:.2f} m³/h ({pp['net_q_lps']:.2f} L/s)"
-              )
-              doc.add_paragraph(net_satir)
-  
-              if pp["emniyet_katsayisi"] > 1.0:
-                yuzde_str = pp["emniyet_etiket"].split(" ")[0]
-                emniyet_satir = (
-                    f"  (%{yuzde_str.replace('%','')} Emniyet Oranı Alınmıştır."
-                    f" Emniyetli Toplam Debi = {pp['v_toplam']:.2f} m³/h"
-                    f" [{pp['q_lps_toplam']:.2f} L/s])"
-                )
-                p_emn = doc.add_paragraph(emniyet_satir)
-                p_emn.runs[0].font.italic = True
-  
-              doc.add_heading(f"-Seçilen Pompa: {psp}", level=4)
-              doc.add_paragraph(
-                  f"V           = {pp['v_tek']:.2f} m3/h - {pp['q_lps_tek']:.2f} L/s"
-              )
-              doc.add_paragraph(f"H           = {pp['h']:.2f} mSS")
-              doc.add_paragraph(f"Güç         = {pp['guc']:.2f} kW")
-              doc.add_paragraph(f"Adet        = {pp['adet_str']}")
-              doc.add_paragraph(
-                  f"Tip         = Dalgıç Tip, Parçalayıcı Bıçaklı, Kesme Düzenekli"
-                  " Pis Su Terfi Pompası"
-              )
-              if poz_rapora_eklensin_mi:
-                doc.add_paragraph(f"Cihaz Poz No: {pp['poz']}")
-  
-              curve = pp.get("pompa_curve", [])
-              if curve:
-                q_curve = [p[0] for p in curve]
-                h_curve = [p[1] for p in curve]
-                grafik_buf = pompa_grafigi_png(
-                    q_curve, h_curve, pp["v_tek"], pp["h"],
-                    pp.get("pompa_egrisi_basligi", "Pompa Performans Eğrisi"),
-                    anonim=True,
-                )
-                doc.add_paragraph("Pompa Performans Eğrisi:")
-                doc.add_picture(grafik_buf, width=Inches(6.2))
-                doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-  
-            # --- PİS SU POMPALARI GENEL ÇALIŞMA NOTU ---
-            # Tüm pompa seçimleri rapora aktarıldıktan sonra yalnızca BİR KEZ eklenir.
-            if psp_parametreleri:
-              not_basligi = doc.add_paragraph()
-              not_basligi.paragraph_format.space_before = Pt(8)
-              not_basligi.paragraph_format.space_after = Pt(3)
-              run = not_basligi.add_run(
-                  "Pis su pompaları ilgili genel çalışma notu:"
-              )
-              run.bold = True
-  
-              doc.add_paragraph(
-                  "İki pompalı terfi istasyonunda pompalardan birincisi, normal "
-                  "tüketim zamanında çalışacak, ikinci pompa yedek. üç pompalı "
-                  "terfi istasyonunda pompalardan birincisi ve ikincisi, normal "
-                  "tüketim zamanında çalışacak, üçüncü pompa yedek konumunda "
-                  "olacaktır. Pompaların yedeklemesi otomatik olarak münavebe ile "
-                  "sağlanacaktır. Pompaların elektrik panosu bu işlevleri "
-                  "sağlayacak şekilde imal ve monte edilecektir."
-              )
-  
-          # --- 6.2.3 YAĞ AYIRICI SEÇİMLERİ ---
-          if bolum_623_aktif:
-            doc.add_heading("6.2.3 YAĞ AYIRICI SEÇİMLERİ", level=2)
-            yag_rapor_maddeleri = []
-            for i, madde in enumerate(yag_ayirici_maddeleri, start=1):
-              if i <= len(yag_ayirici_secimler) and yag_ayirici_secimler[i - 1]:
-                yag_rapor_maddeleri.append(madde)
-  
-            if ek_yag_ayirici_notu.strip():
-              for _not in ek_yag_ayirici_notu.split("\n"):
-                if _not.strip():
-                  yag_rapor_maddeleri.append(_not.strip())
-  
-            if yag_rapor_maddeleri:
-              _genel_esas_p = doc.add_paragraph()
-              _genel_esas_r = _genel_esas_p.add_run("Yağ Ayırıcı Genel Esasları")
-              _genel_esas_r.bold = True
-              _genel_esas_r.italic = True
-              _genel_esas_r.font.size = Pt(12)
-              _genel_esas_r.font.color.rgb = RGBColor(68, 114, 196)
-              for yam in yag_rapor_maddeleri:
-                doc.add_paragraph(yam, style="List Bullet")
-  
-            # Excel'deki her YA sayfası için bağımsız hesap raporu.
-            for _ya_index, (_ya, _hesap) in enumerate(yag_ayirici_hesaplari.items(), start=1):
-              doc.add_heading(f"6.2.3.{_ya_index} {_ya} YAĞ AYIRICISI KAPASİTE HESAPLARI:", level=3)
-              doc.add_paragraph("Hesap yöntemi: EN 1825-2 standardına göre cihaz sayısına bağlı eşzamanlılık yöntemi.")
-  
-              # Eşzamanlılık faktörlerini Excel şablonundaki gibi ayrı ayrı göster.
-              # Kullanılan adet hangi kademeye denk geliyorsa o Zi hücresi sarı vurgulanır.
-              _tab = doc.add_table(rows=1, cols=10)
-              _tab.style = "Table Grid"
-              _hdr = _tab.rows[0].cells
-              _basliklar = [
-                  "Ekipman", "Adet n", "qi [L/s]", "n × qi",
-                  "Zi – 1 adet", "Zi – 2 adet", "Zi – 3 adet",
-                  "Zi – 4 adet", "Zi – 5+ adet", "Pis su debisi [L/s]"
-              ]
-              for _cell, _baslik in zip(_hdr, _basliklar):
-                _cell.text = _baslik
-  
-              for _satir in _hesap["satirlar"]:
-                _cells = _tab.add_row().cells
-                _cells[0].text = _satir["ekipman"]
-                _cells[1].text = str(_satir["adet"])
-                _cells[2].text = f"{_satir['qi']:.2f}"
-                _cells[3].text = f"{_satir['n_x_qi']:.2f}"
-  
-                # Excel'deki Zi(n) değerleri: 1/2/3/4/5+ adet.
-                _zi_tip = next((e[2] for e in YAG_AYIRICI_EKIPMANLARI if e[0] == _satir["ekipman"]), "normal")
-                _zi_degerleri = [
-                    _yag_ayirici_zi(1, _zi_tip),
-                    _yag_ayirici_zi(2, _zi_tip),
-                    _yag_ayirici_zi(3, _zi_tip),
-                    _yag_ayirici_zi(4, _zi_tip),
-                    _yag_ayirici_zi(5, _zi_tip),
-                ]
-                for _zi_index, _zi_deger in enumerate(_zi_degerleri):
-                  _zi_cell = _cells[4 + _zi_index]
-                  _zi_cell.text = f"{_zi_deger:.2f}"
-                  # Adet 1,2,3,4 veya 5+ kademesinin aktif olanını sarı boya.
-                  _adet = int(_satir["adet"])
-                  _aktif_index = min(_adet, 5) - 1
-                  if _aktif_index == _zi_index:
-                    for _par in _zi_cell.paragraphs:
-                      for _run in _par.runs:
-                        _run.font.highlight_color = WD_COLOR_INDEX.YELLOW
-  
-                _cells[9].text = f"{_satir['pis_su_debisi']:.2f}"
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(f"TOPLAM Qs = { _hesap['qs']:.2f} L/s")
-              _r.bold = True
-  
-              # Faktörlerin seçilme nedeni raporda açıkça gösterilir.
-              # Açıklamalar, YAĞ AYIRICI HESABI.xlsx şablonundaki faktör
-              # eşiklerine göre oluşturulur.
-              _fd_deger = _hesap["fd"]
-              if abs(_fd_deger - 1.0) < 1e-9:
-                  _fd_aciklama = "Yağ yoğunluğu ≤ 0.94 g/cm³ olduğu için fd = 1.00 seçilmiştir."
-              else:
-                  _fd_aciklama = "Yağ yoğunluğu > 0.94 g/cm³ olduğu için fd = 1.30 seçilmiştir."
-  
-              _ft_deger = _hesap["ft"]
-              if abs(_ft_deger - 1.0) < 1e-9:
-                  _ft_aciklama = "Su sıcaklığı ≤ 60 °C olduğu için ft = 1.00 seçilmiştir."
-              else:
-                  _ft_aciklama = "Su sıcaklığı > 60 °C olduğu için ft = 1.30 seçilmiştir."
-  
-              _fr_deger = _hesap["fr"]
-              if abs(_fr_deger - 1.0) < 1e-9:
-                  _fr_aciklama = "Temizlik malzemesi kullanılmadığı için fr = 1.00 seçilmiştir."
-              elif abs(_fr_deger - 1.3) < 1e-9:
-                  _fr_aciklama = "Temizlik malzemesi kullanıldığı için fr = 1.30 seçilmiştir."
-              else:
-                  _fr_aciklama = "Hastane kullanımı için fr = 1.50 seçilmiştir."
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(f"Yoğunluk Faktörü (fd): {_fd_deger:.2f}")
-              _r.bold = True
-              _p.add_run(f" — {_fd_aciklama}")
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(f"Sıcaklık Faktörü (ft): {_ft_deger:.2f}")
-              _r.bold = True
-              _p.add_run(f" — {_ft_aciklama}")
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(f"Deterjan Faktörü (fr): {_fr_deger:.2f}")
-              _r.bold = True
-              _p.add_run(f" — {_fr_aciklama}")
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(
-                  "NS (Nominal Kapasite) = Qs × fd × ft × fr = "
-                  f"{_hesap['qs']:.2f} × { _hesap['fd']:.2f} × { _hesap['ft']:.2f} × { _hesap['fr']:.2f} "
-                  f"= { _hesap['ns']:.2f} L/s"
-              )
-              _r.bold = True
-  
-              _p = doc.add_paragraph()
-              _r = _p.add_run(
-                  f"Seçilen yağ ayırıcı kapasitesi: {_hesap['secilen_kapasite']:.2f} L/s"
-              )
-              _r.bold = True
-  
-              if _hesap.get("poz_rapora_aktar") and _hesap.get("secilen_poz"):
-                _p = doc.add_paragraph()
-                _r = _p.add_run(f"Cihaz Poz No: {_hesap['secilen_poz']['poz']}")
-                _r.bold = True
-                doc.add_paragraph(f"Yağ Ayırıcı Özelliği: {_hesap['secilen_poz']['tanim']}")
-  
-          # --- 6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ ---
-        if bolum_63_aktif:
-          doc.add_heading("6.3 SIHHİ TESİSAT CİHAZ SEÇİMLERİ", level=1)
-          if bolum_631_aktif:
-            doc.add_heading(_63_dinamik_baslik("rapor_bolum_631"), level=2)
-            doc.add_heading("6.3.1.1 KULLANMA SUYU DEPOSU SEÇİMİ:", level=3)
-            doc.add_heading("Genel Bilgiler", level=4)
-  
-            # Dinamik Depo Tipi Metni Oluşturma (6.1'deki seçime bağlı)
-            if sih_sec_depo_tipi and sih_depo_tipleri:
-              if len(sih_depo_tipleri) == 1:
-                dinamik_tip_str = sih_depo_tipleri[0].lower()
-              elif len(sih_depo_tipleri) == 2:
-                dinamik_tip_str = (
-                    f"{sih_depo_tipleri[0].lower()} ve {sih_depo_tipleri[1].lower()}"
-                )
-              else:
-                ilkler = ", ".join([t.lower() for t in sih_depo_tipleri[:-1]])
-                son = sih_depo_tipleri[-1].lower()
-                dinamik_tip_str = f"{ilkler} ve {son}"
-            else:
-              dinamik_tip_str = "modüler su deposu"
-  
-            depo_maddeleri = []
-  
-            # Dinamik Cümle
-            depo_maddeleri.append(
-                "Binanın kullanma soğuk suyu ihtiyacının karşılanması ve kesintilere"
-                f" karşı güvence altına alınması amacıyla {dinamik_tip_str}"
-                " tasarlanmıştır."
-            )
-  
-            if depo_sec_1:
-              depo_maddeleri.append(
-                  "Kullanma soğuk suyu deposu hacmi; binanın kullanım amacı, kullanıcı "
-                  "sayısı, kişi başına günlük su tüketimi, kullanım sürekliliği ve ihtiyaç "
-                  "duyulan su rezervi dikkate alınarak belirlenecektir. Depo kapasitesi, "
-                  "binanın günlük su ihtiyacını karşılayacak ve işletme koşullarında yeterli "
-                  "su rezervi sağlayacak şekilde tasarlanacaktır."
-              )
-            if depo_sec_2:
-              depo_maddeleri.append(
-                  "Su deposu içerisinde su kalitesinin korunması ve ölü hacim oluşumunun"
-                  " önlenmesi için bölme perdeleri yer alacaktır."
-              )
-            if depo_sec_3:
-              depo_maddeleri.append(
-                  "Su deposunda taşma, deşarj, havalandırma boruları ile bakım ve temizlik"
-                  " için adam geçiş kapağı (manhole) bulunacaktır."
-              )
-  
-            if ek_depo_notu.strip():
-              for ed in ek_depo_notu.split("\n"):
-                if ed.strip():
-                  depo_maddeleri.append(ed.strip())
-  
-            # Seçili depo notları Genel Bilgiler başlığı altında gösterilir.
-            for dm in depo_maddeleri:
-              doc.add_paragraph(dm, style="List Bullet")
-  
-            # Su ihtiyacı hesabı, seçili depo notlarından sonra ayrı alt başlık olarak verilir.
-            doc.add_heading(
-                f"6.3.{_63_dinamik_no("rapor_bolum_631")}.1 KULLANMA SUYU İHTİYACININ BELİRLENMESİ",
-                level=3,
-            )
-            doc.add_heading("Su Tüketim Değerleri Tablosu", level=4)
-            su_tuketim_word_tablosu = doc.add_table(rows=1, cols=3)
-            su_tuketim_word_tablosu.style = "Table Grid"
-            baslik_hucreleri = su_tuketim_word_tablosu.rows[0].cells
-            baslik_hucreleri[0].text = "Kullanım amacı"
-            baslik_hucreleri[1].text = "Birim"
-            baslik_hucreleri[2].text = "Birim tüketim değeri"
-            for kategori, (birim, deger) in su_tuketim_secenekleri.items():
-                hucreler = su_tuketim_word_tablosu.add_row().cells
-                hucreler[0].text = kategori
-                hucreler[1].text = birim
-                hucreler[2].text = f"{deger:g} L/{birim}/gün"
-  
-            doc.add_paragraph(
-                "Not: Birim tüketim değerleri, kullanıcı tarafından yüklenen "
-                "dokümanda belirtilen TS-1258 kaynaklı değerler esas alınarak "
-                "uygulamaya aktarılmıştır."
-            )
-  
-            doc.add_heading("Su İhtiyacı Hesabı", level=4)
-            doc.add_paragraph(
-                "Kullanım amacı / su tüketim kategorileri: "
-                f"{su_tuketim_tipi}"
-            )
-            if su_hesap_detaylari:
-                konut_raporu_mu = hesap_modu == "Konutlar"
-                hastane_raporu_mu = hesap_modu == "Hastaneler"
-                hesap_tablosu = doc.add_table(
-                    rows=1,
-                    cols=8 if konut_raporu_mu else (6 if hastane_raporu_mu else 5)
-                )
-                hesap_tablosu.style = "Table Grid"
-                hesap_basliklari = hesap_tablosu.rows[0].cells
-                if konut_raporu_mu:
-                    basliklar = [
-                        "Kategori", "Hane başına kişi", "Hane sayısı", "Toplam kişi",
-                        "Birim", "Birim tüketimi", "Günlük ihtiyaç", "Açıklama"
-                    ]
-                elif hastane_raporu_mu:
-                    basliklar = [
-                        "CİHAZ", "Yatak sayısı", "Katsayı", "Toplam kişi sayısı",
-                        "Tüketim [L/kişi-gün]", "Toplam [L/gün]"
-                    ]
-                else:
-                    basliklar = ["Kategori", "Miktar", "Birim", "Birim tüketimi", "Günlük ihtiyaç"]
-                for i, baslik in enumerate(basliklar):
-                    hesap_basliklari[i].text = baslik
-  
-                for detay in su_hesap_detaylari:
-                    hucreler = hesap_tablosu.add_row().cells
-                    hucreler[0].text = detay["kategori"]
-                    if konut_raporu_mu:
-                        hucreler[1].text = f"{hane_kisi_sayisi:g}"
-                        hucreler[2].text = f"{toplam_hane_sayisi:g}"
-                        hucreler[3].text = f"{toplam_kisi_sayisi:g}"
-                        hucreler[4].text = detay["birim"]
-                        hucreler[5].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                        hucreler[6].text = f"{detay['ihtiyac_litre']:g} L/gün"
-                        hucreler[7].text = f"{toplam_hane_sayisi:g} hane × {hane_kisi_sayisi:g} kişi"
-                    elif hastane_raporu_mu:
-                        hucreler[1].text = f"{detay['yatak_sayisi']:g}"
-                        hucreler[2].text = f"{detay['katsayi']:g}"
-                        hucreler[3].text = f"{detay['miktar']:g}"
-                        hucreler[4].text = f"{detay['birim_degeri']:g} L/kişi-gün"
-                        hucreler[5].text = f"{detay['ihtiyac_litre']:g} L/gün"
-                    else:
-                        hucreler[1].text = f"{detay['miktar']:g}"
-                        hucreler[2].text = detay["birim"]
-                        hucreler[3].text = f"{detay['birim_degeri']:g} L/{detay['birim']}/gün"
-                        hucreler[4].text = f"{detay['ihtiyac_litre']:g} L/gün"
-  
-                if hastane_raporu_mu:
-                    toplam_hucreler = hesap_tablosu.add_row().cells
-                    toplam_hucreler[0].text = "GENEL TOPLAM"
-                    toplam_hucreler[1].text = ""
-                    toplam_hucreler[2].text = ""
-                    toplam_hucreler[3].text = f"{sum(detay['miktar'] for detay in su_hesap_detaylari):g}"
-                    toplam_hucreler[4].text = ""
-                    toplam_hucreler[5].text = f"{su_gunluk_ihtiyac_litre:g} L/gün"
-            else:
-                doc.add_paragraph("Herhangi bir su tüketim kategorisi seçilmemiştir.")
-            doc.add_paragraph(
-                f"Günlük toplam su ihtiyacı: {su_gunluk_ihtiyac_litre:g} L/gün "
-                f"({su_gunluk_ihtiyac_m3:g} m³/gün)"
-            )
-            doc.add_heading("Su Deposu Depolama Süresi ve Gerekli Hacim", level=4)
-            doc.add_paragraph(f"Seçilen depolama süresi: {depo_sure_gun:g} gün")
-            depo_hacmi_paragrafi = doc.add_paragraph()
-            depo_hacmi_paragrafi.add_run(
-                f'Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen "{secilen_depo_tipi_metni}" hacmi: '
-                if secilen_depo_tipi_metni
-                else "Yapının kullanım soğuk suyu ihtiyacını karşılamak için seçilen su deposu hacmi: "
-            )
-            rapor_kapasite_m3 = otomatik_poz_kayitlari[0][1] if otomatik_poz_kayitlari else depo_gerekli_hacim_m3
-            rapor_kapasite_litre = rapor_kapasite_m3 * 1000.0
-            depo_hacmi_kalin = depo_hacmi_paragrafi.add_run(
-                f"{rapor_kapasite_litre:g} L ({rapor_kapasite_m3:g} m³)"
-            )
-            depo_hacmi_kalin.bold = True
-            depo_hacmi_paragrafi.add_run("'dir.")
-            for run in depo_hacmi_paragrafi.runs:
-                run.font.color.rgb = RGBColor(0, 0, 0)
-            if poz_gosterilsin_mi and poz_numarasi:
-                poz_paragrafi = doc.add_paragraph()
-                poz_paragrafi.add_run("Cihaz Poz No: ")
-                poz_kalin = poz_paragrafi.add_run(
-                    f"{poz_numarasi}"
-                )
-                poz_kalin.bold = True
-                for run in poz_paragrafi.runs:
-                    run.font.color.rgb = RGBColor(0, 0, 0)
-  
-          # 6.3.1.2 Yağmur suyu deposu seçimi
-          _yagmur_rapor = locals().get("yagmur_hesap", {}) or st.session_state.get("yagmur_hesap", {})
-          _yagmur_aktif_rapor = bool(st.session_state.get("yagmur_suyu_aktif", False)) and bool(_yagmur_rapor)
-          if _yagmur_aktif_rapor:
-            doc.add_heading("6.3.1.2 YAĞMUR SUYU DEPOSU SEÇİMİ:", level=3)
-            _yr = _yagmur_rapor
-            doc.add_heading("• YAĞMUR SUYU TOPLAMA HESABI", level=4)
-            doc.add_paragraph(f"Seçilen İl: {_yr.get('mgm_il', '')}")
-            _yr_yontem = _yr.get("yagis_yontemi", "Günlük Toplam En Yüksek Yağış Miktarı")
-            if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                if _yr.get("mgm_yagis_mm") is not None:
-                    doc.add_paragraph(
-                        f"Tasarım yağış verisi: {_yr_yontem}. "
-                        f"{_yr.get('mgm_il', '')} ili için P = {float(_yr.get('mgm_yagis_mm', 0) or 0):.1f} mm "
-                        f"({_yr.get('mgm_yagis_tarih', '')})."
-                    )
-            elif _yr_yontem == "Ortalama Aylık Yağış Miktarı":
-                doc.add_paragraph(
-                    f"Tasarım yağış verisi: {_yr_yontem}. "
-                    f"12 aylık ortalama yağış değerlerinin aritmetik ortalaması ile P = "
-                    f"{float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm alınmıştır."
-                )
-            else:
-                doc.add_paragraph(
-                    f"Tasarım yağış verisi: {_yr_yontem}. "
-                    f"{_yr.get('mgm_en_yuksek_ay', '')} ayındaki en yüksek aylık ortalama yağış değeri "
-                    f"P = {float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm alınmıştır."
-                )
-  
-            # MGM meteorolojik verileri: RAPORDA YALNIZCA SEÇİLEN HESAP YÖNTEMİ GÖSTERİLİR.
-            # Günlük seçildiyse yalnız günlük tablo; aylık yöntemlerden biri seçildiyse
-            # yalnız seçilen aylık yöntem tablosu rapora eklenir.
-            _secili_il_rapor = str(_yr.get("mgm_il", "")).strip()
-            _mgm_gunluk = _yr.get("mgm_yagis_mm")
-            _mgm_tarih = _yr.get("mgm_yagis_tarih", "")
-            _mgm_aylik_rapor = _yr.get("mgm_aylik_yagis", {}) or {}
-            _mgm_periyot = _yr.get("mgm_aylik_periyot", "") or ""
-            _mgm_kaynak_url = (
-                _yr.get("mgm_url", "")
-                if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı"
-                else _yr.get("mgm_aylik_url", "")
-            )
+        return il, deger, tarih, url
+
+    sonuc = []
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        gelecekler = {executor.submit(_tek_il, il): il for il in MGM_81_IL}
+        for gelecek in as_completed(gelecekler):
+            il = gelecekler[gelecek]
+            try:
+                sonuc.append(gelecek.result())
+            except Exception:
+                try:
+                    _kod = MGM_IL_URL_KODU.get(il, il)
+                    _d, _t, _u = mgm_gunluk_en_yuksek_yagis_mm(_kod)
+                    sonuc.append((il, _d, _t, _u))
+                except Exception:
+                    sonuc.append((il, None, None, None))
+
+    sirali = {il: (deger, tarih, url) for il, deger, tarih, url in sonuc}
+    return [
+        (il, *sirali.get(il, (None, None, None)))
+        for il in MGM_81_IL
+    ]
 
-            doc.add_heading("SEÇİLEN İL METEOROLOJİK VERİLERİ", level=5)
-
-            if _yr_yontem == "Günlük Toplam En Yüksek Yağış Miktarı":
-                _met_tbl = doc.add_table(rows=1, cols=3)
-                _met_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _met_tbl.autofit = True
-                _mh = _met_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "GÜNLÜK TOPLAM EN YÜKSEK YAĞIŞ (mm)", "GERÇEKLEŞME TARİHİ"]):
-                    _mh[_i].text = _baslik
-                    _mh[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _mh[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _mh[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _mc = _met_tbl.add_row().cells
-                _mc[0].text = _secili_il_rapor or "-"
-                _mc[1].text = f"{float(_mgm_gunluk):.1f}" if _mgm_gunluk is not None else "Veri alınamadı"
-                _mc[2].text = _mgm_tarih or "-"
-                for _cell in _mc:
-                    _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    for _p in _cell.paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.font.size = Pt(8.5)
-
-            elif _yr_yontem == "Ortalama Aylık Yağış Miktarı":
-                _ay_tbl = doc.add_table(rows=1, cols=3)
-                _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _ay_tbl.autofit = True
-                _ay_hdr = _ay_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "AY", "AYLIK TOPLAM YAĞIŞ ORTALAMASI (mm)"]):
-                    _ay_hdr[_i].text = _baslik
-                    _ay_hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _ay_hdr[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _ay_hdr[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _aylar_sirali = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-                for _ay in _aylar_sirali:
-                    if _ay not in _mgm_aylik_rapor:
-                        continue
-                    _c = _ay_tbl.add_row().cells
-                    _c[0].text = _secili_il_rapor or "-"
-                    _c[1].text = _ay
-                    _c[2].text = f"{float(_mgm_aylik_rapor[_ay]):.1f}"
-                    for _cell in _c:
-                        _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                        for _p in _cell.paragraphs:
-                            _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                            for _r in _p.runs:
-                                _r.font.size = Pt(8.5)
-                doc.add_paragraph(
-                    f"Ölçüm periyodu: {_mgm_periyot or 'MGM verisinde belirtilmemiş'}. "
-                    f"12 aylık değerlerin aritmetik ortalaması: "
-                    f"{float(_yr.get('mgm_ortalama_aylik_yagis', 0) or 0):.1f} mm."
-                )
-
-            else:  # En Yüksek Aylık Ortalama Yağış Miktarı
-                _ay_tbl = doc.add_table(rows=1, cols=4)
-                _ay_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-                _ay_tbl.autofit = True
-                _ay_hdr = _ay_tbl.rows[0].cells
-                for _i, _baslik in enumerate(["İL", "AY", "AYLIK ORTALAMA YAĞIŞ (mm)", "DURUM"]):
-                    _ay_hdr[_i].text = _baslik
-                    _ay_hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    _tcPr = _ay_hdr[_i]._tc.get_or_add_tcPr()
-                    _shd = OxmlElement("w:shd")
-                    _shd.set(qn("w:fill"), "D9E2F3")
-                    _tcPr.append(_shd)
-                    for _p in _ay_hdr[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.bold = True
-                            _r.font.size = Pt(8.5)
-                _aylar_sirali = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-                _en_ay = _yr.get("mgm_en_yuksek_ay", "")
-                for _ay in _aylar_sirali:
-                    if _ay not in _mgm_aylik_rapor:
-                        continue
-                    _c = _ay_tbl.add_row().cells
-                    _c[0].text = _secili_il_rapor or "-"
-                    _c[1].text = _ay
-                    _c[2].text = f"{float(_mgm_aylik_rapor[_ay]):.1f}"
-                    _c[3].text = "SEÇİLEN / EN YÜKSEK AY" if _ay == _en_ay else ""
-                    for _cell in _c:
-                        _cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                        for _p in _cell.paragraphs:
-                            _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                            for _r in _p.runs:
-                                _r.font.size = Pt(8.5)
-                    if _ay == _en_ay:
-                        for _cell in _c:
-                            _tcPr = _cell._tc.get_or_add_tcPr()
-                            _shd = OxmlElement("w:shd")
-                            _shd.set(qn("w:fill"), "FFF2CC")
-                            _tcPr.append(_shd)
-                            for _p in _cell.paragraphs:
-                                for _r in _p.runs:
-                                    _r.bold = True
-                doc.add_paragraph(
-                    f"Ölçüm periyodu: {_mgm_periyot or 'MGM verisinde belirtilmemiş'}. "
-                    f"Seçilen en yüksek aylık ortalama yağış: {_en_ay or '-'} = "
-                    f"{float(_yr.get('mgm_en_yuksek_ay_yagis', 0) or 0):.1f} mm."
-                )
-
-            # Kaynak linki: raporu inceleyen kişi doğrudan kullanılan MGM sayfasına gidebilir.
-            if _mgm_kaynak_url:
-                _p_kaynak = doc.add_paragraph()
-                _p_kaynak.add_run("Veri kaynağı: ")
-                _part = _p_kaynak.part
-                _rid = _part.relate_to(_mgm_kaynak_url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
-                _hyperlink = OxmlElement("w:hyperlink")
-                _hyperlink.set(qn("r:id"), _rid)
-                _run = OxmlElement("w:r")
-                _rPr = OxmlElement("w:rPr")
-                _color = OxmlElement("w:color")
-                _color.set(qn("w:val"), "0563C1")
-                _rPr.append(_color)
-                _u = OxmlElement("w:u")
-                _u.set(qn("w:val"), "single")
-                _rPr.append(_u)
-                _run.append(_rPr)
-                _text = OxmlElement("w:t")
-                _text.text = "Meteoroloji Genel Müdürlüğü (MGM) – Resmi İklim İstatistikleri"
-                _run.append(_text)
-                _hyperlink.append(_run)
-                _p_kaynak._p.append(_hyperlink)
-            else:
-                doc.add_paragraph(
-                    "Veri kaynağı: Meteoroloji Genel Müdürlüğü (MGM), Resmi İklim İstatistikleri."
-                )
-
-            # Hesap girdileri ve yüzde parametreleri.
-            _yr_A = float(_yr.get('cati_alani', 0) or 0)
-            _yr_P = float(_yr.get('yagis', 0) or 0)
-            _yr_C = float(_yr.get('akis_katsayisi', 0) or 0)
-            _yr_sarnic_orani = float(_yr.get('sarnic_orani', 80) or 0)
-            _yr_filtre_etkinlik = float(_yr.get('filtre_etkinlik', 90) or 0)
-  
-            # Hesap girdileri, MGM kaynak bilgisinin hemen altında gösterilir.
-            doc.add_paragraph(
-                f"Toplama alanı: A = {_yr_A:.2f} m²; "
-                f"tasarım yağış yüksekliği: P = {_yr_P:.2f} mm; "
-                f"akış katsayısı: C = {_yr_C:.2f}"
-            )
-  
-            doc.add_paragraph(
-                f"Sarnıca alınacak yağmur suyu oranı: %{_yr_sarnic_orani:.0f}; "
-                f"filtre etkinlik katsayısı: %{_yr_filtre_etkinlik:.0f}."
-            )
-  
-            # Ham yağış hacmi ve iki yüzde parametresi uygulanarak sarnıca alınacak hacim.
-            _yr_ham_V = float(_yr.get('ham_toplanabilir_m3', _yr_A * _yr_P * _yr_C / 1000.0) or 0)
-            _yr_V = float(_yr.get('toplanabilir_m3', _yr_ham_V * _yr_sarnic_orani / 100.0 * _yr_filtre_etkinlik / 100.0) or 0)
-            doc.add_paragraph("Toplanabilir yağmur suyu ve sarnıca alınacak su hesabı:")
-            doc.add_paragraph("V_ham = A × P × C / 1000")
-            doc.add_paragraph(
-                f"V_ham = {_yr_A:.2f} × {_yr_P:.2f} × {_yr_C:.2f} / 1000 = {_yr_ham_V:.2f} m³"
-            )
-            doc.add_paragraph(
-                f"V_sarnıç = V_ham × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f}"
-            )
-            doc.add_paragraph(
-                f"V_sarnıç = {_yr_ham_V:.2f} × %{_yr_sarnic_orani:.0f} × %{_yr_filtre_etkinlik:.0f} = {_yr_V:.2f} m³"
-            )
-  
-            doc.add_heading("• YAĞMUR SUYU DEPOSU HACİM HESABI", level=4)
-            doc.add_paragraph(
-                f"Yağmur suyu deposu tipi: {_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi)}"
-            )
-            doc.add_paragraph(
-                f"Yıllık toplam yağış: {float(_yr.get('mgm_yillik_yagis_mm', 0) or 0):.2f} mm "
-                "(MGM aylık ortalama yağışlarının toplamı)"
-            )
-            doc.add_paragraph(
-                f"Yıllık toplanabilir yağış hacmi: {float(_yr.get('yillik_toplam_hacim_m3', 0) or 0):.2f} m³/yıl"
-            )
-            doc.add_paragraph(
-                f"Depolanacak oran: %{float(_yr.get('depolama_orani', 6) or 0):.0f}"
-            )
-            doc.add_paragraph(
-                "V_yıllık = A × P_yıllık × C / 1000"
-            )
-            doc.add_paragraph(
-                f"V_yıllık = {float(_yr.get('cati_alani', 0) or 0):.2f} × "
-                f"{float(_yr.get('mgm_yillik_yagis_mm', 0) or 0):.2f} × "
-                f"{float(_yr.get('akis_katsayisi', 0) or 0):.2f} / 1000 = "
-                f"{float(_yr.get('yillik_toplam_hacim_m3', 0) or 0):.2f} m³/yıl"
-            )
-            doc.add_paragraph(
-                f"V_depo = V_yıllık × %{float(_yr.get('depolama_orani', 6) or 0):.0f} = "
-                f"{float(_yr.get('yillik_toplam_hacim_m3', 0) or 0):.2f} × "
-                f"%{float(_yr.get('depolama_orani', 6) or 0):.0f} = "
-                f"{float(_yr.get('gerekli_depo', 0) or 0):.2f} m³"
-            )
-            doc.add_paragraph(f"Hesaplanan gerekli depo hacmi: {float(_yr.get('gerekli_depo', 0) or 0):.2f} m³")
-            _rapor_secilen_depo = float(_yr.get('secilen_depo', 0) or 0)
-            _rapor_depo_tipi = str(_yr.get('yagmur_depo_tipi', sih_yagmur_depo_tipi) or '').strip()
-            if _rapor_depo_tipi:
-                doc.add_paragraph(
-                    f'Seçilen "{_rapor_depo_tipi}" depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³'
-                )
-            else:
-                doc.add_paragraph(
-                    f"Seçilen depo hacmi (Emniyetle): {_rapor_secilen_depo:.2f} m³"
-                )
-            _rapor_yagmur_depo_poz = str(_yr.get("yagmur_depo_poz", "") or "").strip()
-            if _yr.get("yagmur_depo_poz_rapora_eklensin", True) and _rapor_yagmur_depo_poz:
-                doc.add_paragraph(f"Cihaz Poz No: {_rapor_yagmur_depo_poz}")
-  
-            doc.add_heading("• YAĞMUR SUYU FİLTRESİ SEÇİMİ", level=4)
-            doc.add_paragraph(f"Filtre tipi: {_yr.get('filtre_tipi', '')}")
-            doc.add_paragraph(
-                f"Yağmur suyu toplama alanı: {float(_yr.get('cati_alani', 0) or 0):.2f} m²"
-            )
-            doc.add_paragraph(
-                f"Filtre adedi: {float(_yr.get('filtre_adet', 1) or 0):.0f} adet"
-            )
-            doc.add_paragraph(
-                f"Filtre başına düşen toplama alanı: {float(_yr.get('filtre_basina_alan_m2', 0) or 0):.2f} m²"
-            )
-            doc.add_paragraph(
-                f"Tek filtre kapasitesi: {float(_yr.get('filtre_kapasite_m2', 0) or 0):.0f} m²/adet"
-            )
-            doc.add_paragraph(
-                f"Toplam filtre kapasitesi: {_yr.get('filtre_toplam_kapasite_m2', _yr.get('filtre_kapasite_m2', 0)):,.0f} m²"
-            )
-            doc.add_paragraph(
-                f"Tek filtre maksimum debisi: {float(_yr.get('filtre_debisi_ls', 0) or 0):.0f} L/s; "
-                f"toplam maksimum debi: {_yr.get('filtre_toplam_debisi_ls', _yr.get('filtre_debisi_ls', 0)):,.0f} L/s"
-            )
-            if _yr.get('filtre_poz_rapora_eklensin', True):
-                doc.add_paragraph(
-                    f"Cihaz Poz No: {_yr.get('filtre_poz', '')}"
-                )
-            if _yr.get('filtre_kapasite_yetersiz', False):
-                doc.add_paragraph(
-                    "UYARI: Seçilen filtre tipi için mevcut en büyük poz kapasitesi, "
-                    "toplama alanını karşılamamaktadır."
-                )
-  
-            doc.add_heading("• TAŞMA HATTI HESABI", level=4)
-            _tasma_A = _yr.get('cati_alani', 0)
-            _tasma_P = _yr.get('yagis', 0)
-            _tasma_C = _yr.get('akis_katsayisi', 0)
-            _tasma_Vham = _yr.get('ham_toplanabilir_m3', 0)
-            _tasma_t = _yr.get('sure_dk', 0)
-            _tasma_Q = _yr.get('debi_m3h', 0)
-            _tasma_E = _yr.get('tasma_emniyet', 0)
-            _tasma_Qson = _yr.get('tasma_debisi', 0)
-            _tasma_DN = _yr.get('tasma_cap', 0)
-            _tasma_Q_lps = _yr.get('tasma_Q_lps', _tasma_Qson / 3.6)
-            _tasma_hesaplanan_Q_lps = _yr.get('tasma_hesaplanan_Q_lps', _tasma_Qson / 3.6)
-            _tasma_tasarim_Q_lps = _yr.get('tasma_tasarim_Q_lps', _tasma_Q_lps)
-            _tasma_tasarim_debisi_m3h = _yr.get('tasma_tasarim_debisi_m3h', _tasma_tasarim_Q_lps * 3.6)
-            _tasma_debi_sinirlandi = _yr.get('tasma_debi_sinirlandi', False)
-            _tasma_maks_tasarim_Q_lps = _yr.get('tasma_maks_tasarim_Q_lps', 200.0)
-            _tasma_n = _yr.get('tasma_manning_n', 0.011)
-            _tasma_malzeme = _yr.get('tasma_malzeme', 'PVC')
-            _tasma_egim = _yr.get('tasma_egim_yuzde', 1.0)
-            _tasma_max_hiz = _yr.get('tasma_max_hiz', 3.0)
-            _tasma_kapasite = _yr.get('tasma_hidrolik_kapasite_lps', 0.0)
-            _tasma_hiz = _yr.get('tasma_hidrolik_hiz_ms', 0.0)
-            _tasma_uygun = _yr.get('tasma_hidrolik_uygun', False)
-            _tasma_hat_adedi = int(_yr.get('tasma_hat_adedi', 1) or 1)
-            _tasma_hat_Q_lps = float(_yr.get('tasma_hat_Q_lps', _tasma_tasarim_Q_lps / _tasma_hat_adedi) or 0)
-            _tasma_toplam_kapasite_lps = float(_yr.get('tasma_toplam_kapasite_lps', _tasma_kapasite * _tasma_hat_adedi) or 0)
-            _tasma_onerilen_hat_adedi = _yr.get('tasma_onerilen_hat_adedi')
-            _tasma_oneri_cap = _yr.get('tasma_oneri_cap')
-  
-            doc.add_paragraph("Taşma hattı hesabında çatıdan oluşan ham yağmur suyu hacmi, tasarım yağış süresine dağıtılmış ve ardından emniyet katsayısı uygulanmıştır.")
-            doc.add_paragraph("1. Ham yağmur suyu hacmi:")
-            doc.add_paragraph("Vham = A × P × C / 1000")
-            doc.add_paragraph(
-                f"Vham = {_tasma_A:,.2f} m² × {_tasma_P:,.2f} mm × {_tasma_C:.2f} / 1000 = {_tasma_Vham:,.2f} m³"
-            )
-            doc.add_paragraph("2. Tasarım yağış debisi:")
-            doc.add_paragraph("Qyağış = Vham / (t / 60)")
-            doc.add_paragraph(
-                f"Qyağış = {_tasma_Vham:,.2f} m³ / ({_tasma_t:,.2f} / 60) = {_tasma_Q:,.2f} m³/h"
-            )
-            doc.add_paragraph("3. Emniyet katsayısı uygulanmış taşma debisi:")
-            doc.add_paragraph("Qtaşma = Qyağış × (1 + E / 100)")
-            doc.add_paragraph(
-                f"Qtaşma = {_tasma_Q:,.2f} × (1 + {_tasma_E:.2f} / 100) = {_tasma_Qson:,.2f} m³/h = {_tasma_hesaplanan_Q_lps:,.2f} L/s"
-            )
-            doc.add_paragraph(
-                f"Proje tasarım kriteri: taşma hattı tasarım debisi maksimum {_tasma_maks_tasarim_Q_lps:,.0f} L/s olarak sınırlandırılmıştır."
-            )
-            doc.add_paragraph(
-                f"Tasarım taşma debisi = min({_tasma_hesaplanan_Q_lps:,.2f}, {_tasma_maks_tasarim_Q_lps:,.0f}) = {_tasma_tasarim_Q_lps:,.2f} L/s = {_tasma_tasarim_debisi_m3h:,.2f} m³/h"
-            )
-            if _tasma_debi_sinirlandi:
-                doc.add_paragraph(
-                    "Not: Hesaplanan taşma debisi 200 L/s üst sınırını aştığı için hidrolik ön boyutlandırmada "
-                    "tasarım debisi 200 L/s alınmıştır. Hesaplanan gerçek debi ayrıca yukarıda gösterilmiştir."
-                )
-            doc.add_paragraph(
-                f"Taşma hattı adedi: {_tasma_hat_adedi} adet; her hatta düşen tasarım debisi = "
-                f"{_tasma_tasarim_Q_lps:,.2f} / {_tasma_hat_adedi} = {_tasma_hat_Q_lps:,.2f} L/s"
-            )
-            if _tasma_onerilen_hat_adedi is not None:
-                doc.add_paragraph(
-                    f"DN250 sınırı altında tasarım debisini karşılayan önerilen minimum düzen: "
-                    f"{int(_tasma_onerilen_hat_adedi)} hat × DN {int(_tasma_oneri_cap)}."
-                )
-            doc.add_paragraph("4. Taşma hattı hidrolik kontrolü (Manning yöntemi):")
-            doc.add_paragraph(
-                f"Boru malzemesi: {_tasma_malzeme}; Manning katsayısı n = {_tasma_n:.3f}; boru eğimi = %{_tasma_egim:.2f}; "
-                f"izin verilen maksimum hız = {_tasma_max_hiz:.2f} m/s"
-            )
-            doc.add_paragraph("Q gerekli = Qtaşma / 3,6")
-            doc.add_paragraph(
-                f"Q gerekli = {_tasma_tasarim_debisi_m3h:,.2f} m³/h / 3,6 = {_tasma_hat_Q_lps:,.2f} L/s/hat = {_tasma_hat_Q_lps/1000.0:,.4f} m³/s/hat"
-            )
-            doc.add_paragraph("Manning formülü:")
-            doc.add_paragraph("Q = (1/n) × A × R^(2/3) × S^(1/2)")
-            _rep_secili_manning = next((x for x in _yr.get('tasma_hidrolik_tablo', []) if int(x.get('dn', 0)) == int(_tasma_DN)), None)
-            if _rep_secili_manning:
-                _rep_D = float(_rep_secili_manning.get('dn', 0)) / 1000.0
-                _rep_A = float(_rep_secili_manning.get('alan_m2', 0.0))
-                _rep_R = _rep_D / 4.0
-                _rep_Qm3s = float(_rep_secili_manning.get('q_manning_lps', 0.0)) / 1000.0
-                _rep_V = float(_rep_secili_manning.get('hiz_ms', 0.0))
-                doc.add_paragraph(
-                    f"D = {_rep_D:.3f} m; A = π × D² / 4 = π × {_rep_D:.3f}² / 4 = {_rep_A:.5f} m²; "
-                    f"R = D / 4 = {_rep_D:.3f} / 4 = {_rep_R:.5f} m; S = {_tasma_egim/100:.4f}."
-                )
-                doc.add_paragraph(
-                    f"Q = (1 / {_tasma_n:.3f}) × {_rep_A:.5f} × ({_rep_R:.5f})^(2/3) × "
-                    f"({_tasma_egim/100:.4f})^(1/2) = {_rep_Qm3s:.5f} m³/s = {_rep_Qm3s*1000:.2f} L/s."
-                )
-                doc.add_paragraph(
-                    f"V = Q / A = {_rep_Qm3s:.5f} / {_rep_A:.5f} = {_rep_V:.2f} m/s; "
-                    f"kabul edilen maksimum hız = {_tasma_max_hiz:.2f} m/s."
-                )
-            doc.add_paragraph(
-                f"Seçilen minimum taşma hattı: {_tasma_hat_adedi} hat × DN {_tasma_DN}; "
-                f"tek hat tasarım kapasitesi = {_tasma_kapasite:,.2f} L/s; "
-                f"toplam tasarım kapasitesi = {_tasma_toplam_kapasite_lps:,.2f} L/s; "
-                f"Manning hızı = {_tasma_hiz:.2f} m/s"
-            )
-            # Hidrolik kontrol tablosu rapor bölümünde kullanılmadan önce alınmalıdır.
-            # Aksi halde DN200/DN250 kapasite satırında değişken tanımsız kalır ve
-            # rapor oluşturma işlemi NameError ile durur.
-            _hidrolik_tablo = _yr.get('tasma_hidrolik_tablo', [])
-            if _tasma_DN in (200, 250):
-                _rep_secili = next((x for x in _hidrolik_tablo if int(x.get('dn', 0)) == int(_tasma_DN)), None)
-                if _rep_secili and _rep_secili.get('q_hiz_lps') is not None:
-                    doc.add_paragraph(
-                        f"DN {_tasma_DN} için {_tasma_max_hiz:.2f} m/s tasarım hızına göre kapasite: "
-                        f"Q = A × V = {_rep_secili.get('alan_m2', 0):.5f} × {_tasma_max_hiz:.2f} "
-                        f"= {_rep_secili.get('q_hiz_lps', 0):.2f} L/s."
-                    )
-            doc.add_paragraph(
-                f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
-            )
-            # TAŞMA HATTI HİDROLİK KONTROL TABLOSU
-            # Kullanıcı tarafından onaylanan sabit referans değerleri raporda
-            # metin/paragraf yerine gerçek Word tablosu olarak gösterilir.
-            _tasma_rapor_tablo = [
-                ("DN 50", "0.96", "0.96", "0.49", "YETERSİZ"),
-                ("DN 65", "1.94", "1.94", "0.58", "YETERSİZ"),
-                ("DN 80", "3.37", "3.37", "0.67", "YETERSİZ"),
-                ("DN 100", "6.10", "6.10", "0.78", "YETERSİZ"),
-                ("DN 125", "11.07", "11.07", "0.90", "YETERSİZ"),
-                ("DN 150", "18.00", "18.00", "1.02", "YETERSİZ"),
-                ("DN 200", "94.25", "38.76", "1.23", "YETERSİZ"),
-                ("DN 250", "147.26", "70.28", "1.43", "YETERSİZ"),
-            ]
-            doc.add_paragraph("Kontrol edilen çaplar:")
-            _tasma_tbl = doc.add_table(rows=1, cols=5)
-            _tasma_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-            _tasma_tbl.autofit = True
-            _hdr = _tasma_tbl.rows[0].cells
-            for _i, _baslik in enumerate([
-                "BORU ÇAPI", "TASARIM KAPASİTESİ (L/s)",
-                "MANNING KAPASİTESİ (L/s)", "MANNING HIZI (m/s)", "SONUÇ"
-            ]):
-                _hdr[_i].text = _baslik
-                _hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                _tcPr = _hdr[_i]._tc.get_or_add_tcPr()
-                _shd = OxmlElement("w:shd")
-                _shd.set(qn("w:fill"), "D9E2F3")
-                _tcPr.append(_shd)
-                for _p in _hdr[_i].paragraphs:
-                    _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    for _r in _p.runs:
-                        _r.bold = True
-                        _r.font.size = Pt(8.5)
-            for _satir in _tasma_rapor_tablo:
-                _cells = _tasma_tbl.add_row().cells
-                for _i, _deger in enumerate(_satir):
-                    _cells[_i].text = _deger
-                    _cells[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                    for _p in _cells[_i].paragraphs:
-                        _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for _r in _p.runs:
-                            _r.font.size = Pt(8.5)
-            doc.add_paragraph(
-                "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
-                "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
-            )
-  
-            doc.add_heading("• TAŞKAN SİFONU / KOKU KAPANI SEÇİMİ", level=4)
-            doc.add_paragraph(
-                "Taşkan sifonu / koku kapanı kullanılacaktır." if _yr.get("sifon") else
-                "Taşkan sifonu / koku kapanı öngörülmemiştir."
-            )
-            if _yr.get("sifon"):
-                _sifon_poz = str(_yr.get("tasma_sifonu_poz", "") or "").strip()
-                _sifon_dn = int(_yr.get("tasma_sifonu_dn", 0) or 0)
-                _sifon_tanim = str(_yr.get("tasma_sifonu_tanim", "") or "").strip()
-                _sifon_ozellik = str(_yr.get("tasma_sifonu_ozellik", "") or "").strip()
-                _sifon_adedi = int(_yr.get("tasma_sifonu_adedi", _tasma_hat_adedi) or _tasma_hat_adedi)
-                doc.add_paragraph(
-                    f"Hidrolik hesapta kullanılan toplam tasarım taşma debisi: {_tasma_tasarim_Q_lps:,.2f} L/s "
-                    f"(üst sınır {_tasma_maks_tasarim_Q_lps:,.0f} L/s)."
-                )
-                doc.add_paragraph(
-                    f"Taşma hattı düzeni: {_tasma_hat_adedi} paralel hat; her hat için tasarım debisi = "
-                    f"{_tasma_hat_Q_lps:,.2f} L/s."
-                )
-                doc.add_paragraph(
-                    f"Hidrolik hesap sonucu her hat için gerekli minimum taşma hattı: DN {_tasma_DN}."
-                )
-                if _sifon_tanim:
-                    doc.add_paragraph(f"Seçilen Taşkan Sifonu: {_sifon_adedi} adet × {_sifon_tanim}")
-                if _sifon_ozellik:
-                    doc.add_paragraph(f"Taşkan Sifonu Özelliği: {_sifon_ozellik}")
-                if _yr.get("tasma_sifonu_poz_rapora_eklensin") and _sifon_poz:
-                    doc.add_paragraph(f"Taşkan Sifonu Cihaz Poz No: {_sifon_poz}")
-                elif _sifon_poz:
-                    doc.add_paragraph("Taşkan Sifonu Cihaz Poz No rapora eklenmemiştir.")
-            if _yr.get("kanal_baglanti"):
-                doc.add_paragraph("Taşma hattı kanalizasyona bağlanacaktır; geri tepme koruması sağlanacaktır.")
-            else:
-                doc.add_paragraph("Taşma hattı kanalizasyona bağlanmayacaktır.")
-            if _yr.get("geri_tepme"):
-                doc.add_paragraph("Geri tepme önleyici düzenek öngörülmüştür.")
-  
-            doc.add_heading("• AKIŞ DÜZENLEYİCİ (CAZİBE YAVAŞLATICI / SAKİNLEŞTİRİCİ GİRİŞ) SEÇİMİ", level=4)
-            if _yr.get("sakin_giris"):
-                doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) kullanılacaktır.")
-                doc.add_paragraph(f"Malzeme / Özellik: {_yr.get('sakin_giris_malzeme_ozellik', '')}")
-                doc.add_paragraph(f"Fonksiyonu: {_yr.get('sakin_giris_fonksiyonu', '')}")
-                if _yr.get("sakin_giris_poz_rapora_eklensin"):
-                    doc.add_paragraph(f"Cihaz Poz No: {_yr.get('sakin_giris_poz', '25.181.5300')}")
-            else:
-                doc.add_paragraph("Akış düzenleyici (cazibe yavaşlatıcı / sakinleştirici giriş) öngörülmemiştir.")
-  
-            doc.add_heading("• HAVALANDIRMA VE HAŞERE KORUMASI", level=4)
-            doc.add_paragraph(
-                "Depo havalandırması yapılacaktır." if _yr.get("havalandirma") else
-                "Depo havalandırması ayrıca belirtilmemiştir."
-            )
-            doc.add_paragraph(
-                "Havalandırma açıklıkları haşere girişine karşı korunacaktır." if _yr.get("hasere") else
-                "Havalandırma açıklıkları için ayrıca haşere koruması belirtilmemiştir."
-            )
-  
-            doc.add_paragraph(
-                "Not: Yağmur suyu pompası bu bölümde seçilmemiştir. Gerekli pompa/hidrofor seçimi "
-                "ilgili hidrofor-pompa seçim modülünde yapılacaktır."
-            )
-  
-          # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
-  
-          # 6.3.2 başlığı, 6.3.1 bölümünün tamamından sonra eklenir.
-          if bolum_632_aktif:
-            doc.add_heading(_63_dinamik_baslik("rapor_bolum_632"), level=2)
-  
-            genel_bilgiler_basligi = doc.add_paragraph()
-            genel_bilgiler_run = genel_bilgiler_basligi.add_run(
-                "• Genel Bilgiler ve Hidrofor Seçim Esasları"
-            )
-            genel_bilgiler_run.bold = False
-            genel_bilgiler_run.italic = True
-            genel_bilgiler_run.font.size = Pt(12)
-            genel_bilgiler_run.font.color.rgb = RGBColor(68, 114, 196)
-  
-            hidrofor_genel_secimler_rapor = locals().get(
-                "hidrofor_genel_secimler", [True] * 15
-            )
-            hidrofor_genel_maddeleri_rapor = locals().get(
-                "hidrofor_genel_maddeleri", []
-            )
-            for secili, madde in zip(
-                hidrofor_genel_secimler_rapor, hidrofor_genel_maddeleri_rapor
-            ):
-                if secili:
-                    doc.add_paragraph(madde, style="List Bullet")
-  
-            # Yalnızca seçilen hidroforlar, boşluk bırakmadan sıralanır.
-            for hesap in locals().get("hidrofor_hesaplari", []):
-                i = hesap["index"]
-                ad = hesap["baslik"]
-                doc.add_heading(f"6.3.{_63_dinamik_no("rapor_bolum_632")}.{i} {ad}", level=3)
-  
-                    # Alt başlık: Genel Bilgiler başlığı ile aynı görünüm
-                if hesap.get("hesaplama_aktif", True):
-                  hidrofor_hesap_basligi = doc.add_paragraph()
-                  hidrofor_hesap_basligi.paragraph_format.space_before = Pt(4)
-                  hidrofor_hesap_basligi.paragraph_format.space_after = Pt(4)
-                  hidrofor_hesap_run = hidrofor_hesap_basligi.add_run(
-                      "• Hidrofor Hesaplamaları"
-                  )
-                  hidrofor_hesap_run.bold = False
-                  hidrofor_hesap_run.italic = True
-                  hidrofor_hesap_run.font.name = "Arial"
-                  hidrofor_hesap_run.font.size = Pt(12)
-                  hidrofor_hesap_run.font.color.rgb = RGBColor(68, 114, 196)
-                  doc.add_paragraph(
-                      f"Toplam yükleme birimi: Z = {hesap['toplam_yb']:.0f} YB"
-                  )
-                  doc.add_paragraph(
-                      "Saatlik maksimum su tüketimi: Vm = 3600 × (0,25 × √Z)"
-                  )
-                  doc.add_paragraph(
-                      f"Vm = 3600 × (0,25 × √{hesap['toplam_yb']:.0f}) = "
-                      f"{hesap['vm_lph']:.0f} L/h = {hesap['vm_m3h']:.2f} m³/h"
-                  )
-                  doc.add_paragraph(
-                      f"Pompa debisi: Vp = {hesap['vm_m3h']:.2f} × "
-                      f"(1 + %{hesap['emniyet_orani']:.0f}) = {hesap['vp_m3h']:.2f} m³/h"
-                  )
-                  doc.add_paragraph(
-                      f"Asıl pompa adedi: {hesap['asil_pompa']} adet; "
-                      f"bir pompa debisi: {hesap['vp_pompa_m3h']:.2f} m³/h"
-                  )
-  
-                  doc.add_paragraph("İşletme basınçları:")
-                  doc.add_paragraph(f"Kot Farkı: hp = {hesap['hp']:.0f} mSS")
-                  doc.add_paragraph(f"Akma Basıncı: ha = {hesap['ha']:.0f} mSS")
-                  doc.add_paragraph(f"Boru Kayıpları: hb = {hesap['hb']:.1f} mSS")
-                  doc.add_paragraph(f"Sayaç Kayıpları: hc = {hesap['hc']:.0f} mSS")
-                  doc.add_paragraph("İşletme alt basıncı: Pa = (hp + ha + hb+ hc )")
-                  doc.add_paragraph(
-                      f"İşletme alt basıncı: Pa = ( {hesap['hp']:.0f} + {hesap['ha']:.0f} + "
-                      f"{hesap['hb']:.1f} + {hesap['hc']:.0f}) = {hesap['p_alt_mss']:.1f} mSS"
-                  )
-                  doc.add_paragraph(
-                      f"İşletme alt basıncı: Pa = {hesap['p_alt_atu']:.1f} atü seçildi."
-                  )
-                  doc.add_paragraph(
-                      f"İşletme üst basıncı: Pu = {hesap['p_ust_atu']:.1f} atü seçildi."
-                  )
-                if hesap.get("tank_hesabi_aktif", True):
-                  rapor_hidrofor_alt_basligi_ekle(doc, "Hidrofor Tankı Hesabı")
-                  doc.add_paragraph("VN : Hidrofor tankı nominal hacmi (m3)")
-                  doc.add_paragraph("QP : Bir pompanın PALT basınçta verdiği max debi miktarı (m3 / h)")
-                  doc.add_paragraph("S : Şalt sayısı (Motorun saatte devreye girip çıkma sayısı) 1/S")
-                  doc.add_paragraph("- 2 veya 3 kW lık motor güçlerine kadar şalt sayısı 40'a kadar çıkabilir.")
-                  doc.add_paragraph("- Büyük motorlarda şalt sayısı 20'ye çekildi.")
-                  doc.add_paragraph(
-                      "VN = 0,33 × QP × (PÜST + 1) / ((PÜST − PALT) × S)"
-                  )
-                  doc.add_paragraph(
-                      f"VN = 0,33 × {hesap['vp_pompa_m3h']:.2f} × "
-                      f"({hesap['p_ust_atu']:.2f} + 1) / "
-                      f"(({hesap['p_ust_atu']:.2f} − {hesap['p_alt_atu']:.2f}) × {hesap['schalt']:.0f}) = "
-                      f"{hesap['vn_m3']:.3f} m³ = {hesap['vn_m3']*1000:.0f} L"
-                  )
-                  doc.add_paragraph(
-                      f"Her tank için gerekli hacim: {hesap.get('tank_birim_gerekli_litre', 0):.0f} L"
-                  )
-                  doc.add_paragraph(
-                      f"Seçilen tank: {hesap['tank_adedi']} × {hesap['tank_birim_litre']:.0f} L = "
-                      f"{hesap['tank_toplam_litre']:.0f} L"
-                  )
-                  if hesap.get("tank_poz"):
-                      doc.add_paragraph(f"Genleşme Tankı Cihaz Poz No: {hesap['tank_poz']}")
-                if hesap.get("karakteristik_aktif", True):
-                  rapor_hidrofor_alt_basligi_ekle(doc, "Hidroforun Karakteristikleri")
-                  doc.add_paragraph(
-                      f"Tank hacmi: Vt = {hesap['tank_adedi']} x {hesap['tank_birim_litre']:.0f} lt."
-                  )
-                  doc.add_paragraph(
-                      f"Pompa debisi: Vp = {hesap['asil_pompa']} ad x {hesap['vp_pompa_m3h']:.0f} m3/h"
-                  )
-                  doc.add_paragraph(f"İşletme alt basıncı: H a = {hesap['p_alt_mss']:.0f} mSS")
-                  doc.add_paragraph(f"İşletme üst basıncı: H ü = {hesap['p_ust_mss']:.0f} mSS")
-                  doc.add_paragraph(
-                      f"Pompa gücü: Np = {hesap['toplam_pompa']} ad x {hesap['guc']:.1f} KW."
-                  )
-                  tip_metni = hesap.get("poz_aciklama", "")
-                  if not tip_metni or tip_metni.startswith("Birim Poziyat") or tip_metni.startswith("Seçilen debi"):
-                      tip_metni = HIDROFOR_TIP_METINLERI.get(hesap['toplam_pompa'], "Hidrofor")
-                  doc.add_paragraph(f"Tipi: {tip_metni}")
-                  if hesap.get("poz_rapora_eklensin_mi", True):
-                      if hesap.get("poz"):
-                          doc.add_paragraph(f"Cihaz Poz No: {hesap['poz']}")
-                      else:
-                          doc.add_paragraph(
-                              "Cihaz Poz No: Birim Poziyat verisi bu pompa adedi için henüz tanımlanmamıştır."
-                          )
-                if hesap.get("egrisi_aktif", True):
-                  curve = hesap.get("pompa_curve", [])
-                  if curve:
-                      q_curve = [p[0] for p in curve]
-                      h_curve = [p[1] for p in curve]
-                      grafik_buf = pompa_grafigi_png(
-                          q_curve, h_curve, hesap["vp_pompa_m3h"], hesap["h"],
-                          hesap.get("pompa_egrisi_basligi", "Pompa Performans Eğrisi"),
-                          anonim=True,
-                      )
-                      rapor_hidrofor_alt_basligi_ekle(doc, "Pompa Performans Eğrisi:")
-                      doc.add_picture(grafik_buf, width=Inches(6.2))
-                      doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-      # 6.3.3 Kullanma Sıcak Suyu İhtiyacı Hesapları
-      if bolum_633_aktif:
-          doc.add_heading(_63_dinamik_baslik("rapor_bolum_633"), level=2)
-          if sicak_su_hesap_detaylari:
-              yapi_tip_par = doc.add_paragraph()
-              yapi_tip_run = yapi_tip_par.add_run(f"Yapı / kullanım tipi: {sicak_su_yapi_tipi}")
-              yapi_tip_run.bold = True
-              yapi_tip_run.font.color.rgb = RGBColor(0, 0, 0)
-              t_sicak = doc.add_table(rows=1, cols=5)
-              t_sicak.style = "Table Grid"
-              basliklar = ["Kullanım yeri", "Standart aralığı [L]", "Hesapta kullanılan [L]", "Adet", "Toplam [L]"]
-              for i, baslik in enumerate(basliklar):
-                  t_sicak.rows[0].cells[i].text = baslik
-              for detay in sicak_su_hesap_detaylari:
-                  hucre = t_sicak.add_row().cells
-                  hucre[0].text = detay["kullanim"]
-                  hucre[1].text = str(detay["kaynak_aralik"])
-                  hucre[2].text = f"{detay['birim_degeri']:.0f}"
-                  hucre[3].text = f"{detay['miktar']:.0f}"
-                  hucre[4].text = f"{detay['toplam_litre']:.0f}"
-              toplam = t_sicak.add_row().cells
-              toplam[0].text = "GENEL TOPLAM"
-              toplam[4].text = f"{sicak_su_gunluk_toplam_litre:,.0f} L/gün".replace(",", ".")
-  
-              # Tablonun bir satır altında Ortalama Ani Sıcak Su İhtiyacı başlığı
-              doc.add_paragraph("")
-              ortalama_ani_baslik = doc.add_paragraph()
-              run = ortalama_ani_baslik.add_run("Ortalama Ani Sıcak Su İhtiyacı:")
-              run.bold = True
-              run.font.color.rgb = RGBColor(0, 0, 0)
-  
-              faktor_par = doc.add_paragraph()
-              faktor_par.add_run("Kullanma Eş Zaman Faktörü = ")
-              run = faktor_par.add_run(f"{kullanma_es_faktoru:.2f}")
-              run.bold = True
-  
-              faktor_par = doc.add_paragraph()
-              faktor_par.add_run("Depolama Faktörü = ")
-              run = faktor_par.add_run(f"{depolama_faktoru:.2f}")
-              run.bold = True
-  
-              toplam_litre_fmt = str(int(round(sicak_su_gunluk_toplam_litre)))
-              hesaplanan_fmt = str(int(round(hesaplanan_boyler_hacmi)))
-              formula_par = doc.add_paragraph()
-              formula_par.add_run(
-                  f"V = {depolama_faktoru:.2f} × {kullanma_es_faktoru:.2f} × {toplam_litre_fmt} = "
-              )
-              run = formula_par.add_run(f"{hesaplanan_fmt} L")
-              run.bold = True
-  
-              emniyet_par = doc.add_paragraph()
-              emniyet_par.add_run("V = ")
-              run = emniyet_par.add_run(f"{secilen_boyler_hacmi} L")
-              run.bold = True
-              emniyet_par.add_run(" (Emniyetle)")
-              if es_zaman_faktoru is not None:
-                  doc.add_paragraph(f"Excel eş zaman faktörü ({konut_sayisi} konut): {es_zaman_faktoru:.2f}")
-  
-              # Boyler / eşanjör ısıtma kapasite hesabı başlığı
-              # Seçilen sisteme göre raporda da otomatik değişir.
-              _rapor_hesap_tip = str(
-                  st.session_state.get("boyler_secili_tip_v57", "TEK SERPANTİNLİ BOYLER")
-              )
-              _rapor_hesap_basligi = (
-                  "PLAKALI EŞANJÖR ISITMA KAPASİTE HESABI:"
-                  if _rapor_hesap_tip == "PLAKALI EŞANJÖR"
-                  else "BOYLER ISITMA KAPASİTE HESABI:"
-              )
-              boyler_baslik = doc.add_paragraph()
-              boyler_baslik_run = boyler_baslik.add_run(_rapor_hesap_basligi)
-              boyler_baslik_run.bold = True
-              boyler_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-  
-              doc.add_paragraph("Q = ms × c × Δts = mp × c × Δtp")
-              doc.add_paragraph("Q : İletilmesi gereken toplam ısı miktarı. (kCal/h)")
-              doc.add_paragraph("ms : Sekonder su debisi (lt/h)")
-              doc.add_paragraph("mp : Primer su debisi (lt/h)")
-              doc.add_paragraph("c : Suyun özgül ısısı. (°C) [1 kCal/kg.°C]")
-              doc.add_paragraph("Δts : Sekonder devre giriş-çıkış suyu sıcaklık farkı. (°C)")
-              doc.add_paragraph("Δtp : Primer devre giriş-çıkış suyu sıcaklık farkı. (°C)")
-              doc.add_paragraph(
-                  f"Q = {boyler_ms:.0f} lt/h × 1 kCal/kg.°C × "
-                  f"({boyler_ts_cikis:.0f}-{boyler_ts_giris:.0f}) °C"
-              )
-              q_par = doc.add_paragraph()
-              q_par.add_run(
-                  f"Q = {boyler_q_kcal_h:.0f} kcal/h ≈ {int(boyler_q_kw)} kW"
-              ).bold = True
-  
-              # Boyler / eşanjör seçimi
-              # Kullanıcının istediği rapor formatı:
-              # Q, primer/sekonder rejim, adet, tip, hacim, debi ve Cihaz Poz No.
-              secili_tip = st.session_state.get(
-                  "boyler_secili_tip_v57",
-                  "TEK SERPANTİNLİ BOYLER",
-              )
-  
-              # Rapor oluşturulurken de poz seçimini yeniden doğrula. Böylece
-              # Streamlit oturumunda seçim sonucu henüz oluşmamış olsa bile
-              # Cihaz Poz No rapora mutlaka aktarılır.
-              boyler_secim_sonucu = st.session_state.get(
-                  "boyler_secim_sonucu_v59",
-                  None,
-              )
-  
-              if secili_tip == "TEK SERPANTİNLİ BOYLER":
-                  rapor_adet = max(1, int(st.session_state.get("boyler_adet_tek_serpantin_v59", 3)))
-                  if isinstance(boyler_secim_sonucu, dict) and int(boyler_secim_sonucu.get("adet", 0)) == rapor_adet and boyler_secim_sonucu.get("poz"):
-                      _rapor_poz_kaydi = boyler_secim_sonucu
-                  else:
-                      _rapor_poz_kaydi, _, _, _ = _boyler_poz_sec(secilen_boyler_hacmi, boyler_ms, rapor_adet)
-                  rapor_poz = _rapor_poz_kaydi["poz"]
-                  rapor_hacim = int(_rapor_poz_kaydi["hacim"])
-                  rapor_debi = int(_rapor_poz_kaydi.get("debi", _rapor_poz_kaydi.get("debi_80_60", 0)))
-                  rapor_tip = (
-                      "Tek Bakır Boru Serpantinli, Dik Tip, Gövdesi İzolasyonlu, "
-                      "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
-                  )
-                  rapor_gunes_satiri = False
-                  rapor_alt_debi = rapor_ust_debi = 0
-                  rapor_gunes_rejimi = ""
-              elif secili_tip == "ÇİFT SERPANTİNLİ BOYLER":
-                  rapor_adet = max(1, int(st.session_state.get("boyler_adet_cift_serpantin_v59", 3)))
-                  _cift_kayit = st.session_state.get("boyler_cift_secim_sonucu_v66")
-                  if not (isinstance(_cift_kayit, dict) and int(_cift_kayit.get("adet", 0)) == rapor_adet and _cift_kayit.get("poz")):
-                      _cift_poz, _, _, _ = _cift_boyler_poz_sec(secilen_boyler_hacmi, boyler_ms, rapor_adet)
-                      _cift_kayit = {"poz":_cift_poz["poz"], "hacim":_cift_poz["hacim"], "alt_debi":_cift_poz["alt_debi"], "ust_debi":_cift_poz["ust_debi"], "adet":rapor_adet, "gunes_rejimi":st.session_state.get("boyler_gunes_rejimi_v66", "60/40")}
-                  rapor_poz = _cift_kayit["poz"]
-                  rapor_hacim = int(_cift_kayit["hacim"])
-                  rapor_debi = int(_cift_kayit["alt_debi"] + _cift_kayit["ust_debi"])
-                  rapor_alt_debi = int(_cift_kayit["alt_debi"])
-                  rapor_ust_debi = int(_cift_kayit["ust_debi"])
-                  rapor_gunes_rejimi = str(
-                      st.session_state.get(
-                          "rej_gunes_ist_v68",
-                          _cift_kayit.get("gunes_rejimi", "60/40"),
-                      )
-                  )
-                  rapor_gunes_satiri = True
-                  rapor_tip = (
-                      "Çift Bakır Boru Serpantinli, Dik Tip, Gövdesi İzolasyonlu, "
-                      "Elektrostatik Toz Boyalı ( TS EN 13445-3, TS EN 12897, TS 736 )"
-                  )
-              else:
-                  rapor_adet = max(1, int(st.session_state.get("boyler_adet_plakali_esanjör_v59", 2)))
-                  _plaka_kayit = st.session_state.get("plakali_esanjör_secim_sonucu_v75")
-                  if not (isinstance(_plaka_kayit, dict) and _plaka_kayit.get("poz")):
-                      _plaka_q_birim_rapor = float(boyler_q_kcal_h) / float(max(1, rapor_adet))
-                      _plaka_poz_rapor = _plakali_esanjör_poz_sec(_plaka_q_birim_rapor)
-                      _plaka_kayit = {
-                          "poz": _plaka_poz_rapor["poz"],
-                          "q_kcal_h": _plaka_poz_rapor["q_kcal_h"],
-                          "q_kw": _plaka_poz_rapor["q_kcal_h"] * 0.001163,
-                          "primer_dp_mss": _plaka_poz_rapor["primer_dp_mss"],
-                          "sekonder_dp_mss": float(_plaka_poz_rapor["primer_dp_mss"]),
-                          "calisma_adet": rapor_adet,
-                          "yedek_adet": 1,
-                          "adet": rapor_adet + 1,
-                      }
-                  rapor_poz = _plaka_kayit["poz"]
-                  rapor_hacim = int(round(secilen_boyler_hacmi / rapor_adet))
-                  rapor_debi = int(round(boyler_ms / rapor_adet))
-                  rapor_tip = "Plakalı eşanjör"
-                  rapor_gunes_satiri = False
-                  rapor_alt_debi = rapor_ust_debi = 0
-                  rapor_gunes_rejimi = ""
-  
-              # İstenen rapor formatı: etiket / iki nokta / değer şeklinde
-              # üç sütunlu, sabit genişlikli ve hizalı tablo. Böylece etiket
-              # uzunlukları değişse bile iki nokta üst üste ve değerler kaymaz.
-              doc.add_paragraph("")
-              boyler_rapor_baslik = doc.add_paragraph()
-              boyler_rapor_baslik.paragraph_format.space_after = Pt(4)
-              boyler_rapor_baslik_run = boyler_rapor_baslik.add_run(
-                  "Kullanma Sıcak Suyu Boyleri:" if secili_tip != "PLAKALI EŞANJÖR" else ""
-              )
-              boyler_rapor_baslik_run.bold = True
-              boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-              boyler_rapor_baslik_run.font.name = "Times New Roman"
-              boyler_rapor_baslik_run._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-              boyler_rapor_baslik_run.font.size = Pt(11)
-              boyler_rapor_baslik_run.font.bold = True
-              boyler_rapor_baslik_run.font.italic = False
-              boyler_rapor_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-  
-              # Q BOYLER burada kullanıcı tarafından elle değiştirilmiş nihai tam sayıdır.
-              # Rapor her zaman bu değeri kullanır; küsüratlı hesap ayrıca yukarıda gösterilir.
-              if secili_tip == "PLAKALI EŞANJÖR":
-                  _plaka_rapor = st.session_state.get("plakali_esanjör_secim_sonucu_v75", {})
-                  _plaka_poz_rapor = _plaka_rapor.get("poz", rapor_poz)
-                  # Rapor oluşturulurken çalışma adedi doğrudan kayıtlı seçimden
-                  # alınır; böylece önceki oturumdan kalan/olmayan bir değişken
-                  # nedeniyle NameError oluşmaz. Yedek eşanjör kapasite hesabına
-                  # hiçbir zaman dahil edilmez.
-                  _plaka_calisma_adet_rapor = max(
-                      1,
-                      int(_plaka_rapor.get("calisma_adet", rapor_adet - 1 if rapor_adet > 1 else rapor_adet))
-                  )
-                  _plaka_q_birim_rapor = float(boyler_q_kcal_h) / float(_plaka_calisma_adet_rapor)
-                  _plaka_q_rapor = int(_plaka_rapor.get("q_kcal_h", round(_plaka_q_birim_rapor)))
-                  _plaka_kw_rapor = _plaka_rapor.get("q_kw", _plaka_q_rapor * 0.001163)
-                  _plaka_primer_dp = float(_plaka_rapor.get("primer_dp_mss", 4.0))
-                  _plaka_sekonder_dp = _plaka_primer_dp
-  
-                  _akum_rapor = st.session_state.get("plakali_akumulasyon_secim_sonucu_v75", {})
-                  _akum_katsayi_rapor = float(st.session_state.get("plakali_akumulasyon_katsayisi_v75", 1.0))
-                  _akum_gerekli_rapor = float(_akum_rapor.get("gerekli_hacim", toplam_tuketim * _akum_katsayi_rapor))
-                  _akum_hacim_rapor = int(_akum_rapor.get("hacim", 100))
-                  _akum_adet_rapor = int(_akum_rapor.get("adet", 1))
-                  _akum_toplam_rapor = int(_akum_rapor.get("toplam_hacim", _akum_adet_rapor * _akum_hacim_rapor))
-                  _akum_tip_rapor = _akum_rapor.get("tip", AKUMULASYON_TANKI_TIP)
-  
-                  _plaka_calisma_adet_rapor = int(_plaka_rapor.get("calisma_adet", max(1, rapor_adet - 1)))
-                  _plaka_yedek_adet_rapor = int(_plaka_rapor.get("yedek_adet", 1))
-                  _plaka_toplam_adet_rapor = int(_plaka_rapor.get("adet", _plaka_calisma_adet_rapor + _plaka_yedek_adet_rapor))
-  
-                  # 1. ekipman: Akümülasyon tankı
-                  # Önceki boş paragraf kaldırıldı; başlık Q hesabına daha yakın konumlanır.
-                  akum_baslik = doc.add_paragraph()
-                  akum_baslik_run = akum_baslik.add_run("SICAK SU AKÜMÜLASYON TANKI SEÇİMİ:")
-                  akum_baslik_run.bold = True
-                  akum_baslik_run.font.color.rgb = RGBColor(0, 0, 0)
-                  akum_baslik_run.font.name = "Arial"
-                  akum_baslik_run.font.size = Pt(11)
-                  boyler_rapor_satirlari = [
-                      ("Tank hacmi", f"{_akum_hacim_rapor} L (PN 10)"),
-                      ("Adet", str(_akum_adet_rapor)),
-                      ("Tip", _akum_tip_rapor),
-                  ]
-                  if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
-                      boyler_rapor_satirlari.append(("Cihaz Poz No", _akum_rapor.get("poz", "")))
-  
-                  # 2. ekipman: Plakalı eşanjör
-                  # Raporda ayrı, tam genişlikte bir seçim başlığı olarak gösterilir.
-                  boyler_rapor_satirlari.extend([
-                      ("__PLAKALI_ESANJOR_BASLIK__", ""),
-                      ("Q", f"{_plaka_q_rapor:.0f} kcal/h ≈ {int(_plaka_kw_rapor)} kW (eşanjör başına)"),
-                      ("Primer Devre", "80 / 60 °C sıcak su (Kazan)"),
-                      ("Seconder Devre", "10 / 60 °C sıcak su"),
-                      ("Primer Devre Basınç Kaybı", f"{_plaka_primer_dp:g} mSS"),
-                      ("Seconder Devre Basınç Kaybı", f"{_plaka_sekonder_dp:g} mSS"),
-                      ("Tip", "Plakalı eşanjör."),
-                      ("Adet", f"{_plaka_toplam_adet_rapor} ({_plaka_yedek_adet_rapor} adet Yedek)"),
-                  ])
-                  if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
-                      boyler_rapor_satirlari.append(("Cihaz Poz No", _plaka_poz_rapor))
-              else:
-                  boyler_rapor_satirlari = [
-                      ("Q BOYLER", f"{int(boyler_q_kw)} kW"),
-                      (
-                          "Isıtıcı Akışkan (Kazan)",
-                          f"{boyler_tp_giris:.0f}/{boyler_tp_cikis:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
-                      ),
-                  ]
-                  if rapor_gunes_satiri:
-                      boyler_rapor_satirlari.append((
-                          "Isıtıcı Akışkan (Güneş)",
-                          f"{rapor_gunes_rejimi.replace('/', '/')} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)",
-                      ))
-                  boyler_rapor_satirlari.extend([
-                      ("Isıtılan Akışkan", f"{boyler_ts_cikis:.0f}/{boyler_ts_giris:.0f} ºC sıcak su (4,0 mSS, basınç kaybı) (Kabul)"),
-                      ("Adet", str(rapor_adet)),
-                      ("Tip", rapor_tip),
-                      ("Boyler hacmi", f"{rapor_hacim} lt"),
-                  ])
-                  if rapor_gunes_satiri:
-                      # Çift serpantinli boylerde iki serpantin debisi ayrı ayrı rapora aktarılır.
-                      boyler_rapor_satirlari.extend([
-                          ("Alt serpantin debisi", f"{rapor_alt_debi} lt/h"),
-                          ("Üst serpantin debisi", f"{rapor_ust_debi} lt/h"),
-                      ])
-                  else:
-                      # Tek serpantinli boylerde tek debi gösterilir.
-                      boyler_rapor_satirlari.append(("Boyler Debisi", f"{rapor_debi} lt/h"))
-                  if bool(st.session_state.get("boyler_poz_rapora_eklensin_v72", True)):
-                      boyler_rapor_satirlari.append(("Cihaz Poz No", rapor_poz))
-  
-              # Word tablosu kullanıyoruz; kenarlıkları kaldırarak düz metin
-              # görünümü korunur, ancak üç kolon sayesinde tüm satırlar simetrik
-              # ve profesyonel biçimde hizalanır.
-              boyler_tablo = doc.add_table(
-                  rows=len(boyler_rapor_satirlari), cols=3
-              )
-              boyler_tablo.autofit = False
-              boyler_tablo.allow_autofit = False
-  
-              # Sayfa genişliğine göre: etiket 2.15", iki nokta 0.18", değer kalan alan.
-              kolon_genislikleri = [Inches(2.15), Inches(0.18), Inches(4.65)]
-              kalin_etiketler = {
-                  "Q BOYLER", "Adet", "Boyler hacmi",
-                  "Boyler Debisi", "Alt serpantin debisi", "Üst serpantin debisi", "Cihaz Poz No", "Q", "Primer Devre", "Seconder Devre", "Primer Devre Basınç Kaybı", "Seconder Devre Basınç Kaybı", "SICAK SU AKÜMÜLASYON TANKI", "Gerekli akümülasyon hacmi", "Tank hacmi"
-              }
-  
-              for satir_no, (etiket, deger) in enumerate(boyler_rapor_satirlari):
-                  hucreler = boyler_tablo.rows[satir_no].cells
-  
-                  # Plakalı eşanjör seçim başlığı: üç hücre birleştirilir,
-                  # böylece başlık sayfa genişliğine yayılır.
-                  if etiket == "__PLAKALI_ESANJOR_BASLIK__":
-                      hucre = hucreler[0].merge(hucreler[1]).merge(hucreler[2])
-                      hucre.width = sum(kolon_genislikleri)
-                      hucre.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-  
-                      tcPr = hucre._tc.get_or_add_tcPr()
-                      tcBorders = tcPr.first_child_found_in("w:tcBorders")
-                      if tcBorders is None:
-                          tcBorders = OxmlElement("w:tcBorders")
-                          tcPr.append(tcBorders)
-                      for kenar in ("top", "left", "bottom", "right", "insideH", "insideV"):
-                          el = tcBorders.find(qn(f"w:{kenar}"))
-                          if el is None:
-                              el = OxmlElement(f"w:{kenar}")
-                              tcBorders.append(el)
-                          el.set(qn("w:val"), "nil")
-  
-                      p_baslik = hucre.paragraphs[0]
-                      p_baslik.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                      p_baslik.paragraph_format.space_before = Pt(12)
-                      p_baslik.paragraph_format.space_after = Pt(8)
-                      run_baslik = p_baslik.add_run(
-                          "KULLANMA SICAK SU SİSTEMİ PLAKALI EŞANJÖRÜ SEÇİMİ:"
-                      )
-                      run_baslik.font.name = "Times New Roman"
-                      run_baslik._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                      run_baslik.font.size = Pt(12)
-                      run_baslik.bold = True
-                      run_baslik.font.italic = False
-                      run_baslik.font.color.rgb = RGBColor(0, 0, 0)
-                      continue
-  
-                  for hucre, genislik in zip(hucreler, kolon_genislikleri):
-                      hucre.width = genislik
-                      hucre.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                      # Tablo kenarlıklarını tamamen kaldır.
-                      tcPr = hucre._tc.get_or_add_tcPr()
-                      tcBorders = tcPr.first_child_found_in("w:tcBorders")
-                      if tcBorders is None:
-                          tcBorders = OxmlElement("w:tcBorders")
-                          tcPr.append(tcBorders)
-                      for kenar in ("top", "left", "bottom", "right", "insideH", "insideV"):
-                          el = tcBorders.find(qn(f"w:{kenar}"))
-                          if el is None:
-                              el = OxmlElement(f"w:{kenar}")
-                              tcBorders.append(el)
-                          el.set(qn("w:val"), "nil")
-  
-                  p_etiket = hucreler[0].paragraphs[0]
-                  p_etiket.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                  p_etiket.paragraph_format.space_after = Pt(3)
-                  p_etiket.paragraph_format.space_before = Pt(3)
-                  run_etiket = p_etiket.add_run(etiket)
-                  run_etiket.font.name = "Times New Roman"
-                  run_etiket._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  run_etiket.font.size = Pt(10.5)
-                  run_etiket.font.bold = False
-                  run_etiket.font.italic = False
-                  run_etiket.font.color.rgb = RGBColor(0, 0, 0)
-  
-                  p_iki_nokta = hucreler[1].paragraphs[0]
-                  p_iki_nokta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                  p_iki_nokta.paragraph_format.space_after = Pt(3)
-                  p_iki_nokta.paragraph_format.space_before = Pt(3)
-                  run_iki_nokta = p_iki_nokta.add_run(":")
-                  run_iki_nokta.font.name = "Times New Roman"
-                  run_iki_nokta._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  run_iki_nokta.font.size = Pt(10.5)
-                  run_iki_nokta.font.bold = False
-                  run_iki_nokta.font.italic = False
-                  run_iki_nokta.font.color.rgb = RGBColor(0, 0, 0)
-  
-                  p_deger = hucreler[2].paragraphs[0]
-                  p_deger.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                  p_deger.paragraph_format.space_after = Pt(3)
-                  p_deger.paragraph_format.space_before = Pt(3)
-                  run_deger = p_deger.add_run(deger)
-                  run_deger.font.name = "Times New Roman"
-                  run_deger._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  run_deger.font.size = Pt(10.5)
-                  run_deger.font.color.rgb = RGBColor(0, 0, 0)
-                  run_deger.bold = False
-                  run_deger.italic = False
-  
-              doc.add_paragraph("").paragraph_format.space_after = Pt(0)
-  
-          else:
-              doc.add_paragraph("Herhangi bir kullanma sıcak suyu kullanım yeri seçilmemiştir.")
-  
-      # --- 6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ ---
-      if bolum_634_aktif:
-          _rs_rapor = st.session_state.get("re_sirkulasyon_pompa_sonucu_v99", {})
-          if _rs_rapor:
-              doc.add_heading(_63_dinamik_baslik("rapor_bolum_634"), level=2)
-  
-              _rs_qb = float(_rs_rapor.get("q_boyler_kcal_h", 0.0))
-              _rs_qb_kw = float(_rs_rapor.get("q_boyler_kw", _rs_qb * 0.001163))
-              _rs_qh = float(_rs_rapor.get("q_hesap_m3h", 0.0))
-              _rs_q_txt = f"{_rs_qb:,.0f}"
-              _rs_kw_txt = f"{_rs_qb_kw:.0f}".replace(".", ",")
-              _rs_factor = 1.0 + float(_rs_rapor.get("emniyet_orani", 15.0)) / 100.0
-              _rs_factor_txt = f"{_rs_factor:.2f}".replace(".", ",")
-              _rs_qh_txt = f"{_rs_qh:.2f}"
-  
-              # TÜM 6.3.4 ÇIKTISINI TEK BİR ÇERÇEVESİZ HÜCREDE TOPLA.
-              # Böylece Word'deki ayrı paragraf/table akışlarından kaynaklanan
-              # büyük boşluklar oluşmaz; formül ve pompa bilgileri tek blok halinde kalır.
-              _rs_tbl = doc.add_table(rows=1, cols=1)
-              _rs_tbl.autofit = False
-              _rs_tbl.allow_autofit = False
-              _rs_cell = _rs_tbl.cell(0, 0)
-              _rs_cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
-              _rs_tbl.columns[0].width = Inches(6.9)
-  
-              # Tablo kenarlıklarını tamamen kaldır.
-              _tbl_pr = _rs_tbl._tbl.tblPr
-              _tbl_borders = _tbl_pr.first_child_found_in("w:tblBorders")
-              if _tbl_borders is None:
-                  _tbl_borders = OxmlElement("w:tblBorders")
-                  _tbl_pr.append(_tbl_borders)
-              for _edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
-                  _el = _tbl_borders.find(qn(f"w:{_edge}"))
-                  if _el is None:
-                      _el = OxmlElement(f"w:{_edge}")
-                      _tbl_borders.append(_el)
-                  _el.set(qn("w:val"), "nil")
-  
-              def _rs_cell_paragraph(alignment=WD_ALIGN_PARAGRAPH.LEFT, before=0, after=0):
-                  _p = _rs_cell.add_paragraph()
-                  _p.alignment = alignment
-                  _p.paragraph_format.space_before = Pt(before)
-                  _p.paragraph_format.space_after = Pt(after)
-                  _p.paragraph_format.line_spacing = 1.0
-                  return _p
-  
-              # İlk boş paragrafı temizle.
-              _rs_cell.paragraphs[0].text = ""
-              _rs_cell.paragraphs[0].paragraph_format.space_before = Pt(0)
-              _rs_cell.paragraphs[0].paragraph_format.space_after = Pt(0)
-  
-              # Q BOYLER — sayfanın en soluna yaslı.
-              _qpar = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 5)
-              _qpar.paragraph_format.left_indent = Inches(0)
-              _qpar.paragraph_format.first_line_indent = Inches(0)
-              _qr = _qpar.add_run(f"Q BOYLER = {_rs_q_txt} kcal/h ≈ {_rs_kw_txt} kW")
-              _qr.font.name = "Arial"
-              _qr.font.size = Pt(11.5)
-              _qr.bold = True
-  
-              # Q BOYLER ile formül arasında yaklaşık bir Enter mesafesi.
-              _formula_spacer = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 0)
-              _formula_spacer.paragraph_format.line_spacing = 1.0
-              _formula_spacer.add_run(" ").font.size = Pt(10.5)
-  
-              # Formül: Word'de dağılmaması için üç sabit kolon kullanılır.
-              # V= sola yaslı, pay ve payda mevcut örneğe göre bir karakter sola alınır.
-              _ft = _rs_cell.add_table(rows=1, cols=3)
-              _ft.autofit = False
-              _ft.alignment = WD_TABLE_ALIGNMENT.LEFT
-              _ft.columns[0].width = Inches(0.55)
-              _ft.columns[1].width = Inches(3.00)
-              _ft.columns[2].width = Inches(2.70)
-              _fc = _ft.rows[0].cells
-              for _c in _fc:
-                  _c.width = Inches(0.55) if _c is _fc[0] else (Inches(3.00) if _c is _fc[1] else Inches(2.70))
-                  _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                  _tcPr = _c._tc.get_or_add_tcPr()
-                  _b = _tcPr.first_child_found_in("w:tcBorders")
-                  if _b is None:
-                      _b = OxmlElement("w:tcBorders"); _tcPr.append(_b)
-                  for _edge in ("top","left","bottom","right","insideH","insideV"):
-                      _el = _b.find(qn(f"w:{_edge}"))
-                      if _el is None:
-                          _el = OxmlElement(f"w:{_edge}"); _b.append(_el)
-                      _el.set(qn("w:val"), "nil")
-              _p0 = _fc[0].paragraphs[0]; _p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-              _p0.paragraph_format.space_before = Pt(0); _p0.paragraph_format.space_after = Pt(0)
-              _rv = _p0.add_run("V =")
-              _rv.font.name="Courier New"; _rv.font.size=Pt(10.5); _rv.bold=False
-  
-              # Orta hücrede pay / çizgi / payda. Pay ve payda bir karakter sola çekildi.
-              _pf = _fc[1].paragraphs[0]
-              _pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
-              _pf.paragraph_format.space_before = Pt(0); _pf.paragraph_format.space_after = Pt(0)
-              _rf = _pf.add_run(
-                  f"{_rs_q_txt} × 0,05 × {_rs_factor_txt}\n"
-                  f"-------------------------------\n"
-                  f"          5.000"
-              )
-              _rf.font.name="Courier New"; _rf.font.size=Pt(10.5)
-  
-              _pr = _fc[2].paragraphs[0]
-              _pr.alignment = WD_ALIGN_PARAGRAPH.LEFT
-              _pr.paragraph_format.space_before = Pt(0); _pr.paragraph_format.space_after = Pt(0)
-              _rq = _pr.add_run(f"= {_rs_qh_txt} m³/h")
-              _rq.font.name="Courier New"; _rq.font.size=Pt(10.5)
-  
-              _sp = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 4)
-              _sp.paragraph_format.line_spacing = 1.0
-  
-              _baslik = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 3)
-              _br = _baslik.add_run("Seçilen Pompa :")
-              _br.font.name = "Arial"
-              _br.font.size = Pt(11.5)
-              _br.bold = True
-  
-              # Etiket, ayraç ve değer tek bir sabit tablo üzerinde hizalanır.
-              _pump_tbl = _rs_cell.add_table(rows=0, cols=3)
-              _pump_tbl.autofit = False
-              _pump_tbl.allow_autofit = False
-              _pump_tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
-              _pump_tbl.columns[0].width = Inches(1.20)
-              _pump_tbl.columns[1].width = Inches(0.20)
-              _pump_tbl.columns[2].width = Inches(5.50)
-  
-              def _pump_row(label, value, bold_value=True, equals=False):
-                  _cells = _pump_tbl.add_row().cells
-                  for _c, _w in zip(_cells, (1.20, 0.20, 5.50)):
-                      _c.width = Inches(_w)
-                      _c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
-                      _tcPr = _c._tc.get_or_add_tcPr()
-                      _b = _tcPr.first_child_found_in("w:tcBorders")
-                      if _b is None:
-                          _b = OxmlElement("w:tcBorders"); _tcPr.append(_b)
-                      for _edge in ("top","left","bottom","right","insideH","insideV"):
-                          _el = _b.find(qn(f"w:{_edge}"))
-                          if _el is None:
-                              _el = OxmlElement(f"w:{_edge}"); _b.append(_el)
-                          _el.set(qn("w:val"), "nil")
-                  p1, p2, p3 = (_cells[0].paragraphs[0], _cells[1].paragraphs[0], _cells[2].paragraphs[0])
-                  for _p in (p1,p2,p3):
-                      _p.paragraph_format.space_before = Pt(0)
-                      _p.paragraph_format.space_after = Pt(0)
-                      _p.paragraph_format.line_spacing = 1.0
-                  p1.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                  r1 = p1.add_run(label); r1.font.name="Arial"; r1.font.size=Pt(11); r1.bold=False; r1.font.color.rgb = RGBColor(0,0,0)
-                  p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                  r2 = p2.add_run("=" if equals else ":"); r2.font.name="Arial"; r2.font.size=Pt(11); r2.bold=False; r2.font.color.rgb = RGBColor(0,0,0)
-                  p3.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                  r3 = p3.add_run(str(value)); r3.font.name="Arial"; r3.font.size=Pt(11); r3.bold=False; r3.font.color.rgb = RGBColor(0,0,0)
-  
-              _pump_row("V", f"{_rs_rapor.get('q_m3h', 0.0):.2f} m³/h")
-              _pump_row("H", f"{_rs_rapor.get('h_mss', 0.0):g} mSS")
-              _pump_row("Güç", f"{_rs_rapor.get('guc_kw', 0.20):.2f} kW")
-              _pump_row("Adet", _rs_rapor.get("adet_str", ""))
-              _pump_row("Tip", _rs_rapor.get("tip", ""), bold_value=False)
-              if _rs_rapor.get("poz_rapora_aktar", True):
-                  _pump_row("Cihaz Poz No", _rs_rapor.get("poz", ""), bold_value=True, equals=True)
-  
-              # Pompa performans eğrisi rapora eklenir; marka/model adı raporda gösterilmez.
-              _rs_curve = _rs_rapor.get("pompa_curve", [])
-              if _rs_curve:
-                  _egri_sp = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 6, 2)
-                  _er = _egri_sp.add_run("Pompa Performans Eğrisi")
-                  _er.font.name = "Arial"; _er.font.size = Pt(11.5); _er.bold = True
-                  _egri_png = pompa_grafigi_png(
-                      [x[0] for x in _rs_curve], [x[1] for x in _rs_curve],
-                      float(_rs_rapor.get("q_m3h", 0.0)), float(_rs_rapor.get("h_mss", 0.0)),
-                      "Pompa Performans Eğrisi", anonim=True,
-                  )
-                  _pic = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.CENTER, 0, 0)
-                  _pic.add_run().add_picture(_egri_png, width=Inches(5.8))
-  
-              _after = _rs_cell_paragraph(WD_ALIGN_PARAGRAPH.LEFT, 0, 0)
-              _after.paragraph_format.line_spacing = 1.0
-  
-  
-      # --- 6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ ---
-      if bolum_635_aktif:
-          doc.add_heading(_63_dinamik_baslik("rapor_bolum_635"), level=2)
-          _yum_rapor_maddeleri = [m for i, m in enumerate(yumusatma_maddeleri) if i < len(yumusatma_secimler) and yumusatma_secimler[i]]
-          if ek_yumusatma_notu.strip():
-              _yum_rapor_maddeleri.extend(x.strip() for x in ek_yumusatma_notu.split("\n") if x.strip())
-          if _yum_rapor_maddeleri:
-              _p_yum = doc.add_paragraph()
-              _r_yum = _p_yum.add_run("Yumuşatma Cihazı Seçimi Genel Esasları")
-              _r_yum.bold = True
-              _r_yum.italic = True
-              _r_yum.font.size = Pt(12)
-              _r_yum.font.color.rgb = RGBColor(68, 114, 196)
-              for _m in _yum_rapor_maddeleri:
-                  doc.add_paragraph(_m, style="List Bullet")
-  
-          _yum_sonuc = st.session_state.get("yumusatma_sonucu", {})
-          if _yum_sonuc:
-              _vh = float(_yum_sonuc.get("sistem_hacmi_m3", 0.0))
-              _vh_gen = float(_yum_sonuc.get("genlesme_hacmi_m3", 0.0))
-              _ts = float(_yum_sonuc.get("doldurma_suresi_h", 6.0))
-              _qd = float(_yum_sonuc.get("gerekli_debi_m3h", 0.0))
-              _kap = float(_yum_sonuc.get("kapasite", 0.0))
-              _poz = str(_yum_sonuc.get("poz_no", ""))
-              _adet = int(_yum_sonuc.get("adet", 1) or 1)
-              _recine = float(_yum_sonuc.get("recine_l", 0.0))
-              _baglanti = str(_yum_sonuc.get("baglanti", ""))
-              _reg_kap = float(_yum_sonuc.get("rej_kapasitesi_m3_reg", 0.0))
-              _sertlik = float(_yum_sonuc.get("toplam_sertlik_fr_m3_reg", 0.0))
-  
-              _p_yum_kapasite = doc.add_paragraph()
-              _r_yum_kapasite = _p_yum_kapasite.add_run("Yumuşatma cihazı kapasite hesabı:")
-              _r_yum_kapasite.bold = True
-              _r_yum_kapasite.italic = True
-              _r_yum_kapasite.font.name = "Times New Roman"
-              _r_yum_kapasite.font.size = Pt(12)
-              _r_yum_kapasite.font.color.rgb = RGBColor(68, 114, 196)
-  
-              _vh_litre = _vh * 1000.0
-              _vh_gen_litre = _vh_gen * 1000.0
-              doc.add_paragraph(
-                  f"Sistemdeki su hacmi: V = {_vh_litre:.0f} lt - {_vh:.2f} m³"
-                  + (f" (Kapalı genleşme deposu hesabından alınan değer: {_vh_gen_litre:.0f} lt - {_vh_gen:.2f} m³)" if _vh_gen > 0 else " (kullanıcı tarafından girilen değer)")
-              )
-              doc.add_paragraph(f"Sistemin doldurma süresi: t = {_ts:.2f} saat")
-              doc.add_paragraph(f"Gerekli yumuşatma debisi: Q = V / t = {_vh:.2f} / {_ts:.2f} = {_qd:.2f} m³/h")
-              _tip_rapor_doc = "ikili tam otomatik tandem" if _yum_sonuc.get("sistem_tipi") == "İkili Tandem" else "tam otomatik"
-              doc.add_paragraph(
-                  f"Sonuç: {_kap:.2f} m³/h'lik {_tip_rapor_doc} tip su yumuşatma cihazı projelendirilmiştir."
-              )
-  
-              _yum_tbl = doc.add_table(rows=0, cols=2)
-              _yum_tbl.style = "Table Grid"
-              _yum_satirlar = [
-                  ("Sistem Tipi", str(_yum_sonuc.get("sistem_tipi", ""))),
-                  ("Cihaz Adedi", f"{_adet} adet"),
-                  ("Seçilen Cihaz Kapasitesi", f"{_kap:.2f} m³/h"),
-                  ("Reçine Miktarı", f"{_recine:.0f} L"),
-                  ("Giriş / Çıkış Bağlantısı", _baglanti),
-                  ("Rejenerasyon Kapasitesi", f"{_reg_kap:.2f} m³/reg"),
-                  ("Toplam Sertlik Kapasitesi", f"{_sertlik:.0f} °Fr·m³/reg"),
-              ]
-              if _yum_sonuc.get("poz_rapora") and _poz:
-                  _yum_satirlar.append(("Cihaz Poz No", _poz))
-              for _etiket, _deger in _yum_satirlar:
-                  _cells = _yum_tbl.add_row().cells
-                  _cells[0].text = _etiket
-                  _cells[1].text = str(_deger)
-  
-      # -----------------------------------------------------------------------
-      # 7. YANGIN TESİSATI - 7.1 RAPORU
-      # -----------------------------------------------------------------------
-      if st.session_state.get("rapor_bolum_7", True) and st.session_state.get("rapor_bolum_71", True):
-          ana_baslik_ekle("7. YANGIN TESİSATI")
-          doc.add_heading("7.1 YANGIN TESİSATI GENEL ESASLARI", level=2)
-          for _rb, _rm, _rk, _rrk in _yangin_71_gruplari:
-              if not st.session_state.get(_rrk, True):
-                  continue
-              vals = st.session_state.get(_rk, [True] * len(_rm))
-              if not any(vals):
-                  continue
-              doc.add_heading(_rb, level=3)
-              for i, madde in enumerate(_rm):
-                  if i < len(vals) and vals[i]:
-                      p = doc.add_paragraph()
-                      r = p.add_run("• " + madde)
-                      r.bold = True
-  
-          if st.session_state.get("rapor_bolum_713", True):
-              _ts_vals = [bool(st.session_state.get(f"yangin_713_ts_{_i}", True)) for _i in range(len(_yangin_713_ts_standartlari))]
-              _nfpa_vals = [bool(st.session_state.get(f"yangin_713_nfpa_{_i}", True)) for _i in range(len(_yangin_713_nfpa_standartlari))]
-              _std_vals = _ts_vals + _nfpa_vals
-              if any(_std_vals):
-                  doc.add_heading("7.1.3 YANGIN TESİSATI STANDARTLARI", level=3)
-                  for _i, _std in enumerate(_yangin_713_standartlari):
-                      if _std_vals[_i]:
-                          p = doc.add_paragraph()
-                          r = p.add_run("• " + _std)
-                          r.bold = True
-  
-      # -----------------------------------------------------------------------
-      # 7.2 RAPORU - Ek-1/B tablosu + 7.2.2 otomatik/manuel sonuç
-      # 7.2, 7.1 raporundan sonra yazılır; böylece Word raporunda bölüm sırası
-      # program ekranındaki 7.1 -> 7.2 akışıyla birebir aynı olur.
-      # -----------------------------------------------------------------------
-      _r72_parent = bool(st.session_state.get("rapor_bolum_72", True))
-      _r721 = bool(st.session_state.get("rapor_bolum_721", True))
-      _r722 = bool(st.session_state.get("rapor_bolum_722", True))
-  
-      if st.session_state.get("rapor_bolum_7", True) and _r72_parent and (_r721 or _r722):
-          if not st.session_state.get("rapor_bolum_71", True):
-              ana_baslik_ekle("7. YANGIN TESİSATI")
-  
-          doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
-
-          # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
-          # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
-          _gbi_rapor_verileri = [
-              ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
-              ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
-              ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
-              ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-              ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-              ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-              ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
-              ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
-              ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
-              ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
-              ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
-              ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
-          ]
-          # Blok bilgilerini de aynı bina bilgileri tablosuna ekle.
-          # Alanlar yangin.py tarafından kullanılan session_state anahtarlarından okunur.
-          _blok_secim_rapor = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
-          try:
-              _blok_adet_rapor = 1 if _blok_secim_rapor.lower().startswith("tek") else int(_blok_secim_rapor.split()[0])
-          except (ValueError, IndexError):
-              _blok_adet_rapor = 1
-          _blok_adet_rapor = max(1, min(_blok_adet_rapor, 10))
-          _gbi_rapor_verileri.insert(0, ("Blok sayısı", str(_blok_adet_rapor)))
-          for _i_blok_rapor in range(1, _blok_adet_rapor + 1):
-              _ad_blok_rapor = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_adi", f"Blok {_i_blok_rapor}") or f"Blok {_i_blok_rapor}")
-              _alan_blok_rapor = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_alan_m2", 0.0) or 0.0)
-              _gbi_rapor_verileri.insert(_i_blok_rapor, (f"Blok {_i_blok_rapor} adı", _ad_blok_rapor))
-              _gbi_rapor_verileri.insert(_i_blok_rapor + 1, (f"{_ad_blok_rapor} alanı", f"{_alan_blok_rapor:,.2f} m²"))
-
-          _gbi_baslik = doc.add_paragraph()
-          _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
-          _gbi_run.bold = True
-          _gbi_run.italic = True
-          _gbi_run.font.size = Pt(13)
-          _gbi_tbl = doc.add_table(rows=1, cols=2)
-          _gbi_tbl.style = "Table Grid"
-          _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
-          _gbi_tbl.rows[0].cells[1].text = "DEĞER"
-          for _cell in _gbi_tbl.rows[0].cells:
-              for _run in _cell.paragraphs[0].runs:
-                  _run.bold = True
-          for _etiket, _deger in _gbi_rapor_verileri:
-              _gc = _gbi_tbl.add_row().cells
-              _gc[0].text = _etiket
-              _gc[1].text = _deger
-  
-  
-          _secili_kayitlar = _yangin_721_secili_kayitlar()
-          _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
-          _manuel = bool(st.session_state.get("yangin_721_manuel", False))
-          _etkin = (
-              st.session_state.get("yangin_721_manuel_sinif", _otomatik)
-              if _manuel else _otomatik
-          )
-  
-          if _r721:
-              doc.add_heading("7.2.1 BİNA KULLANIM AMACI", level=3)
-              if _secili_kayitlar:
-                  doc.add_paragraph(
-                      "Seçilen bina / kullanım alanları: " +
-                      ", ".join(x["etiket"] for x in _secili_kayitlar)
-                  )
-                  doc.add_paragraph(
-                      f"Ek-1/B + Ek-1/C'ye göre otomatik yangın tehlike sınıfı (en yüksek seçilen sınıf): {_otomatik}"
-                  )
-              else:
-                  doc.add_paragraph("Ek-1/B kullanım alanı seçilmemiştir.")
-  
-              # RAPORDA EK-1/B: yalnızca seçilen satırlar gösterilir;
-              # ancak seçilen satırın TÜM tehlike sınıfı sütunları korunur.
-              # Seçilen hücre(ler) sarı renkle vurgulanır.
-              _tbl = doc.add_table(rows=1, cols=len(_ek1b_basliklari) + 1)
-              _tbl.style = "Table Grid"
-              _hdr = _tbl.rows[0].cells
-              _hdr[0].text = "KULLANIM TÜRÜ"
-              for _i, _h in enumerate(_ek1b_basliklari, start=1):
-                  _hdr[_i].text = str(_h)
-              for _cell in _hdr:
-                  for _r in _cell.paragraphs[0].runs:
-                      _r.bold = True
-
-              # Aynı satırda birden fazla sarı hücre seçilmişse tek satırda birleştir.
-              _secili_b_satirlar = {}
-              for _kayit in _secili_kayitlar:
-                  _tur = _kayit.get("satır", _kayit.get("satir", ""))
-                  _kolon = int(_kayit.get("kolon", 0) or 0)
-                  _secili_b_satirlar.setdefault(_tur, set()).add(_kolon)
-
-              for _tur, _secili_kolonlar in _secili_b_satirlar.items():
-                  _satir_verisi = next((x for x in _ek1b_satirlari if x.get("tur") == _tur), None)
-                  if _satir_verisi is None:
-                      continue
-                  _hucreler = _satir_verisi.get("hücreler", [])
-                  _cells = _tbl.add_row().cells
-                  _cells[0].text = str(_tur)
-                  for _kolon in range(len(_ek1b_basliklari)):
-                      _metin = _hucreler[_kolon] if _kolon < len(_hucreler) else ""
-                      _cells[_kolon + 1].text = str(_metin)
-                      if _kolon in _secili_kolonlar:
-                          _tcPr = _cells[_kolon + 1]._tc.get_or_add_tcPr()
-                          _shd = OxmlElement("w:shd")
-                          _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
-                          _tcPr.append(_shd)
-                          for _pr in _cells[_kolon + 1].paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-
-              _pnot = doc.add_paragraph()
-              _rn = _pnot.add_run(
-                  "Raporda yalnızca seçilen Ek-1/B kullanım alanları gösterilmiştir."
-              )
-              _rn.italic = True
-
-              _pkaynak = doc.add_paragraph()
-              _rs = _pkaynak.add_run(
-                  "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
-                  "Ek-1/B: Orta Tehlike Kullanım Alanları, s. 243."
-              )
-              _rs.bold = True
-
-              # Ek-1/C: yalnızca seçilen satırlar gösterilir; satırın TÜM
-              # tehlike sınıfı sütunları korunur, seçilen hücre(ler) sarı vurgulanır.
-              _secili_c = _ek1c_secili_kayitlar()
-              if _secili_c:
-                  doc.add_paragraph("Ek-1/C — Yüksek Tehlike Kullanım Alanları")
-                  _tc = doc.add_table(rows=1, cols=len(_ek1c_basliklari) + 1)
-                  _tc.style = "Table Grid"
-                  _tc.rows[0].cells[0].text = "KULLANIM TÜRÜ"
-                  for _i, _h in enumerate(_ek1c_basliklari, start=1):
-                      _tc.rows[0].cells[_i].text = str(_h)
-                  for _cell in _tc.rows[0].cells:
-                      for _r in _cell.paragraphs[0].runs:
-                          _r.bold = True
-
-                  _secili_c_satirlar = {}
-                  for _kayit in _secili_c:
-                      _satir_no = int(_kayit.get("satır", _kayit.get("satir", 0)) or 0)
-                      _kolon = int(_kayit.get("kolon", 0) or 0)
-                      _secili_c_satirlar.setdefault(_satir_no, set()).add(_kolon)
-
-                  for _satir_no, _secili_kolonlar in _secili_c_satirlar.items():
-                      _satir_verisi = _ek1c_satirlari[_satir_no] if 0 <= _satir_no < len(_ek1c_satirlari) else None
-                      if _satir_verisi is None:
-                          continue
-                      _hucreler = _satir_verisi.get("hücreler", [])
-                      _cells = _tc.add_row().cells
-                      _cells[0].text = str(_satir_verisi.get("tur", ""))
-                      for _kolon in range(len(_ek1c_basliklari)):
-                          _metin = _hucreler[_kolon] if _kolon < len(_hucreler) else ""
-                          _cells[_kolon + 1].text = str(_metin)
-                          if _kolon in _secili_kolonlar:
-                              _tcPr = _cells[_kolon + 1]._tc.get_or_add_tcPr()
-                              _shd = OxmlElement("w:shd")
-                              _shd.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill", "FFF2CC")
-                              _tcPr.append(_shd)
-                              for _pr in _cells[_kolon + 1].paragraphs:
-                                  for _run in _pr.runs:
-                                      _run.bold = True
-                  _pc = doc.add_paragraph()
-                  _rc = _pc.add_run("Raporda yalnızca seçilen Ek-1/C kullanım alanları gösterilmiştir.")
-                  _rc.italic = True
-                  _src_c = doc.add_paragraph()
-                  _src_c.add_run(
-                      "Kaynak / Tablo: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
-                      "Ek-1/C: Yüksek Tehlike Kullanım Alanları, s. 245."
-                  ).bold = True
-
-          if _r722:
-              doc.add_heading("7.2.2 YANGIN TEHLİKE SINIFI", level=3)
-  
-              doc.add_paragraph("Çoklu seçilen kullanım alanları ve yangın tehlike sınıfları:")
-              _t722_secimler = doc.add_table(rows=1, cols=2)
-              _t722_secimler.style = "Table Grid"
-              _t722_secimler.rows[0].cells[0].text = "SEÇİLEN KULLANIM ALANI"
-              _t722_secimler.rows[0].cells[1].text = "YANGIN TEHLİKE SINIFI"
-              for _c in _t722_secimler.rows[0].cells:
-                  for _pr in _c.paragraphs:
-                      for _run in _pr.runs:
-                          _run.bold = True
-              for _kayit in _secili_kayitlar:
-                  _cc = _t722_secimler.add_row().cells
-                  _cc[0].text = str(_kayit.get("etiket", ""))
-                  _cc[1].text = str(_kayit.get("sinif", ""))
-  
-              _t722 = doc.add_table(rows=0, cols=2)
-              _t722.style = "Table Grid"
-              _rws = [
-                  ("Seçilen kullanım alanı sayısı", len(_secili_kayitlar)),
-                  ("Ek-1/B + Ek-1/C otomatik sonucu (en yüksek)", _otomatik),
-                  ("Seçilen yangın tehlike sınıfı", _etkin),
-              ]
-              for _etiket, _deger in _rws:
-                  _cc = _t722.add_row().cells
-                  _cc[0].text = _etiket
-                  _cc[1].text = str(_deger)
-                  if _etiket == "Seçilen yangın tehlike sınıfı":
-                      for _cell in _cc:
-                          _tcPr = _cell._tc.get_or_add_tcPr()
-                          _shd = OxmlElement("w:shd")
-                          _shd.set(qn("w:fill"), "FFF2CC")
-                          _tcPr.append(_shd)
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-              _src722 = doc.add_paragraph()
-              _src722.add_run(
-                  "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu, "
-                  "Ek-1/B ve Ek-1/C; tehlike sınıfının farklı bölümlerdeki kullanım alanlarına göre "
-                  "en yüksek sınıfa göre belirlenmesi için Madde 19."
-              ).italic = True
-  
-      # -----------------------------------------------------------------------
-      # 7.3 - 7.15 YANGIN TESİSATI ALT BÖLÜMLERİ
-      # Her başlık ayrı bir bölüm olarak tutulur; hesap içerikleri sonraki
-      # aşamalarda bölüm bölüm geliştirilecektir.
-      # -----------------------------------------------------------------------
-      _yangin_73_715 = [
-          ("bolum_73", "rapor_bolum_73", "7.3 BİNA İÇİ HORTUM SİSTEMİ TASARIMI VE HESAPLAMALARI"),
-          ("bolum_74", "rapor_bolum_74", "7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI"),
-          ("bolum_75", "rapor_bolum_75", "7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_76", "rapor_bolum_76", "7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_77", "rapor_bolum_77", "7.7 KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_78", "rapor_bolum_78", "7.8 DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_79", "rapor_bolum_79", "7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_710", "rapor_bolum_710", "7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_7110", "rapor_bolum_7110", "7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_7120", "rapor_bolum_7120", "7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
-          ("bolum_7130", "rapor_bolum_7130", "7.13 YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI"),
-          ("bolum_7140", "rapor_bolum_7140", "7.14 YANGIN TESİSATI HİDROLİK HESAPLARI"),
-          ("bolum_7150", "rapor_bolum_7150", "7.15 YANGIN TESİSATI SONUÇ TABLOSU"),
-      ]
-      if st.session_state.get("rapor_bolum_7", True):
-          _r73_715 = [x for x in _yangin_73_715 if st.session_state.get(x[1], True)]
-          if _r73_715:
-              # Yalnızca seçili 7.3-7.15 bölümlerini boşluksuz yeniden numaralandır.
-              _r73_715 = [
-                  (_bk, _rk, re.sub(r"^7\.\d+\s*", f"7.{_num} ", _bt))
-                  for _num, (_bk, _rk, _bt) in enumerate(_r73_715, start=3)
-              ]
-              _has_71_report = bool(st.session_state.get("rapor_bolum_71", True)) and (
-                  any(st.session_state.get(_rrk, True) for _rb, _rm, _rk, _rrk in _yangin_71_gruplari)
-                  or bool(st.session_state.get("rapor_bolum_713", True))
-              )
-              _has_72_report = bool(st.session_state.get("rapor_bolum_72", True)) and (
-                  bool(st.session_state.get("rapor_bolum_721", True))
-                  or bool(st.session_state.get("rapor_bolum_722", True))
-              )
-              if not (_has_71_report or _has_72_report):
-                  ana_baslik_ekle("7. YANGIN TESİSATI")
-              for _bk, _rk, _bt in _r73_715:
-                  _p7 = doc.add_paragraph()
-                  _p7.paragraph_format.space_before = Pt(12)
-                  _p7.paragraph_format.space_after = Pt(6)
-                  _run7 = _p7.add_run(_bt.upper())
-                  _run7.bold = True
-                  _run7.italic = True
-                  _run7.font.size = Pt(15)
-                  _run7.font.color.rgb = RGBColor(31, 78, 121)
-                  # 7.9 Merdiven basınçlandırma — seçilen mevzuat maddeleri ve her merdivenin hesabı
-                  if _bk == "bolum_7110":
-                      if bool(st.session_state.get("yangin_711_rapor_ui", True)):
-                          doc.add_heading("7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
-                          _maddeler711_rapor = [
-                              ("1", "Tasarım ilkeleri", "Duman kontrol sistemi olarak yapılan basınçlandırma, havalandırma ve duman tahliye tesisatı; binada bulunanlara zarar vermeyecek, paniği önleyecek ve binanın güvenli boşaltılmasını sağlayacak şekilde tasarlanmalı, tesis edilmeli ve çalışır durumda tutulmalıdır. (BYKHY Madde 85)"),
-                              ("2", "Duman kontrolünün esasları", "Doğal duman tahliyesinde duman çekiş bacaları, duman kesicileri ve duman bölmeleri kullanılabilir. Mekanik duman kontrolünde iklimlendirme sistemi özel düzenlemelerle kullanılabilir veya ayrı mekanik havalandırma/duman kontrol sistemi kurulabilir. Duman tahliye ağızları sürekli açık veya yangında otomatik/elle açılabilir olmalı ve bakımları yapılmalıdır. (BYKHY Madde 86)"),
-                              ("3", "İklimlendirme ve havalandırma tesisatının kullanımı", "Mevcut iklimlendirme ve havalandırma tesisatı duman kontrolü için kullanılacaksa mekanik duman kontrol sistemine ilişkin şartlar uygulanır. Kanallar uygun metal malzemeden yapılmalı, yeterli askılarla bağlanmalı, kaplama malzemesi zor alevlenici olmalı ve yangın güvenliği koşullarına uygun düzenlenmelidir. (BYKHY Madde 87)"),
-                              ("4", "Özel mahallerde duman kontrolü", "Kazan dairesi, jeneratör odası, mutfak, otopark ve benzeri özel mahallerin havalandırma ve duman tahliye düzenleri, ilgili mahal için yönetmelikte belirtilen bağımsızlık, hava emişi, egzoz atışı ve yangın güvenliği koşullarına uygun tasarlanmalıdır. (BYKHY Madde 88)"),
-                          ]
-                          for _no711, _bas711, _met711 in _maddeler711_rapor:
-                              if not bool(st.session_state.get(f"yangin_7111_madde_{_no711}", True)): continue
-                              if not bool(st.session_state.get("yangin_711_yonetmelik_atiflari", True)): _met711 = _yangin_mevzuat_atiflarini_kaldir(_met711)
-                              _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_no711}) {_bas711}: "); _rr711.bold = True; _p711.add_run(_met711)
-                      if bool(st.session_state.get("yangin_7112_rapora_ekle", True)):
-                          _zorunluluk711_rapor = [
-                              ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
-                              ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
-                              ("3", "Sığınaklar", "100 m²'den büyük sığınaklarda duman tahliye sistemi düzenlenmesi gerekir. Mahal alanı, kullanım amacı ve ilgili diğer hükümler proje özelinde kontrol edilmelidir. (BYKHY Madde 59/1)"),
-                              ("4", "Dizel yangın pompası ve acil durum jeneratörü mahalleri", "Mekanik havalandırmanın gerekli olduğu bu mahallerin sistemleri diğer bölümlere hizmet veren sistemlerden bağımsız tasarlanır. Dış hava emişi ve egzoz atış noktaları arasında en az 5 m mesafe sağlanır. (BYKHY Madde 88/1)"),
-                              ("5", "Mutfak pişirme alanları", "Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden en az 5 m uzakta olmalıdır. (BYKHY Madde 88/2)"),
-                              ("6", "Kazan dairesi, bodrum depoları ve otoparklar", "Bu mahaller için özel havalandırma/duman tahliye koşulları, mahallin niteliği ve ilgili fıkra kapsamı doğrulanarak uygulanır; bütün mahallere koşulsuz aynı debi katsayısı uygulanmamalıdır. (BYKHY Madde 88/3)"),
-                              ("7", "Parlayıcı organik toz bulunan mahaller", "Bu mahallerde duman kontrolü ve havalandırma ihtiyacı ilgili özel hükümlere göre değerlendirilir. (BYKHY Madde 88/4)"),
-                          ]
-                          for _no, _bas, _met in _zorunluluk711_rapor:
-                              if not bool(st.session_state.get(f"yangin_7112_madde_{_no}", True)): continue
-                              if not bool(st.session_state.get("yangin_7112_atiflari", True)): _met = _yangin_mevzuat_atiflarini_kaldir(_met)
-                              _p = doc.add_paragraph(); _r = _p.add_run(f"({int(_no) + 4}) {_bas}: "); _r.bold = True; _p.add_run(_met)
-                      # Kullanıcının eklediği maddeler, dört ana ve yedi zorunluluk maddesinden sonra devam eder.
-                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=12):
-                          _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
-                      if bool(st.session_state.get("yangin_7113_rapora_ekle", True)):
-                          _h7113 = st.session_state.get("yangin_7113_hesap", {})
-                          if _h7113:
-                              doc.add_heading("7.11.2 DUMAN TAHLİYE DEBİSİ HESABI", level=4)
-                              _rows7113 = [
-                                  ("Hesaplanan mahal", str(_h7113.get("mahal", "-"))),
-                                  ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
-                                  ("Mahal yüksekliği", f"{float(_h7113.get('yukseklik_m', 0)):,.2f} m"),
-                                  ("Mahal hacmi (V)", f"{float(_h7113.get('hacim_m3', 0)):,.2f} m³"),
-                                  ("Hava değişim sayısı (N)", f"{float(_h7113.get('hava_degisimi_1h', 0)):,.2f} 1/h"),
-                                  ("Hesap debisi (Q = V × N)", f"{float(_h7113.get('debi_m3h', 0)):,.0f} m³/h"),
-                                  ("Hesap debisi", f"{float(_h7113.get('debi_m3s', 0)):,.3f} m³/s"),
-                              ]
-                              _tab7113 = doc.add_table(rows=0, cols=2); _tab7113.style = "Table Grid"
-                              for _lab, _val in _rows7113:
-                                  _cells = _tab7113.add_row().cells; _cells[0].text = _lab; _cells[1].text = _val
-                              _pn = doc.add_paragraph("Hesap yöntemi: Q = V × N. N değeri, yalnızca ilgili mahal ve mevzuat koşulu için geçerli olan düzenlemeden alınmalıdır. Sığınak ve diğer mahaller için kullanılacak katsayı, ilgili mevzuat/standart ve onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2 ve Madde 85)")
-
-                  if _bk == "bolum_79":
-                      _79_rapor_maddeleri = [('1', 'Basınçlandırma zorunluluğu — yüksek merdiven kovaları', "Konutlar hariç, merdiven kovası yüksekliği 30,50 m'den fazla olan binalarda kaçış merdivenleri basınçlandırılır. Bodrum ve üst katlara hizmet eden merdiven aynı yuvada olsa dahi, gerekli yangına dayanımlı ve duman sızdırmaz ayırma ile ayrı çıkış sağlanmışsa üst katların yüksekliği esas alınır. (BYKHY Madde 89, 1)"), ('2', 'Dört kattan fazla bodrum katı', 'Bodrum kat sayısı dörtten fazla olan binalarda bodrum katlara hizmet veren kaçış merdivenleri basınçlandırılır. (BYKHY Madde 89, 2)'), ('3', 'Yüksek konutlarda basınçlandırma', "Yapı yüksekliği 51,50 m'den yüksek olan konutların kaçış merdivenlerinin basınçlandırılması zorunludur. (BYKHY Madde 89, 3)"), ('4', 'Acil durum asansörü kuyusu', 'Acil durum asansörü kuyularının yangın etkisi altında kalmaması için basınçlandırılması gerekir. (BYKHY Madde 89, 4)'), ('5', 'Kapalı ve açık kapı durumunda basınç farkı', 'Bütün kapılar kapalıyken merdiven yuvası ile bina kullanım alanları arasındaki basınç farkı en az 50 Pa; açık kapı durumu için en az 15 Pa olmalıdır. (BYKHY Madde 89, 5)'), ('6', 'Yangın güvenlik holü ile basınç dağılımı', 'Yangın güvenlik holü de basınçlandırılıyorsa merdiven tarafındaki basınç, hol tarafındaki basınçtan daha yüksek olacak şekilde dağılım oluşturulur. (BYKHY Madde 89, 6)'), ('7', 'Kapı açma kuvveti', 'Basınçlı hava ve otomatik kapı kapatıcısının etkisi birlikte dikkate alındığında, kapıyı açmak için kapı koluna uygulanması gereken kuvvet 110 N değerini aşmamalıdır. (BYKHY Madde 89, 7)'), ('8', 'Açık kapılarda hava hızı', 'Birbirini takip eden iki kat kapısı ile dışarı tahliye kapısı tam açıkken, her bir tam açık kapı için ortalama hava hızı en az 1 m/s olmalıdır. (BYKHY Madde 89, 8)'), ('9', 'Açık kapı ve sızıntı alanlarının tasarıma dahil edilmesi', 'Tasarımda en az iki iç kapının ve bir dış tahliye kapısının açık olacağı kabul edilir; diğer kapalı kapıların sızıntı alanları da hesaba katılır ve bina kat sayısına göre açık iç kapı sayısı artırılır. (BYKHY Madde 89, 9)'), ('10', 'Sızıntı debisinin karşılanması', 'Basınçlandırma havası debisi, sızıntı alanlarından çevreye oluşan hava akışlarını karşılayacak yeterlilikte olmalıdır. (BYKHY Madde 89, 10)'), ('11', 'Aşırı basıncın sınırlandırılması', 'Merdiven içinde aşırı basınç oluşmasını önlemek için aşırı basınç damperi ve frekans kontrollü fan gibi önlemler sağlanır. (BYKHY Madde 89, 11)'), ('12', 'Dış hava emişi ve üfleme noktaları', "Basınçlandırma havası doğrudan dışarıdan alınmalı ve egzoz çıkışlarından en az 5 m uzakta olmalıdır. Yüksekliği 25 m'den fazla kapalı merdivenlerde birden fazla üfleme noktası gerekir; iki noktalı düzende aralarındaki düşey mesafe en az merdiven yüksekliğinin yarısıdır. Yapı yüksekliği 51,50 m'den fazla ise her katta veya en çok üç katta bir üfleme yapılır. (BYKHY Madde 89, 12)"), ('13', 'Dış hava emişinde duman algılama', 'Basınçlandırma fanının dış hava emişine algılayıcı yerleştirilir; duman algılanması hâlinde fan otomatik durdurulur. (BYKHY Madde 89, 13)'), ('14', 'Yangın alarm sistemiyle otomatik çalıştırma', 'Basınçlandırma sistemi yangın algılama ve uyarı sistemi tarafından otomatik olarak çalıştırılmalıdır. (BYKHY Madde 89, 14)'), ('15', 'Elle çalıştırma ve durdurma', 'Basınçlandırma fanının elle çalıştırılıp durdurulabilmesi için açma-kapatma anahtarı bulunmalıdır. (BYKHY Madde 89, 15)'), ('16', 'Basınçlandırma olmayan merdivenlerde havalandırma', 'Kaçış merdiveni basınçlandırılmamışsa merdiven bölümünde açılabilir pencere veya sürekli havalandırma sağlayan tepe penceresi bulunmalıdır. (BYKHY Madde 89, 16)'), ('17', 'Mevcut binalarda basınçlandırma', "Mevcut binalarda dörtten fazla bodrum kata hizmet veren kaçış merdivenleri ile merdiven kovası yüksekliği 51,50 m'den fazla olan kaçış merdivenleri, Madde 89 esaslarına göre basınçlandırılır. (BYKHY Madde 163, 1)")]
-                      doc.add_heading("7.9.1 MERDİVEN BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI", level=4)
-                      for _no79, _baslik79, _metin79 in _79_rapor_maddeleri:
-                          if not bool(st.session_state.get(f"yangin_791_madde_{_no79}", True)):
-                              continue
-                          if not bool(st.session_state.get("yangin_791_yonetmelik_atiflari", True)):
-                              _metin79 = _yangin_mevzuat_atiflarini_kaldir(_metin79)
-                          _p79 = doc.add_paragraph()
-                          _r79 = _p79.add_run(f"({_no79}) {_baslik79}: ")
-                          _r79.bold = True
-                          _p79.add_run(_metin79)
-                      for _ekno79, _ek79 in enumerate(st.session_state.get("yangin_791_ek_maddeler", []), start=len(_79_rapor_maddeleri)+1):
-                          _p79 = doc.add_paragraph()
-                          _r79 = _p79.add_run(f"({_ekno79}) {_ek79.get('baslik', '')}: ")
-                          _r79.bold = True
-                          _p79.add_run(str(_ek79.get("metin", "")))
-                      doc.add_heading("7.9.2 MERDİVEN BASINÇLANDIRMA HESAPLARI", level=4)
-                      _79_rapor_hesaplari = st.session_state.get("yangin_79_rapor_hesaplari", [])
-                      if not _79_rapor_hesaplari:
-                          doc.add_paragraph("Merdiven hesaplaması yapılmamış veya rapora aktarılacak merdiven seçilmemiştir.")
-                      # Her seçili merdiven, yangin.py tarafından ayrı bir kayıt olarak aktarılır.
-                      # Kayıtlar birleştirilmeden kendi başlıkları ve hesap tablolarıyla yazdırılır.
-                      for _h79 in _79_rapor_hesaplari:
-                          _ham_merdiven_adi79 = str(_h79.get("ad", "YAN. MER. 01"))
-                          _merdiven_sira79 = "01"
-                          import re as _re_merdiven79
-                          _m79 = _re_merdiven79.search(r"(\d+)\s*$", _ham_merdiven_adi79)
-                          if _m79:
-                              _merdiven_sira79 = _m79.group(1).zfill(2)
-                          doc.add_heading(f"YANGIN MERDİVENİ BASINÇLANDIRMA FANI {_merdiven_sira79}", level=5)
-                          # Excel'deki hesap sıralamasına benzer ayrıntılı rapor tablosu:
-                          # Girdi, formül/işlem ve sonuç ayrı sütunlarda gösterilir.
-                          _t79 = doc.add_table(rows=1, cols=3)
-                          _t79.style = "Table Grid"
-                          _t79.autofit = True
-                          _baslik_hucreleri79 = _t79.rows[0].cells
-                          _baslik_hucreleri79[0].text = "HESAP KALEMİ / GİRDİ"
-                          _baslik_hucreleri79[1].text = "FORMÜL / İŞLEM"
-                          _baslik_hucreleri79[2].text = "DEĞER / SONUÇ"
-                          _gen_cm79 = float(_h79.get("menfez_genislik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
-                          _yuk_cm79 = float(_h79.get("menfez_yukseklik_cm", _h79.get("menfez_kenar_cm", 0)) or 0)
-                          _menfez_m279 = float(_h79.get("secilen_menfez_alan", 0) or 0)
-                          _menfez_top_m279 = float(_h79.get("secilen_menfez_toplam_alan", 0) or 0)
-                          _q1_79 = float(_h79.get("q1", 0) or 0)
-                          _q2_79 = float(_h79.get("q2", 0) or 0)
-                          _qtop79 = float(_h79.get("toplam_debi", _q1_79 + _q2_79) or 0)
-                          _kapali79 = int(_h79.get("kapali_adet", 0) or 0)
-                          _acik79 = int(_h79.get("acik_adet", 0) or 0)
-                          _men_ad79 = int(_h79.get("menfez_adet", 0) or 0)
-                          _fan_ad79 = int(_h79.get("fan_adet", 1) or 1)
-                          _kayip79 = float(_h79.get("kayip", 0) or 0)
-                          _em_or79 = float(_h79.get("emniyet_orani", 10) or 0)
-                          _em_de79 = float(_h79.get("emniyet_degeri", 0) or 0)
-                          _em_top79 = float(_h79.get("emniyetli_basinc", 0) or 0)
-                          _bas79 = float(_h79.get("basinc", 0) or 0)
-                          _hid_kw79 = float(_h79.get("fan_hidrolik_kw", 0) or 0)
-                          _motor_kw79 = float(_h79.get("fan_motor_kw", 0) or 0)
-                          _satirlar79 = [
-                              ("Kapalı kapı adedi", "", str(_kapali79)),
-                              ("Kapı başına sızıntı alanı", "Ae", f"{float(_h79.get('sizinti_alani', 0) or 0):.4f} m²"),
-                              ("Kapalı kapı basınç farkı", "ΔP = 50 Pa", f"{float(_h79.get('kapali_delta_p', 50) or 50):.1f} Pa"),
-                              ("Q1 — Sızıntı debisi (emniyet dâhil)", "Q1 = 0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_q1_79:,.2f} m³/h"),
-                              ("Açık kapı adedi", "", str(_acik79)),
-                              ("Kapı genişliği", "", f"{float(_h79.get('kapi_genislik_m', 1) or 0):.2f} m"),
-                              ("Kapı yüksekliği", "", f"{float(_h79.get('kapi_yukseklik_m', 2.4) or 0):.2f} m"),
-                              ("Açık kapı hava hızı", "", f"{float(_h79.get('kapi_hava_hizi', 1) or 0):.2f} m/s"),
-                              ("Q2 — Açık kapı debisi", "Q2 = N × genişlik × yükseklik × hız × 3600 × 1,10", f"{_q2_79:,.2f} m³/h"),
-                              ("Toplam hava debisi", "Q = Q1 + Q2", f"{_qtop79:,.2f} m³/h"),
-                              ("Menfez adedi", "", str(_men_ad79)),
-                              ("Menfez başına debi", "Q / menfez adedi", f"{(_qtop79 / _men_ad79 if _men_ad79 else 0):,.2f} m³/h"),
-                              ("Menfez tasarım hava hızı", "", f"{float(_h79.get('menfez_hiz', 5) or 0):.2f} m/s"),
-                              ("Gerekli efektif alan / menfez", "A = (Q / adet) / (v × 3600)", f"{float(_h79.get('menfez_alan', 0) or 0):.4f} m²"),
-                              ("Seçilen menfez ölçüsü", "Genişlik × yükseklik", f"{_gen_cm79:.0f} × {_yuk_cm79:.0f} cm"),
-                              ("Seçilen menfez alanı / adet", "(genişlik × yükseklik) / 10.000", f"{_menfez_m279:.4f} m²"),
-                              ("Seçilen menfez toplam alanı", "Alan / adet × menfez adedi", f"{_menfez_top_m279:.4f} m²"),
-                              ("Şaft kanal kayıpları", "", f"{float(_h79.get('saft_kaybi', 0) or 0):.1f} Pa"),
-                              ("Menfez basınç kaybı", "", f"{float(_h79.get('menfez_kaybi', 0) or 0):.1f} Pa"),
-                              ("Panjur ve taze hava alış kaybı", "", f"{float(_h79.get('panjur_kaybi', 0) or 0):.1f} Pa"),
-                              ("Pozitif basınç", "", f"{float(_h79.get('pozitif_basinc', 0) or 0):.1f} Pa"),
-                              ("Basınç kayıpları toplamı", "Şaft + menfez + panjur + pozitif basınç", f"{_kayip79:,.1f} Pa"),
-                              ("Emniyet oranı", "", f"%{_em_or79:g}"),
-                              ("Emniyet payı", "Kayıp toplamı × emniyet oranı / 100", f"{_em_de79:,.1f} Pa"),
-                              ("Emniyet dâhil basınç", "Kayıp toplamı + emniyet payı", f"{_em_top79:,.1f} Pa"),
-                              ("Seçilen Fan Basıncı", "", f"{_bas79:,.0f} Pa"),
-                              ("Seçilen fan debisi", "", f"{float(_h79.get('fan_basina_secilen_debi', _h79.get('fan_debisi', _qtop79)) or 0):,.2f} m³/h / fan"),
-                              ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_h79.get('fan_debisi', _qtop79) or 0):,.2f} m³/h"),
-                              ("Seçilen Fan Basıncı", "Emniyet dâhil", f"{float(_h79.get('fan_secilen_basinc', _bas79) or 0):,.0f} Pa"),
-                              ("Fan Gücü", "Seçilen fan elektrik gücü", f"{float(_h79.get('fan_elektrik_gucu', _motor_kw79) or _motor_kw79):.2f} kW"),
-                              ("Fan Adeti", "", str(_fan_ad79)),
-                          ]
-                          if _h79.get("fan_poz_rapora_ekle", True):
-                              _poz_index79 = next((i for i, row in enumerate(_satirlar79) if row[0] == "Fan Adeti"), len(_satirlar79))
-                              _satirlar79.insert(_poz_index79, ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_h79.get('fan_poz', '—') or '—')))
-                          # Görseldeki önceki rapor düzeni: sabit sütun oranları,
-                          # açık mavi bölüm bantları, sıkı hücre boşlukları ve küçük yazı.
-                          from docx.shared import Cm, Pt
-                          from docx.enum.text import WD_ALIGN_PARAGRAPH
-                          from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
-                          from docx.oxml import OxmlElement
-                          from docx.oxml.ns import qn
-                          _t79.alignment = WD_TABLE_ALIGNMENT.CENTER
-                          _t79.autofit = False
-                          _genislikler79 = [Cm(4.8), Cm(5.4), Cm(5.6)]
-                          for _satir79 in _t79.rows:
-                              for _i79, _hucre79 in enumerate(_satir79.cells):
-                                  _hucre79.width = _genislikler79[_i79]
-                                  _hucre79.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                          for _i79, _baslik_hucre79 in enumerate(_baslik_hucreleri79):
-                              _baslik_hucre79.width = _genislikler79[_i79]
-                              _baslik_hucre79.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                              _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _baslik_hucre79._tc.get_or_add_tcPr().append(_shd79)
-                          _bolumler79 = {
-                              'Kapalı kapı adedi': '1. HAVA DEBİSİ HESABI',
-                              'Menfez adedi': '2. MENFEZ BOYUTLANDIRMASI',
-                              'Şaft kanal kayıpları': '3. BASINÇ KAYIPLARI VE EMNİYET',
-                              'Seçilen fan debisi': '4. FAN SEÇİMİ — SONUÇ ÖZETİ',
-                          }
-                          for _etiket79, _formul79, _deger79 in _satirlar79:
-                              if _etiket79 in _bolumler79:
-                                  _bolum_satir79 = _t79.add_row()
-                                  _bolum_hucre79 = _bolum_satir79.cells
-                                  _bolum_hucre79[0].merge(_bolum_hucre79[1]).merge(_bolum_hucre79[2])
-                                  _bolum_hucre79[0].text = _bolumler79[_etiket79]
-                                  _bolum_hucre79[0].width = Cm(15.8)
-                                  _bolum_hucre79[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                  _shd79 = OxmlElement('w:shd'); _shd79.set(qn('w:fill'), 'D9E2F3'); _bolum_hucre79[0]._tc.get_or_add_tcPr().append(_shd79)
-                                  for _p79 in _bolum_hucre79[0].paragraphs:
-                                      _p79.paragraph_format.space_before = Pt(0); _p79.paragraph_format.space_after = Pt(0)
-                                      for _r79 in _p79.runs:
-                                          _r79.bold = True; _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
-                              _c79 = _t79.add_row().cells
-                              for _i79, _icerik79 in enumerate((_etiket79, _formul79, _deger79)):
-                                  _c79[_i79].text = str(_icerik79)
-                                  _c79[_i79].width = _genislikler79[_i79]
-                                  _c79[_i79].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                          # Tablo başlığı ve gövdesinde aynı font/boşluk; sonuç sütunu hizalı.
-                          for _satir79 in _t79.rows:
-                              for _i79, _hucre79 in enumerate(_satir79.cells):
-                                  for _p79 in _hucre79.paragraphs:
-                                      _p79.paragraph_format.space_before = Pt(0)
-                                      _p79.paragraph_format.space_after = Pt(0)
-                                      _p79.paragraph_format.line_spacing = 1.0
-                                      if _i79 == 2 and len(_satir79.cells) == 3:
-                                          _p79.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                                      for _r79 in _p79.runs:
-                                          _r79.font.name = 'Times New Roman'
-                                          _r79._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-                                          _r79.font.size = Pt(9.5)
-                          for _c79 in _baslik_hucreleri79:
-                              for _p79 in _c79.paragraphs:
-                                  for _r79 in _p79.runs:
-                                      _r79.bold = True
-                                      _r79.font.name = 'Times New Roman'; _r79.font.size = Pt(9.5)
-
-
-                  # 7.10 Asansör basınçlandırma — seçilen mevzuat maddeleri ve kullanıcı ekleri
-                  if _bk == "bolum_710":
-                      doc.add_heading("7.10.1 ASANSÖR BASINÇLANDIRMA SİSTEMİ YÖNETMELİK ESASLARI", level=4)
-                      _maddeler710_rapor = [("1", "Acil durum asansörü kuyusunun basınçlandırılması", "Acil durum asansörü kuyusunun yangın etkisi altında kalmasını önlemek amacıyla basınçlandırılması gerekir. (BYKHY Madde 89, 4)")]
-                      for _no710, _bas710, _met710 in _maddeler710_rapor:
-                          if not bool(st.session_state.get(f"yangin_710_madde_{_no710}", True)):
-                              continue
-                          if not bool(st.session_state.get("yangin_710_yonetmelik_atiflari", True)):
-                              _met710 = _yangin_mevzuat_atiflarini_kaldir(_met710)
-                          _p710 = doc.add_paragraph()
-                          _r710 = _p710.add_run(f"({_no710}) {_bas710}: ")
-                          _r710.bold = True
-                          _p710.add_run(_met710)
-                      for _ekno710, _ek710 in enumerate(st.session_state.get("yangin_710_ek_maddeler", []), start=len(_maddeler710_rapor)+1):
-                          _p710 = doc.add_paragraph()
-                          _r710 = _p710.add_run(f"({_ekno710}) {_ek710.get('baslik', '')}: ")
-                          _r710.bold = True
-                          _p710.add_run(str(_ek710.get("metin", "")))
-                      _h710 = st.session_state.get("yangin_710_rapor_hesap", {})
-                      doc.add_heading("7.10.2 ASANSÖR BASINÇLANDIRMA HESAPLARI", level=4)
-                      if not _h710 or not _h710.get("fanlar"):
-                          doc.add_paragraph("Asansör basınçlandırma fanı seçilmemiş veya hesap yapılmamıştır.")
-                      else:
-                          from docx.shared import Cm, Pt
-                          from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
-                          from docx.oxml import OxmlElement
-                          from docx.oxml.ns import qn
-                          for _fan710 in _h710.get("fanlar", []):
-                              _fanhead = doc.add_heading(_fan710.get("rapor_adi", "ASANSÖR BASINÇLANDIRMA FANI"), level=5)
-                              _fanhead.paragraph_format.space_before = Pt(6)
-                              _t710 = doc.add_table(rows=1, cols=3); _t710.style = "Table Grid"; _t710.autofit = False
-                              _head710 = _t710.rows[0].cells
-                              for _i, _txt in enumerate(("HESAP KALEMİ", "FORMÜL / İŞLEM", "DEĞER / SONUÇ")):
-                                  _head710[_i].text = _txt
-                              _rows710 = [
-                                  ("1. HAVA DEBİSİ HESABI", "", ""),
-                                  ("Kapalı kapı adedi", "N", str(_fan710.get("n_kapali", 0))),
-                                  ("Basınç farkı", "ΔP", f"{_fan710.get('dp1', 50):.1f} Pa"),
-                                  ("Kapı başına sızıntı alanı", "Ae", f"{_fan710.get('ae', .06):.3f} m²"),
-                                  ("Q1 — Sızıntı debisi (%50 emniyet dâhil)", "0,83 × (N × Ae) × √ΔP × 1,5 × 3600", f"{_fan710.get('q1', 0):,.2f} m³/h"),
-                                  ("2. AÇIK KAPI DEBİSİ", "", ""),
-                                  ("Açık kapı adedi", "N", str(_fan710.get("n_acik", 0))),
-                                  ("Kapı ölçüsü", "Genişlik × yükseklik", f"{_fan710.get('kapi_gen', 0):.2f} × {_fan710.get('kapi_yuk', 0):.2f} m"),
-                                  ("Kapı alanı", "Ae = genişlik × yükseklik", f"{_fan710.get('ae2', 0):.3f} m²"),
-                                  ("Açık kapı debisi Q2", "V × Ae × N × 3600", f"{_fan710.get('q2', 0):,.2f} m³/h"),
-                                  ("Q2 (%10 emniyet dâhil)", "Q2 × 1,10", f"{_fan710.get('q2_em', 0):,.2f} m³/h"),
-                                  ("3. TOPLAM HAVA DEBİSİ", "Q1 + Q2", f"{_fan710.get('qtop', 0):,.2f} m³/h; seçim: {_fan710.get('qsec', 0):,.0f} m³/h"),
-                                  ("4. BASINÇ KAYIPLARI VE EMNİYET", "", ""),
-                                  ("Şaft kanal kaybı", "", f"{_fan710.get('saft', 0):.1f} Pa"),
-                                  ("Menfez kaybı", "", f"{_fan710.get('menfez', 0):.1f} Pa"),
-                                  ("Panjur ve taze hava alış kaybı", "", f"{_fan710.get('panjur', 0):.1f} Pa"),
-                                  ("Pozitif basınç", "", f"{_fan710.get('pozitif', 0):.1f} Pa"),
-                                  ("Basınç kayıpları toplamı", "", f"{_fan710.get('saft', 0) + _fan710.get('menfez', 0) + _fan710.get('panjur', 0) + _fan710.get('pozitif', 0):.1f} Pa"),
-                                  ("Toplam kayıp / emniyet payı", f"Emniyet %{_fan710.get('emniyet_orani', 10):g}", f"{_fan710.get('emniyet', 0):.1f} Pa"),
-                                  ("Emniyet dahil basınç", "Kayıp toplamı + emniyet payı", f"{_fan710.get('kayip', 0) + _fan710.get('emniyet', 0):.1f} Pa"),
-                                  ("Seçilen Fan Basıncı", "", f"{_fan710.get('basinc', 0):.0f} Pa"),
-                                  ("5. FAN SEÇİMİ — SONUÇ ÖZETİ", "", ""),
-                                  ("Seçilen fan debisi", "", f"{_fan710.get('qsec', 0):,.0f} m³/h"),
-                                  ("Toplam seçilen fan kapasitesi", "Seçilen fan debisi × fan adedi", f"{float(_fan710.get('qsec', 0) or 0) * max(1, int(_fan710.get('fan_adedi', 1) or 1)):,.0f} m³/h"),
-                                  ("Seçilen Fan Basıncı", "Emniyet dahil basınç", f"{_fan710.get('basinc', 0):.0f} Pa"),
-                                  ("Fan Gücü", "Seçilen fan elektrik gücü", f"{_fan710.get('motor', 0):.2f} kW"),
-                                  ("Fan Adeti", "", str(max(1, int(_fan710.get('fan_adedi', 1) or 1)))),
-                                  ("Cihaz Poz No", "Basınç ve fan debisi kademesine göre seçim", str(_fan710.get("poz_no", "Uygun poz bulunamadı"))),
-                                  ("Fan tipi", "", str(_fan710.get("fan_tip", "Asansör basınçlandırma fanı"))),
-                              ]
-                              _width710=[Cm(4.8),Cm(5.4),Cm(5.6)]
-                              for _rowdata in _rows710:
-                                  _cells=_t710.add_row().cells
-                                  if _rowdata[1]=="" and _rowdata[2]=="":
-                                      _cells[0].merge(_cells[1]).merge(_cells[2]); _cells[0].text=_rowdata[0]
-                                      _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cells[0]._tc.get_or_add_tcPr().append(_sh)
-                                      for _p in _cells[0].paragraphs:
-                                          for _rr in _p.runs: _rr.bold=True
-                                  else:
-                                      for _i,_v in enumerate(_rowdata): _cells[_i].text=str(_v)
-                              for _row in _t710.rows:
-                                  for _i,_cell in enumerate(_row.cells):
-                                      _cell.width=_width710[_i]; _cell.vertical_alignment=WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                                      for _p in _cell.paragraphs:
-                                          _p.paragraph_format.space_before=Pt(0); _p.paragraph_format.space_after=Pt(0); _p.paragraph_format.line_spacing=1.0
-                                          for _rr in _p.runs:
-                                              _rr.font.name='Times New Roman'; _rr._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'),'Times New Roman'); _rr.font.size=Pt(9.5)
-                              for _cell in _head710:
-                                  _sh=OxmlElement('w:shd'); _sh.set(qn('w:fill'),'D9E2F3'); _cell._tc.get_or_add_tcPr().append(_sh)
-                                  for _rr in _cell.paragraphs[0].runs: _rr.bold=True
-
-
-                  # 7.3 Yangın Dolabı Sistemi — rapor içeriği
-                  if _bk == "bolum_73":
-                      doc.add_heading("7.3.1 BİNA İÇİ HORTUM SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
-                      _yd_esaslari_rapor = [
-                          ("1", "Yangın dolabı yapılması", "Yüksek binalarda; toplam kapalı kullanım alanı 1000 m²’den büyük imalathane, atölye, depo, otel, motel, sağlık, toplanma amaçlı ve eğitim binalarında ve kapalı kullanım alanı 2000 m²’den büyük binalarda yangın dolabı yapılması zorunludur. (BYKHY Madde 94, 1/b/1)"),
-                          ("2", "Yangın dolaplarının yerleşimi", "Yangın dolapları her katta ve yangın duvarları ile ayrılmış her bölümde, aralarındaki uzaklık 30 m’yi geçmeyecek şekilde düzenlenir. Yağmurlama sistemi ve katlarda itfaiye su alma ağzı bulunması hâlinde bu mesafe 45 m’ye kadar çıkarılabilir. (BYKHY Madde 94, 1/b/2)"),
-                          ("3", "Yerleşim yeri ve erişilebilirlik", "Dolapların mümkün olduğunca koridor çıkışları ve merdiven sahanlıkları yakınına, kolay görülebilecek ve acil durumda kolay erişilebilecek yerlere yerleştirilmesi esastır. (BYKHY Madde 94, 1/b/2)"),
-                          ("4", "Dolap ve kabin özellikleri", "Dolap veya kabin, gerekli yangın söndürme cihazlarının yerleştirilmesine izin verecek büyüklükte olmalı; hortum ve cihazların yangın sırasında kullanımını zorlaştırmamalı ve yalnızca yangın söndürme amacıyla kullanılmalıdır. (BYKHY Madde 94, 1/b/3)"),
-                          ("5", "Yuvarlak yarı-sert hortumlu dolaplar", "Hortum serme ve bağlama konusunda eğitimli personel veya itfaiye görevlisi bulunmayan yapılarda TS EN 671-1’e uygun yuvarlak yarı-sert hortumlu yangın dolapları kullanılır. Hortum TS EN 694’e uygun, çapı 25 mm ve uzunluğu en fazla 30 m olmalıdır. (BYKHY Madde 94, 1/b/4)"),
-                          ("6", "Yuvarlak yarı-sert hortumlu dolaplarda debi ve basınç", "İçinde itfaiye su alma ağzı bulunmayan yuvarlak yarı-sert hortumlu yangın dolaplarında tasarım debisi 100 L/dak ve lüle girişindeki tasarım basıncı 400 kPa olmalıdır. Lüle giriş basıncı 700 kPa’ı aşarsa basınç düşürücü kullanılır. (BYKHY Madde 94, 1/b/6) (BYKHY Madde 94, 1/b/5)"),
-                          ("7", "Yassı hortumlu yangın dolapları", "Yetişmiş yangın söndürme görevlisi bulundurulması gereken yapılarda TS EN 671-2’ye uygun yassı hortumlu dolaplar kullanılabilir. Hortum anma çapı 50 mm’yi, uzunluğu 20 m’yi geçmemelidir. Tasarım debisi 400 L/dak ve lüle girişindeki basınç 600 kPa olmalıdır. (BYKHY Madde 94, 1/b/6)"),
-                          ("8", "Yassı hortumlu dolaplarda basınç kontrolü", "Yassı hortumlu sistemlerde lüle girişindeki basıncın 900 kPa’ı aşması hâlinde basınç düşürücü kullanılır. (BYKHY Madde 94, 1/b/6)"),
-                          ("9", "Periyodik bakım", "Yangın dolapları ve hortum makara sistemlerinin TS EN 671-3’te belirtilen periyodik bakımları bina sahibi, yönetici veya sorumlu bina yetkilisi tarafından yaptırılmalıdır. (BYKHY Madde 94, 1/b/7)"),
-                          ("10", "Kat bağlantı vanaları ve itfaiye su alma ağızları", "İtfaiye su alma hattı kapsamında, yüksek binalar ile kat alanı 1.000 m²’den fazla olan alışveriş merkezleri, otoparklar ve benzeri yerlerde ıslak veya kuru sabit boru sistemi üzerinde itfaiye personeli ve eğitilmiş personelin kullanımına imkân sağlayan bağlantı ağızları bırakılır. Bu bağlantı ağızları kaçış merdiveni veya yangın güvenlik holü gibi korunmuş mekânlarda düzenlenir. Bir boyutu 60 m’yi geçen katlarda yangın dolabı ve itfaiye su alma ağzı yapılması gerekir. (BYKHY Madde 94, 1/a/1)"),
-                          ("11", "İtfaiye su alma ağzına erişim mesafesi", "Herhangi bir noktadan itfaiye su alma ağzına olan mesafe 60 m’den fazla olamaz. Sabit boru tesisatı üzerindeki bütün hortum bağlantıları itfaiyenin kullandığı normlarda Storz tip 50 mm veya 65 mm çapında olur. (BYKHY Madde 94, 1/a/2-3)"),
-                          ("12", "İtfaiye su verme ağzı", "Yüksek binalarda veya bina oturma alanı 1.000 m²’den büyük binalarda veya cephe genişliği 75 m’yi aşan binalarda, itfaiyenin sisteme dışarıdan su basabilmesi için sulu yangın söndürme sistemlerine en az 100 mm nominal çapında itfaiye su verme bağlantısı yapılır. İtfaiye su verme bağlantısında iki adet 65 mm Storz tip rakor ve çek valf bulunur. İtfaiye araçlarının bağlantı ağzına ulaşma mesafesi 18 m’den fazla olamaz. (BYKHY Madde 97, 1)"),
-                          ("13", "Yangın dolapları ve hortum bağlantı muslukları", "Yangın dolapları ve hortum bağlantı muslukları TS 2217’e uygun olacaktır."),
-                          ("14", "Yangın dolaplarında kullanılacak hortum ve yerleşim yüksekliği", "Yangın dolapları içerisinde hortum olarak; kirlenme, çürüme ve küflenme göz önüne alınarak kurutmaya da gerek olmayan, basınca dayanıklı 1” çapında kauçuk hortumlar kullanılacaktır. Yangın dolapları yerden 80 cm ila 120 cm yükseklikte olacak şekilde yerleştirilecektir."),
-                          ("15", "Yangın dolabı gövde ve su giriş tipi", "Yangın dolapları 1.5 mm DKP saçtan mamul, makaradan gövde içerisine su girişi yapabilecek tipte olacaktır."),
-                          ("16", "Yangın dolabı boru sistemi", "Yangın dolapları sprinkler sistemi kolonlarından hat alınarak değil bağımsız boru sistemi olarak tasarlanmıştır."),
-                          ("17", "İtfaiye su alma ağızlarının tesis edilmesi ve özellikleri", "Binada yangının büyümesi durumunda itfaiyenin ve eğitilmiş personelin yangına müdahale edebilmesi için kaçış merdiven yuvaları içerisinde, ayrıca itfaiye su alma ağızları da tesis edilecektir. İtfaiye su alma ağızları DIN normlarına uygun vanalı, 2½” çapında olacak ve her bağlantı ağzında 2½” x 2” ara rakor ve zincirli kapakları takılı halde bulunacaktır. İtfaiye su alma ağızlarına, gerektiğinde B tipi (110’luk) veya C tipi (85’lik) yassı hortum takılarak yangına müdahale edilebilecektir."),
-                          ("18", "İtfaiye su alma ağızlarının bağlantısı ve basıncı", "İtfaiye su alma ağızlarının bağlantısı doğrudan yangın kollektöründen yapılacaktır. Yangın merdiven yuvaları içinde yer alacak olan riser kolonlarına yerden yaklaşık 1.0-1.2 m yükseklikte olacak şekilde itfaiye su alma ağızları bağlantısı yapılacaktır. İtfaiye su alma ağızlarında yassı hortum ucundaki lans girişinde, akış halinde basınç 6 bar olacaktır. Ve 9 barı geçmemelidir."),
-                      ]
-                      for _no, _baslik_yd, _metin_yd in _yd_esaslari_rapor:
-                          if not bool(st.session_state.get(f"yangin_731_madde_{_no}", True)):
-                              continue
-                          if not bool(st.session_state.get("yangin_731_yonetmelik_atiflari", True)):
-                              _metin_yd = _yangin_mevzuat_atiflarini_kaldir(_metin_yd)
-                          _pyd = doc.add_paragraph()
-                          _r = _pyd.add_run(f"{_no}. {_baslik_yd}: ")
-                          _r.bold = True
-                          _pyd.add_run(_metin_yd)
-
-                      # Programda çap tablosundan önce eklenen kullanıcı maddeleri
-                      # rapora aynı sırayla ve otomatik numaralandırmayla aktarılır.
-                      _cap_oncesi = st.session_state.get("yangin_731_maddeler_cap_oncesi", [])
-                      _cap_sonrasi = st.session_state.get("yangin_731_maddeler_cap_sonrasi", [])
-                      _ek_no = 19
-                      for _madde in _cap_oncesi:
-                          _pyd = doc.add_paragraph()
-                          _r = _pyd.add_run(f"{_ek_no}. {str(_madde.get('baslik','')).strip()}: ")
-                          _r.bold = True
-                          _pyd.add_run(str(_madde.get('metin','')).strip())
-                          _ek_no += 1
-
-                      _cap_baslik = doc.add_paragraph()
-                      _cap_run = _cap_baslik.add_run("YANGIN DOLAP SİSTEMİ İÇİN KULLANILAN ÇAP TABLOSU")
-                      _cap_run.bold = True
-                      _cap_tbl = doc.add_table(rows=1, cols=2)
-                      _cap_tbl.style = "Table Grid"
-                      _cap_tbl.rows[0].cells[0].text = "Dolap Sayısı"
-                      _cap_tbl.rows[0].cells[1].text = "Boru Çapı"
-                      for _ds, _bc in [("(1) Dolap", '2”'), ("2 ve daha fazla dolap", '2½”')]:
-                          _cells = _cap_tbl.add_row().cells
-                          _cells[0].text = _ds
-                          _cells[1].text = _bc
-                      for _madde in _cap_sonrasi:
-                          _pyd = doc.add_paragraph()
-                          _r = _pyd.add_run(f"{_ek_no}. {str(_madde.get('baslik','')).strip()}: ")
-                          _r.bold = True
-                          _pyd.add_run(str(_madde.get('metin','')).strip())
-                          _ek_no += 1
-
-                      doc.add_heading("7.3.2 BİNA İÇİ HORTUM SİSTEMİ TASARIM DEBİLERİ TESPİTİ", level=4)
-                      doc.add_paragraph(
-                          "Binaların Yangından Korunması Hakkında Yönetmelik Ek-8/C, bina tehlike sınıfına göre "
-                          "yangın dolabı ve hidrant sistemi için ilâve edilecek su ihtiyaçlarını belirler. "
-                          "Bu raporda yalnızca seçilen etkin yangın tehlike sınıfına karşılık gelen değer vurgulanmıştır."
-                      )
-
-                      _ek8c_verileri_rapor = [
-                          ("Düşük tehlike", 100, 30),
-                          ("Orta Tehlike-1-2", 100, 60),
-                          ("Orta Tehlike-3-4", 100, 60),
-                          ("Yüksek Tehlike", 200, 90),
-                      ]
-                      _etkin_73_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                      if not _etkin_73_rapor:
-                          _etkin_73_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                      _s73 = _etkin_73_rapor.lower().replace("–", "-").replace(" ", "")
-                      if _s73.startswith("düşük"):
-                          _ek8c_secili_rapor = "Düşük tehlike"
-                      elif _s73.startswith("ortatehlike-1") or _s73.startswith("ortatehlike-2"):
-                          _ek8c_secili_rapor = "Orta Tehlike-1-2"
-                      elif _s73.startswith("ortatehlike-3") or _s73.startswith("ortatehlike-4"):
-                          _ek8c_secili_rapor = "Orta Tehlike-3-4"
-                      elif _s73.startswith("yüksek"):
-                          _ek8c_secili_rapor = "Yüksek Tehlike"
-                      else:
-                          _ek8c_secili_rapor = ""
-
-                      _t73 = doc.add_table(rows=1, cols=3)
-                      _t73.style = "Table Grid"
-                      for _cell, _txt in zip(_t73.rows[0].cells, [
-                          "BİNA TEHLİKE SINIFI", "İLAVE YANGIN DOLABI DEBİSİ (L/dak)", "SÜRE (dak)"
-                      ]):
-                          _cell.text = _txt
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-                      for _grup, _q_dolap, _sure in _ek8c_verileri_rapor:
-                          _cc = _t73.add_row().cells
-                          _cc[0].text = _grup
-                          _cc[1].text = f"{_q_dolap:,}".replace(",", ".")
-                          _cc[2].text = str(_sure)
-                          if _grup == _ek8c_secili_rapor:
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-                                  for _pr in _cell.paragraphs:
-                                      for _run in _pr.runs:
-                                          _run.bold = True
-
-                      _ek8c_secili_kayit_rapor = next((x for x in _ek8c_verileri_rapor if x[0] == _ek8c_secili_rapor), None)
-                      if _ek8c_secili_kayit_rapor:
-                          _q73, _sure73 = _ek8c_secili_kayit_rapor[1], _ek8c_secili_kayit_rapor[2]
-                          _p73sonuc = doc.add_paragraph()
-                          _r = _p73sonuc.add_run("7.3 Tasarım Esası: ")
-                          _r.bold = True
-                          _p73sonuc.add_run(
-                              f"Seçilen yangın tehlike sınıfı: {_etkin_73_rapor} → "
-                              f"Yangın dolabı debisi: {_q73} L/dak → Süre: {_sure73} dk."
-                          )
-                          for _run in _p73sonuc.runs:
-                              if _run.text.startswith("7.3 Tasarım Esası"):
-                                  _run.bold = True
-
-                      _src73 = doc.add_paragraph()
-                      _src73.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
-                          "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları."
-                      ).italic = True
-
-                      _pk = doc.add_paragraph()
-                      _rk = _pk.add_run(
-                          "Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; "
-                          "L/dak – litre/dakika; kPa – kilopaskal"
-                      )
-                      _rk.italic = True
-
-                  # 7.4 Hidrant Sistemi
-                  elif _bk == "bolum_74":
-                      doc.add_heading("7.4.1 HİDRANT SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
-                      _hidrant_esaslari_rapor = [
-                          ("1", "Hidrant sisteminin amacı ve yerleşimi", "Yapıların yangından korunmasında, ilk müdahalede söndürülemeyen yangınlara dışarıdan müdahale edebilmek için mümkün olduğunca yapının veya binanın bütün çevresini kapsayacak şekilde hidrant sistemi tesis edilir. Hidrantların itfaiye araçlarının kolay yanaşabileceği ve bağlantı yapabileceği şekilde düzenlenmesi gerekir. (BYKHY Madde 95, 1)"),
-                          ("2", "Hidrant sistemi tasarım debisi ve basıncı", "Hidrant sistemi dizayn debisi en az 1.900 L/dak olacak şekilde tasarlanır. Debi, binanın tehlike sınıfına göre artırılır. Hidrant çıkışında 700 kPa basınç olması gerekir. (BYKHY Madde 95, 2)"),
-                          ("3", "Hidrantlar arası uzaklık", "Hidrantlar arası uzaklık çok riskli bölgelerde 50 m, riskli bölgelerde 100 m, orta riskli bölgelerde 125 m ve az riskli bölgelerde 150 m alınır. (BYKHY Madde 95, 3)"),
-                          ("4", "Hidrantların bina çevresindeki konumu", "Normal şartlarda hidrantlar, korunan binalardan ortalama 5 ilâ 15 m kadar uzağa yerleştirilir. (BYKHY Madde 95, 4)"),
-                          ("5", "Hidrant besleme borusu çapı", "Hidrant sistemine suyu sağlayan boru donanımında ring sistemi mevcut değil ise kullanılabilecek en düşük boru çapı 100 mm olacak şekilde ve hidrolik hesaba göre belirlenir. (BYKHY Madde 95, 5)"),
-                          ("6", "Hidrant tipi ve hat kesme vanaları", "Sistemde kullanılacak hidrantların ilgili Türk Standartlarına uygun yerüstü yangın hidrantı olması gerekir. Hidrant yenilenmesi ve bakım işlemlerini kolaylaştırmak amacıyla uygun noktalarda yeraltı veya yerüstü yahut her iki tip hat kesme vanaları temin ve tesis edilir. (BYKHY Madde 95, 6)"),
-                          ("7", "Yerleşim alanlarında dış hidrant sistemi", "İçerisinde her türlü kullanım alanı bulunan ve genel yerleşim alanlarından ayrı olarak planlanan yerleşim alanlarında yapılacak binaların taban alanları toplamının 5.000 m²’den büyük olması halinde dış hidrant sistemi yapılması mecburidir. Yönetmeliğin 7’nci maddesinin on ikinci fıkrası kapsamındaki alanlarda da dış hidrant sistemi yapılır. (BYKHY Madde 95, 7)"),
-                          ("8", "İtfaiye araçlarının ulaşamadığı yerleşim alanları", "İtfaiye araçlarının giremediği veya manevra yapamadığı, ulaşım imkânı olmayan yerleşim mahallerinde uygun yerlere yerüstü yangın hidrantları veya pompa ile teçhiz edilmiş yeterli kapasitede yangın havuzları ve sarnıçları yapılır. (BYKHY Madde 95, 8)"),
-                          ("9", "Bina çevresinde hidrant yerleşimi", "Bina çevresinde meydana gelebilecek yangınlara müdahale edilebilmesi, dışarıdan içeriye hortum serilerek su verilebilmesi ve itfaiye geldiği zaman su alabilmesi için hidrant sistemi kurulacaktır. Bina girişlerine, köşe başlarına ve açık otopark çevresine yakın yerlere hidrant yerleşimi yapılacaktır."),
-                          ("10", "Hidrant sistemi ring hattı", "Hidrant sistemi için sulu söndürme sistemleri kollektöründen ayrı bir hat alınacak ve bina çevresinde ring sistemi oluşturulacaktır."),
-                          ("11", "Hidrantların bina girişleri ve köşe başlarındaki yerleşimi", "Hidrantlar bina girişlerine ve köşe başlarına yakın olmak üzere yerleştirilecektir."),
-                          ("12", "Hidrant sistemi boru malzemesi", "Sistemde yüksek yoğunluklu polietilen borular veya ductile borular kullanılacaktır."),
-                          ("13", "Boru hatlarının toprak altı döşeme derinliği", "Sistemde kullanılan borular hem mekanik hasarları önlemek hem de donmaya karşı tedbir almak amacı ile en az 100 cm derinlikte toprak altına yerleştirilecektir."),
-                          ("14", "Yerüstü hidrantları ve kesme vanaları", "Sistemde kullanılacak hidrantlar yer üstü yangın hidrantları olacaktır. Hidrant sisteminde, hidrant yenilenmesini ve bakım işlemlerinin yapılmasını kolaylaştıracak şekilde her hidrantın girişinde kesme vanaları yerleştirilecektir."),
-                          ("15", "Kuru tip hidrant özellikleri", "İtfaiye elemanları ve eğitilmiş personelin kullanımına olanak verebilmesi için, çıkış ağızları 2 x 2½” iki çıkış ağızlı, anma boyutu 4” olan kuru tip hidrantlar monte edilecektir. (TS 2821/1)."),
-                          ("16", "Hidrant otomatik boşaltma düzeni", "Hidrantların otomatik çalışan bir boşaltma düzeni olacak, hidrant vanası açıkken bu sistem kapalı olup, hidrant vanası kapatıldığında gövde de kalan su otomatik olarak boşalacaktır."),
-                          ("17", "Hidrant ayağı ve drenaj düzeni", "Hidrant ayakları taş veya beton düz bir zemin üzerine oturtulacak olup, hidrant gövdesindeki suyun drenajı için kullanılacak otomatik tahliye donanımının çevresi küçük çakıl taşları ile doldurulacaktır."),
-                          ("18", "Hortum bağlantı ağızlarının yüksekliği", "Hidrant üzerindeki hortum bağlantı ağızlarının yerden yüksekliği en az 45 cm olacak şekilde yerleştirilecektir."),
-                          ("19", "Boru hatlarının flushing işlemi", "Yapım esnasında, boru içerisinde kalan yabancı malzemeleri temizlemek için su ile flushing yapılacaktır. Flushing esnasında, borular içerisindeki hız en az 3 m/s olacaktır."),
-                      ]
-                      for _no, _baslik_h, _metin_h in _hidrant_esaslari_rapor:
-                          if not bool(st.session_state.get(f"yangin_741_madde_{_no}", True)):
-                              continue
-                          if not bool(st.session_state.get("yangin_741_yonetmelik_atiflari", True)):
-                              _metin_h = _yangin_mevzuat_atiflarini_kaldir(_metin_h)
-                          _p = doc.add_paragraph()
-                          _r = _p.add_run(f"{_no}. {_baslik_h}: ")
-                          _r.bold = True
-                          _p.add_run(_metin_h)
-
-                      _hidrant_ek_maddeler = st.session_state.get("yangin_741_maddeler_cap_oncesi", [])
-                      _ek_hno = 20
-                      for _madde in _hidrant_ek_maddeler:
-                          _p = doc.add_paragraph()
-                          _r = _p.add_run(f"{_ek_hno}. {str(_madde.get('baslik','')).strip()}: ")
-                          _r.bold = True
-                          _p.add_run(str(_madde.get('metin','')).strip())
-                          _ek_hno += 1
-
-                      _src74 = doc.add_paragraph()
-                      _src74.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 95: Hidrant sistemi."
-                      ).italic = True
-
-                      # 7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ
-                      doc.add_heading("7.4.2 HİDRANT SİSTEMİ TASARIM DEBİSİ TESPİTİ", level=4)
-                      doc.add_paragraph(
-                          "BYKHY Ek-8/C'ye göre bina tehlike sınıfına bağlı olarak hidrant sistemi için ilave edilecek "
-                          "su ihtiyacı aşağıdaki tablodan otomatik olarak seçilir. BYKHY Madde 95/2 gereği hidrant "
-                          "sistemi dizayn debisi en az 1.900 L/dak olmalı ve hidrant çıkışında 700 kPa basınç sağlanmalıdır."
-                      )
-
-                      _ek8c_hidrant_verileri_rapor = [
-                          ("Düşük tehlike", 400, 30),
-                          ("Orta Tehlike-1-2", 400, 60),
-                          ("Orta Tehlike-3-4", 1000, 60),
-                          ("Yüksek Tehlike", 1500, 90),
-                      ]
-                      _etkin_74_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                      if not _etkin_74_rapor:
-                          _etkin_74_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                      _s74 = _etkin_74_rapor.lower().replace("–", "-").replace(" ", "")
-                      if _s74.startswith("düşük"):
-                          _ek8c_hidrant_secili_rapor = "Düşük tehlike"
-                      elif _s74.startswith("ortatehlike-1") or _s74.startswith("ortatehlike-2"):
-                          _ek8c_hidrant_secili_rapor = "Orta Tehlike-1-2"
-                      elif _s74.startswith("ortatehlike-3") or _s74.startswith("ortatehlike-4"):
-                          _ek8c_hidrant_secili_rapor = "Orta Tehlike-3-4"
-                      elif _s74.startswith("yüksek"):
-                          _ek8c_hidrant_secili_rapor = "Yüksek Tehlike"
-                      else:
-                          _ek8c_hidrant_secili_rapor = ""
-
-                      _t74 = doc.add_table(rows=1, cols=3)
-                      _t74.style = "Table Grid"
-                      for _cell, _txt in zip(_t74.rows[0].cells, [
-                          "BİNA TEHLİKE SINIFI", "İLAVE HİDRANT DEBİSİ (L/dak)", "SÜRE (dak)"
-                      ]):
-                          _cell.text = _txt
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-                      for _grup, _q_hidrant, _sure in _ek8c_hidrant_verileri_rapor:
-                          _cc = _t74.add_row().cells
-                          _cc[0].text = _grup
-                          _cc[1].text = f"{_q_hidrant:,}".replace(",", ".")
-                          _cc[2].text = str(_sure)
-                          if _grup == _ek8c_hidrant_secili_rapor:
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-                                  for _pr in _cell.paragraphs:
-                                      for _run in _pr.runs:
-                                          _run.bold = True
-
-                      _ek8c_hidrant_kayit_rapor = next(
-                          (x for x in _ek8c_hidrant_verileri_rapor if x[0] == _ek8c_hidrant_secili_rapor),
-                          None,
-                      )
-                      if _ek8c_hidrant_kayit_rapor:
-                          _qh74, _sureh74 = _ek8c_hidrant_kayit_rapor[1], _ek8c_hidrant_kayit_rapor[2]
-                          _p74sonuc = doc.add_paragraph()
-                          _r = _p74sonuc.add_run("7.4.2 Tasarım Esası: ")
-                          _r.bold = True
-                          _p74sonuc.add_run(
-                              f"Seçilen yangın tehlike sınıfı: {_etkin_74_rapor} → "
-                              f"Hidrant ilave debisi: {_qh74} L/dak → Süre: {_sureh74} dk."
-                          )
-
-                      _src742 = doc.add_paragraph()
-                      _src742.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Ek-8/C: "
-                          "Yangın Dolapları ve Hidrant Sistemi İçin İlâve Edilecek Su İhtiyaçları; "
-                          "Madde 95/2: Hidrant sistemi dizayn debisi ve çıkış basıncı."
-                      ).italic = True
-                      _pk742 = doc.add_paragraph()
-                      _rk742 = _pk742.add_run(
-                          "Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; "
-                          "L/dak – litre/dakika; kPa – kilopaskal"
-                      )
-                      _rk742.italic = True
-
-                  # 7.5 Sprinkler (Yağmurlama) Sistemi
-                  elif _bk == "bolum_75":
-                      doc.add_heading("7.5.1 SPRİNKLER (YAĞMURLAMA) SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
-                      _sprinkler_esaslari_rapor = [
-                          ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
-                          ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
-                          ("3", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su spreyi ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
-                          ("4", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
-                          ("5", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
-                          ("6", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
-                          ("7", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
-                          ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
-                          ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
-                          ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
-                      ]
-                      for _no, _baslik_s, _metin_s in _sprinkler_esaslari_rapor:
-                          if not bool(st.session_state.get(f"yangin_751_madde_{_no}", True)):
-                              continue
-                          if not bool(st.session_state.get("yangin_751_yonetmelik_atiflari", True)):
-                              _metin_s = _yangin_mevzuat_atiflarini_kaldir(_metin_s)
-                          _p = doc.add_paragraph()
-                          _r = _p.add_run(f"{_no}. {_baslik_s}: ")
-                          _r.bold = True
-                          _p.add_run(_metin_s)
-
-                      # Kullanıcının verdiği proje özel sprinkler esasları,
-                      # yönetmelikten gelen 1-10 maddelerinin devamı olarak 11-17
-                      # şeklinde rapora aktarılır.
-                      _sprinkler_proje_notlari_rapor = [
-                          "Sprinkler sistem tipi olarak ıslak borulu sprinkler sistemi kurulacaktır. Zonlamada ıslak borulu sistem için yatayda 4831 m² maksimum zon alanı olarak alınmıştır.",
-                          "Sprinkler sisteminde, kat girişini izole edebilmek için izlenebilir volanlı kelebek vanalar her kat girişinde kullanılmıştır.",
-                          "Yangın tesisatı TSE ve NFPA uyumlu olacaktır.",
-                          "Her zon ve katta, ayrı test ve drenaj yapabilmek için vanalar kullanılmıştır.",
-                          "En az her kat bazında sistemi izlemek amacıyla akış anahtarları kullanılmıştır.",
-                          "Her bir söndürme mahali için hidrolik hesap sonucu çıkan köpük miktarı ve ekipmanı belirlenmiştir.",
-                          "Sistemin manuel olarak devreden çıkartılarak düşük risk durumunda yangına bir seyyar söndürücü ile manuel müdahale yapılarak köpüklü söndürme sistemi boşaltılmadan yangının personel tarafından söndürülmesi sağlanabilecektir.",
-                      ]
-                      for _i_not, _not in enumerate(_sprinkler_proje_notlari_rapor, start=11):
-                          _p_not = doc.add_paragraph()
-                          _r_not = _p_not.add_run(f"{_i_not}. ")
-                          _r_not.bold = True
-                          _p_not.add_run(_not)
-
-                      _src75 = doc.add_paragraph()
-                      _src75.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik — Madde 96: Yağmurlama sistemi."
-                      ).italic = True
-
-                      doc.add_heading("7.5.2 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM DEĞERLERİ TESPİTİ", level=4)
-                      doc.add_paragraph(
-                          "BYKHY Ek-8/B'ye göre yağmurlama sistemi tasarım yoğunluğu ve tasarım alanı, bina tehlike sınıfına göre aşağıdaki tablodan belirlenir. "
-                          "Depolama alanları ve farklı özellikteki kullanım alanları için TS EN 12845 esas alınır."
-                      )
-
-                      _ek8b_sprinkler_verileri_rapor = [
-                          ("Düşük Tehlike", "2,25", "84", "—"),
-                          ("Orta Tehlike-1", "5,0", "72", "90"),
-                          ("Orta Tehlike-2", "5,0", "144", "180"),
-                          ("Orta Tehlike-3", "5,0", "216", "270"),
-                          ("Orta Tehlike-4", "5,0", "360", "—"),
-                          ("Yüksek Tehlike-1", "7,7", "260", "325"),
-                          ("Yüksek Tehlike-2", "10,0", "260", "325"),
-                          ("Yüksek Tehlike-3", "12,5", "260", "325"),
-                          ("Yüksek Tehlike-4", "Yoğun su", "—", "—"),
-                      ]
-                      _etkin_75_rapor = str(st.session_state.get("yangin_722_etkin_sinif", "")).strip()
-                      if not _etkin_75_rapor:
-                          _etkin_75_rapor = str(st.session_state.get("yangin_722_otomatik_sinif", "")).strip()
-                      _s75_rapor = _etkin_75_rapor.lower().replace("–", "-").replace(" ", "")
-                      _ek8b_sprinkler_secili_rapor = ""
-                      for _grup75, _yog75, _islak75, _kuru75 in _ek8b_sprinkler_verileri_rapor:
-                          if _s75_rapor == _grup75.lower().replace("–", "-").replace(" ", ""):
-                              _ek8b_sprinkler_secili_rapor = _grup75
-                              break
-
-                      _t75 = doc.add_table(rows=1, cols=4)
-                      _t75.style = "Table Grid"
-                      for _cell, _txt in zip(_t75.rows[0].cells, [
-                          "TEHLİKE SINIFI", "TASARIM YOĞUNLUĞU (mm/dak)",
-                          "KORUMA ALANI — ISLAK VEYA ÖN ETKİLİ (m²)",
-                          "KORUMA ALANI — KURU VEYA DEĞİŞKEN (m²)"
-                      ]):
-                          _cell.text = _txt
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-                      for _grup75, _yog75, _islak75, _kuru75 in _ek8b_sprinkler_verileri_rapor:
-                          _cc = _t75.add_row().cells
-                          _cc[0].text = _grup75
-                          _cc[1].text = _yog75
-                          _cc[2].text = _islak75
-                          _cc[3].text = _kuru75
-                          if _grup75 == _ek8b_sprinkler_secili_rapor:
-                              for _cell in _cc:
-                                  _tcPr = _cell._tc.get_or_add_tcPr()
-                                  _shd = OxmlElement("w:shd")
-                                  _shd.set(qn("w:fill"), "FFF2CC")
-                                  _tcPr.append(_shd)
-                                  for _pr in _cell.paragraphs:
-                                      for _run in _pr.runs:
-                                          _run.bold = True
-
-                      _ek8b_sec75_kayit = next(
-                          (x for x in _ek8b_sprinkler_verileri_rapor if x[0] == _ek8b_sprinkler_secili_rapor),
-                          None,
-                      )
-                      if _ek8b_sec75_kayit:
-                          _p75sonuc = doc.add_paragraph()
-                          _r = _p75sonuc.add_run("7.5.2 Tasarım Değeri: ")
-                          _r.bold = True
-                          _p75sonuc.add_run(
-                              f"Seçilen yangın tehlike sınıfı: {_ek8b_sec75_kayit[0]} → "
-                              f"Tasarım yoğunluğu: {_ek8b_sec75_kayit[1]} mm/dak → "
-                              f"Islak/ön etkili koruma alanı: {_ek8b_sec75_kayit[2]} m² → "
-                              f"Kuru/değişken koruma alanı: {_ek8b_sec75_kayit[3]} m²."
-                          )
-
-                          # Programda seçilen ıslak/kuru sistem tipine göre debi hesabını raporda da açıkça göster.
-                          _spr_sistem_tipi_rapor = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
-                          _spr_sistem_norm_rapor = _spr_sistem_tipi_rapor.lower()
-                          _spr_kuru_rapor = ("kuru" in _spr_sistem_norm_rapor or "alternatif" in _spr_sistem_norm_rapor)
-                          _spr_alan_metin_rapor = _ek8b_sec75_kayit[3] if _spr_kuru_rapor else _ek8b_sec75_kayit[2]
-                          _spr_alan_num_rapor = None
-                          try:
-                              _spr_alan_num_rapor = float(str(_spr_alan_metin_rapor).replace(",", "."))
-                              _spr_yog_num_rapor = float(str(_ek8b_sec75_kayit[1]).replace(",", "."))
-                          except (TypeError, ValueError):
-                              _spr_alan_num_rapor = None
-                          _p75hesap = doc.add_paragraph()
-                          _r = _p75hesap.add_run("Sprinkler tasarım sistemi seçimi: ")
-                          _r.bold = True
-                          _p75hesap.add_run(_spr_sistem_tipi_rapor + ".")
-                          _p75hesap = doc.add_paragraph()
-                          _r = _p75hesap.add_run("7.5.2 Sprinkler Tasarım Debisi Hesabı: ")
-                          _r.bold = True
-                          if _spr_alan_num_rapor is not None and _spr_alan_num_rapor > 0:
-                              _spr_q_rapor = _spr_yog_num_rapor * _spr_alan_num_rapor
-                              _p75hesap.add_run(
-                                  f"Tasarım yoğunluğu × seçilen {('kuru/değişken' if _spr_kuru_rapor else 'ıslak/ön etkili')} koruma alanı "
-                                  f"= {_spr_yog_num_rapor:g} mm/dak × {_spr_alan_num_rapor:g} m² "
-                                  f"= {_spr_q_rapor:,.2f} L/dak."
-                              )
-                          else:
-                              _p75hesap.add_run(
-                                  f"Seçilen {('kuru/değişken' if _spr_kuru_rapor else 'ıslak/ön etkili')} koruma alanı "
-                                  f"({_spr_alan_metin_rapor}) için sayısal değer bulunmadığından debi bu tabloda hesaplanmamıştır."
-                              )
-
-                      # Ek-8/A su deposu hacim tablosu: uygulamada seçilen
-                      # tehlike sınıfı + sistem tipi + yapı yüksekliği sütunu raporda da sarı vurgulanır.
-                      _ek8a_rapor_sinif = str(st.session_state.get("yangin_722_etkin_sinif", st.session_state.get("yangin_722_otomatik_sinif", "")) or "")
-                      _ek8a_rapor_norm = _ek8a_rapor_sinif.strip().lower().replace("–", "-").replace("—", "-")
-                      _ek8a_rapor_norm = "".join(_ek8a_rapor_norm.split())
-                      _ek8a_rapor_tip = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili").lower()
-                      _ek8a_rapor_yukseklik = float(st.session_state.get("yangin_75_ek8a_yapi_yuksekligi_m", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0)) or 0)
-                      _ek8a_rapor_kolon = 0 if _ek8a_rapor_yukseklik <= 15 else (1 if _ek8a_rapor_yukseklik <= 30 else 2)
-                      _ek8a_rapor_hacimler = [
-                          ("Düşük Tehlike", "Islak veya ön uyarılı", ["9", "10", "11"]),
-                          ("Orta Tehlike-1", "Islak veya ön uyarılı", ["55", "70", "80"]),
-                          ("Orta Tehlike-1", "Kuru veya alternatif", ["105", "125", "140"]),
-                          ("Orta Tehlike-2", "Islak veya ön uyarılı", ["105", "125", "140"]),
-                          ("Orta Tehlike-2", "Kuru veya alternatif", ["135", "160", "185"]),
-                          ("Orta Tehlike-3", "Islak veya ön uyarılı", ["135", "160", "185"]),
-                          ("Orta Tehlike-3", "Kuru veya alternatif", ["160", "185", "200"]),
-                          ("Orta Tehlike-4", "Islak veya ön uyarılı", ["160", "185", "200"]),
-                          ("Orta Tehlike-4", "Kuru veya alternatif", ["Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"]),
-                          ("Yüksek Tehlike", "Islak veya ön uyarılı", ["Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"]),
-                          ("Yüksek Tehlike", "Kuru veya alternatif", ["Hidrolik Hesap", "Hidrolik Hesap", "Hidrolik Hesap"]),
-                      ]
-                      _ek8a_rapor_satir = None
-                      for _i8a, (_sinif8a, _tip8a, _hacimler8a) in enumerate(_ek8a_rapor_hacimler):
-                          _sinif8a_norm = "".join(_sinif8a.lower().replace("–", "-").replace("—", "-").split())
-                          _tip8a_islak = ("ıslak" in _ek8a_rapor_tip or "ön" in _ek8a_rapor_tip)
-                          _tip8a_kuru = ("kuru" in _ek8a_rapor_tip or "alternatif" in _ek8a_rapor_tip)
-                          _satir8a_islak = ("ıslak" in _tip8a.lower() or "ön" in _tip8a.lower())
-                          _satir8a_kuru = ("kuru" in _tip8a.lower() or "alternatif" in _tip8a.lower())
-                          if _ek8a_rapor_norm.startswith(_sinif8a_norm) and ((_tip8a_islak and _satir8a_islak) or (_tip8a_kuru and _satir8a_kuru)):
-                              _ek8a_rapor_satir = _i8a
-                              break
-
-                      doc.add_paragraph(
-                          "Ek-8/A — Yağmurlama sistemi, yangın dolabı ve hidrant tasarımı ön hesabı için su deposu en az hacmi"
-                      )
-                      _t8a_rapor = doc.add_table(rows=1, cols=5)
-                      _t8a_rapor.style = "Table Grid"
-                      _baslik8a = ["Yangın Tehlike Sınıfı", "Sistem Tipi", "h ≤ 15 m", "15 < h ≤ 30 m", "30 < h ≤ 45 m"]
-                      for _hucre8a, _baslik8a_txt in zip(_t8a_rapor.rows[0].cells, _baslik8a):
-                          _hucre8a.text = _baslik8a_txt
-                          for _pr8a in _hucre8a.paragraphs:
-                              for _run8a in _pr8a.runs:
-                                  _run8a.bold = True
-                      for _i8a, (_sinif8a, _tip8a, _hacimler8a) in enumerate(_ek8a_rapor_hacimler):
-                          _cc8a = _t8a_rapor.add_row().cells
-                          for _j8a, _deger8a in enumerate([_sinif8a, _tip8a] + _hacimler8a):
-                              _cc8a[_j8a].text = _deger8a
-                          if _i8a == _ek8a_rapor_satir and _hacimler8a[_ek8a_rapor_kolon] != "Hidrolik Hesap":
-                              # Diğer rapor tablolarındaki gibi seçili satırın TAMAMINI sarıya boya.
-                              for _hedef8a in _cc8a:
-                                  _tcPr8a = _hedef8a._tc.get_or_add_tcPr()
-                                  _shd8a = _tcPr8a.find(qn("w:shd"))
-                                  if _shd8a is None:
-                                      _shd8a = OxmlElement("w:shd")
-                                      _tcPr8a.append(_shd8a)
-                                  _shd8a.set(qn("w:fill"), "FFF2CC")
-                                  for _pr8a in _hedef8a.paragraphs:
-                                      for _run8a in _pr8a.runs:
-                                          _run8a.bold = True
-                      _ek8a_rapor_secilen_m3 = st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", None)
-                      _ek8a_rapor_not = doc.add_paragraph()
-                      if _ek8a_rapor_satir is not None and _ek8a_rapor_hacimler[_ek8a_rapor_satir][2][_ek8a_rapor_kolon] != "Hidrolik Hesap":
-                          _ek8a_rapor_not.add_run(
-                              f"Seçilen Ek-8/A minimum depo hacmi: {_ek8a_rapor_secilen_m3:g} m³. "
-                              f"Yapı yüksekliği: {_ek8a_rapor_yukseklik:g} m; 45 m üzerindeki yapılarda 30 < h ≤ 45 m sütunu kullanılır."
-                          )
-                      else:
-                          _ek8a_rapor_not.add_run(
-                              "Seçilen tehlike sınıfı / sprinkler sistemi kombinasyonu için Ek-8/A'da otomatik hacim bulunmadığından hidrolik hesap gerekir."
-                          )
-
-                      _src752 = doc.add_paragraph()
-                      _src752.add_run(
-                          "Kaynak: Binaların Yangından Korunması Hakkında Yönetmelik Kılavuzu — "
-                          "Ek-8/B: Yağmurlama Sisteminde Tasarım Yoğunlukları. "
-                          "Not: Depolama alanları ve farklı özellikteki kullanım alanları için TS EN 12845 esas alınır."
-                      ).italic = True
-
-                      _pk75 = doc.add_paragraph()
-                      _rk75 = _pk75.add_run(
-                          "Kısaltmalar: BYKHY – Binaların Yangından Korunması Hakkında Yönetmelik; "
-                          "L/dak – litre/dakika; kPa – kilopaskal"
-                      )
-                      _rk75.italic = True
-
-                      # 7.5 çap tabloları: arayüzde seçilen tabloları rapora da aktar.
-                      # Veri yoksa rapor akışını bozma; mevcut hesap raporu devam etsin.
-                      _cap_gruplar_rapor = st.session_state.get("yangin_75_cap_tablosu_secili_gruplar", []) or []
-                      _cap_veri_rapor = st.session_state.get("yangin_75_cap_tablolari_veri", {}) or {}
-                      # Rapor üretimi sırasında seçili grup listesi boş kalmışsa,
-                      # checkbox durumlarını ve 7.2 tehlike sınıfını kullanarak grubu yeniden belirle.
-                      if not _cap_gruplar_rapor:
-                          _cap_grup_anahtar_fallback = [
-                              ("HAFİF TEHLİKE", "yangin_75_cap_hafif_aktif"),
-                              ("ORTA TEHLİKE", "yangin_75_cap_orta_aktif"),
-                              ("YÜKSEK TEHLİKE", "yangin_75_cap_yuksek_aktif"),
-                          ]
-                          _cap_gruplar_rapor = [
-                              _g for _g, _k in _cap_grup_anahtar_fallback
-                              if bool(st.session_state.get(_k, False))
-                          ]
-                          if not _cap_gruplar_rapor:
-                              _sinif_cap_fallback = str(
-                                  st.session_state.get("yangin_722_etkin_sinif", "")
-                                  or st.session_state.get("yangin_722_otomatik_sinif", "")
-                              ).strip().lower().replace("–", "-")
-                              if _sinif_cap_fallback.startswith("düşük") or _sinif_cap_fallback.startswith("hafif"):
-                                  _cap_gruplar_rapor = ["HAFİF TEHLİKE"]
-                              elif _sinif_cap_fallback.startswith("orta"):
-                                  _cap_gruplar_rapor = ["ORTA TEHLİKE"]
-                              elif _sinif_cap_fallback.startswith("yüksek"):
-                                  _cap_gruplar_rapor = ["YÜKSEK TEHLİKE"]
-                      # UI'daki tablo verisi rapor oluşturulurken yoksa aynı kaynak tabloyu
-                      # burada yedek olarak tanımla; böylece yalnız test-drenaj tablosu kalmaz.
-                      if not _cap_veri_rapor:
-                          _cap_veri_rapor = {
-                              "HAFİF TEHLİKE": [
-                                  ('1" DN25', "1-2"), ('1¼" DN32', "3"), ('1½" DN40', "4-5"),
-                                  ('2" DN50', "6-10"), ('2½" DN65', "11-30"), ('3" DN80', "31-60"),
-                                  ('4" DN100', "61-100"), ('5" DN125', "101-160"), ('6" DN150', "161-275"),
-                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
-                              ],
-                              "ORTA TEHLİKE": [
-                                  ('1" DN25', "1-2"), ('1¼" DN32', "3"), ('1½" DN40', "4-5"),
-                                  ('2" DN50', "6-10"), ('2½" DN65', "11-20"), ('3" DN80', "21-40"),
-                                  ('4" DN100', "41-100"), ('5" DN125', "101-160"), ('6" DN150', "161-275"),
-                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
-                              ],
-                              "YÜKSEK TEHLİKE": [
-                                  ('1" DN25', "1"), ('1¼" DN32', "2-4"), ('1½" DN40', "5-4"),
-                                  ('2" DN50', "8-14"), ('2½" DN65', "15-26"), ('3" DN80', "27-54"),
-                                  ('4" DN100', "55-89"), ('5" DN125', "90-149"), ('6" DN150', "150-275"),
-                                  ('8" DN200', "GEREKSİZ"), ('10" DN250', "GEREKSİZ"),
-                              ],
-                          }
-                      _cap_test_rapor = st.session_state.get("yangin_75_test_drenaj_veri", []) or []
-                      _cap_oto_grup_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_grup", "") or "")
-                      _cap_oto_cap_rapor = str(st.session_state.get("yangin_75_cap_tablosu_otomatik_cap", "") or "")
-                      _cap_manuel_grup_rapor = str(st.session_state.get("yangin_75_cap_tablosu_manuel_grup", "") or "")
-                      _cap_manuel_cap_rapor = str(st.session_state.get("yangin_75_cap_tablosu_manuel_cap", "") or "")
-                      if _cap_gruplar_rapor or _cap_test_rapor:
-                          doc.add_heading("SPRİNKLER BORU ÇAPI TABLOLARI", level=4)
-                          doc.add_paragraph(
-                              "Aşağıda programda seçilen sprinkler boru çapı tabloları gösterilmiştir. "
-                              "Sarı renkle işaretlenen satır, otomatik veya manuel seçilen çapı belirtir."
-                          )
-                          for _cap_grup_rapor in _cap_gruplar_rapor:
-                              _cap_satirlar_rapor = _cap_veri_rapor.get(_cap_grup_rapor, [])
-                              if not _cap_satirlar_rapor:
-                                  continue
-                              doc.add_heading(f"{_cap_grup_rapor} ÇAP TABLOSU", level=5)
-                              _cap_tab_rapor = doc.add_table(rows=1, cols=2)
-                              _cap_tab_rapor.style = "Table Grid"
-                              for _hc, _ht in zip(_cap_tab_rapor.rows[0].cells, ["Boru Çapı", "Sprinkler Adedi / Aralığı"]):
-                                  _hc.text = _ht
-                                  for _hp in _hc.paragraphs:
-                                      for _hr in _hp.runs:
-                                          _hr.bold = True
-                              _secili_cap_grup_rapor = _cap_manuel_grup_rapor or _cap_oto_grup_rapor
-                              _secili_cap_rapor = _cap_manuel_cap_rapor or _cap_oto_cap_rapor
-                              for _cap_adi_rapor, _cap_aralik_rapor in _cap_satirlar_rapor:
-                                  _cap_hucreler_rapor = _cap_tab_rapor.add_row().cells
-                                  _cap_hucreler_rapor[0].text = str(_cap_adi_rapor)
-                                  _cap_hucreler_rapor[1].text = str(_cap_aralik_rapor)
-                                  if _cap_grup_rapor == _secili_cap_grup_rapor and str(_cap_adi_rapor) == _secili_cap_rapor:
-                                      for _cap_hucre_rapor in _cap_hucreler_rapor:
-                                          _cap_tcpr_rapor = _cap_hucre_rapor._tc.get_or_add_tcPr()
-                                          _cap_shd_rapor = _cap_tcpr_rapor.find(qn("w:shd"))
-                                          if _cap_shd_rapor is None:
-                                              _cap_shd_rapor = OxmlElement("w:shd")
-                                              _cap_tcpr_rapor.append(_cap_shd_rapor)
-                                          _cap_shd_rapor.set("w:fill", "FFF2CC")
-                                          for _cap_p_rapor in _cap_hucre_rapor.paragraphs:
-                                              for _cap_run_rapor in _cap_p_rapor.runs:
-                                                  _cap_run_rapor.bold = True
-                          if _cap_test_rapor:
-                              doc.add_heading("TEST-DRENAJ HATTI ÇAP TABLOSU — DAİMA AKTİF", level=5)
-                              _test_cap_tab_rapor = doc.add_table(rows=1, cols=2)
-                              _test_cap_tab_rapor.style = "Table Grid"
-                              for _hc, _ht in zip(_test_cap_tab_rapor.rows[0].cells, ["Ana Hat", "Test-Drenaj Çapı"]):
-                                  _hc.text = _ht
-                                  for _hp in _hc.paragraphs:
-                                      for _hr in _hp.runs:
-                                          _hr.bold = True
-                              for _hat_rapor, _cap_rapor in _cap_test_rapor:
-                                  _tc = _test_cap_tab_rapor.add_row().cells
-                                  _tc[0].text = str(_hat_rapor)
-                                  _tc[1].text = str(_cap_rapor)
-
-                  # 7.12 Yangın Suyu Depolama Sistemi — adetli debi toplamı ve Ek-8/A depo hacmi
-                  elif _bk == "bolum_7120":
-                      # 7.12 tablosu: dolap/hidrant için debi × süre × adet; sprinkler için yalnız Ek-8/A hacmi.
-                      _q73_712 = float(st.session_state.get("yangin_712_yangin_dolabi_birim_debisi_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
-                      _q74_712 = float(st.session_state.get("yangin_712_hidrant_birim_debisi_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
-                      _t73_712 = float(st.session_state.get("yangin_712_t73_dak", st.session_state.get("yangin_73_ek8c_yangin_dolabi_suresi_dak", 0)) or 0)
-                      _t74_712 = float(st.session_state.get("yangin_712_t74_dak", st.session_state.get("yangin_74_ek8c_hidrant_suresi_dak", 0)) or 0)
-                      _adet73_712 = int(st.session_state.get("yangin_712_yangin_dolabi_adedi", 2) or 0)
-                      _adet74_712 = int(st.session_state.get("yangin_712_hidrant_adedi", 1) or 0)
-                      _q73_toplam_712 = _q73_712 * _adet73_712
-                      _q74_toplam_712 = _q74_712 * _adet74_712
-                      _toplam_tasarim_debisi_712 = _q73_toplam_712 + _q74_toplam_712
-                      _toplam_tasarim_debisi_712_m3h = _toplam_tasarim_debisi_712 * 0.06
-                      _v73_712_l = _q73_712 * _t73_712 * _adet73_712
-                      _v74_712_l = _q74_712 * _t74_712 * _adet74_712
-                      _v75_712_m3 = float(st.session_state.get("yangin_712_sprinkler_hacmi_m3", st.session_state.get("yangin_75_ek8a_depo_min_hacim_m3", 0)) or 0)
-                      _v75_712_l = _v75_712_m3 * 1000.0
-                      _vtop_712_l = _v73_712_l + _v74_712_l + _v75_712_l
-                      _vtop_712_m3 = _vtop_712_l / 1000.0
-
-                      def _yangin_rapor_sayi(_deger, _ondalik=2):
-                          return f"{_deger:,.{_ondalik}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-                      doc.add_paragraph(
-                          "Yangın dolabı ve hidrant su hacimleri, seçilen tasarım debisinin çalışma süresi ve adetle çarpılmasıyla hesaplanmıştır. "
-                          "Sprinkler için yalnızca 7.5.2 bölümünden Ek-8/A'ya göre alınan depo hacmi kullanılmıştır."
-                      )
-                      _t712 = doc.add_table(rows=1, cols=6)
-                      _t712.style = "Table Grid"
-                      for _cell, _txt in zip(_t712.rows[0].cells, [
-                          "Kaynak", "Debi (L/dak)", "Süre (dk)", "Adet", "Hesaplanan Su Hacmi (L)", "Hesaplanan Su Hacmi (m³)"
-                      ]):
-                          _cell.text = _txt
-                          for _pr in _cell.paragraphs:
-                              for _run in _pr.runs:
-                                  _run.bold = True
-
-                      _satirlar_712 = [
-                          ("7.3.2 Yangın Dolabı", _yangin_rapor_sayi(_q73_712), _yangin_rapor_sayi(_t73_712, 0), str(_adet73_712), _yangin_rapor_sayi(_v73_712_l, 0), _yangin_rapor_sayi(_v73_712_l / 1000.0, 3)),
-                          ("7.4.2 Hidrant", _yangin_rapor_sayi(_q74_712), _yangin_rapor_sayi(_t74_712, 0), str(_adet74_712), _yangin_rapor_sayi(_v74_712_l, 0), _yangin_rapor_sayi(_v74_712_l / 1000.0, 3)),
-                          ("7.5.2 Sprinkler (Ek-8/A)", "—", "—", "—", _yangin_rapor_sayi(_v75_712_l, 0), _yangin_rapor_sayi(_v75_712_m3, 3)),
-                      ]
-                      for _satir712 in _satirlar_712:
-                          _cc = _t712.add_row().cells
-                          for _cell, _txt in zip(_cc, _satir712):
-                              _cell.text = _txt
-
-                      _p712top = doc.add_paragraph()
-                      _r712top = _p712top.add_run("TOPLAM HESAPLANAN YANGIN SUYU HACMİ: ")
-                      _r712top.bold = True
-                      _p712top.add_run(f"{_yangin_rapor_sayi(_vtop_712_l, 0)} L = {_yangin_rapor_sayi(_vtop_712_m3, 3)} m³")
-
-                      _p712not = doc.add_paragraph()
-                      _p712not.add_run(
-                          "Hesap yöntemi: yangın dolabı/hidrant su hacmi = debi × süre × adet; "
-                          "sprinkler hacmi = 7.5.2 / Ek-8/A'dan seçilen m³ değeri. Hacimler toplamda m³ cinsinden birleştirilmiştir."
-                      ).italic = True
-
-                      _depo712_tipi = st.session_state.get("yangin_712_depo_tipi", "Galvaniz Modüler Su Deposu")
-                      _depo712_kapasite = float(st.session_state.get("yangin_712_depo_kapasitesi_secili_m3", _vtop_712_m3) or _vtop_712_m3)
-                      _depo712_poz = str(st.session_state.get("yangin_712_depo_poz", "") or "").strip()
-                      _depo712_adet = int(st.session_state.get("yangin_712_depo_bolme_sayisi_secili", st.session_state.get("yangin_712_depo_bolme_sayisi", 2 if _vtop_712_m3 > 121.5 else 1)) or 1)
-                      _depo712_bolme_hacmi = _depo712_kapasite / max(1, _depo712_adet)
-                      _depo712_pozlari = st.session_state.get("yangin_712_depo_pozlari", []) or []
-                      _p712d = doc.add_paragraph()
-                      _r712d = _p712d.add_run("Seçilen yangın suyu deposu: ")
-                      _r712d.bold = True
-                      _depo_adet_ifadesi_712 = "1 adet" if _depo712_adet == 1 else f"{_depo712_adet} adet"
-                      _p712d.add_run(
-                          f"{_depo712_tipi} — Su deposu sayısı: {_depo_adet_ifadesi_712} — "
-                          f"Toplam seçilen kapasite: {_depo712_kapasite:g} m³ — "
-                          f"Depo başına yaklaşık: {_depo712_bolme_hacmi:g} m³"
-                      )
-                      # Poz ve kapasiteyi her depo için ayrı ayrı listelemek yerine,
-                      # seçilen poz numarasını tek satırda göster.
-                      _rapor_depo_pozu_712 = _depo712_poz
-                      if not _rapor_depo_pozu_712 and _depo712_pozlari:
-                          _rapor_depo_pozu_712 = str(_depo712_pozlari[0].get("poz", "") or "").strip()
-                      _ppoz712 = doc.add_paragraph()
-                      _ppoz712.add_run("Cihaz Poz No: ").bold = True
-                      _ppoz712.add_run(_rapor_depo_pozu_712).bold = True
-
-                  # 7.13 Yangın Pompa Grubu — seçim kriterleri
-                  elif _bk == "bolum_7130":
-                      doc.add_heading(
-                          "7.13.1 YANGIN HİDROFORU SEÇİM KRİTERLERİ",
-                          level=4,
-                      )
-                      _yangin_hidroforu_secim_kriterleri = [
-                          "Yangın hidroforu ve pompa grubu, sabit yangın söndürme sistemlerinin gerekli su debisini ve basıncını sağlayacak şekilde seçilecektir. (BYKHY Madde 91, 1; Madde 93, 1)",
-                          "Pompa grubunun tasarım debisi ve basma yüksekliği, ilgili sistemlerin hidrolik hesapları sonucunda belirlenecektir. (BYKHY Madde 91, 1)",
-                          "Pompa performans eğrisinde kapalı vana basma yüksekliği, anma basma yüksekliğinin %140'ını aşmayacak; %150 debideki basma yüksekliği ise anma basma yüksekliğinin %65'inden düşük olmayacaktır. (BYKHY Madde 93, 1)",
-                          "Pompa, gerekli basınç değerini karşılamak şartıyla anma debisinin %130'u kapasitedeki sistem taleplerinde kullanılabilecektir. (BYKHY Madde 93, 1)",
-                          "Tek yangın pompası kullanılması durumunda aynı kapasitede yedek pompa bulundurulacaktır. Birden fazla pompa kullanılması durumunda toplam kapasitenin en az %50'si yedek kapasite olarak sağlanacaktır. (BYKHY Madde 93, 2)",
-                          "Yangın pompaları elektrik motoru, içten yanmalı motor veya türbin ile tahrik edilebilecektir. (BYKHY Madde 93, 3)",
-                          "Yedek dizel motor tahrikli pompa kullanılmaması durumunda, yangın pompalarının enerji beslemesi güvenilir kaynaktan ve binanın genel elektrik sisteminden bağımsız olarak sağlanacaktır. (BYKHY Madde 93, 4)",
-                          "Pompalarda gerekli otomatik hava boşaltma ve sirkülasyon rahatlama valfleri gibi yardımcı elemanlar bulunacaktır. (BYKHY Madde 93, 5)",
-                          "Her pompa için ayrı ve kilitlenebilir kumanda panosu bulunacak; panolarda faz hatası, faz sırası hatası ve kumanda fazı hatası göstergeleri yer alacaktır. (BYKHY Madde 93, 6)",
-                          "Her pompa için ayrı kumanda basınç anahtarı kullanılacak; alt ve üst basınç değerleri bağımsız ayarlanabilir ve ayarlandıktan sonra kilitlenebilir olacaktır. (BYKHY Madde 93, 7)",
-                          "Pompa kontrolü basınç kumandalı, tam otomatik veya yarı otomatik olarak düzenlenebilecektir. (BYKHY Madde 93, 8)",
-                          "Pompa odasında elektrik motorlu pompalar için sürekli +4 °C'nin, dizel motorlu pompalar için sürekli +10 °C'nin üzerinde sıcaklık sağlanacaktır. (BYKHY Madde 93, 9)",
-                          "Pompa istasyonunda servis, muayene ve ayar gerektiren cihazların çalışma alanlarında acil aydınlatma sağlanacaktır. (BYKHY Madde 93, 10)",
-                          "Pompa istasyonu zemini, suyun pompa, tahrik elemanı ve kumanda panosu gibi kritik cihazlardan uzaklaştırılmasını sağlayacak şekilde drenaj eğimiyle düzenlenecektir. (BYKHY Madde 93, 11)",
-                          "Pompa grubunun tesisatı, uygulanabilir standartlara ve proje kriterlerine uygun olacak; gerekli kontrol, test ve bakım işlemleri gerçekleştirilecektir. (İlgili yönetmelik ve standart hükümleri)",
-                      ]
-                      _secili_7131_kriterler = [
-                          (i, metin)
-                          for i, metin in enumerate(_yangin_hidroforu_secim_kriterleri)
-                          if bool(st.session_state.get(f"yangin_7131_kriter_{i}", True))
-                      ]
-                      for _kriter_sira, _kriter_metin in enumerate(_secili_7131_kriterler, start=1):
-                          _pkriter = doc.add_paragraph(style="List Number")
-                          _pkriter.paragraph_format.space_after = Pt(4)
-                          _pkriter.paragraph_format.keep_together = True
-                          _metin_7131 = _kriter_metin[1]
-                          if not bool(st.session_state.get("yangin_7131_yonetmelik_atiflari", True)):
-                              _metin_7131 = _yangin_mevzuat_atiflarini_kaldir(_metin_7131)
-                          _pkriter.add_run(_metin_7131)
-                      if not _secili_7131_kriterler:
-                          _pnone = doc.add_paragraph("Bu bölüm için rapora eklenecek seçim kriteri seçilmemiştir.")
-                          _pnone.paragraph_format.space_after = Pt(6)
-                      _pkaynak = doc.add_paragraph()
-                      _pkaynak.add_run(
-                          "Mevzuat kaynağı: Binaların Yangından Korunması Hakkında Yönetmelik. "
-                          "Nihai proje kontrolünde yürürlükteki resmî metin ve uygulanabilir standartlar esas alınmalıdır."
-                      ).italic = True
-
-                      # 7.13.2 — yangın hidroforu debi hesabı
-                      doc.add_heading("7.13.2 YANGIN HİDROFORU DEBİ HESAPLARI", level=4)
-                      _dolap_adedi_7132_r = int(st.session_state.get("yangin_7132_dolap_adedi_secili", st.session_state.get("yangin_712_yangin_dolabi_adedi", 2)) or 0)
-                      _hidrant_adedi_7132_r = int(st.session_state.get("yangin_7132_hidrant_adedi_secili", st.session_state.get("yangin_712_hidrant_adedi", 1)) or 0)
-                      _q73_birim_7132_r = float(st.session_state.get("yangin_7132_q73_birim_ldak", st.session_state.get("yangin_73_secili_yangin_suyu_debisi_ldak", 0)) or 0)
-                      _q74_birim_7132_r = float(st.session_state.get("yangin_7132_q74_birim_ldak", st.session_state.get("yangin_74_ek8c_hidrant_debisi_ldak", 0)) or 0)
-                      _q73_7132_r = float(st.session_state.get("yangin_7132_q73_ldak", _q73_birim_7132_r * _dolap_adedi_7132_r) or 0)
-                      _q74_7132_r = float(st.session_state.get("yangin_7132_q74_ldak", _q74_birim_7132_r * _hidrant_adedi_7132_r) or 0)
-                      _q75_7132_r = float(st.session_state.get("yangin_7132_q75_ldak", st.session_state.get("yangin_75_sprinkler_debisi_ldak", 0)) or 0)
-                      _spr_yog_7132_r = float(st.session_state.get("yangin_7132_spr_yogunluk", st.session_state.get("yangin_75_ek8b_tasarim_yogunlugu", 0)) or 0)
-                      _spr_alan_7132_r = float(st.session_state.get("yangin_7132_spr_alan", 0) or 0)
-                      _emniyet_7132_r = float(st.session_state.get("yangin_7132_emniyet_orani", 15.0) or 0)
-                      _toplam_7132_r = _q73_7132_r + _q74_7132_r + _q75_7132_r
-                      _toplam_7132_m3h_r = _toplam_7132_r * 0.06
-                      _nihai_7132_r = _toplam_7132_r * (1 + _emniyet_7132_r / 100.0)
-                      _nihai_7132_m3h_r = _nihai_7132_r * 0.06
-                      _fmt_7132 = lambda x, n=2: f"{x:,.{n}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                      _tab_7132 = doc.add_table(rows=1, cols=4)
-                      _tab_7132.style = "Table Grid"
-                      for _cell, _txt in zip(_tab_7132.rows[0].cells, ["Tasarım debisi kaynağı", "Adet", "Birim tasarım debisi", "Toplam debi (L/dak)"]):
-                          _cell.text = _txt
-                          for _para in _cell.paragraphs:
-                              for _run in _para.runs:
-                                  _run.bold = True
-                      _spr_tipi_7132_r = str(st.session_state.get("yangin_75_sistem_tipi", "Islak / Ön etkili") or "Islak / Ön etkili")
-                      _spr_alan_tipi_7132_r = "kuru/değişken" if ("kuru" in _spr_tipi_7132_r.lower() or "alternatif" in _spr_tipi_7132_r.lower()) else "ıslak/ön etkili"
-                      _tablo_satirlari_7132 = [
-                          ("7.3.2 Yangın Dolabı", str(_dolap_adedi_7132_r), f"{_fmt_7132(_q73_birim_7132_r)} L/dak × adet", _q73_7132_r),
-                          ("7.4.2 Hidrant", str(_hidrant_adedi_7132_r), f"{_fmt_7132(_q74_birim_7132_r)} L/dak × adet", _q74_7132_r),
-                          ("7.5.2 Sprinkler", "—", f"{_fmt_7132(_spr_yog_7132_r)} mm/dak × {_fmt_7132(_spr_alan_7132_r)} m² ({_spr_alan_tipi_7132_r})", _q75_7132_r),
-                          ("TOPLAM TASARIM DEBİSİ", "—", "—", _toplam_7132_r),
-                      ]
-                      for _kaynak_7132, _adet_7132, _birim_7132, _debi_7132 in _tablo_satirlari_7132:
-                          _cells_7132 = _tab_7132.add_row().cells
-                          for _cell, _txt in zip(_cells_7132, [_kaynak_7132, _adet_7132, _birim_7132, _fmt_7132(_debi_7132)]):
-                              _cell.text = _txt
-                      _p7132 = doc.add_paragraph()
-                      _p7132.add_run("Toplam tasarım debisi: ").bold = True
-                      _p7132.add_run(f"{_fmt_7132(_toplam_7132_r)} L/dak = {_fmt_7132(_toplam_7132_m3h_r)} m³/h")
-                      _p7132 = doc.add_paragraph()
-                      _p7132.add_run(f"Emniyet payı (%{_fmt_7132(_emniyet_7132_r, 0)}): ").bold = True
-                      _p7132.add_run(f"{_fmt_7132(_nihai_7132_r - _toplam_7132_r)} L/dak = {_fmt_7132((_nihai_7132_r - _toplam_7132_r) * 0.06)} m³/h")
-                      _p7132 = doc.add_paragraph()
-                      _p7132.add_run("YANGIN HİDROFORU TASARIM DEBİSİ: ").bold = True
-                      _p7132.add_run(f"{_fmt_7132(_nihai_7132_r)} L/dak = {_fmt_7132(_nihai_7132_m3h_r)} m³/h").bold = True
-
-                      # 7.13.3 — Yangın hidroforu basma yüksekliği hesabı
-                      doc.add_heading("7.13.3 YANGIN HİDROFORU BASMA YÜKSEKLİĞİ HESABI", level=4)
-                      _kot_farki_7133_r = float(st.session_state.get("yangin_7133_kot_farki_m", st.session_state.get("yangin_genel_yapi_yuksekligi_m", 0.0)) or 0.0)
-                      _kritik_basinci_7133_r = float(st.session_state.get("yangin_7133_kritik_basinci_mss", 40.0) or 0.0)
-                      _boru_kaybi_7133_r = float(st.session_state.get("yangin_7133_boru_kaybi_mss", 0.0) or 0.0)
-                      _h_hesaplanan_7133_r = _kot_farki_7133_r + _boru_kaybi_7133_r + _kritik_basinci_7133_r
-                      _h_elle_7133_r = bool(st.session_state.get("yangin_7133_basma_yuksekligi_elle", False))
-                      _h_nihai_7133_r = float(st.session_state.get("yangin_7133_basma_yuksekligi_manuel_mss", _h_hesaplanan_7133_r) or 0.0) if _h_elle_7133_r else _h_hesaplanan_7133_r
-                      _h_tab_7133 = doc.add_table(rows=1, cols=2)
-                      _h_tab_7133.style = "Table Grid"
-                      for _c, _t in zip(_h_tab_7133.rows[0].cells, ["Hesap kalemi", "Değer"]):
-                          _c.text = _t
-                          for _p in _c.paragraphs:
-                              for _run in _p.runs:
-                                  _run.bold = True
-                      for _kalem, _deger in [
-                          ("Kot farkı / yapı yüksekliği (hp)", f"{_fmt_7132(_kot_farki_7133_r)} mSS"),
-                          ("Lans girişindeki basınç (ha)", f"{_fmt_7132(_kritik_basinci_7133_r)} mSS ({_fmt_7132(_kritik_basinci_7133_r * 9.80665)} kPa)"),
-                          ("Boru kayıpları (hb)", f"{_fmt_7132(_boru_kaybi_7133_r)} mSS"),
-                          ("P = hp + hb + ha", f"({_fmt_7132(_kot_farki_7133_r)} + {_fmt_7132(_boru_kaybi_7133_r)} + {_fmt_7132(_kritik_basinci_7133_r)}) = {_fmt_7132(_h_hesaplanan_7133_r)} mSS"),
-                          ("Toplam basınç", f"≈ {_fmt_7132(_h_nihai_7133_r)} mSS = {_fmt_7132(_h_nihai_7133_r / 10)} bar"),
-                      ]:
-                          _cells = _h_tab_7133.add_row().cells
-                          _cells[0].text = _kalem
-                          _cells[1].text = _deger
-
-                      # 7.13.4 — Yangın hidroforu seçimi (1 asıl + 1 yedek)
-                      doc.add_heading("7.13.4 YANGIN HİDROFORU SEÇİMİ", level=4)
-                      _qsec_m3h = float(st.session_state.get("yangin_7133_tasarim_debi_m3h", _nihai_7132_m3h_r) or 0.0)
-                      _qsec_ldak = float(st.session_state.get("yangin_7133_tasarim_debi_ldak", _qsec_m3h / 0.06 if _qsec_m3h else 0.0) or 0.0)
-                      _hsec = float(st.session_state.get("yangin_7133_basma_yuksekligi_mss", 0.0) or 0.0)
-                      _set_tipi_rapor = str(st.session_state.get("yangin_7134_pompa_seti_tipi_rapor", "Elektrikli asıl + elektrikli yedek + jokey pompa") or "")
-                      # Rapor tablosunda kullanılan motor türlerini seçilen pompa setinden üret.
-                      # Önceki sürümde bu iki değişken tanımlanmadan tablo satırlarında kullanılıyordu.
-                      _set_tipi_norm = _set_tipi_rapor.casefold()
-                      if "dizel asıl" in _set_tipi_norm or "dizel asilli" in _set_tipi_norm:
-                          _ana_motor_turu = "Dizel motorlu"
-                          _yedek_motor_turu = "Dizel motorlu"
-                      elif "elektrikli asıl + dizel yedek" in _set_tipi_norm or "elektrikli asilli + dizel yedek" in _set_tipi_norm:
-                          _ana_motor_turu = "Elektrik motorlu"
-                          _yedek_motor_turu = "Dizel motorlu"
-                      elif "elektrikli asıl + elektrikli yedek" in _set_tipi_norm or "elektrikli asilli + elektrikli yedek" in _set_tipi_norm:
-                          _ana_motor_turu = "Elektrik motorlu"
-                          _yedek_motor_turu = "Elektrik motorlu"
-                      else:
-                          # Kayıtlı set adı beklenen ifadelerden farklıysa ayrı ana/yedek
-                          # seçimlerini kullan; varsayılan olarak elektrikli set kabul edilir.
-                          _ana_tahrik_kayit = str(st.session_state.get("yangin_7133_ana_tahrik", "Elektrik motorlu") or "Elektrik motorlu")
-                          _yedek_tahrik_kayit = str(st.session_state.get("yangin_7133_yedek_tahrik", _ana_tahrik_kayit) or _ana_tahrik_kayit)
-                          _ana_motor_turu = "Dizel motorlu" if "dizel" in _ana_tahrik_kayit.casefold() else "Elektrik motorlu"
-                          _yedek_motor_turu = "Dizel motorlu" if "dizel" in _yedek_tahrik_kayit.casefold() else "Elektrik motorlu"
-                      _set_par = doc.add_paragraph()
-                      _set_par.add_run("Seçilen pompa seti: ").bold = True
-                      _set_par.add_run(_set_tipi_rapor)
-                      _pompa_tab = doc.add_table(rows=1, cols=10)
-                      _pompa_tab.style = "Table Grid"
-                      _pompa_basliklar = ["Pompa", "Pompa tipi", "Motor / tahrik türü", "Adet", "GPM", "GPM karşılığı (m³/h)", "Debi (m³/h)", "Basma yüksekliği (mSS)", "Motor gücü (kW)", "Cihaz Poz No"]
-                      for _c, _t in zip(_pompa_tab.rows[0].cells, _pompa_basliklar):
-                          _c.text = _t
-                          for _p in _c.paragraphs:
-                              for _run in _p.runs:
-                                  _run.bold = True
-                      _pompa_satirlari = [
-                          (
-                              "Ana yangın pompası",
-                              str(st.session_state.get("yangin_7133_ana_tipi_rapor", st.session_state.get("yangin_7133_ana_tipi", "Belirtilmedi")) or "Belirtilmedi"),
-                              _ana_motor_turu,
-                              "1 asıl",
-                              st.session_state.get("yangin_7133_ana_rapor_gpm", st.session_state.get("yangin_7133_ana_katalog_gpm", "—")),
-                              st.session_state.get("yangin_7133_ana_rapor_gpm_karsilik_m3h", st.session_state.get("yangin_7133_ana_katalog_gpm_karsilik_m3h", "—")),
-                              float(st.session_state.get("yangin_7133_ana_debi_m3h", _qsec_m3h) or 0.0),
-                              float(st.session_state.get("yangin_7133_ana_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7133_ana_guc_kw", 0.0) or 0.0),
-                              str(st.session_state.get("yangin_7133_ana_poz", "") or "Belirtilmedi"),
-                          ),
-                          (
-                              "Yedek yangın pompası",
-                              str(st.session_state.get("yangin_7133_yedek_tipi_rapor", st.session_state.get("yangin_7133_yedek_tipi", "Belirtilmedi")) or "Belirtilmedi"),
-                              _yedek_motor_turu,
-                              "1 yedek",
-                              st.session_state.get("yangin_7133_yedek_rapor_gpm", st.session_state.get("yangin_7133_yedek_katalog_gpm", "—")),
-                              st.session_state.get("yangin_7133_yedek_rapor_gpm_karsilik_m3h", st.session_state.get("yangin_7133_yedek_katalog_gpm_karsilik_m3h", "—")),
-                              float(st.session_state.get("yangin_7133_yedek_debi_m3h", _qsec_m3h) or 0.0),
-                              float(st.session_state.get("yangin_7133_yedek_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7133_yedek_guc_kw", 0.0) or 0.0),
-                              str(st.session_state.get("yangin_7133_yedek_poz", "") or "Belirtilmedi"),
-                          ),
-                      ]
-                      if st.session_state.get("yangin_7134_jokey_var", False):
-                          _pompa_satirlari.append((
-                              "Jokey pompa",
-                              str(st.session_state.get("yangin_7134_jokey_tipi", "Dikey milli çok kademeli") or "Dikey milli çok kademeli"),
-                              "Elektrik motorlu",
-                              "1 adet",
-                              st.session_state.get("yangin_7134_jokey_rapor_gpm", "—"),
-                              st.session_state.get("yangin_7134_jokey_rapor_gpm_karsilik_m3h", "—"),
-                              float(st.session_state.get("yangin_7134_jokey_debi_m3h", 6.0) or 0.0),
-                              float(st.session_state.get("yangin_7134_jokey_h_mss", _hsec) or 0.0),
-                              float(st.session_state.get("yangin_7134_jokey_guc_kw", 4.5) or 0.0),
-                              str(st.session_state.get("yangin_7134_jokey_poz", "") or "Belirtilmedi"),
-                          ))
-                      for _tip, _pompa_tipi, _motor_turu, _adet, _gpm, _gpm_m3h, _debi, _basma, _guc, _poz_no in _pompa_satirlari:
-                          _cells = _pompa_tab.add_row().cells
-                          _gpm_text = str(_gpm) if _gpm not in (None, "", "—") else "—"
-                          _gpm_m3h_text = _fmt_7132(_gpm_m3h) if isinstance(_gpm_m3h, (int, float)) else str(_gpm_m3h or "—")
-                          _satir_degerleri = [_tip, _pompa_tipi, _motor_turu, _adet, _gpm_text, _gpm_m3h_text, _fmt_7132(_debi), _fmt_7132(_basma), _fmt_7132(_guc), _poz_no]
-                          for _c, _t in zip(_cells, _satir_degerleri):
-                              _c.text = str(_t)
-                      # Yangın pompası tablosunu derli toplu biçimlendir: tüm hücrelerde 10 punto,
-                      # sıkı paragraf aralıkları, dikey ortalama ve kompakt hücre kenar boşlukları.
-                      try:
-                          from docx.shared import Pt as _PompaPt, Inches as _PompaInches
-                          from docx.enum.text import WD_ALIGN_PARAGRAPH as _PompaAlign
-                          from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as _PompaVAlign
-                          from docx.oxml import OxmlElement as _PompaOxml
-                          from docx.oxml.ns import qn as _pompa_qn
-                          for _satir_i, _satir in enumerate(_pompa_tab.rows):
-                              for _hucre_i, _hucre in enumerate(_satir.cells):
-                                  _hucre.vertical_alignment = _PompaVAlign.CENTER
-                                  _tcPr = _hucre._tc.get_or_add_tcPr()
-                                  _mar = _tcPr.first_child_found_in('w:tcMar')
-                                  if _mar is None:
-                                      _mar = _PompaOxml('w:tcMar')
-                                      _tcPr.append(_mar)
-                                  for _kenar in ('top', 'start', 'bottom', 'end'):
-                                      _el = _mar.find(_pompa_qn(f'w:{_kenar}'))
-                                      if _el is None:
-                                          _el = _PompaOxml(f'w:{_kenar}')
-                                          _mar.append(_el)
-                                      _el.set(_pompa_qn('w:w'), '55' if _kenar in ('start','end') else '35')
-                                      _el.set(_pompa_qn('w:type'), 'dxa')
-                                  for _par in _hucre.paragraphs:
-                                      _par.paragraph_format.space_before = _PompaPt(0)
-                                      _par.paragraph_format.space_after = _PompaPt(0)
-                                      _par.paragraph_format.line_spacing = 1.0
-                                      _par.alignment = _PompaAlign.CENTER if _hucre_i >= 3 else _PompaAlign.LEFT
-                                      for _run in _par.runs:
-                                          _run.font.name = 'Arial'
-                                          _run.font.size = _PompaPt(10)
-                                          if _satir_i == 0:
-                                              _run.bold = True
-                          # Sütun başlıkları sonraki sayfaya taşarsa başlık satırını tekrar et.
-                          _trPr = _pompa_tab.rows[0]._tr.get_or_add_trPr()
-                          _tekrar = _PompaOxml('w:tblHeader')
-                          _tekrar.set(_pompa_qn('w:val'), 'true')
-                          _trPr.append(_tekrar)
-                          _pompa_tab.autofit = True
-                      except Exception:
-                          pass
-                      # Poz numaraları yalnızca ilgili pompa satırındaki son sütunda gösterilir;
-                      # tablonun altında tekrar eden ayrı poz satırları oluşturulmaz.
-
-
-                  else:
-                      _body7 = doc.add_paragraph(
-                          ""
-                      )
-                      _body7.paragraph_format.space_after = Pt(6)
-  
-      # ANA BÖLÜM NUMARALARI — SIHHİ TESİSAT RAPORDAN ÇIKARILDIYSA
-      # Bu modülde sıhhi tesisatın gerçek seçim değişkeni bolum_6_aktif'tir.
-      # rapor_bolum_6 gibi farklı bir session_state anahtarına bakmak, kapatılan
-      # bölümü açık sanıp Yangın Tesisatı başlığını 7 bırakabiliyordu.
-      if not bolum_6_aktif:
-          import re as _re_bolum_no
-
-          def _yangin_baslik_no_guncelle(_p):
-              _stil = str(getattr(getattr(_p, "style", None), "name", "") or "").lower()
-              _metin = _p.text or ""
-              # Yalnızca başlıkları değiştir: Heading stilleri ve biçimlendirilmiş
-              # büyük harfli alt bölüm başlıkları. Normal açıklama/metin korunur.
-              _baslik_gibi = _stil.startswith("heading") or _metin.strip().isupper()
-              if not _baslik_gibi:
-                  return
-              _m = _re_bolum_no.match(r"^(\s*)7(?:\.\d+)*(?=\s|$)", _metin)
-              if not _m:
-                  return
-              _on_ek_uzunluk = len(_m.group(1))
-              _yeni = _metin[:_on_ek_uzunluk] + "6" + _metin[_on_ek_uzunluk+1:]
-              # Başlıklar genellikle tek run'dan oluşur. İlk run'da değiştirerek
-              # Word biçimlendirmesini koru; bölünmüş run durumunda güvenli yedek kullan.
-              _eski_runs = list(_p.runs)
-              if _eski_runs and _eski_runs[0].text and _eski_runs[0].text.startswith(_m.group(1) + "7"):
-                  _eski_runs[0].text = _eski_runs[0].text[:len(_m.group(1))] + "6" + _eski_runs[0].text[len(_m.group(1))+1:]
-              elif _eski_runs:
-                  _eski_runs[0].text = _yeni
-                  for _run in _eski_runs[1:]:
-                      _run.text = ""
-              else:
-                  _p.add_run(_yeni)
-
-          # Gövde paragrafları
-          for _p_no in doc.paragraphs:
-              _yangin_baslik_no_guncelle(_p_no)
-          # Tablo hücrelerindeki olası başlıklar da kapsansın.
-          for _tbl_no in doc.tables:
-              for _row_no in _tbl_no.rows:
-                  for _cell_no in _row_no.cells:
-                      for _p_no in _cell_no.paragraphs:
-                          _yangin_baslik_no_guncelle(_p_no)
-
-      # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
-      def rapor_word_stillerini_uygula(_doc):
-          """Word raporunun paragraf ve tablo stillerini güvenli biçimde uygular."""
-          for _style_name in ("Normal", "Body Text", "List Paragraph", "List Bullet", "List Number"):
-              try:
-                  _style = _doc.styles[_style_name]
-                  _style.font.name = "Times New Roman"
-                  _style._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-                  _style.font.size = Pt(12)
-                  _style.paragraph_format.widow_control = True
-              except (KeyError, AttributeError):
-                  pass
-          for _paragraph in _doc.paragraphs:
-              _style = getattr(_paragraph, "style", None)
-              if str(getattr(_style, "name", "") or "").lower().startswith("heading"):
-                  _paragraph.paragraph_format.keep_with_next = True
-
-      rapor_word_stillerini_uygula(doc)
-  
-      buffer = io.BytesIO()
-      doc.save(buffer)
-      buffer.seek(0)
-  
-      dosya_adi = (
-          f"{aktif_is.replace(' ', '_')}_Rapor"
-          if is_adi
-          else "Mekanik_Uygulama_Raporu"
-      )
-  
-      st.session_state["_rapor_hazir_docx_v134"] = buffer.getvalue()
-      st.session_state["_rapor_hazir_adi_v134"] = dosya_adi
-  
-      # Rapor aynı çalıştırmada oluşturuldu. Aşağıdaki blok, oluşturulan
-      # dosyayı bu çalıştırmanın sonunda doğrudan indirme düğmesine bağlar.
-  except Exception as _rapor_hata:
-    st.error("❌ Rapor oluşturulurken hata oluştu. Aşağıdaki gerçek hata rapor oluşturma işlemini durdurdu:")
-    st.exception(_rapor_hata)
 
 # ---------------------------------------------------------------------------
-# RAPOR ÇIKTISI — AYNI ÇALIŞTIRMADA İNDİRME
+# PROGRAM BASLIKLARI - RENKLI VE DUZENLI GORUNUM
 # ---------------------------------------------------------------------------
-if st.session_state.get("_rapor_hazir_docx_v134"):
-    _rapor_docx_veri_son = st.session_state["_rapor_hazir_docx_v134"]
-    _rapor_ad_son = st.session_state.get("_rapor_hazir_adi_v134", "Mekanik_Uygulama_Raporu")
-    _rapor_format_son = st.session_state.get("rapor_cikti_format_v134", "Word (.docx)")
-    st.sidebar.markdown("### 📥 RAPOR HAZIR")
-    if _rapor_format_son == "Word (.docx)":
-        st.sidebar.download_button(
-            "📥 Word'u İndir",
-            data=_rapor_docx_veri_son,
-            file_name=f"{_rapor_ad_son}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key="rapor_word_indir_son_v2",
-            use_container_width=True,
+st.markdown('<style>\n#sayfa_basi, #sayfa_sonu { scroll-margin-top: 20px; }\n.hizli-navigasyon {\n    position: fixed;\n    right: 18px;\n    top: 50%;\n    transform: translateY(-50%);\n    z-index: 999999;\n    display: flex;\n    flex-direction: column;\n    gap: 7px;\n}\n.hizli-navigasyon a {\n    display: block;\n    min-width: 108px;\n    padding: 8px 11px;\n    text-align: center;\n    text-decoration: none !important;\n    border-radius: 8px;\n    border: 1px solid #B8C7D9;\n    background: rgba(255,255,255,0.96);\n    color: #0B3D91 !important;\n    font-weight: 700;\n    font-size: 13px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.16);\n}\n.hizli-navigasyon a:hover { background: #EAF2F8; }\n@media (max-width: 700px) {\n    .hizli-navigasyon { right: 8px; top: 50%; transform: translateY(-50%); }\n    .hizli-navigasyon a { min-width: 92px; padding: 7px 8px; font-size: 12px; }\n}\n</style>', unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Ana bolum basliklari */
+h1 {
+    color: #0B3D91 !important;
+    font-weight: 800 !important;
+    border-bottom: 3px solid #0B3D91;
+    padding-bottom: 8px;
+    margin-top: 18px !important;
+}
+
+/* 2. seviye basliklar: ana bolumler */
+h2 {
+    color: #0B3D91 !important;
+    background: #EAF2F8;
+    border-left: 7px solid #0B3D91;
+    border-radius: 6px;
+    padding: 9px 14px !important;
+    font-weight: 750 !important;
+    margin-top: 18px !important;
+    margin-bottom: 10px !important;
+}
+
+/* 3. seviye basliklar: alt bolumler */
+h3 {
+    color: #0F5B78 !important;
+    background: #F2F8FA;
+    border-left: 5px solid #1B8AAA;
+    border-radius: 5px;
+    padding: 7px 12px !important;
+    font-weight: 700 !important;
+    margin-top: 13px !important;
+    margin-bottom: 8px !important;
+}
+
+/* 4. seviye basliklar: hesap/alt basliklar */
+h4 {
+    color: #7A4E00 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #E6C77A;
+    padding-bottom: 4px !important;
+}
+
+/* Streamlit st.header/st.subheader icin daha temiz dikey bosluk */
+div[data-testid="stHeading"] h1,
+div[data-testid="stHeading"] h2,
+div[data-testid="stHeading"] h3,
+div[data-testid="stHeading"] h4 {
+    letter-spacing: 0.1px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div id="sayfa_basi"></div>
+    <div class="hizli-navigasyon">
+        <a href="#sayfa_basi">⬆ Başa Git</a>
+        <a href="#sayfa_orta">↕ Ortaya Git</a>
+        <a href="#sayfa_sonu">⬇ Sona Git</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
+# PROJE YÖNETİMİ — KAYDET / FARKLI KAYDET / PROJE AÇ / SİL
+# ---------------------------------------------------------------------------
+_PROJE_YONETICISI = ProjeYoneticisi()
+_PROJE_META_KEYS = {
+    "aktif_proje_id", "aktif_proje_adi", "proje_yukleme_bildirimi",
+    "proje_dis_dosya_hazirlandi", "proje_dis_dosya_yukle_bekliyor",
+    "proje_son_kayit_zamani", "proje_kaynak", "_proje_adi_manuel",
+}
+_PROJE_WIDGET_KAYDETME_DISI_KEYS = {
+    # Proje yönetimi widgetları
+    "proje_kaydet_btn_v115", "proje_farkli_kaydet_btn_v115",
+    "proje_ac_btn_v115", "proje_dis_dosya_ac_btn_v115",
+    "proje_kaydet_btn_v116", "proje_ac_btn_v116",
+    "proje_sil_btn_v116", "proje_basliktan_al_btn_v116",
+    "proje_dis_dosya_indir_v116", "proje_dis_dosya_ac_btn_v116",
+    "proje_ac_sec_v116", "proje_dis_dosya_yukle_v116",
+    "proje_yeni_btn_v119", "yeni_proje_btn_v118",
+    # Ana bölüm toplu seçim / rapor üretim butonları
+    "rapor_tumunu_sec_v92", "rapor_tumunu_kaldir_v92",
+    "rapor_word_indir_v101",
+}
+
+
+def _proje_widget_anahtari_mi(anahtar):
+    """Bir session-state anahtarının Streamlit tarafından yönetilen geçici bir
+    buton/aksiyon widget'ı olup olmadığını belirler.
+
+    Eski proje dosyalarında buton anahtarları bulunabilir. Bunları yüklemeye
+    çalışmak StreamlitValueAssignmentNotAllowedError üretir.
+    """
+    anahtar = str(anahtar)
+    if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
+        return True
+    if "_btn_" in anahtar or anahtar.endswith("_btn"):
+        return True
+    if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
+        return True
+
+    # Eski proje dosyalarında bazı butonlar "_btn_" içermeyen anahtarlarla
+    # kaydedilmiş olabilir. Bunların hiçbirini projeye geri yüklemiyoruz.
+    _alt = anahtar.lower()
+    _buton_anahtar_parcalari = (
+        "sidebar_rapor_olustur",
+        "rapor_olustur",
+        "proje_yeni",
+        "proje_kaydet_btn",
+        "proje_farkli_kaydet",
+        "proje_ac_btn",
+        "proje_sil_btn",
+        "proje_dis_dosya_ac_btn",
+        "proje_dis_dosya_indir",
+        "rapor_pdf_indir",
+        "rapor_word_indir",
+        "rapor_html_indir",
+        "rapor_txt_indir",
+        "rapor_indir",
+    )
+    if any(parca in _alt for parca in _buton_anahtar_parcalari):
+        return True
+
+    # Genel güvenlik: Streamlit aksiyon widget'ı isimlerinde sık kullanılan
+    # buton/aksiyon ifadelerini proje verisi olarak geri yükleme. Türkçe
+    # "_buton_" anahtarları da kapsanmalıdır; aksi halde eski proje kayıtlarında
+    # saklanan st.button anahtarı geri yüklenip StreamlitValueAssignmentNotAllowedError
+    # oluşturabilir (ör. yangin_7111_ekle_buton_0).
+    if (
+        _alt.endswith("_button")
+        or "_button_" in _alt
+        or "_buton_" in _alt
+        or _alt.endswith("_buton")
+    ):
+        return True
+    # _toplu_secim_butonlari() dinamik olarak oluşturduğu st.button anahtarları
+    # eski proje kayıtlarında bulunabilir. Bunlar session_state'e geri yazılırsa
+    # StreamlitValueAssignmentNotAllowedError oluşur.
+    if anahtar.startswith("alt_grup_sec_v55_") or anahtar.startswith("alt_grup_kaldir_v55_"):
+        return True
+    # 7.1 yangın bölümü toplu seçim butonları Streamlit widget state'idir;
+    # eski proje kayıtlarından yüklenmeleri ValueAssignmentNotAllowedError üretir.
+    # 7.1 toplu seçim butonlarının eski ve yeni anahtarlarını proje verisi
+    # olarak ASLA geri yükleme. Eski projelerde "_tum_sec" / "_tum_kaldir"
+    # biçimindeki anahtarlar bulunduğunda StreamlitValueAssignmentNotAllowedError
+    # oluşabilir.
+    if "_tum_sec" in anahtar or "_tum_kaldir" in anahtar:
+        return True
+    # data_editor widget anahtarları Streamlit tarafından yönetilir.
+    if "editor" in anahtar.lower():
+        return True
+
+    # Streamlit st.button durumları projeye ait veri değildir. Bazı butonlarda
+    # anahtar dinamik oluşturulduğu için "_btn_" filtresi tek başına yetmez.
+    _alt = anahtar.lower()
+    _button_prefixleri = (
+        "boyler_raporda_kullan_",
+        "rapor_sec_",
+        "rapor_kullan_",
+        "sistem_raporda_",
+    )
+    if _alt.startswith(_button_prefixleri):
+        return True
+
+    # İsimlendirmesi açıkça geçici seçim/aksiyon durumunu belirten anahtarlar.
+    if _alt.endswith("_sec_key") or _alt.endswith("_button_key"):
+        return True
+
+    return False
+
+
+def _proje_degerini_temizle(deger):
+    """Session State içindeki değerleri proje JSON'una güvenli biçimde dönüştürür."""
+    if deger is None or isinstance(deger, (str, int, float, bool)):
+        return deger
+    if isinstance(deger, pd.DataFrame):
+        return {
+            "__tip__": "pandas_dataframe",
+            "columns": [str(c) for c in deger.columns],
+            "records": deger.where(pd.notna(deger), None).to_dict(orient="records"),
+        }
+    if isinstance(deger, (list, tuple)):
+        sonuc = []
+        for x in deger:
+            temiz = _proje_degerini_temizle(x)
+            if temiz is not _GEcersiz_PROJE:
+                sonuc.append(temiz)
+        return sonuc
+    if isinstance(deger, dict):
+        sonuc = {}
+        for k, v in deger.items():
+            temiz = _proje_degerini_temizle(v)
+            if temiz is not _GEcersiz_PROJE:
+                sonuc[str(k)] = temiz
+        return sonuc
+    return _GEcersiz_PROJE
+
+
+_GEcersiz_PROJE = object()
+
+
+def _proje_ayarlarini_topla():
+    ayarlar = {}
+    for anahtar, deger in st.session_state.items():
+        if (
+            anahtar in _PROJE_META_KEYS
+            or _proje_widget_anahtari_mi(anahtar)
+            or anahtar.startswith("proje_")
+        ):
+            continue
+        temiz = _proje_degerini_temizle(deger)
+        if temiz is not _GEcersiz_PROJE:
+            ayarlar[anahtar] = temiz
+    return ayarlar
+
+
+def _proje_degerini_geri_yukle(deger):
+    """Proje JSON'undaki özel veri tiplerini uygulama değerlerine dönüştürür."""
+    if isinstance(deger, dict) and deger.get("__tip__") == "pandas_dataframe":
+        return pd.DataFrame(deger.get("records", []), columns=deger.get("columns"))
+    if isinstance(deger, dict):
+        return {str(k): _proje_degerini_geri_yukle(v) for k, v in deger.items()}
+    if isinstance(deger, list):
+        return [_proje_degerini_geri_yukle(v) for v in deger]
+    return deger
+
+
+def _proje_adi():
+    """Kullanıcının proje adı alanındaki adı; boşsa kapak başlığını döndürür."""
+    ad = str(st.session_state.get("proje_adi_giris", "")).strip()
+    if not ad:
+        ad = str(st.session_state.get("is_adi", "")).strip()
+    return ad
+
+
+def _proje_kisa_dosya_adi(proje_adi):
+    """Dosya/klasör adında yalnızca proje adının ilk iki kelimesini kullanır."""
+    kelimeler = [k for k in str(proje_adi or "").strip().split() if k]
+    if not kelimeler:
+        return ""
+    return guvenli_dosya_adi(" ".join(kelimeler[:2]))
+
+def _proje_verisini_hazirla(proje_adi=None):
+    proje_adi = str(proje_adi or _proje_adi()).strip()
+    return {
+        "proje_dosya_suru": 2,
+        "proje_adi": proje_adi,
+        "proje_id": _proje_kisa_dosya_adi(proje_adi) if proje_adi else "",
+        "olusturma_tarihi": datetime.now().isoformat(timespec="seconds"),
+        "sirket_adi": str(st.session_state.get("sirket_adi", "")),
+        "rapor_turu": str(st.session_state.get("rapor_turu", "")),
+        "hazirlayan": str(st.session_state.get("hazirlayan", "")),
+        "mmo_no": str(st.session_state.get("mmo_no", "")),
+        "rapor_tarihi": str(st.session_state.get("tarih", "")),
+        "session_state": _proje_ayarlarini_topla(),
+    }
+
+
+def _proje_olustur_veya_kaydet(proje_adi, farkli_kaydet=False):
+    proje_adi = str(proje_adi or "").strip()
+    if not proje_adi:
+        st.session_state["proje_yukleme_bildirimi"] = (
+            "Proje adı boş bırakılamaz. Proje Yönetimi bölümünden proje adını girin."
         )
-    elif _rapor_format_son == "PDF (.pdf)":
-        _pdf_son = _rapor_docx_pdf_donustur(_rapor_docx_veri_son)
-        if _pdf_son:
-            st.sidebar.download_button(
-                "📥 PDF'yi İndir", data=_pdf_son,
-                file_name=f"{_rapor_ad_son}.pdf", mime="application/pdf",
-                key="rapor_pdf_indir_son_v2", use_container_width=True,
+        return False
+
+    proje_id = _proje_kisa_dosya_adi(proje_adi)
+    aktif = st.session_state.get("aktif_proje_id", "")
+    try:
+        if farkli_kaydet and _PROJE_YONETICISI.proje_var_mi(proje_id):
+            st.session_state["proje_yukleme_bildirimi"] = (
+                f"Bu isimde proje zaten var: {proje_adi}"
+            )
+            return False
+
+        bilgiler = {
+            "sirket_adi": str(st.session_state.get("sirket_adi", "")),
+            "rapor_turu": str(st.session_state.get("rapor_turu", "")),
+            "hazirlayan": str(st.session_state.get("hazirlayan", "")),
+            "mmo_no": str(st.session_state.get("mmo_no", "")),
+            "rapor_tarihi": str(st.session_state.get("tarih", "")),
+            "genel": {"session_state": _proje_ayarlarini_topla()},
+        }
+
+        # Aktif proje adı değiştirilmişse Kaydet işlemi mevcut projeyi yeni ada taşır.
+        if (not farkli_kaydet) and aktif and aktif != proje_id and _PROJE_YONETICISI.proje_var_mi(proje_id):
+            st.session_state["proje_yukleme_bildirimi"] = (
+                f"'{proje_adi}' adıyla başka bir proje zaten var. Farklı bir isim seçin."
+            )
+            return False
+
+        if (not farkli_kaydet) and aktif and aktif != proje_id and _PROJE_YONETICISI.proje_var_mi(aktif):
+            eski_klasor = Path(_PROJE_YONETICISI.ana_dizin) / aktif
+            eski_veri = _PROJE_YONETICISI.ac(aktif)
+            eski_veri.proje_adi = proje_adi
+            eski_veri.proje_id = proje_id
+            eski_veri.genel = bilgiler["genel"]
+            eski_veri.sirket_adi = bilgiler["sirket_adi"]
+            eski_veri.rapor_turu = bilgiler["rapor_turu"]
+            eski_veri.hazirlayan = bilgiler["hazirlayan"]
+            eski_veri.mmo_no = bilgiler["mmo_no"]
+            eski_veri.rapor_tarihi = bilgiler["rapor_tarihi"]
+            yeni_klasor = Path(_PROJE_YONETICISI.ana_dizin) / proje_id
+            eski_klasor.rename(yeni_klasor)
+            _PROJE_YONETICISI.kaydet(eski_veri)
+            proje = eski_veri
+        elif farkli_kaydet or not _PROJE_YONETICISI.proje_var_mi(proje_id):
+            proje = _PROJE_YONETICISI.proje_olustur(
+                proje_adi, proje_id=proje_id, **bilgiler
             )
         else:
-            st.sidebar.warning("PDF dönüştürme motoru bu ortamda çalışmadı. Word çıktısını seçebilirsiniz.")
-    elif _rapor_format_son == "HTML (.html)":
-        _html_son = _rapor_docx_html(_rapor_docx_veri_son)
-        st.sidebar.download_button(
-            "📥 HTML'yi İndir", data=_html_son,
-            file_name=f"{_rapor_ad_son}.html", mime="text/html",
-            key="rapor_html_indir_son_v2", use_container_width=True,
+            proje = _PROJE_YONETICISI.ac(proje_id)
+            proje.proje_adi = proje_adi
+            proje.genel = bilgiler["genel"]
+            proje.sirket_adi = bilgiler["sirket_adi"]
+            proje.rapor_turu = bilgiler["rapor_turu"]
+            proje.hazirlayan = bilgiler["hazirlayan"]
+            proje.mmo_no = bilgiler["mmo_no"]
+            proje.rapor_tarihi = bilgiler["rapor_tarihi"]
+            _PROJE_YONETICISI.kaydet(proje)
+
+        st.session_state["aktif_proje_id"] = proje.proje_id
+        st.session_state["aktif_proje_adi"] = proje.proje_adi
+        st.session_state["proje_kaynak"] = "yerel"
+        st.session_state["proje_son_kayit_zamani"] = datetime.now().strftime("%H:%M:%S")
+        st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' kaydedildi."
+        return True
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Proje kaydedilemedi: {hata}"
+        return False
+
+
+def _proje_kaydet_callback():
+    _proje_olustur_veya_kaydet(_proje_adi(), farkli_kaydet=False)
+
+
+def _yeni_proje_baslat():
+    """Yeni proje isteğini işaretler; gerçek session temizliği bir sonraki rerunun
+    başında, widgetlar yeniden oluşturulmadan önce yapılır.
+
+    Bu yaklaşım StreamlitValueAssignmentNotAllowedError oluşmasını önler.
+    """
+    st.session_state["_yeni_proje_sifirlama_bekliyor"] = True
+
+
+
+def _proje_sil(proje_id):
+    try:
+        if not proje_id:
+            return
+
+        # Hem yerel hem de Supabase kaydını proje yöneticisine bırakarak sil.
+        _PROJE_YONETICISI.proje_sil(proje_id, onay=True)
+
+        if st.session_state.get("aktif_proje_id") == proje_id:
+            st.session_state.pop("aktif_proje_id", None)
+            st.session_state.pop("aktif_proje_adi", None)
+            st.session_state["proje_kaynak"] = ""
+            st.session_state["proje_son_kayit_zamani"] = ""
+        st.session_state["proje_yukleme_bildirimi"] = f"'{proje_id}' projesi silindi."
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Proje silinemedi: {hata}"
+
+
+def _proje_yeni():
+    """Mevcut aktif çalışmayı kapatıp temiz bir yeni proje oturumu başlatır."""
+    try:
+        # Projeye ait kaydedilebilir tüm kullanıcı verilerini temizle.
+        # Buton/aksiyon widgetları özellikle korunur; aksi halde Streamlit
+        # ValueAssignment hatası oluşabilir.
+        mevcut_ayarlar = _proje_ayarlarini_topla()
+        for anahtar in list(mevcut_ayarlar.keys()):
+            if anahtar not in _PROJE_META_KEYS and not _proje_widget_anahtari_mi(anahtar):
+                st.session_state.pop(anahtar, None)
+
+        # Proje yönetimi durumunu sıfırla.
+        for anahtar in (
+            "aktif_proje_id", "aktif_proje_adi", "proje_son_kayit_zamani",
+            "proje_kaynak", "proje_dis_dosya_hazirlandi",
+            "proje_dis_dosya_yukle_bekliyor",
+        ):
+            st.session_state.pop(anahtar, None)
+
+        st.session_state["proje_adi_giris"] = ""
+        st.session_state["_proje_adi_manuel"] = False
+        st.session_state["proje_yukleme_bildirimi"] = "Yeni proje açıldı. Yeni proje bilgilerini girebilirsiniz."
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Yeni proje açılamadı: {hata}"
+
+
+def _proje_basliktan_al():
+    ad = str(st.session_state.get("is_adi", "")).strip()
+    st.session_state["proje_adi_giris"] = ad
+    st.session_state["_proje_adi_manuel"] = False
+    st.session_state["proje_yukleme_bildirimi"] = "Proje adı kapak başlığından alındı."
+
+
+def _proje_adi_manuel_degisti():
+    st.session_state["_proje_adi_manuel"] = True
+
+
+def _is_adi_degisti():
+    # Kullanıcı proje adını elle değiştirmediyse proje adı kapak başlığıyla eşit tutulur.
+    if not st.session_state.get("_proje_adi_manuel", False):
+        st.session_state["proje_adi_giris"] = str(st.session_state.get("is_adi", ""))
+
+
+def _proje_ac(proje_id):
+    try:
+        # Mevcut geçici widget durumlarını temizle.
+        for _k in list(st.session_state.keys()):
+            if _proje_widget_anahtari_mi(_k):
+                st.session_state.pop(_k, None)
+
+        proje = _PROJE_YONETICISI.ac(proje_id)
+        ayarlar = proje.genel.get("session_state", {}) if isinstance(proje.genel, dict) else {}
+        for anahtar, deger in ayarlar.items():
+            if _proje_widget_anahtari_mi(anahtar) or anahtar.startswith("proje_"):
+                continue
+            st.session_state[anahtar] = _proje_degerini_geri_yukle(deger)
+        st.session_state["aktif_proje_id"] = proje.proje_id
+        st.session_state["aktif_proje_adi"] = proje.proje_adi
+        st.session_state["proje_adi_giris"] = proje.proje_adi
+        st.session_state["_proje_adi_manuel"] = True
+        st.session_state["proje_kaynak"] = "yerel"
+        st.session_state["proje_son_kayit_zamani"] = ""
+        st.session_state["proje_yukleme_bildirimi"] = f"'{proje.proje_adi}' açıldı."
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Proje açılamadı: {hata}"
+
+
+def _proje_otomatik_kaydet():
+    """Aktif yerel projeyi her Streamlit rerun'unda günceller.
+    Dışarıdan yüklenen projeler tarayıcı güvenliği nedeniyle kaynak dosyaya
+    sessizce geri yazılamaz; onlar için Farklı Kaydet tekrar kullanılmalıdır.
+    """
+    aktif = st.session_state.get("aktif_proje_id", "")
+    kaynak = st.session_state.get("proje_kaynak", "")
+    ad = _proje_adi()
+    if not aktif or kaynak != "yerel" or not ad:
+        return
+    if aktif != _proje_kisa_dosya_adi(ad):
+        return
+    try:
+        _proje_olustur_veya_kaydet(ad, farkli_kaydet=False)
+    except Exception:
+        pass
+
+
+def _proje_dis_dosyayi_yukle_callback():
+    """Bilgisayardan seçilen .proje.json dosyasını gerçekten oku ve bir sonraki
+    rerunda uygulanmak üzere beklet.
+
+    ÖNEMLİ: file_uploader'ın session-state anahtarını burada silmiyoruz.
+    Önceki sürümde bu anahtar _proje_widget_anahtari_mi() filtresine takıldığı
+    için UploadedFile nesnesi callback çalışmadan önce kayboluyor ve dosya
+    ekranda görünmesine rağmen "açılmıyor" gibi davranıyordu.
+    """
+    yuklenen = st.session_state.get("proje_dis_dosya_yukle_v116")
+    if yuklenen is None:
+        st.session_state["proje_yukleme_bildirimi"] = "Lütfen bir .proje.json dosyası seçin."
+        return
+
+    try:
+        ham_veri = yuklenen.getvalue()
+        if not ham_veri:
+            raise ValueError("Seçilen proje dosyası boş.")
+
+        veri = json.loads(ham_veri.decode("utf-8-sig"))
+        if not isinstance(veri, dict):
+            raise ValueError("Proje dosyasının ana yapısı geçersiz.")
+
+        ayarlar = veri.get("session_state", {})
+        if not isinstance(ayarlar, dict):
+            raise ValueError("Proje dosyasında geçerli session_state bulunamadı.")
+
+        # Eski/yeni format uyumluluğu: bazı dış proje dosyalarında bilgiler
+        # doğrudan 'genel.session_state' altında olabilir.
+        if not ayarlar and isinstance(veri.get("genel"), dict):
+            ayarlar = veri["genel"].get("session_state", {})
+            if not isinstance(ayarlar, dict):
+                ayarlar = {}
+
+        # Yüklenen dosyanın gerçek içeriğini bir sonraki reruna taşıyoruz.
+        st.session_state["proje_dis_dosya_yukle_bekliyor"] = ayarlar
+        st.session_state["aktif_proje_id"] = str(veri.get("proje_id", ""))
+        st.session_state["aktif_proje_adi"] = str(veri.get("proje_adi", ""))
+        st.session_state["proje_adi_giris"] = str(veri.get("proje_adi", ""))
+        st.session_state["_proje_adi_manuel"] = True
+        st.session_state["proje_kaynak"] = "harici"
+        st.session_state["proje_son_kayit_zamani"] = ""
+        st.session_state["proje_yukleme_bildirimi"] = (
+            f"'{veri.get('proje_adi', 'Proje')}' dosyası okundu ve yükleniyor..."
         )
-    elif _rapor_format_son == "Metin (.txt)":
-        _txt_son = _rapor_docx_txt(_rapor_docx_veri_son)
-        st.sidebar.download_button(
-            "📥 Metni İndir", data=_txt_son,
-            file_name=f"{_rapor_ad_son}.txt", mime="text/plain",
-            key="rapor_txt_indir_son_v2", use_container_width=True,
+
+        # Widget callback'inden güvenli şekilde çıkıp yeni session state ile
+        # tam bir Streamlit rerun başlat.
+        st.rerun()
+    except Exception as hata:
+        st.session_state["proje_yukleme_bildirimi"] = f"Proje dosyası açılamadı: {hata}"
+
+
+_bekleyen_dis_proje = st.session_state.pop("proje_dis_dosya_yukle_bekliyor", None)
+if isinstance(_bekleyen_dis_proje, dict):
+    for _k in list(st.session_state.keys()):
+        if _proje_widget_anahtari_mi(_k):
+            st.session_state.pop(_k, None)
+    for _anahtar, _deger in _bekleyen_dis_proje.items():
+        if _proje_widget_anahtari_mi(_anahtar) or _anahtar.startswith("proje_"):
+            continue
+        st.session_state[_anahtar] = _proje_degerini_geri_yukle(_deger)
+
+# ---------------------------------------------------------------------------
+# YENİ PROJE İSTEĞİNİ, WIDGETLAR OLUŞMADAN ÖNCE UYGULA
+# ---------------------------------------------------------------------------
+if st.session_state.pop("_yeni_proje_sifirlama_bekliyor", False):
+    # Yeni proje geçişinde korunacak kurumsal bilgiler.
+    _korunacak_kurumsal = {}
+    for _k in list(st.session_state.keys()):
+        _ks = str(_k).lower()
+        _kurumsal = (
+            _ks in {
+                "sirket_adi", "firma_adi", "kurulus_adi",
+                "isveren", "isveren_adi", "isveren_bilgileri",
+                "adres", "proje_adresi", "firma_adresi",
+            }
+            or "isveren" in _ks
+            or "adres" in _ks
+            or "sirket" in _ks
+            or "firma" in _ks
+            or "kurulus" in _ks
+        )
+        if _kurumsal:
+            _korunacak_kurumsal[_k] = st.session_state.get(_k)
+
+    # Eski projenin tüm widget/proje değerlerini kaldır.
+    st.session_state.clear()
+
+    # Kurumsal bilgiler yeni projeye aynen taşınır.
+    for _k, _v in _korunacak_kurumsal.items():
+        st.session_state[_k] = _v
+
+    st.session_state["aktif_proje_id"] = ""
+    st.session_state["aktif_proje_adi"] = ""
+    st.session_state["proje_adi_giris"] = ""
+    st.session_state["proje_kaynak"] = ""
+    st.session_state["proje_son_kayit_zamani"] = ""
+    st.session_state["proje_dis_dosya_hazirlandi"] = False
+    st.session_state["proje_dis_dosya_yukle_bekliyor"] = None
+    st.session_state["_proje_adi_manuel"] = False
+    st.session_state["proje_yukleme_bildirimi"] = (
+        "🆕 Yeni proje başlatıldı. Proje bilgileri temizlendi; "
+        "şirket/işveren/adres bilgileri korundu."
+    )
+
+
+def _rapor_docx_pdf_donustur(docx_bytes):
+    """
+    DOCX raporunu PDF'e dönüştürür.
+    1) LibreOffice/soffice varsa orijinal Word düzenine en yakın PDF'i üretir.
+    2) LibreOffice yoksa matplotlib'in yerleşik PDF backend'i ile PDF üretir.
+       Böylece ayrıca ReportLab kurulumu zorunlu değildir.
+    """
+    _hatalar = []
+
+    # ---------------------------------------------------------------
+    # 1. Tercih: LibreOffice / soffice
+    # ---------------------------------------------------------------
+    with tempfile.TemporaryDirectory() as _tmp:
+        _docx = Path(_tmp) / "rapor.docx"
+        _docx.write_bytes(docx_bytes)
+
+        for _soffice in ("libreoffice", "soffice"):
+            try:
+                _sonuc = subprocess.run(
+                    [
+                        _soffice,
+                        "--headless",
+                        "--convert-to", "pdf",
+                        "--outdir", _tmp,
+                        str(_docx),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                )
+                _pdf = Path(_tmp) / "rapor.pdf"
+                if _sonuc.returncode == 0 and _pdf.exists() and _pdf.stat().st_size > 100:
+                    return _pdf.read_bytes()
+
+                _hatalar.append(
+                    f"{_soffice}: {_sonuc.stderr.strip() or _sonuc.stdout.strip()}"
+                )
+            except Exception as _e:
+                _hatalar.append(f"{_soffice}: {_e}")
+
+    # ---------------------------------------------------------------
+    # 2. Güvenli fallback: matplotlib PdfPages
+    # ---------------------------------------------------------------
+    try:
+        from matplotlib.backends.backend_pdf import PdfPages
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+        import textwrap
+
+        _doc = Document(io.BytesIO(docx_bytes))
+
+        # Türkçe karakterleri destekleyen font.
+        _font_name = "DejaVu Sans"
+
+        _elements = []
+
+        # Paragraflar
+        for _p in _doc.paragraphs:
+            _txt = _p.text.strip()
+            if not _txt:
+                continue
+
+            _style = (_p.style.name or "").lower()
+            if "heading 1" in _style:
+                _kind = "h1"
+            elif "heading 2" in _style:
+                _kind = "h2"
+            elif "heading 3" in _style:
+                _kind = "h3"
+            else:
+                _kind = "p"
+
+            _elements.append((_kind, _txt))
+
+        # Tabloları metinsel ama okunabilir biçimde ekle.
+        for _table in _doc.tables:
+            _elements.append(("table", ""))
+            for _row in _table.rows:
+                _elements.append(
+                    (
+                        "table_row",
+                        "  |  ".join(_cell.text.replace("\n", " / ") for _cell in _row.cells)
+                    )
+                )
+            _elements.append(("table_end", ""))
+
+        if not _elements:
+            return None
+
+        _tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        _tmp_pdf.close()
+        _pdf_path = Path(_tmp_pdf.name)
+
+        try:
+            with PdfPages(str(_pdf_path)) as _pdf:
+                _fig = None
+                _ax = None
+                _y = 0.96
+                _table_mode = False
+
+                def _new_page():
+                    nonlocal _fig, _ax, _y, _table_mode
+                    if _fig is not None:
+                        _pdf.savefig(_fig, bbox_inches="tight")
+                        plt.close(_fig)
+                    _fig = Figure(figsize=(8.27, 11.69))
+                    FigureCanvasAgg(_fig)
+                    _ax = _fig.add_axes([0.075, 0.055, 0.86, 0.89])
+                    _ax.axis("off")
+                    _ax.set_xlim(0, 1)
+                    _ax.set_ylim(0, 1)
+                    _y = 0.98
+                    _table_mode = False
+
+                _new_page()
+
+                for _kind, _txt in _elements:
+                    if _kind == "table":
+                        _table_mode = True
+                        _y -= 0.012
+                        continue
+
+                    if _kind == "table_end":
+                        _table_mode = False
+                        _y -= 0.012
+                        continue
+
+                    if _kind == "table_row":
+                        _lines = textwrap.wrap(
+                            _txt, width=105, replace_whitespace=False
+                        ) or [""]
+                        for _line in _lines:
+                            if _y < 0.055:
+                                _new_page()
+                            _ax.text(
+                                0.015, _y, _line,
+                                fontsize=7.2,
+                                fontname=_font_name,
+                                va="top",
+                            )
+                            _y -= 0.022
+                        continue
+
+                    if _kind == "h1":
+                        _fs, _weight, _space = 17, "bold", 0.055
+                    elif _kind == "h2":
+                        _fs, _weight, _space = 13, "bold", 0.042
+                    elif _kind == "h3":
+                        _fs, _weight, _space = 11, "bold", 0.035
+                    else:
+                        _fs, _weight, _space = 9.2, "normal", 0.025
+
+                    if _y < 0.09:
+                        _new_page()
+
+                    _lines = textwrap.wrap(
+                        _txt, width=100 if _kind == "p" else 85,
+                        replace_whitespace=False
+                    ) or [""]
+
+                    for _idx, _line in enumerate(_lines):
+                        if _y < 0.055:
+                            _new_page()
+                        _ax.text(
+                            0.0, _y, _line,
+                            fontsize=_fs,
+                            fontname=_font_name,
+                            fontweight=_weight,
+                            color=(
+                                "#0B3D91" if _kind == "h1"
+                                else "#0F5B78" if _kind == "h3"
+                                else "#111111"
+                            ),
+                            va="top",
+                        )
+                        _y -= 0.024 if _kind == "p" else 0.030
+
+                    _y -= _space
+
+                if _fig is not None:
+                    _pdf.savefig(_fig, bbox_inches="tight")
+                    plt.close(_fig)
+
+            _data = _pdf_path.read_bytes()
+            if _data and len(_data) > 100:
+                return _data
+
+        finally:
+            try:
+                _pdf_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    except Exception as _e:
+        _hatalar.append(f"matplotlib PDF: {_e}")
+
+    return None
+
+
+def _rapor_docx_html(docx_bytes):
+    """DOCX'teki temel paragraf ve tabloları bağımsız HTML çıktısına çevirir."""
+    _doc = Document(io.BytesIO(docx_bytes))
+    _html = [
+        "<!doctype html><html><head><meta charset='utf-8'>",
+        "<title>Mekanik Uygulama Raporu</title>",
+        "<style>body{font-family:Arial,sans-serif;margin:40px;line-height:1.45}"
+        "table{border-collapse:collapse;width:100%;margin:12px 0}"
+        "td,th{border:1px solid #999;padding:6px}"
+        "h1{color:#0B3D91}h2{color:#0B3D91}h3{color:#155E75}"
+        "</style></head><body>"
+    ]
+    for _p in _doc.paragraphs:
+        _txt = _p.text.strip()
+        if not _txt:
+            continue
+        _style = (_p.style.name or "").lower()
+        if "heading 1" in _style:
+            _html.append(f"<h1>{_txt}</h1>")
+        elif "heading 2" in _style:
+            _html.append(f"<h2>{_txt}</h2>")
+        elif "heading 3" in _style:
+            _html.append(f"<h3>{_txt}</h3>")
+        else:
+            _html.append(f"<p>{_txt}</p>")
+    for _table in _doc.tables:
+        _html.append("<table>")
+        for _ri, _row in enumerate(_table.rows):
+            _html.append("<tr>")
+            for _cell in _row.cells:
+                _tag = "th" if _ri == 0 else "td"
+                _html.append(f"<{_tag}>{_cell.text}</{_tag}>")
+            _html.append("</tr>")
+        _html.append("</table>")
+    _html.append("</body></html>")
+    return "\n".join(_html).encode("utf-8")
+
+
+def _rapor_docx_txt(docx_bytes):
+    _doc = Document(io.BytesIO(docx_bytes))
+    _satirlar = []
+    for _p in _doc.paragraphs:
+        if _p.text.strip():
+            _satirlar.append(_p.text)
+    for _table in _doc.tables:
+        for _row in _table.rows:
+            _satirlar.append(" | ".join(_cell.text for _cell in _row.cells))
+    return ("\n".join(_satirlar) + "\n").encode("utf-8")
+
+# Opsiyonel pis su pompası bölümü kapalı olsa bile rapor oluşturma kontrolünde
+# bu değişkenin güvenli biçimde bulunması gerekir.
+psp_parametreleri = globals().get("psp_parametreleri", {})
+
+# ---------------------------------------------------------------------------
+# PROJE KONTROL PANELİ
+# ---------------------------------------------------------------------------
+with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
+    st.button(
+        "🆕 Yeni Proje",
+        key="proje_yeni_btn_v119",
+        use_container_width=True,
+        on_click=_yeni_proje_baslat,
+        help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
+    )
+
+    st.markdown("---")
+    st.markdown("### 📄 RAPOR OLUŞTURMA")
+
+    _rapor_format = st.selectbox(
+        "Çıktı formatı",
+        ["Word (.docx)", "PDF (.pdf)", "HTML (.html)", "Metin (.txt)"],
+        key="rapor_cikti_format_v134",
+    )
+
+    # Bu bir aksiyon widget'ıdır; proje JSON'una hiçbir şekilde kaydedilmez.
+    if st.button(
+        "📄 RAPORU OLUŞTUR",
+        key="sidebar_rapor_olustur_v134",
+        use_container_width=True,
+        help="Hesap raporunu seçtiğiniz çıktı formatında hazırlar.",
+    ):
+        # Rapor aynı Streamlit çalıştırmasında aşağıdaki rapor bloğunda
+        # oluşturulur. Burada rerun yapılmaz; böylece rapor isteği kaybolmaz.
+        st.session_state["_rapor_olustur_istegi_v134"] = True
+
+    if st.session_state.get("_rapor_hazir_docx_v134"):
+        _rapor_docx_veri = st.session_state["_rapor_hazir_docx_v134"]
+        _rapor_ad = st.session_state.get(
+            "_rapor_hazir_adi_v134", "Mekanik_Uygulama_Raporu"
         )
 
+        if _rapor_format == "Word (.docx)":
+            st.download_button(
+                "📥 Word'u İndir",
+                data=_rapor_docx_veri,
+                file_name=f"{_rapor_ad}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key="rapor_word_indir_v134",
+                use_container_width=True,
+            )
+        elif _rapor_format == "PDF (.pdf)":
+            _pdf_veri = _rapor_docx_pdf_donustur(_rapor_docx_veri)
+            if _pdf_veri:
+                st.download_button(
+                    "📥 PDF'yi İndir",
+                    data=_pdf_veri,
+                    file_name=f"{_rapor_ad}.pdf",
+                    mime="application/pdf",
+                    key="rapor_pdf_indir_v134",
+                    use_container_width=True,
+                )
+            else:
+                st.error(
+                    "PDF oluşturulamadı. Word/HTML çıktısı kullanılabilir; "
+                    "PDF motoru bu çalışma ortamında başlatılamadı."
+                )
+        elif _rapor_format == "HTML (.html)":
+            st.download_button(
+                "📥 HTML'yi İndir",
+                data=_rapor_docx_html(_rapor_docx_veri),
+                file_name=f"{_rapor_ad}.html",
+                mime="text/html",
+                key="rapor_html_indir_v134",
+                use_container_width=True,
+            )
+        else:
+            st.download_button(
+                "📥 Metin Dosyasını İndir",
+                data=_rapor_docx_txt(_rapor_docx_veri),
+                file_name=f"{_rapor_ad}.txt",
+                mime="text/plain",
+                key="rapor_txt_indir_v134",
+                use_container_width=True,
+            )
+
+    # Yerel + Supabase kayıtlarını birlikte getir.
+    # Böylece Streamlit Cloud yeniden başlasa bile uzak kaydedilmiş projeler
+    # "Uygulama İçindeki Kayıtlı Proje" listesinde görünür.
+    _mevcut_projeler = []
+    try:
+        _proje_kayitlari = _PROJE_YONETICISI.proje_listesi()
+        _mevcut_projeler = [
+            {
+                "proje_id": str(x.get("proje_id", "")),
+                "proje_adi": str(x.get("proje_adi", x.get("proje_id", ""))),
+            }
+            for x in _proje_kayitlari
+            if str(x.get("proje_id", "")).strip()
+        ]
+    except Exception:
+        _mevcut_projeler = []
+
+    st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
+
+    st.text_input(
+        "Proje Adı",
+        key="proje_adi_giris",
+        value=st.session_state.get("proje_adi_giris", st.session_state.get("is_adi", "")),
+        on_change=_proje_adi_manuel_degisti,
+        help="İlk değer İşin Adı / Proje Başlığı alanından gelir. Buradan elle değiştirebilirsiniz.",
+    )
+    st.caption("İlk değer otomatik olarak kapaktaki proje başlığından alınır; isterseniz burada değiştirebilirsiniz.")
+    st.button("↻ Başlıktan tekrar al", key="proje_basliktan_al_btn_v116", use_container_width=True, on_click=_proje_basliktan_al)
+
+    _pc1, _pc2 = st.columns(2)
+    with _pc1:
+        st.button("💾 Kaydet", key="proje_kaydet_btn_v116", use_container_width=True, on_click=_proje_kaydet_callback)
+    with _pc2:
+        _dis_ad_now = _proje_adi()
+        _dis_veri_now = _proje_verisini_hazirla(_dis_ad_now) if _dis_ad_now else {"session_state": {}}
+        _dis_json_now = json.dumps(_dis_veri_now, ensure_ascii=False, indent=2)
+        _dis_dosya_adi_now = f"{_proje_kisa_dosya_adi(_dis_ad_now)}.proje.json" if _dis_ad_now else "Proje.proje.json"
+        st.download_button(
+            "📑 Farklı Kaydet",
+            data=_dis_json_now.encode("utf-8"),
+            file_name=_dis_dosya_adi_now,
+            mime="application/json",
+            key="proje_dis_dosya_indir_v116",
+            use_container_width=True,
+            help="Tarayıcınızın indirme ayarına göre dosya konumunu seçebilirsiniz.",
+        )
+
+    if _mevcut_projeler:
+        _proje_secim_ids = [x["proje_id"] for x in _mevcut_projeler]
+        _proje_secim_labels = [
+            f"{x['proje_adi']}  [{x['proje_id']}]"
+            for x in _mevcut_projeler
+        ]
+        _aktif_id = str(st.session_state.get("aktif_proje_id", ""))
+        _aktif_index = (
+            _proje_secim_ids.index(_aktif_id)
+            if _aktif_id in _proje_secim_ids else 0
+        )
+        _secili_proje_label = st.selectbox(
+            "Uygulama İçindeki Kayıtlı Proje",
+            _proje_secim_labels,
+            index=_aktif_index,
+            key="proje_ac_sec_v116",
+        )
+        _secili_proje_index = _proje_secim_labels.index(_secili_proje_label)
+        _secili_proje_id = _proje_secim_ids[_secili_proje_index]
+        _secili_proje_adi = _mevcut_projeler[_secili_proje_index]["proje_adi"]
+
+        _pc3, _pc4 = st.columns(2)
+        with _pc3:
+            st.button(
+                "📂 Aç", key="proje_ac_btn_v116", use_container_width=True,
+                on_click=lambda: _proje_ac(_secili_proje_id),
+            )
+        with _pc4:
+            st.button(
+                "🗑️ Sil", key="proje_sil_btn_v116", use_container_width=True,
+                on_click=lambda: _proje_sil(_secili_proje_id),
+            )
+        st.caption(f"Kayıtlı proje: **{_secili_proje_adi}**")
+    else:
+        st.caption("Henüz uygulama içinde kayıtlı proje yok.")
+
+    st.markdown("**📂 Bilgisayardan / Masaüstünden Proje Aç**")
+    st.file_uploader(
+        "Proje dosyasını seçin (.proje.json)",
+        type=["json"],
+        key="proje_dis_dosya_yukle_v116",
+        help="Daha önce Farklı Kaydet ile oluşturduğunuz .proje.json dosyasını seçin.",
+    )
+    st.button(
+        "📂 Seçilen Projeyi Yükle", key="proje_dis_dosya_ac_btn_v116",
+        use_container_width=True, on_click=_proje_dis_dosyayi_yukle_callback,
+    )
+
+    if st.session_state.get("aktif_proje_adi"):
+        st.success(f"💾 **Aktif proje:** {st.session_state['aktif_proje_adi']}")
+    if st.session_state.get("proje_son_kayit_zamani"):
+        st.caption(f"Son kayıt: {st.session_state['proje_son_kayit_zamani']}")
+    if st.session_state.get("proje_yukleme_bildirimi"):
+        st.info(st.session_state["proje_yukleme_bildirimi"])
+
+# Türkçe ay isimleri için sözlük
+aylar = {
+    1: "Ocak",
+    2: "Şubat",
+    3: "Mart",
+    4: "Nisan",
+    5: "Mayıs",
+    6: "Haziran",
+    7: "Temmuz",
+    8: "Ağustos",
+    9: "Eylül",
+    10: "Ekim",
+    11: "Kasım",
+    12: "Aralık",
+}
+
+bugun = datetime.now()
+bugun_ay_yil = f"{aylar[bugun.month]} {bugun.year}"
 
 
-# SAYFA SONU ANKORU
-st.markdown('<div id="sayfa_sonu"></div>', unsafe_allow_html=True)
+# İklim verilerini JSON dosyasından yükleme fonksiyonu
+def iklim_verisini_yukle():
+  # Streamlit Cloud / yerel çalışmada çalışma dizini değişse bile
+  # iklim_verileri.json dosyasını app.py'nin bulunduğu klasörden bul.
+  dosya_adi = Path(__file__).resolve().parent / "iklim_verileri.json"
+  if dosya_adi.exists():
+    with open(dosya_adi, "r", encoding="utf-8") as f:
+      return json.load(f)
+  else:
+    return {
+        "Ankara": {
+            "Çankaya": {
+                "kis_kt": -12.0,
+                "kis_yt": -13.2,
+                "yaz_kt": 33.0,
+                "yaz_yt": 19.0,
+                "enlem": "39° 57' Kuzey",
+                "boylam": "32° 53' Doğu",
+                "rakim": 949,
+                "gsf": 15.5,
+            },
+            "Keçiören": {
+                "kis_kt": -12.5,
+                "kis_yt": -13.7,
+                "yaz_kt": 32.5,
+                "yaz_yt": 18.5,
+                "enlem": "39° 58' Kuzey",
+                "boylam": "32° 51' Doğu",
+                "rakim": 930,
+                "gsf": 16.0,
+            },
+        },
+        "İstanbul": {
+            "Kadıköy": {
+                "kis_kt": -2.0,
+                "kis_yt": -3.5,
+                "yaz_kt": 31.0,
+                "yaz_yt": 23.0,
+                "enlem": "40° 59' Kuzey",
+                "boylam": "29° 02' Doğu",
+                "rakim": 30,
+                "gsf": 9.0,
+            }
+        },
+    }
+
+
+iklim_veritabani = iklim_verisini_yukle()
+
+
+# Otomatik İçindekiler Tablosu (TOC) Alanı Ekleyen Fonksiyon
+def enable_update_fields_on_open(doc):
+    """Word belgesini açarken alanların (özellikle İçindekiler) güncellenmesini ister."""
+    settings = doc.settings.element
+    update_fields = settings.find(qn("w:updateFields"))
+    if update_fields is None:
+        update_fields = OxmlElement("w:updateFields")
+        settings.append(update_fields)
+    update_fields.set(qn("w:val"), "true")
+
+
+def add_toc(paragraph):
+  """Word TOC alanı; başlıklar ve sayfa numaraları Word tarafından güncellenir."""
+  run = paragraph.add_run()
+  fld_begin = OxmlElement("w:fldChar"); fld_begin.set(qn("w:fldCharType"), "begin"); fld_begin.set(qn("w:dirty"), "true")
+  instr = OxmlElement("w:instrText"); instr.set(qn("xml:space"), "preserve"); instr.text = 'TOC \\o "1-3" \\h \\z \\u'
+  fld_sep = OxmlElement("w:fldChar"); fld_sep.set(qn("w:fldCharType"), "separate")
+  txt = OxmlElement("w:t"); txt.text = "İçindekiler güncelleniyor..."
+  fld_end = OxmlElement("w:fldChar"); fld_end.set(qn("w:fldCharType"), "end"); fld_end.set(qn("w:dirty"), "true")
+  run._r.append(fld_begin); run._r.append(instr); run._r.append(fld_sep); run._r.append(txt); run._r.append(fld_end)
+
+# 6.3 alt bölümlerinin dinamik numaralandırma kaynağı.
+# Bu liste, bölüm seçimi kapatılıp açıldığında numaranın otomatik yeniden
+# sıralanmasını sağlar.
+_BOLUM_63_COCUKLARI = [
+    ("rapor_bolum_631", "SU DEPOSU KAPASİTE HESAPLAMALARI"),
+    ("rapor_bolum_632", "KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ"),
+    ("rapor_bolum_633", "KULLANMA SICAK SUYU İHTİYACI HESAPLARI"),
+    ("rapor_bolum_634", "KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ"),
+    ("rapor_bolum_635", "SU YUMUŞATMA CİHAZI SEÇİMİ"),
+]
+
+# Sol menüdeki "Tümünü Seç / Tümünü Kaldır" işlemlerinin kullandığı anahtarlar.
+BOLUM_SECIM_ANAHTARLARI = [
+    "rapor_bolum_1", "rapor_bolum_2", "rapor_bolum_3", "rapor_bolum_4",
+    "rapor_bolum_5", "rapor_bolum_51", "rapor_bolum_6", "rapor_bolum_61",
+    "rapor_bolum_611", "rapor_bolum_62", "rapor_bolum_621", "rapor_bolum_622", "rapor_bolum_623",
+    "rapor_bolum_63", "rapor_bolum_631", "rapor_bolum_631_1", "rapor_bolum_631_2",
+    "rapor_bolum_631_2_1", "rapor_bolum_631_2_2", "rapor_bolum_631_2_3",
+    "rapor_bolum_631_2_4", "rapor_bolum_631_2_5", "rapor_bolum_631_2_6",
+    "rapor_bolum_631_2_7", "rapor_bolum_632",
+    "rapor_bolum_633", "rapor_bolum_634", "rapor_bolum_635",
+    "rapor_bolum_7", "rapor_bolum_71", "rapor_bolum_711", "rapor_bolum_712", "rapor_bolum_713",
+    "rapor_bolum_72", "rapor_bolum_721", "rapor_bolum_722", "rapor_bolum_723", "rapor_bolum_724", "rapor_bolum_725",
+    "rapor_bolum_73", "rapor_bolum_731", "rapor_bolum_732", "rapor_bolum_733",
+    "rapor_bolum_74", "rapor_bolum_741", "rapor_bolum_742", "rapor_bolum_743", "rapor_bolum_744",
+    "rapor_bolum_75", "rapor_bolum_751", "rapor_bolum_752", "rapor_bolum_753",
+    "rapor_bolum_76", "rapor_bolum_761", "rapor_bolum_762", "rapor_bolum_763", "rapor_bolum_764", "rapor_bolum_765",
+    "rapor_bolum_77", "rapor_bolum_78", "rapor_bolum_79",
+]
+def _63_dinamik_no(anahtar):
+    """6.3 alt bölüm numarasını sabit tutar; seçim durumuna göre yeniden numaralandırmaz."""
+    return [k for k, _ in _BOLUM_63_COCUKLARI].index(anahtar) + 1
+
+def _63_dinamik_baslik(anahtar):
+    ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
+    return f"6.3.{_63_dinamik_no(anahtar)} {ad.upper()}"
+
+def _63_sidebar_baslik(anahtar, varsayilan_baslik):
+    """Sol menüde 6.3 alt bölüm numarasını aktif seçimlere göre dinamik gösterir."""
+    if anahtar in dict(_BOLUM_63_COCUKLARI):
+        ad = dict(_BOLUM_63_COCUKLARI)[anahtar]
+        return f"6.3.{_63_dinamik_no(anahtar)} {ad.upper()}"
+    return varsayilan_baslik
+
+def _tum_bolumleri_sec():
+    for _anahtar in BOLUM_SECIM_ANAHTARLARI:
+        st.session_state[_anahtar] = True
+
+def _tum_bolumleri_kaldir():
+    for _anahtar in BOLUM_SECIM_ANAHTARLARI:
+        st.session_state[_anahtar] = False
+
+# ---------------------------------------------------------------------------
+# SOL MENÜ / BÖLÜM NAVİGASYONU
+# ---------------------------------------------------------------------------
+# Bölüm seçimleri artık sol menüde tutulur. Bölüm adları aynı zamanda
+# sayfadaki ilgili başlığa bağlantıdır; böylece tıklandığında doğrudan
+# seçilen bölüme gidilir. Checkbox'lar rapora dahil/hariç mantığını korur.
+_BOLUM_NAV = [
+    ("1. Kapak Bilgileri", "bolum_1", "rapor_bolum_1"),
+    ("2. Uygulanacak Standart ve Yönetmelikler", "bolum_2", "rapor_bolum_2"),
+    ("3. Mekanik Tesisat Proje Kapsamı", "bolum_3", "rapor_bolum_3"),
+    ("4. Tesiste Kullanılacak Isı İletim Akışkanları", "bolum_4", "rapor_bolum_4"),
+    ("5. İklim, Konfor Şartları ve Tasarım Kriterleri", "bolum_5", "rapor_bolum_5"),
+    ("5.1 Dış Hava Tasarım Kriterleri", "bolum_51", "rapor_bolum_51"),
+    ("6. Sıhhi Tesisat", "bolum_6", "rapor_bolum_6"),
+    ("6.1 Sıhhi Tesisat Ön Bilgiler", "bolum_61", "rapor_bolum_61"),
+    ("6.1.1 Temiz Su Hesabı", "bolum_611", "rapor_bolum_611"),
+    ("6.2 Pis Su Tesisatı Esasları", "bolum_62", "rapor_bolum_62"),
+    ("6.2.1 Pis Su Hesabı", "bolum_621", "rapor_bolum_621"),
+    ("6.2.2 Pis Su Terfi Pompaları", "bolum_622", "rapor_bolum_622"),
+    ("6.2.3 Yağ Ayırıcı Seçimleri", "bolum_623", "rapor_bolum_623"),
+    ("6.3 Sıhhi Tesisat Cihaz Seçimleri", "bolum_63", "rapor_bolum_63"),
+    ("6.3.1 SU DEPOSU KAPASİTE HESAPLAMALARI", "bolum_631", "rapor_bolum_631"),
+    ("6.3.1.1 Kullanma Suyu Deposu Seçimi", "bolum_631_1", "rapor_bolum_631_1"),
+    ("6.3.1.2 Yağmur Suyu Deposu Seçimi", "bolum_631_2", "rapor_bolum_631_2"),
+    ("6.3.1.2.1 Yağmur Suyu Toplama Hesabı", "bolum_631_2_1", "rapor_bolum_631_2_1"),
+    ("6.3.1.2.2 Yağmur Suyu Filtresi Seçimi", "bolum_631_2_2", "rapor_bolum_631_2_2"),
+    ("6.3.1.2.3 İlk Yağış Ayırıcı Seçimi", "bolum_631_2_3", "rapor_bolum_631_2_3"),
+    ("6.3.1.2.4 Yağmur Suyu Deposu Hacim Hesabı", "bolum_631_2_4", "rapor_bolum_631_2_4"),
+    ("6.3.1.2.5 Taşma Hattı Hesabı", "bolum_631_2_5", "rapor_bolum_631_2_5"),
+    ("6.3.1.2.6 Taşma Sifonu / Koku Kapanı", "bolum_631_2_6", "rapor_bolum_631_2_6"),
+    ("6.3.1.2.7 Depo Girişi / Sakin Giriş", "bolum_631_2_7", "rapor_bolum_631_2_7"),
+    ("6.3.1.2.8 Havalandırma ve Haşere Koruması", "bolum_631_2_8", "rapor_bolum_631_2_8"),
+    ("6.3.2 KULLANMA SOĞUK SUYU HİDROFORU SEÇİMİ", "bolum_632", "rapor_bolum_632"),
+    ("6.3.3 KULLANMA SICAK SUYU İHTİYACI HESAPLARI", "bolum_633", "rapor_bolum_633"),
+    ("6.3.4 KULLANMA SICAK SU TESİSATI RE-SİRKULASYON POMPASI SEÇİMİ", "bolum_634", "rapor_bolum_634"),
+    ("6.3.5 SU YUMUŞATMA CİHAZI SEÇİMİ", "bolum_635", "rapor_bolum_635"),
+    ("7. YANGIN TESİSATI", "bolum_7", "rapor_bolum_7"),
+    ("7.1 YANGIN TESİSATI GENEL ESASLARI", "bolum_71", "rapor_bolum_71"),
+    ("7.1.1 Yangın Tesisatının Amacı ve Kapsamı", "bolum_711", "rapor_bolum_711"),
+    ("7.1.2 Yangın Tesisatı Tasarım Esasları", "bolum_712", "rapor_bolum_712"),
+    ("7.1.3 Yangın Tesisatı Standartları", "bolum_713", "rapor_bolum_713"),
+    ("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", "bolum_72", "rapor_bolum_72"),
+    ("7.2.1 Bina Kullanım Amacı", "bolum_721", "rapor_bolum_721"),
+    ("7.2.2 Yangın Tehlike Sınıfı", "bolum_722", "rapor_bolum_722"),
+    ("7.2.3 Yangın Bölmeleri", "bolum_723", "rapor_bolum_723"),
+    ("7.2.4 Tasarım Kriterleri", "bolum_724", "rapor_bolum_724"),
+    ("7.2.5 Tasarım Debisi", "bolum_725", "rapor_bolum_725"),
+    ("7.3 YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI", "bolum_73", "rapor_bolum_73"),
+    ("7.4 HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI", "bolum_74", "rapor_bolum_74"),
+    ("7.5 SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_75", "rapor_bolum_75"),
+    ("7.6 GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_76", "rapor_bolum_76"),
+    ("7.7 KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_77", "rapor_bolum_77"),
+    ("7.8 DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_78", "rapor_bolum_78"),
+    ("7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_79", "rapor_bolum_79"),
+    ("7.10 ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_710", "rapor_bolum_710"),
+    ("7.11 DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_7110", "rapor_bolum_7110"),
+    ("7.12 YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI", "bolum_7120", "rapor_bolum_7120"),
+    ("7.13 YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI", "bolum_7130", "rapor_bolum_7130"),
+    ("7.14 YANGIN TESİSATI HİDROLİK HESAPLARI", "bolum_7140", "rapor_bolum_7140"),
+    ("7.15 YANGIN TESİSATI SONUÇ TABLOSU", "bolum_7150", "rapor_bolum_7150"),
+    ("8. ISITMA TESİSATI", "bolum_8", "rapor_bolum_8"),
+    ("9. SOĞUTMA TESİSATI", "bolum_9", "rapor_bolum_9"),
+    ("10. HAVALANDIRMA TESİSATI", "bolum_10", "rapor_bolum_10"),
+ ]
+
+# 7.3-7.15 yangın alt bölümlerini, seçili olanlara göre boşluksuz numaralandır.
+# Anahtarlar sabit kalır; yalnızca menüde görünen numaralar değişir.
+_YANGIN_ALT_BOLUM_ANAHTARLARI = [
+    ("rapor_bolum_73", "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+    ("rapor_bolum_74", "HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+    ("rapor_bolum_75", "SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_76", "GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_77", "KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_78", "DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_79", "MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_710", "ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7110", "DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7120", "YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7130", "YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7140", "YANGIN TESİSATI HİDROLİK HESAPLARI"),
+    ("rapor_bolum_7150", "YANGIN TESİSATI SONUÇ TABLOSU"),
+]
+
+def _yangin_sidebar_baslik(anahtar, varsayilan_baslik):
+    secili = [
+        (key, ad) for key, ad in _YANGIN_ALT_BOLUM_ANAHTARLARI
+        if st.session_state.get(key, True)
+    ]
+    for sira, (key, ad) in enumerate(secili, start=3):
+        if key == anahtar:
+            return f"7.{sira} {ad}"
+    return varsayilan_baslik
+
+with st.sidebar:
+    st.markdown("## 📑 PROJE BÖLÜMLERİ")
+    st.caption("Bölüm adına tıklayarak doğrudan o bölüme gidebilirsiniz.")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.button(
+            "☑ TÜMÜNÜ SEÇ",
+            key="rapor_tumunu_sec_v92",
+            on_click=_tum_bolumleri_sec,
+            use_container_width=True,
+        )
+    with c2:
+        st.button(
+            "☐ TÜMÜNÜ KALDIR",
+            key="rapor_tumunu_kaldir_v92",
+            on_click=_tum_bolumleri_kaldir,
+            use_container_width=True,
+        )
+
+    st.markdown("### Bölümler")
+    # Tüm yan sekmelerin seçim kutuları varsayılan olarak açık gelir.
+    for _baslik, _anchor, _key in _BOLUM_NAV:
+        if _key not in st.session_state:
+            st.session_state[_key] = True
+
+        if _anchor.startswith("bolum_63"):
+            _baslik = _63_sidebar_baslik(_key, _baslik)
+        if _key in {k for k, _ in _YANGIN_ALT_BOLUM_ANAHTARLARI}:
+            _baslik = _yangin_sidebar_baslik(_key, _baslik)
+
+        _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
+        with _c_nav:
+            st.markdown(
+                f'<a class="proje-nav-tab" href="#{_anchor}">▸ {_baslik}</a>',
+                unsafe_allow_html=True,
+            )
+        with _c_chk:
+            st.checkbox(
+                "",
+                key=_key,
+                label_visibility="collapsed",
+            )
+
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] { min-width: 330px; max-width: 380px; }
+        [data-testid="stSidebar"] .proje-nav-tab {
+            display:block;
+            margin:3px 0 4px 0;
+            padding:7px 8px;
+            border-radius:6px;
+            text-decoration:none !important;
+            font-size:0.92rem;
+            color:inherit;
+            background:rgba(128,128,128,0.08);
+        }
+        [data-testid="stSidebar"] .proje-nav-tab:hover {
+            background:rgba(128,128,128,0.18);
+        }
+        [data-testid="stSidebar"] .proje-nav-ana {
+            margin-left:0;
+            font-weight:600;
+            background:rgba(70,120,200,0.10);
+        }
+        [data-testid="stSidebar"] [data-testid="stCheckbox"] {
+            margin-bottom:0;
+            transform:scale(1.05);
+            transform-origin:center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Ana ekranda kullanılacak eski değişken adları korunuyor.
+bolum_2_aktif_ui = st.session_state.get("rapor_bolum_2", False)
+bolum_3_aktif_ui = st.session_state.get("rapor_bolum_3", False)
+bolum_4_aktif_ui = st.session_state.get("rapor_bolum_4", False)
+bolum_5_aktif_ui = st.session_state.get("rapor_bolum_5", False)
+bolum_51_aktif_ui = st.session_state.get("rapor_bolum_51", False)
+bolum_6_aktif_ui = st.session_state.get("rapor_bolum_6", False)
+bolum_61_aktif_ui = st.session_state.get("rapor_bolum_61", False)
+bolum_611_aktif_ui = st.session_state.get("rapor_bolum_611", False)
+bolum_62_aktif_ui = st.session_state.get("rapor_bolum_62", False)
+bolum_621_aktif_ui = st.session_state.get("rapor_bolum_621", False)
+bolum_622_aktif_ui = st.session_state.get("rapor_bolum_622", False)
+bolum_623_aktif_ui = st.session_state.get("rapor_bolum_623", False)
+bolum_63_aktif_ui = st.session_state.get("rapor_bolum_63", False)
+bolum_631_aktif_ui = st.session_state.get("rapor_bolum_631", False)
+bolum_632_aktif_ui = st.session_state.get("rapor_bolum_632", False)
+bolum_633_aktif_ui = st.session_state.get("rapor_bolum_633", False)
+bolum_634_aktif_ui = st.session_state.get("rapor_bolum_634", False)
+bolum_635_aktif_ui = st.session_state.get("rapor_bolum_635", False)
+
+# ---------------------------------------------------------------------------
+# ALT GRUPLAR İÇİN TOPLU SEÇİM BUTONLARI
+# ---------------------------------------------------------------------------
+def _toplu_secim_butonlari(anahtarlar, grup_adi=None):
+    """Alt checkbox grubunu güvenli biçimde topluca seç/kaldır."""
+    if not anahtarlar:
+        return
+
+    # Widget anahtarları sabit olmalı; hash() kullanmıyoruz.
+    grup_imza = grup_adi or "_".join(anahtarlar)
+    sec_key = f"alt_grup_sec_v55_{grup_imza}"
+    kaldir_key = f"alt_grup_kaldir_v55_{grup_imza}"
+
+    def _grubu_sec():
+        for anahtar in anahtarlar:
+            st.session_state[anahtar] = True
+
+    def _grubu_kaldir():
+        for anahtar in anahtarlar:
+            st.session_state[anahtar] = False
+
+    col_sec, col_kaldir = st.columns(2)
+    with col_sec:
+        st.button(
+            "☑ TÜMÜNÜ SEÇ",
+            key=sec_key,
+            on_click=_grubu_sec,
+            use_container_width=True,
+        )
+    with col_kaldir:
+        st.button(
+            "☐ TÜMÜNÜ KALDIR",
+            key=kaldir_key,
+            on_click=_grubu_kaldir,
+            use_container_width=True,
+        )
+
+# ---------------------------------------------------------------------------
+# HİYERARŞİK AKTİFLİK
+# ---------------------------------------------------------------------------
+# Burada checkbox Session State'lerini değiştirmiyoruz.
+# Örneğin sadece 6.3.2 seçilmişse:
+#   rapor_bolum_632 = True
+#   bolum_63_aktif = True
+#   bolum_6_aktif = True
+# olur; fakat 6.3 checkbox'ı kullanıcı arayüzünde zorla işaretlenmez.
+# Böylece TÜMÜNÜ KALDIR sonrası herhangi bir alt bölüm seçilebilir.
+# 5. ana başlık kapatılırsa 5.1 alt başlığı da rapor dışında kalır.
+bolum_5_aktif = bool(st.session_state.get("rapor_bolum_5", False))
+bolum_51_aktif = bolum_5_aktif and bool(st.session_state.get("rapor_bolum_51", False))
+
+# 6. SIHHİ TESİSAT ana seçimi ana anahtardır.
+# Ana bölüm kapatıldığında alt başlıklar session_state içinde işaretli kalsa bile
+# hiçbir sıhhi tesisat alt bölümü rapora dahil edilmez. Tekrar dahil etmek için
+# önce 6. Sıhhi Tesisat ana kutusu açılır; ardından istenen alt bölümler seçilebilir.
+_sihhi_ana_secili = bool(st.session_state.get("rapor_bolum_6", False))
+
+bolum_611_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_611", False))
+bolum_61_aktif = _sihhi_ana_secili and (
+    bool(st.session_state.get("rapor_bolum_61", False)) or bolum_611_aktif
+)
+
+bolum_621_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_621", False))
+bolum_622_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_622", False))
+bolum_623_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_623", False))
+bolum_62_aktif = _sihhi_ana_secili and (
+    bool(st.session_state.get("rapor_bolum_62", False))
+    or bolum_621_aktif
+    or bolum_622_aktif
+    or bolum_623_aktif
+)
+
+# 6.3.1 ana checkbox'ı bu grubun kontrolüdür.
+bolum_631_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_631", False))
+bolum_631_1_aktif = bolum_631_aktif and bool(st.session_state.get("rapor_bolum_631_1", False))
+bolum_631_2_alt_anahtarlar = [
+    "rapor_bolum_631_2", "rapor_bolum_631_2_1", "rapor_bolum_631_2_2",
+    "rapor_bolum_631_2_3", "rapor_bolum_631_2_4", "rapor_bolum_631_2_5",
+    "rapor_bolum_631_2_6", "rapor_bolum_631_2_7",
+]
+bolum_631_2_aktif = bolum_631_aktif and any(
+    bool(st.session_state.get(k, False)) for k in bolum_631_2_alt_anahtarlar
+)
+bolum_632_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_632", False))
+bolum_633_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_633", False))
+bolum_634_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_634", False))
+bolum_635_aktif = _sihhi_ana_secili and bool(st.session_state.get("rapor_bolum_635", False))
+bolum_63_aktif = _sihhi_ana_secili and (
+    bool(st.session_state.get("rapor_bolum_63", False))
+    or bolum_631_aktif
+    or bolum_632_aktif
+    or bolum_633_aktif
+    or bolum_634_aktif
+    or bolum_635_aktif
+)
+
+# Ana bölüm kapalıysa sıhhi tesisatın tüm başlıkları rapor dışıdır.
+bolum_6_aktif = _sihhi_ana_secili and (
+    bool(st.session_state.get("rapor_bolum_6", False))
+    or bolum_61_aktif or bolum_62_aktif or bolum_63_aktif
+)
+
+bolum_2_aktif = bool(st.session_state.get("rapor_bolum_2", False))
+bolum_3_aktif = bool(st.session_state.get("rapor_bolum_3", False))
+bolum_4_aktif = bool(st.session_state.get("rapor_bolum_4", False))
+
+# Bölümler bağımsız seçilebildiği için rapor değişkenlerinin güvenli
+# başlangıç değerleri burada tanımlanır. İlgili modül aktifse gerçek değerlerle
+# aşağıda üzerine yazılır.
+secilen_depo_tipi_metni = ""
+sih_depo_tipleri = []
+# 6.2.3 Yağ Ayırıcı seçimleri için güvenli başlangıç değerleri.
+yag_ayirici_maddeleri = [
+    "Mutfak/yemekhane atık suyu yağ ayırıcıdan geçirilecektir.",
+    "Yağ ayırıcı kapasitesi, sisteme gelen atık su debisine göre belirlenecektir.",
+    "Yağ ayırıcı hesabında mutfak ekipmanlarının eş zamanlı kullanım durumu dikkate alınacaktır.",
+    "Yağ ayırıcı, kolay temizlenebilir ve bakım yapılabilir özellikte olacaktır.",
+    "Yağ ayırıcı üzerinde yeterli büyüklükte bakım ve temizleme kapağı bulunacaktır.",
+    "Yağ ayırıcı, yağ ve katı maddelerin kanalizasyon sistemine taşınmasını önleyecek şekilde seçilecektir.",
+    "Yağ ayırıcı çıkışında gerekli koku kontrolü ve havalandırma düzeni sağlanacaktır.",
+    "Yağ ayırıcının montajı, bakım ve temizlik sırasında kolay erişilebilecek şekilde yapılacaktır.",
+    "Yağ ayırıcının giriş ve çıkış bağlantı çapları tesisat boru çaplarına uygun olacaktır.",
+    "Yağ ayırıcı kapasitesi ve bağlantı çapı raporda gösterilecektir.",
+]
+yag_ayirici_secimler = [bool(st.session_state.get(f"yag_ayirici_sec_{i}", True)) for i in range(1, 11)]
+ek_yag_ayirici_notu = str(st.session_state.get("ek_yag_ayirici_notu", ""))
+
+
+# ---------------------------------------------------------------------------
+# 6.2.3 YAĞ AYIRICI HESAP MOTORU — YAĞ AYIRICI HESABI.xlsx ile birebir
+# ---------------------------------------------------------------------------
+# Excel'deki 4 sayfa YA-01 ... YA-04 aynı hesap şablonunu kullanır.
+# Programda ekipman adetleri kullanıcı tarafından değiştirilebilir; aşağıdaki
+# varsayılan adetler Excel dosyasındaki ilgili sayfalardaki örnek değerlerdir.
+YAG_AYIRICI_EKIPMANLARI = [
+    ("Pişirme Kazan Çıkışı Ø 25 mm", 1.0, "normal"),
+    ("Pişirme Kazan Çıkışı Ø 50 mm", 2.0, "normal"),
+    ("Devirme Tipi Kazan Çıkışı Ø 70 mm", 1.0, "normal"),
+    ("Devirme Tipi Kazan Çıkışı Ø 100 mm", 3.0, "normal"),
+    ("Sifonlu Evye Çıkışı Ø 40", 0.8, "normal"),
+    ("Sifonlu Evye Çıkışı Ø 50", 1.5, "normal"),
+    ("Sifonsuz Evye Çıkışı Ø 40", 2.5, "normal"),
+    ("Sifonsuz Evye Çıkışı Ø 50", 4.0, "normal"),
+    ("Bulaşık Makinası", 2.0, "bulasik"),
+    ("Devirme Tipi Kızartma Tavası", 1.0, "normal"),
+    ("Normal Kızartma Tavası", 0.1, "normal"),
+    ("Yüksek Basınçlı/Buharlı Temizleme Makinası", 2.0, "normal"),
+    ("Kabuk Soyma Makinası", 1.5, "normal"),
+    ("Sebze Yıkama Makinası", 2.0, "normal"),
+    ("Pişirme Fırını", 0.5, "normal"),
+    ("Yer süzgeci", 0.5, "normal"),
+    ("Musluk DN 15 (R 1/2\")", 0.5, "normal"),
+    ("DN 20 (R 3/4\")", 1.0, "normal"),
+    ("DN 25 (R 1\")", 1.7, "normal"),
+]
+
+# Program başlangıcında bütün yağ ayırıcı ekipman adetleri 0'dır.
+# Excel'deki YA-01 ... YA-04 örnek adetleri referans alınmış olsa da kullanıcıya
+# başlangıç değeri olarak aktarılmaz.
+YAG_AYIRICI_VARSAYILAN_ADETLERI = [0] * len(YAG_AYIRICI_EKIPMANLARI)
+
+# 2026 mekanik tesisat poz listesine göre standart yağ ayırıcılar.
+# Kapasiteler: 1, 2, 3, 4, 7 ve 10 L/s.
+YAG_AYIRICI_POZLARI = [
+    {"poz": "25.620.1201", "kapasite": 1.0, "tanim": "Kapasite: 1 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 47 litre, 880x510x490 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1202", "kapasite": 2.0, "tanim": "Kapasite: 2 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 80 litre, 1190x660x710 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1203", "kapasite": 3.0, "tanim": "Kapasite: 3 lt/sn, et kalınlığı: min.1,5 mm, yağ hacmi: 135 litre, 1250x850x970 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1204", "kapasite": 4.0, "tanim": "Kapasite: 4 lt/sn, et kalınlığı: min.2 mm, yağ hacmi: 160 litre, 1580x910x1030 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1205", "kapasite": 7.0, "tanim": "Kapasite: 7 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 350 litre, 2000x1000x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+    {"poz": "25.620.1206", "kapasite": 10.0, "tanim": "Kapasite: 10 lt/sn, et kalınlığı: min.3 mm, yağ hacmi: 500 litre, 2500x1430x1300 mm yağ ayırıcı AISI 304 kalite 18/8 Cr-Ni"},
+]
+
+def _yag_ayirici_poz_otomatik_sec(ns):
+    """NS değerini karşılayan en küçük standart yağ ayırıcı pozunu seçer."""
+    try:
+        gerekli = float(ns)
+    except Exception:
+        gerekli = 0.0
+    if gerekli <= 0:
+        return None
+    for _poz in YAG_AYIRICI_POZLARI:
+        if _poz["kapasite"] >= gerekli:
+            return dict(_poz)
+    return None
+
+def _yag_ayirici_zi(adet, ekipman_tipi="normal"):
+    """Excel'deki Zi(n) kademelerini aynen uygular."""
+    n = int(adet)
+    if ekipman_tipi == "bulasik":
+        # Excel Bulaşık Makinası satırı: 0/1=0.60, 2=0.50, 3=0.40,
+        # 4=0.34, 5 ve üzeri=0.30.
+        if n <= 1:
+            return 0.60
+        if n == 2:
+            return 0.50
+        if n == 3:
+            return 0.40
+        if n == 4:
+            return 0.34
+        return 0.30
+    # Diğer bütün Excel satırları: 0/1=0.45, 2=0.31, 3=0.25,
+    # 4=0.21, 5 ve üzeri=0.20.
+    if n <= 1:
+        return 0.45
+    if n == 2:
+        return 0.31
+    if n == 3:
+        return 0.25
+    if n == 4:
+        return 0.21
+    return 0.20
+
+
+def _yag_ayirici_hesapla(ya_adi, adetler, fd=1.0, ft=1.0, fr=1.0, secilen_kapasite=0.0, secilen_poz=None, poz_rapora_aktar=False, poz_secim_modu="Otomatik"):
+    satirlar = []
+    qs = 0.0
+    for i, ((ekipman, qi, tip), adet) in enumerate(zip(YAG_AYIRICI_EKIPMANLARI, adetler), start=1):
+        n = int(adet)
+        n_x_qi = n * float(qi)
+        zi = _yag_ayirici_zi(n, tip)
+        pis_su_debisi = n_x_qi * zi
+        qs += pis_su_debisi
+        # Adedi 0 olan ekipmanlar hesap sonucuna ve rapora dahil edilmez.
+        # Böylece kullanılmayan ekipmanlar raporda gereksiz yer kaplamaz.
+        if n > 0:
+            satirlar.append({
+                "sira": i,
+                "ekipman": ekipman,
+                "adet": n,
+                "qi": float(qi),
+                "n_x_qi": n_x_qi,
+                "zi": zi,
+                "pis_su_debisi": pis_su_debisi,
+            })
+    ns = qs * float(fd) * float(ft) * float(fr)
+    return {
+        "ya_adi": ya_adi,
+        "satirlar": satirlar,
+        "qs": qs,
+        "fd": float(fd),
+        "ft": float(ft),
+        "fr": float(fr),
+        "ns": ns,
+        "secilen_kapasite": float(secilen_kapasite),
+        "secilen_poz": dict(secilen_poz) if isinstance(secilen_poz, dict) else None,
+        "poz_rapora_aktar": bool(poz_rapora_aktar),
+        "poz_secim_modu": str(poz_secim_modu),
+    }
+
+# 6.2.3 hesap sonuçları rapor üretiminden önce güvenli biçimde hazır tutulur.
+yag_ayirici_hesaplari = {}
+yag_ayirici_secilenler = list(st.session_state.get("yag_ayirici_secilenler", ["YA-01"]))
+sih_sec_depo_tipi = []
+depo_gerekli_hacim_m3 = 0.0
+depo_gerekli_hacim_litre = 0.0
+otomatik_poz_kayitlari = []
+poz_numarasi = ""
+poz_tipi = ""
+sicak_su_hesap_detaylari = []
+sicak_su_gunluk_toplam_litre = 0.0
+sicak_su_yapi_tipi = ""
+kullanma_es_faktoru = 0.0
+depolama_faktoru = 0.0
+hidrofor_hesaplari = []
+
+# ---------------------------------------------------------------------------
+# ANA TESİSAT KATEGORİLERİ - GÖRSEL DÜZEN
+# ---------------------------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    /* Ana kategori sekmelerini daha okunaklı ve belirgin yap */
+    div[data-testid="stTabs"] {
+        margin-top: 6px;
+    }
+
+    div[data-testid="stTabs"] [role="tablist"] {
+        gap: 4px !important;
+        border-bottom: 2px solid #D7DEE8 !important;
+        overflow-x: auto !important;
+        padding-bottom: 0 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 11px 16px !important;
+        min-height: 44px !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: #334155 !important;
+        background: #F3F6FA !important;
+        border: 1px solid #D7DEE8 !important;
+        border-bottom: 3px solid transparent !important;
+        white-space: nowrap !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"]:hover {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0B3D91 !important;
+        background: #EAF2F8 !important;
+        border-color: #B8C7D9 !important;
+        border-bottom: 4px solid #0B3D91 !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
+# ANA TESİSAT KATEGORİLERİ
+# ---------------------------------------------------------------------------
+_t_genel, _t_sihhi, _t_yangin, _t_isitma, _t_sogutma, _t_havalandirma = st.tabs(
+    [
+        "1–5 GENEL BİLGİLER",
+        "6. SIHHİ TESİSAT",
+        "7. YANGIN TESİSATI",
+        "8. ISITMA TESİSATI",
+        "9. SOĞUTMA TESİSATI",
+        "10. HAVALANDIRMA",
+    ]
+)
+
+with _t_genel:
+    # --- 1. SEKME / BÖLÜM: KAPAK BİLGİLERİ ---
+    st.markdown('<div id="bolum_1"></div>', unsafe_allow_html=True)
+    st.header("1. Kapak Bilgileri")
+    sirket_adi = st.text_input(
+        "Şirket / Kuruluş İsmi",
+        "FUGA MEKANİK MÜHENDİSLİK MÜŞAVİRLİK İNŞ.SAN.TİC.LTD.ŞTİ",
+        key="sirket_adi",
+    )
+    is_adi = st.text_input("İşin Adı / Proje Başlığı", "", key="is_adi", on_change=_is_adi_degisti)
+    rapor_turu = st.text_input(
+        "Rapor Türü", "MEKANİK TESİSAT UYGULAMA PROJESİ HESAP RAPORU"
+    )
+    hazirlayan = st.text_input("Hazırlayan Mühendis", "Mehmet Küçük")
+    mmo_no = st.text_input("MMO Oda No", "109913")
+    tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
+
+    st.header("1. Genel Bina Bilgileri")
+    # ------------------------------------------------------------------
+    # GENEL BİNA BİLGİLERİ
+    # Bu bilgiler Genel Bilgiler sekmesinde bir kez girilir; yangın modülü
+    # aynı session_state anahtarlarını kullanarak değerleri okumaya devam eder.
+    # ------------------------------------------------------------------
+    with st.expander("GENEL BİNA BİLGİLERİ", expanded=True):
+        st.markdown(
+            '<div style="font-size:16px;font-weight:700;font-style:italic;">'
+            'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "Bu bilgiler, aşağıdaki yangın tesisatı bölümlerinde yapılacak "
+            "ön değerlendirme ve hesaplamalarda ortak veri olarak kullanılacaktır. "
+            "Şimdilik rapora aktarılmaz."
+        )
+        with st.expander("ⓘ BİNA YÜKSEKLİĞİ VE YAPI YÜKSEKLİĞİ TANIMI / ŞEKLİ", expanded=False):
+            st.markdown(
+                "**Bina yüksekliği:** Binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir."
+            )
+            st.markdown(
+                "**Yapı yüksekliği:** Bodrum katlar, asma katlar ve çatı arası piyesler dâhil olmak üzere, yapının inşa edilen bütün katlarının toplam yüksekliğidir."
+            )
+            # Şema dosyası GitHub/Streamlit ortamında isim veya uzantı farkı
+            # nedeniyle bulunamazsa, aynı klasördeki uygun PNG dosyasını da ara.
+            _sema_kok = Path(__file__).resolve().parent
+            _sema_adaylari = [
+                _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
+                *_sema_kok.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
+            ]
+            _sema_yolu = next((p for p in _sema_adaylari if p.is_file()), None)
+            _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu else None
+            if _sema_verisi:
+                st.image(_sema_verisi, caption="Bina yüksekliği ve yapı yüksekliği — şematik gösterim", use_container_width=True)
+            else:
+                st.warning("Bina yüksekliği / yapı yüksekliği şeması bulunamadı. PNG dosyasının app.py ile aynı kökte olduğundan emin olun.")
+            st.caption(
+                "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
+            )
+        # BLOK BİLGİLERİ: blok adedi, her bloğun adı ve alanı.
+        # Eski tek toplam alan değeri ilk blok için başlangıç değeri olarak korunur.
+        _blok_secenekleri = ["Tek blok"] + [f"{_i} blok" for _i in range(2, 11)]
+        _mevcut_toplam_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
+        st.session_state.setdefault("yangin_genel_blok_sayisi", "Tek blok")
+        st.selectbox(
+            "Blok sayısı",
+            options=_blok_secenekleri,
+            key="yangin_genel_blok_sayisi",
+            help="Projede bulunan blok sayısını seçiniz. Her blok için ad ve m² bilgisi ayrı girilir.",
+        )
+        _blok_adet = 1 if st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") == "Tek blok" else int(str(st.session_state["yangin_genel_blok_sayisi"]).split()[0])
+        _blok_sekmeleri = st.tabs([f"Blok {_i}" for _i in range(1, _blok_adet + 1)])
+        _blok_alanlari = []
+        for _i, _blok_sekme in enumerate(_blok_sekmeleri, start=1):
+            _ad_key = f"yangin_genel_blok_{_i}_adi"
+            _alan_key = f"yangin_genel_blok_{_i}_alan_m2"
+            if _i == 1:
+                st.session_state.setdefault(_ad_key, "Blok 1")
+                st.session_state.setdefault(_alan_key, _mevcut_toplam_alan)
+            else:
+                st.session_state.setdefault(_ad_key, f"Blok {_i}")
+                st.session_state.setdefault(_alan_key, 0.0)
+            with _blok_sekme:
+                _bk1, _bk2 = st.columns([2, 1])
+                with _bk1:
+                    st.text_input(f"Blok {_i} adı", key=_ad_key, help="Örnek: A Blok, B Blok, C Blok")
+                with _bk2:
+                    st.number_input(f"Blok {_i} alanı (m²)", min_value=0.0, step=10.0, key=_alan_key)
+            _blok_alanlari.append(float(st.session_state.get(_alan_key, 0.0) or 0.0))
+        _blok_toplam_alan = round(sum(_blok_alanlari), 2)
+        # Var olan toplam alan anahtarı güncellenir; diğer hesaplamalar bu toplamı kullanmaya devam eder.
+        st.session_state["yangin_genel_toplam_alan_m2"] = _blok_toplam_alan
+        st.info(f"**Blokların toplam alanı: {_blok_toplam_alan:,.2f} m²**".replace(",", "X").replace(".", ",").replace("X", "."))
+        _b1, _b2, _b3 = st.columns(3)
+        with _b1:
+            st.number_input(
+                "Toplam yapı / kapalı kullanım alanı (m²)",
+                min_value=0.0, step=10.0,
+                key="yangin_genel_toplam_alan_m2",
+                disabled=True,
+                help="Bu değer, yukarıda girilen blok alanlarının toplamından otomatik hesaplanır.",
+            )
+            st.number_input(
+                "Kat sayısı", min_value=0, step=1,
+                key="yangin_genel_kat_sayisi",
+                help="Binanın toplam kat sayısını giriniz. İlgili yangın güvenliği değerlendirmelerinde kullanılacaktır.",
+            )
+            st.number_input(
+                "Bodrum kat sayısı", min_value=0, step=1,
+                key="yangin_genel_bodrum_kat_sayisi",
+                help="Binada bulunan bodrum kat adedini giriniz.",
+            )
+        with _b2:
+            st.number_input(
+                "Bina yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_bina_yuksekligi_m",
+                help="BYKHY tanımına göre binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
+            )
+            st.number_input(
+                "Yapı yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_yapi_yuksekligi_m",
+                help="BYKHY tanımına göre bodrum katlar, asma katlar ve çatı arası piyesler dâhil yapının inşa edilen bütün katlarının toplam yüksekliğidir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
+            )
+            st.number_input(
+                "Merdiven kovası yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_merdiven_kovasi_yuksekligi_m",
+                help="Merdiven kovası / merdiven basınçlandırması değerlendirmesinde kullanılacak yaklaşık yüksekliği metre olarak giriniz.",
+            )
+        with _b3:
+            st.number_input(
+                "Toplam kişi sayısı", min_value=0, step=1,
+                key="yangin_genel_kisi_sayisi",
+                help="Binada bulunan veya hesapta esas alınacak toplam kişi sayısını giriniz.",
+            )
+            st.number_input(
+                "Otopark sayısı / araç kapasitesi", min_value=0, step=1,
+                key="yangin_genel_otopark_arac_sayisi",
+                help="Kapalı otoparkta bulunabilecek toplam araç kapasitesini giriniz.",
+            )
+            st.number_input(
+                "Kapalı otopark alanı (m²)", min_value=0.0, step=10.0,
+                key="yangin_genel_kapali_otopark_alan_m2",
+                help="Kapalı otoparkın yangın güvenliği değerlendirmesinde kullanılacak toplam alanını m² olarak giriniz.",
+            )
+        _b4, _b5, _b6 = st.columns(3)
+        with _b4:
+            st.number_input(
+                "Yatak sayısı (varsa)", min_value=0, step=1,
+                key="yangin_genel_yatak_sayisi",
+                help="Hastane, otel, yurt vb. yapılarda varsa toplam yatak sayısını giriniz.",
+            )
+        with _b5:
+            st.number_input(
+                "İmar planlama / yerleşim alanı (m²)", min_value=0.0, step=10.0,
+                key="yangin_genel_imar_alani_m2",
+                help="Proje kapsamında kullanılacak yerleşim / imar alanını m² olarak giriniz.",
+            )
+        with _b6:
+            st.checkbox(
+                "Acil durum asansörü bulunuyor",
+                key="yangin_genel_acil_durum_asansoru",
+                help="Binada acil durum asansörü bulunup bulunmadığını belirtiniz.",
+            )
+    if bolum_2_aktif:
+      # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
+      st.markdown('<div id="bolum_2"></div>', unsafe_allow_html=True)
+      st.header("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
+      st.caption("Rapor seçimi: " + ("Dahil" if bolum_2_aktif else "Hariç"))
+      st.write("Raporda yer almasını istediğiniz standart ve yönetmelikleri seçin:")
+
+      std_keys = [
+          "std_ts_825",
+          "std_yangin",
+          "std_bep_2008_2010",
+          "std_ts_1258",
+          "std_ts_826",
+          "std_ts_2164",
+          "std_ts_3419",
+          "std_ts_en_12056_2",
+          "std_ts_en_12845",
+          "std_mmo_84",
+          "std_mmo_352_5",
+          "std_mmo_122",
+          "std_mmo_133",
+          "std_mmo_155",
+          "std_ashrae",
+          "std_su",
+          "std_klima",
+          "std_tesisat",
+          "std_kanal",
+          "std_asansor",
+          "std_deprem",
+          "std_akustik",
+          "std_isg",
+      ]
+      _toplu_secim_butonlari(std_keys)
+
+      std_ts_825 = st.checkbox(
+          "TS 825 - BİNALARDA ISI YALITIM KURALLARI", key="std_ts_825", value=True
+      )
+      std_yangin = st.checkbox(
+          '09 Eylül 2009 tarih ve 27344 numaralı sayısında yayımlanan " BİNALARIN'
+          ' YANGINDAN KORUNMASI HAKKINDA YÖNETMELİK"',
+          key="std_yangin",
+          value=True,
+      )
+      std_bep_2008_2010 = st.checkbox(
+          "5 Aralık 2008 tarih, 27075 sayılı resmi gazetede yayımlanan “BİNALARDA"
+          " ENERJİ PERFORMANSI YÖNETMELİĞİ” ve 1 Nisan 2010 tarih, 27539 sayılı resmi"
+          " gazetede yayımlanan “BİNALARDA ENERJİ PERFORMANSI YÖNETMELİĞİ”",
+          key="std_bep_2008_2010",
+          value=True,
+      )
+      std_ts_1258 = st.checkbox(
+          "TS 1258 – TEMİZSU TESİSATI HESAP KURALLARI",
+          key="std_ts_1258",
+          value=True,
+      )
+      std_ts_826 = st.checkbox(
+          "TS 826 – BİNALARDA PİSSU TESİSATI HESAPLAMA KURALLARI",
+          key="std_ts_826",
+          value=True,
+      )
+      std_ts_2164 = st.checkbox(
+          "TS 2164 - KALORİFER TESİSATI PROJELENDİRME KURALLARI",
+          key="std_ts_2164",
+          value=True,
+      )
+      std_ts_3419 = st.checkbox(
+          "TS 3419 – HAVALANDIRMA VE İKLİMLENDİRME TESİSLERİ PROJELENDİRME"
+          " KURALLARI",
+          key="std_ts_3419",
+          value=True,
+      )
+      std_ts_en_12056_2 = st.checkbox(
+          "TS EN 12056-2 – CAZİBELİ DRENAJ SİSTEMLERİ -BİNA İÇİ- TASARIM VE HESAPLAMA",
+          key="std_ts_en_12056_2",
+          value=True,
+      )
+      std_ts_en_12845 = st.checkbox(
+          "TS EN 12845 – SABİT YANGIN SÖNDÜRME SİSTEMLERİ – OTOMATİK SPRİNKLER"
+          " SİSTEMLERİ- TASARIM, MONTAJ VE BAKIM",
+          key="std_ts_en_12845",
+          value=True,
+      )
+      std_mmo_84 = st.checkbox(
+          "MMO KALORİFER TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:84)",
+          key="std_mmo_84",
+          value=True,
+      )
+      std_mmo_352_5 = st.checkbox(
+          "MMO KALORİFER TESİSATI (Y.NO:352/5)", key="std_mmo_352_5", value=True
+      )
+      std_mmo_122 = st.checkbox(
+          "MMO SIHHİ TESİSAT PROJE HAZIRLAMA ESASLARI(Y.NO:122)",
+          key="std_mmo_122",
+          value=True,
+      )
+      std_mmo_133 = st.checkbox(
+          "MMO GAZ TESİSATI PROJE HAZIRLAMA ESASLARI(Y.NO:133)",
+          key="std_mmo_133",
+          value=True,
+      )
+      std_mmo_155 = st.checkbox(
+          "MMO KAZAN VE BACA(Y.NO:155)", key="std_mmo_155", value=True
+      )
+
+      std_ashrae = st.checkbox("ASHRAE Standartları", key="std_ashrae", value=True)
+      std_su = st.checkbox(
+          "İçmesuyu Temizleme ve Dağıtım Sistemleri Standartları",
+          key="std_su",
+          value=True,
+      )
+      std_klima = st.checkbox(
+          "Klima ve Havalandırma Tesisatı Yönetmelikleri",
+          key="std_klima",
+          value=True,
+      )
+      std_tesisat = st.checkbox(
+          "Merkezi Isıtma ve Sıhhi Sıcak Su Sistemlerinde Isı Maliyetlerinin"
+          " Paylaştırılmasına İlişkin Yönetmelik",
+          key="std_tesisat",
+          value=False,
+      )
+      std_kanal = st.checkbox(
+          "Kanalizasyon Şebekesi Olmayan Yerlerde Yapılacak Çukurlar",
+          key="std_kanal",
+          value=False,
+      )
+      std_asansor = st.checkbox(
+          "Asansör Yönetmeliği ve İlgili Standartlar", key="std_asansor", value=False
+      )
+      std_deprem = st.checkbox(
+          "Türkiye Bina Deprem Yönetmeliği (Mekanik Ekipman Askı ve Destekleri)",
+          key="std_deprem",
+          value=True,
+      )
+      std_akustik = st.checkbox(
+          "Binaların Gürültüye Karşı Korunması Yönetmeliği",
+          key="std_akustik",
+          value=False,
+      )
+      std_isg = st.checkbox(
+          "İş Sağlığı ve Güvenliği Kanunu ve İlgili Yönetmelikler",
+          key="std_isg",
+          value=True,
+      )
+
+      ek_standartlar = st.text_area(
+          "Eklemek istediğiniz ilave standartlar ve açıklamaları (Her satıra bir tane"
+          " yazabilirsiniz)",
+          "",
+          height=80,
+      )
+
+    if bolum_3_aktif:
+      # --- 3. SEKME / BÖLÜM: MEKANİK TESİSAT PROJE KAPSAMI ---
+      st.markdown('<div id="bolum_3"></div>', unsafe_allow_html=True)
+      st.header("3. MEKANİK TESİSAT PROJE KAPSAMI")
+      st.caption("Rapor seçimi: " + ("Dahil" if bolum_3_aktif else "Hariç"))
+      st.write(
+          "Proje kapsamında yer alacak mekanik tesisat sistemlerini seçebilirsiniz:"
+      )
+
+      kapsam_keys = [
+          "kapsam_isitma",
+          "kapsam_sogutma",
+          "kapsam_soguk_su",
+          "kapsam_sicak_su",
+          "kapsam_yangin_depo",
+          "kapsam_atik_su",
+          "kapsam_yangin_dagitim",
+          "kapsam_kazan_dairesi",
+          "kapsam_havalandirma",
+          "kapsam_basinc_hava",
+          "kapsam_medikal_gaz",
+          "kapsam_otomatik",
+      ]
+      _toplu_secim_butonlari(kapsam_keys)
+
+      kapsam_isitma = st.checkbox(
+          "Isıtma tesisatı,", key="kapsam_isitma", value=True
+      )
+      kapsam_sogutma = st.checkbox(
+          "Soğutma tesisatı,", key="kapsam_sogutma", value=True
+      )
+      kapsam_soguk_su = st.checkbox(
+          "Kullanma soğuk suyu tesisatı,", key="kapsam_soguk_su", value=True
+      )
+      kapsam_sicak_su = st.checkbox(
+          "Kullanma sıcak suyu tesisatı,", key="kapsam_sicak_su", value=True
+      )
+      kapsam_yangin_depo = st.checkbox(
+          "Yangın ve kullanma suyu depolaması ve dağıtımı,",
+          key="kapsam_yangin_depo",
+          value=True,
+      )
+      kapsam_atik_su = st.checkbox(
+          "Yapı içinde atık su tesisatı (Yapı çıkış rögarına),",
+          key="kapsam_atik_su",
+          value=True,
+      )
+      kapsam_yangin_dagitim = st.checkbox(
+          "Yangın suyu iç ve dış dağıtım sistemleri,",
+          key="kapsam_yangin_dagitim",
+          value=True,
+      )
+      kapsam_kazan_dairesi = st.checkbox(
+          "Merkezi ısıtma kazan dairesi ve tali teknik hacimler,",
+          key="kapsam_kazan_dairesi",
+          value=True,
+      )
+      kapsam_havalandirma = st.checkbox(
+          "Havalandırma Tesisatı", key="kapsam_havalandirma", value=True
+      )
+      kapsam_basinc_hava = st.checkbox(
+          "Basınçlı hava tesisatı,", key="kapsam_basinc_hava", value=False
+      )
+      kapsam_medikal_gaz = st.checkbox(
+          "Medikal gaz tesisatı", key="kapsam_medikal_gaz", value=False
+      )
+      kapsam_otomatik = st.checkbox(
+          "Otomatik kontrol sistemi kavramı tanımı,",
+          key="kapsam_otomatik",
+          value=True,
+      )
+
+      ek_kapsam = st.text_area(
+          "Eklemek istediğiniz ilave proje kapsam maddeleri (Her satıra bir tane"
+          " yazabilirsiniz)",
+          "",
+          height=80,
+      )
+
+    # -----------------------------------------------------------------------------
+    # BÖLÜM 4 SEÇİMİ KAPALI OLSA BİLE KULLANILAN GÜVENLİ VARSAYILANLAR
+    # -----------------------------------------------------------------------------
+    # 6.3.3 Boyler hesabı, 4. bölümün rapora dahil edilip edilmediğinden bağımsız
+    # çalışabilir. Bu nedenle rej_boyler değişkeni mutlaka önceden tanımlı olmalıdır.
+    # Böylece "TÜMÜNÜ KALDIR" sonrasında yalnızca 6.3.3 tekrar açıldığında
+    # NameError oluşmaz. 4. bölüm açılırsa aşağıdaki selectbox değeri bunu günceller.
+    st.session_state.setdefault("rej_boyler_v53", "80/60")
+    st.session_state.setdefault("rej_gunes_ist_v68", "60/40")
+    rej_boyler = st.session_state.get("rej_boyler_v53", "80/60")
+
+    if bolum_4_aktif:
+      # --- 4. SEKME / BÖLÜM: TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI ---
+      st.markdown('<div id="bolum_4"></div>', unsafe_allow_html=True)
+      st.header("4. TESİSTE KULLANILACAK ISI İLETİM AKIŞKANLARI")
+      st.caption("Rapor seçimi: " + ("Dahil" if bolum_4_aktif else "Hariç"))
+      st.write(
+          "Raporda yer almasını istediğiniz ısı iletim akışkanlarını seçin ve"
+          " rejimlerini belirleyin:"
+      )
+
+      sicaklik_secenekleri = [
+          "80/60",
+          "70/50",
+          "60/40",
+          "50/30",
+          "50/40",
+          "7/12",
+          "6/11",
+          "10/60",
+      ]
+      buhar_secenekleri = [
+          "1 atm (100 °C)",
+          "2 bar (120 °C)",
+          "3 bar (133 °C)",
+          "4 bar (143 °C)",
+          "6 bar (165 °C)",
+          "8 bar (175 °C)",
+      ]
+      kizgin_su_secenekleri = [
+          "120/90",
+          "130/70",
+          "140/90",
+          "150/100",
+          "160/110",
+          "180/130",
+      ]
+
+      akiskan_keys = [
+          "chk_kalorifer",
+          "chk_fco_ist",
+          "chk_fco_sog",
+          "chk_ks_ist",
+          "chk_buhar",
+          "chk_ks_sog",
+          "chk_boyler",
+          "chk_k_sicak",
+          "chk_doseme",
+          "chk_kizgin",
+          "chk_gunes_ist",
+      ]
+      _toplu_secim_butonlari(akiskan_keys)
+
+      col1, col2 = st.columns(2)
+
+      with col1:
+        chk_kalorifer = st.checkbox(
+            "1. Kalorifer tesisatı", key="chk_kalorifer", value=True
+        )
+        sec_kalorifer = st.multiselect(
+            "Kalorifer Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["80/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_kalorifer_akiskan_v1",
+        )
+        rej_kalorifer = next((x for x in sec_kalorifer if x in sicaklik_secenekleri), "80/60")
+        st.session_state["akiskan_kalorifer_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_kalorifer
+        st.session_state["akiskan_kalorifer_elektrik"] = "Elektrik" in sec_kalorifer
+
+        # Klima Tesisatı sekmesi: kalorifer tesisatındaki rejim/akışkan seçeneklerinin
+        # aynısını ayrı bir sekmede sunar; mevcut kalorifer seçim anahtarlarına dokunmaz.
+        with st.expander("Klima Tesisatı", expanded=False):
+            st.markdown("#### Klima Tesisatı")
+            chk_klima_tesisati = st.checkbox(
+                "Klima tesisatı", key="chk_klima_tesisati_v1", value=True
+            )
+            sec_klima_tesisati = st.multiselect(
+                "Klima Tesisatı Rejimi / Isı İletim Akışkanı:",
+                sicaklik_secenekleri
+                + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+                default=[
+                    "7/12",
+                    "Klima Gazı (R134A ve/veya R410A ve/veya R52)",
+                    "Elektrik",
+                ],
+                key="sec_klima_tesisati_akiskan_v1",
+            )
+            st.session_state["rej_klima_tesisati_v1"] = next(
+                (x for x in sec_klima_tesisati if x in sicaklik_secenekleri), "7/12"
+            )
+            st.session_state["akiskan_klima_tesisati_klima_gazi"] = (
+                "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_klima_tesisati
+            )
+            st.session_state["akiskan_klima_tesisati_elektrik"] = (
+                "Elektrik" in sec_klima_tesisati
+            )
+
+        chk_fco_ist = st.checkbox(
+            "2. Fan-Coil ısıtma tesisatı", key="chk_fco_ist", value=True
+        )
+        rej_fco_ist = st.selectbox(
+            "Fan-Coil Isıtma Rejimi:", sicaklik_secenekleri, index=0
+        )
+
+        chk_fco_sog = st.checkbox(
+            "3. Fan-Coil Soğutma tesisatı", key="chk_fco_sog", value=True
+        )
+        rej_fco_sog = st.selectbox(
+            "Fan-Coil Soğutma Rejimi:", sicaklik_secenekleri, index=5
+        )
+
+        chk_ks_ist = st.checkbox(
+            "4. Klima santrali ısıtma tesisatı", key="chk_ks_ist", value=True
+        )
+        sec_ks_ist = st.multiselect(
+            "Klima Santrali Isıtma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["80/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_ks_ist_akiskan_v1",
+        )
+        rej_ks_ist = next((x for x in sec_ks_ist if x in sicaklik_secenekleri), "80/60")
+        st.session_state["akiskan_ks_ist_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_ks_ist
+        st.session_state["akiskan_ks_ist_elektrik"] = "Elektrik" in sec_ks_ist
+
+        chk_buhar = st.checkbox("9. Buhar tesisatı", key="chk_buhar", value=False)
+        rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
+
+        chk_gunes_ist = st.checkbox(
+            "11. Güneş Enerjisi Isıtma Tesisatı",
+            key="chk_gunes_ist",
+            value=True,
+        )
+        rej_gunes_ist = st.selectbox(
+            "Güneş Enerjisi Isıtma Rejimi:",
+            ["60/40"],
+            index=0,
+            key="rej_gunes_ist_v68",
+        )
+
+      with col2:
+        chk_ks_sog = st.checkbox(
+            "5. Klima santrali Soğutma tesisatı", key="chk_ks_sog", value=True
+        )
+        sec_ks_sog = st.multiselect(
+            "Klima Santrali Soğutma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["7/12", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_ks_sog_akiskan_v1",
+        )
+        rej_ks_sog = next((x for x in sec_ks_sog if x in sicaklik_secenekleri), "7/12")
+        st.session_state["akiskan_ks_sog_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_ks_sog
+        st.session_state["akiskan_ks_sog_elektrik"] = "Elektrik" in sec_ks_sog
+
+        chk_boyler = st.checkbox(
+            "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
+        )
+        # Boyler ısıtma rejimi varsayılan olarak 80/60 olsun.
+        # Seçim bölüm 4 kapalıyken de korunur; bölüm tekrar açıldığında aynı değer gelir.
+        sec_boyler = st.multiselect(
+            "Boyler Isıtma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=[st.session_state["rej_boyler_v53"], "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_boyler_akiskan_v1",
+        )
+        rej_boyler = next((x for x in sec_boyler if x in sicaklik_secenekleri), "80/60")
+        st.session_state["rej_boyler_v53"] = rej_boyler
+        st.session_state["akiskan_boyler_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_boyler
+        st.session_state["akiskan_boyler_elektrik"] = "Elektrik" in sec_boyler
+
+        chk_k_sicak = st.checkbox(
+            "7. Kullanma sıcak suyu", key="chk_k_sicak", value=True
+        )
+        sec_k_sicak = st.multiselect(
+            "Kullanma Sıcak Suyu Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["10/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_k_sicak_akiskan_v1",
+        )
+        rej_k_sicak = next((x for x in sec_k_sicak if x in sicaklik_secenekleri), "10/60")
+        st.session_state["akiskan_k_sicak_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_k_sicak
+        st.session_state["akiskan_k_sicak_elektrik"] = "Elektrik" in sec_k_sicak
+
+        chk_doseme = st.checkbox(
+            "8. Döşemeden ısıtma tesisatı", key="chk_doseme", value=True
+        )
+        rej_doseme = st.selectbox(
+            "Döşemeden Isıtma Rejimi:", sicaklik_secenekleri, index=4
+        )
+
+        chk_kizgin = st.checkbox(
+            "10. Kızgın su tesisatı", key="chk_kizgin", value=False
+        )
+        rej_kizgin = st.selectbox(
+            "Kızgın Su Rejimi:", kizgin_su_secenekleri, index=0
+        )
+
+    if bolum_5_aktif:
+      # --- 5. BÖLÜM: İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ ---
+      st.markdown('<div id="bolum_5"></div>', unsafe_allow_html=True)
+      st.header("5. İKLİM, KONFOR ŞARTLARI VE TASARIM KRİTERLERİ")
+      st.caption("Rapor seçimi: " + ("Dahil" if bolum_5_aktif else "Hariç"))
+      if bolum_51_aktif:
+        st.markdown('<div id="bolum_51"></div>', unsafe_allow_html=True)
+        st.subheader("5.1 DIŞ HAVA TASARIM KRİTERLERİ")
+
+        iller_listesi = sorted(list(iklim_veritabani.keys()))
+
+        # İl seçimini benzersiz bir session_state anahtarıyla sakla.
+        # Proje kaydedilip yeniden açıldığında bu anahtar proje ayarlarıyla
+        # geri yüklenir; böylece varsayılan ilk il (Adana) seçimi ezmez.
+        _kayitli_il = st.session_state.get("iklim_secilen_il_v1")
+        _il_index = iller_listesi.index(_kayitli_il) if _kayitli_il in iller_listesi else 0
+        secilen_il = st.selectbox(
+            "Yapının inşa edileceği ili seçin:",
+            iller_listesi,
+            index=_il_index,
+            key="iklim_secilen_il_v1",
+        )
+
+        ilceler_listesi = sorted(list(iklim_veritabani[secilen_il].keys()))
+        _kayitli_ilce = st.session_state.get("iklim_secilen_ilce_v1")
+        _ilce_index = ilceler_listesi.index(_kayitli_ilce) if _kayitli_ilce in ilceler_listesi else 0
+        secilen_ilce = st.selectbox(
+            "Yapının inşa edileceği ilçeyi seçin:",
+            ilceler_listesi,
+            index=_ilce_index,
+            key="iklim_secilen_ilce_v1",
+        )
+
+        iklim_veri = iklim_veritabani[secilen_il][secilen_ilce]
+
+        st.markdown(f"### 📌 {secilen_il} / {secilen_ilce} İklim Verileri")
+        c_1, c_2 = st.columns(2)
+        with c_1:
+          st.markdown(
+              f"• **KIŞ**: `{iklim_veri['kis_kt']}` °C KT , `{iklim_veri['kis_yt']}`"
+              " °C YT"
+          )
+          st.markdown(
+              f"• **YAZ**: `{iklim_veri['yaz_kt']}` °C KT , `{iklim_veri['yaz_yt']}`"
+              " °C YT"
+          )
+          st.markdown(f"• **Günlük Sıcaklık Farkı**: `{iklim_veri['gsf']}` °C")
+        with c_2:
+          st.markdown(f"• **Enlem**: `{iklim_veri['enlem']}`")
+          st.markdown(f"• **Boylam**: `{iklim_veri['boylam']}`")
+          st.markdown(f"• **Deniz seviyesinden yüksekliği**: `{iklim_veri['rakim']}` m.")
+
+
+
+
+# 6. SIHHİ TESİSAT — modüler dosyadan çalıştırılır
+run_fragment("sihhi.py", globals())
+# 7. YANGIN TESİSATI — modüler dosyadan çalıştırılır
+run_fragment("yangin.py", globals())
+
+with _t_isitma:
+    st.header("8. ISITMA TESİSATI")
+    st.info("Isıtma tesisatı modülü bu sekme altında yer alacaktır.")
+
+with _t_sogutma:
+    st.header("9. SOĞUTMA TESİSATI")
+    st.info("Soğutma tesisatı modülü bu sekme altında yer alacaktır.")
+
+with _t_havalandirma:
+    st.header("10. HAVALANDIRMA TESİSATI")
+    st.info("Havalandırma tesisatı modülü bu sekme altında yer alacaktır.")
+
+
+
+# RAPOR OLUŞTURMA — modüler rapor motoru
+run_fragment("rapor.py", globals())
