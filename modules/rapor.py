@@ -2989,6 +2989,26 @@ if _rapor_olustur_sidebar:
                                           ("Hesap debisi (Q = V × N)", f"{float(_mh7113.get('debi_m3h', 0)):,.0f} m³/h"),
                                           ("Hesap debisi", f"{float(_mh7113.get('debi_m3s', 0)):,.3f} m³/s"),
                                       ]
+                                      _koridor_fan7113 = _mh7113.get("koridor_fan_hesabi", {})
+                                      if _koridor_fan7113:
+                                          _rows7113.extend([
+                                              ("DUMAN TAHLİYE FANI — EXCEL HESAP YÖNTEMİ", ""),
+                                              ("Fan kapasitesi (Qfan = Q × 3)", f"{float(_koridor_fan7113.get('fan_debisi_m3h', 0)):,.0f} m³/h"),
+                                              ("Menfez adedi", str(_koridor_fan7113.get("menfez_adet", 1))),
+                                              ("Menfez ölçüsü", f"{float(_koridor_fan7113.get('menfez_en_cm', 0)):g} × {float(_koridor_fan7113.get('menfez_boy_cm', 0)):g} cm"),
+                                              ("Menfez başına debi", f"{float(_koridor_fan7113.get('menfez_basina_debi_m3h', 0)):,.2f} m³/h"),
+                                              ("Menfez efektif alanı", f"{float(_koridor_fan7113.get('menfez_en_cm', 0))*float(_koridor_fan7113.get('menfez_boy_cm', 0))/10000.0:.4f} m²"),
+                                              ("Menfez hızı", f"{float(_koridor_fan7113.get('menfez_hizi_ms', 0)):,.2f} m/s"),
+                                              ("Şaft/kanal kaybı", f"{float(_koridor_fan7113.get('kayip_saft_pa', 0)):,.0f} Pa"),
+                                              ("Menfez kaybı", f"{float(_koridor_fan7113.get('kayip_menfez_pa', 0)):,.0f} Pa"),
+                                              ("Panjur ve egzost atış kanalı kaybı", f"{float(_koridor_fan7113.get('kayip_panjur_pa', 0)):,.0f} Pa"),
+                                              ("Negatif basınç", f"{float(_koridor_fan7113.get('kayip_negatif_pa', 0)):,.0f} Pa"),
+                                              ("Toplam basınç kaybı", f"{float(_koridor_fan7113.get('kayip_toplam_pa', 0)):,.0f} Pa"),
+                                              (f"Emniyet faktörü (%{float(_koridor_fan7113.get('emniyet_yuzde', 10)):g})", f"{float(_koridor_fan7113.get('emniyet_pa', 0)):,.0f} Pa"),
+                                              ("Seçilen fan basıncı (50 Pa üst kademeye yuvarlanmış)", f"{float(_koridor_fan7113.get('fan_basinc_pa', 0)):,.0f} Pa"),
+                                              ("Motor gücü (hesap)", f"{float(_koridor_fan7113.get('motor_ham_kw', 0)):,.3f} kW"),
+                                              ("Seçilen motor gücü", f"{float(_koridor_fan7113.get('motor_secilen_kw', 0)):,.2f} kW"),
+                                          ])
                                       for _lab, _val in _rows7113:
                                           _cells = _tab7113.add_row().cells
                                           _cells[0].text = _lab; _cells[1].text = _val
@@ -3003,7 +3023,7 @@ if _rapor_olustur_sidebar:
                                   for _lab, _val in _rows7113:
                                       _cells = _tab7113.add_row().cells
                                       _cells[0].text = _lab; _cells[1].text = _val
-                              _pn = doc.add_paragraph("Hesap yöntemi: Q = V × N. N değeri, yalnızca ilgili mahal ve mevzuat koşulu için geçerli olan düzenlemeden alınmalıdır. Sığınak ve diğer mahaller için kullanılacak katsayı, ilgili mevzuat/standart ve onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2 ve Madde 85)")
+                              _pn = doc.add_paragraph("Genel mahal hesabı: Q = V × N. Koridor duman tahliye fanı hesabında, DUMAN TAHLİYE FANI.xlsx dosyasındaki yöntem izlenmiştir: fan kapasitesi = duman egzoz debisi × 3; basınç kayıplarına emniyet faktörü eklenmiş ve fan basıncı 50 Pa kademesine yukarı yuvarlanmıştır. Mahale uygulanacak hava değişim sayısı ve tasarım kriteri proje/mevzuat kapsamında doğrulanmalıdır.")
 
 
                   if _bk == "bolum_79":
