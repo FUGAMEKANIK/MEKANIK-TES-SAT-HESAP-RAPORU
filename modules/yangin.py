@@ -2188,6 +2188,54 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                             _ekler711.append({"baslik": _eb711.strip(), "metin": _em711.strip()}); st.session_state["yangin_7111_ek_maddeler"] = _ekler711; st.rerun()
                         for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
 
+                    # 7.11.2 — Zorunlulukların mahal ve kullanım koşullarına göre açıklanması
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.2 DUMAN KONTROLÜ GEREKEN BİNA VE MAHALLER</div>', unsafe_allow_html=True)
+                    _7112_rapor_key = "yangin_7112_rapora_ekle"
+                    st.session_state.setdefault(_7112_rapor_key, True)
+                    st.checkbox("7.11.2 zorunluluk açıklamaları rapora eklensin", key=_7112_rapor_key)
+                    _zorunluluk_711 = [
+                        ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
+                        ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
+                        ("3", "Sığınaklar", "100 m²'den büyük sığınaklarda duman tahliye sistemi düzenlenmesi gerekir. Mahal alanı, kullanım amacı ve ilgili diğer hükümler proje özelinde kontrol edilmelidir. (BYKHY Madde 59/1)"),
+                        ("4", "Dizel yangın pompası ve acil durum jeneratörü mahalleri", "Mekanik havalandırmanın gerekli olduğu bu mahallerin duman tahliye/havalandırma sistemleri diğer bölümlere hizmet veren sistemlerden bağımsız tasarlanır. Dış hava emişi ve egzoz atış noktaları arasında yönetmelikte belirtilen en az 5 m mesafe sağlanır. (BYKHY Madde 88/1)"),
+                        ("5", "Mutfak pişirme alanları", "Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden en az 5 m uzakta olmalıdır. (BYKHY Madde 88/2)"),
+                        ("6", "Kazan dairesi, bodrum depoları ve otoparklar", "Bu mahaller için özel havalandırma/duman tahliye koşulları, mahallin niteliği ve ilgili fıkra kapsamı doğrulanarak uygulanır; bütün mahallere koşulsuz aynı debi katsayısı uygulanmamalıdır. (BYKHY Madde 88/3)"),
+                        ("7", "Parlayıcı organik toz bulunan mahaller", "Parlayıcı organik tozların bulunduğu üretim veya depolama alanlarında, ilgili özel hükümlere göre duman kontrolü ve havalandırma ihtiyacı değerlendirilir. (BYKHY Madde 88/4)"),
+                    ]
+                    _7112_atif_key = "yangin_7112_atiflari"
+                    st.session_state.setdefault(_7112_atif_key, True)
+                    st.checkbox("7.11.2 mevzuat atıfları rapora eklensin", key=_7112_atif_key)
+                    _t7112_1, _t7112_2 = st.columns(2)
+                    with _t7112_1:
+                        if st.button("✓ 7.11.2 tüm maddeleri seç", key="yangin_7112_tum_sec", use_container_width=True):
+                            for _n, _b, _m in _zorunluluk_711: st.session_state[f"yangin_7112_madde_{_n}"] = True
+                            st.rerun()
+                    with _t7112_2:
+                        if st.button("✕ 7.11.2 tüm maddeleri kaldır", key="yangin_7112_tum_kaldir", use_container_width=True):
+                            for _n, _b, _m in _zorunluluk_711: st.session_state[f"yangin_7112_madde_{_n}"] = False
+                            st.rerun()
+                    for _n, _b, _m in _zorunluluk_711:
+                        _key = f"yangin_7112_madde_{_n}"; st.session_state.setdefault(_key, True)
+                        _display = _m if st.session_state[_7112_atif_key] else re.sub(r"\s*\([^)]*(?:BYKHY|Madde)[^)]*\)", "", _m, flags=re.IGNORECASE).strip()
+                        with st.container(border=True): st.checkbox(f"7.11.2.{_n} {_b}", key=_key); st.caption(_display)
+
+                    # 7.11.3 — Hava değişim katsayısıyla debi hesabı; yalnızca ilgili mevzuat şartı geçerliyse kullanılır.
+                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.3 DUMAN TAHLİYE DEBİSİ HESABI</div>', unsafe_allow_html=True)
+                    _7113_rapor_key = "yangin_7113_rapora_ekle"
+                    st.session_state.setdefault(_7113_rapor_key, True)
+                    st.checkbox("7.11.3 debi hesabı rapora eklensin", key=_7113_rapor_key)
+                    _oda_turu = st.selectbox("Hesaplanan mahal", ["Kapalı otopark (BYKHY Madde 60/2 şartları sağlanıyorsa)", "Sığınak (uygulanacak debi kriteri ayrıca doğrulanmalı)", "Kazan dairesi / bodrum depo (ilgili hüküm kapsamındaysa)", "Diğer mahal (katsayı proje standardına göre girilir)"], key="yangin_7113_mahal")
+                    _vcol1, _vcol2, _vcol3 = st.columns(3)
+                    with _vcol1: _alan7113 = st.number_input("Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0, key="yangin_7113_alan")
+                    with _vcol2: _yukseklik7113 = st.number_input("Mahal yüksekliği (m)", min_value=0.0, value=3.0, step=0.1, key="yangin_7113_yukseklik")
+                    with _vcol3: _n7113 = st.number_input("Hava değişim sayısı N (1/h)", min_value=0.0, value=10.0 if _oda_turu.startswith("Kapalı otopark") else 0.0, step=1.0, key="yangin_7113_n")
+                    _hacim7113 = _alan7113 * _yukseklik7113
+                    _q7113_m3h = _hacim7113 * _n7113
+                    _q7113_m3s = _q7113_m3h / 3600.0
+                    st.markdown(f"**Mahal hacmi:** {_hacim7113:,.2f} m³  |  **Hesap debisi:** {_q7113_m3h:,.0f} m³/h ({_q7113_m3s:,.3f} m³/s)")
+                    st.caption("Formül: Q = V × N. Q m³/h cinsindedir; m³/s için 3600'e bölünür. 10 hava değişimi yalnızca ilgili yönetmelik koşulu sağlanan kapalı otopark gibi mevzuatta açıkça belirtilen durumlarda kullanılmalıdır. Sığınak ve diğer mahaller için N değeri ilgili mevzuat/standart veya onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2; genel tasarım ilkeleri Madde 85)")
+                    st.session_state["yangin_7113_hesap"] = {"mahal": _oda_turu, "alan_m2": _alan7113, "yukseklik_m": _yukseklik7113, "hacim_m3": _hacim7113, "hava_degisimi_1h": _n7113, "debi_m3h": _q7113_m3h, "debi_m3s": _q7113_m3s}
+
             elif _baslik.startswith("7.9 "):
                 # --------------------------------------------------------------
                 # 7.9 MERDİVEN BASINÇLANDIRMA SİSTEMİ
