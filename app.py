@@ -444,14 +444,7 @@ def _proje_widget_anahtari_mi(anahtar):
     anahtar = str(anahtar)
     if anahtar in _PROJE_WIDGET_KAYDETME_DISI_KEYS:
         return True
-    # Türkçe adlandırılmış buton anahtarları da proje JSON'undan geri
-    # yüklenmemelidir. Örnek: yangin_7111_ekle_buton_0.
-    if (
-        "_btn_" in anahtar
-        or anahtar.endswith("_btn")
-        or "_buton_" in anahtar
-        or anahtar.endswith("_buton")
-    ):
+    if "_btn_" in anahtar or anahtar.endswith("_btn"):
         return True
     if anahtar.startswith("rapor_tumunu_") or anahtar.startswith("rapor_word_indir"):
         return True
@@ -2001,6 +1994,150 @@ with _t_genel:
     mmo_no = st.text_input("MMO Oda No", "109913")
     tarih = st.text_input("Rapor Tarihi", bugun_ay_yil)
 
+    st.header("1. Genel Bina Bilgileri")
+    # ------------------------------------------------------------------
+    # GENEL BİNA BİLGİLERİ
+    # Bu bilgiler Genel Bilgiler sekmesinde bir kez girilir; yangın modülü
+    # aynı session_state anahtarlarını kullanarak değerleri okumaya devam eder.
+    # ------------------------------------------------------------------
+    with st.expander("GENEL BİNA BİLGİLERİ", expanded=False):
+        st.markdown(
+            '<div style="font-size:16px;font-weight:700;font-style:italic;">'
+            'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "Bu bilgiler, aşağıdaki yangın tesisatı bölümlerinde yapılacak "
+            "ön değerlendirme ve hesaplamalarda ortak veri olarak kullanılacaktır. "
+            "Şimdilik rapora aktarılmaz."
+        )
+        with st.expander("ⓘ BİNA YÜKSEKLİĞİ VE YAPI YÜKSEKLİĞİ TANIMI / ŞEKLİ", expanded=False):
+            st.markdown(
+                "**Bina yüksekliği:** Binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir."
+            )
+            st.markdown(
+                "**Yapı yüksekliği:** Bodrum katlar, asma katlar ve çatı arası piyesler dâhil olmak üzere, yapının inşa edilen bütün katlarının toplam yüksekliğidir."
+            )
+            # Şema dosyası GitHub/Streamlit ortamında isim veya uzantı farkı
+            # nedeniyle bulunamazsa, aynı klasördeki uygun PNG dosyasını da ara.
+            _sema_kok = Path(__file__).resolve().parent
+            _sema_adaylari = [
+                _sema_kok / "bina_yuksekligi_yapi_yuksekligi_sema_opt.png",
+                *_sema_kok.glob("bina_yuksekligi_yapi_yuksekligi_sema*.png"),
+            ]
+            _sema_yolu = next((p for p in _sema_adaylari if p.is_file()), None)
+            _sema_verisi = _sema_yolu.read_bytes() if _sema_yolu else None
+            if _sema_verisi:
+                st.image(_sema_verisi, caption="Bina yüksekliği ve yapı yüksekliği — şematik gösterim", use_container_width=True)
+            else:
+                st.warning("Bina yüksekliği / yapı yüksekliği şeması bulunamadı. PNG dosyasının app.py ile aynı kökte olduğundan emin olun.")
+            st.caption(
+                "Not: Şema açıklayıcı amaçlıdır. Projede ölçü alınırken yürürlükteki mevzuat tanımları ve ilgili kotlar esas alınmalıdır."
+            )
+        # BLOK BİLGİLERİ: blok adedi, her bloğun adı ve alanı.
+        # Eski tek toplam alan değeri ilk blok için başlangıç değeri olarak korunur.
+        _blok_secenekleri = ["Tek blok"] + [f"{_i} blok" for _i in range(2, 11)]
+        _mevcut_toplam_alan = float(st.session_state.get("yangin_genel_toplam_alan_m2", 0.0) or 0.0)
+        st.session_state.setdefault("yangin_genel_blok_sayisi", "Tek blok")
+        st.selectbox(
+            "Blok sayısı",
+            options=_blok_secenekleri,
+            key="yangin_genel_blok_sayisi",
+            help="Projede bulunan blok sayısını seçiniz. Her blok için ad ve m² bilgisi ayrı girilir.",
+        )
+        _blok_adet = 1 if st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") == "Tek blok" else int(str(st.session_state["yangin_genel_blok_sayisi"]).split()[0])
+        _blok_sekmeleri = st.tabs([f"Blok {_i}" for _i in range(1, _blok_adet + 1)])
+        _blok_alanlari = []
+        for _i, _blok_sekme in enumerate(_blok_sekmeleri, start=1):
+            _ad_key = f"yangin_genel_blok_{_i}_adi"
+            _alan_key = f"yangin_genel_blok_{_i}_alan_m2"
+            if _i == 1:
+                st.session_state.setdefault(_ad_key, "Blok 1")
+                st.session_state.setdefault(_alan_key, _mevcut_toplam_alan)
+            else:
+                st.session_state.setdefault(_ad_key, f"Blok {_i}")
+                st.session_state.setdefault(_alan_key, 0.0)
+            with _blok_sekme:
+                _bk1, _bk2 = st.columns([2, 1])
+                with _bk1:
+                    st.text_input(f"Blok {_i} adı", key=_ad_key, help="Örnek: A Blok, B Blok, C Blok")
+                with _bk2:
+                    st.number_input(f"Blok {_i} alanı (m²)", min_value=0.0, step=10.0, key=_alan_key)
+            _blok_alanlari.append(float(st.session_state.get(_alan_key, 0.0) or 0.0))
+        _blok_toplam_alan = round(sum(_blok_alanlari), 2)
+        # Var olan toplam alan anahtarı güncellenir; diğer hesaplamalar bu toplamı kullanmaya devam eder.
+        st.session_state["yangin_genel_toplam_alan_m2"] = _blok_toplam_alan
+        st.info(f"**Blokların toplam alanı: {_blok_toplam_alan:,.2f} m²**".replace(",", "X").replace(".", ",").replace("X", "."))
+        _b1, _b2, _b3 = st.columns(3)
+        with _b1:
+            st.number_input(
+                "Toplam yapı / kapalı kullanım alanı (m²)",
+                min_value=0.0, step=10.0,
+                key="yangin_genel_toplam_alan_m2",
+                disabled=True,
+                help="Bu değer, yukarıda girilen blok alanlarının toplamından otomatik hesaplanır.",
+            )
+            st.number_input(
+                "Kat sayısı", min_value=0, step=1,
+                key="yangin_genel_kat_sayisi",
+                help="Binanın toplam kat sayısını giriniz. İlgili yangın güvenliği değerlendirmelerinde kullanılacaktır.",
+            )
+            st.number_input(
+                "Bodrum kat sayısı", min_value=0, step=1,
+                key="yangin_genel_bodrum_kat_sayisi",
+                help="Binada bulunan bodrum kat adedini giriniz.",
+            )
+        with _b2:
+            st.number_input(
+                "Bina yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_bina_yuksekligi_m",
+                help="BYKHY tanımına göre binanın kot aldığı noktadan saçak seviyesine kadar olan mesafedir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
+            )
+            st.number_input(
+                "Yapı yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_yapi_yuksekligi_m",
+                help="BYKHY tanımına göre bodrum katlar, asma katlar ve çatı arası piyesler dâhil yapının inşa edilen bütün katlarının toplam yüksekliğidir. Değeri metre olarak giriniz. ⓘ Ayrıntılı şekil aşağıdaki bilgi panelindedir.",
+            )
+            st.number_input(
+                "Merdiven kovası yüksekliği (m)", min_value=0.0, step=0.10,
+                key="yangin_genel_merdiven_kovasi_yuksekligi_m",
+                help="Merdiven kovası / merdiven basınçlandırması değerlendirmesinde kullanılacak yaklaşık yüksekliği metre olarak giriniz.",
+            )
+        with _b3:
+            st.number_input(
+                "Toplam kişi sayısı", min_value=0, step=1,
+                key="yangin_genel_kisi_sayisi",
+                help="Binada bulunan veya hesapta esas alınacak toplam kişi sayısını giriniz.",
+            )
+            st.number_input(
+                "Otopark sayısı / araç kapasitesi", min_value=0, step=1,
+                key="yangin_genel_otopark_arac_sayisi",
+                help="Kapalı otoparkta bulunabilecek toplam araç kapasitesini giriniz.",
+            )
+            st.number_input(
+                "Kapalı otopark alanı (m²)", min_value=0.0, step=10.0,
+                key="yangin_genel_kapali_otopark_alan_m2",
+                help="Kapalı otoparkın yangın güvenliği değerlendirmesinde kullanılacak toplam alanını m² olarak giriniz.",
+            )
+        _b4, _b5, _b6 = st.columns(3)
+        with _b4:
+            st.number_input(
+                "Yatak sayısı (varsa)", min_value=0, step=1,
+                key="yangin_genel_yatak_sayisi",
+                help="Hastane, otel, yurt vb. yapılarda varsa toplam yatak sayısını giriniz.",
+            )
+        with _b5:
+            st.number_input(
+                "İmar planlama / yerleşim alanı (m²)", min_value=0.0, step=10.0,
+                key="yangin_genel_imar_alani_m2",
+                help="Proje kapsamında kullanılacak yerleşim / imar alanını m² olarak giriniz.",
+            )
+        with _b6:
+            st.checkbox(
+                "Acil durum asansörü bulunuyor",
+                key="yangin_genel_acil_durum_asansoru",
+                help="Binada acil durum asansörü bulunup bulunmadığını belirtiniz.",
+            )
     if bolum_2_aktif:
       # --- 2. SEKME / BÖLÜM: UYGULANACAK STANDART VE YÖNETMELİKLER ---
       st.markdown('<div id="bolum_2"></div>', unsafe_allow_html=True)
