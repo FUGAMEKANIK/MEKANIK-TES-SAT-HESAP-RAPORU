@@ -344,6 +344,52 @@ if _rapor_olustur_sidebar:
           f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
       )
       doc.add_paragraph(yapi_metni)
+
+      # GENEL BİNA BİLGİLERİ: Genel Bilgiler bölümünde, yapı konum cümlesinin
+      # hemen altında gösterilir. Aynı tablo 7.2 Yangın bölümünde de korunur.
+      _gbi_genel_verileri = [
+          ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
+          ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
+          ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
+          ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+          ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+          ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+          ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
+          ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
+          ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
+          ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
+          ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
+          ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
+      ]
+      _blok_secim_genel = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
+      try:
+          _blok_adet_genel = 1 if _blok_secim_genel.lower().startswith("tek") else int(_blok_secim_genel.split()[0])
+      except (ValueError, IndexError):
+          _blok_adet_genel = 1
+      _blok_adet_genel = max(1, min(_blok_adet_genel, 10))
+      _gbi_genel_verileri.insert(0, ("Blok sayısı", str(_blok_adet_genel)))
+      for _i_blok_genel in range(1, _blok_adet_genel + 1):
+          _ad_blok_genel = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_genel}_adi", f"Blok {_i_blok_genel}") or f"Blok {_i_blok_genel}")
+          _alan_blok_genel = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_genel}_alan_m2", 0.0) or 0.0)
+          _gbi_genel_verileri.insert(_i_blok_genel, (f"Blok {_i_blok_genel} adı", _ad_blok_genel))
+          _gbi_genel_verileri.insert(_i_blok_genel + 1, (f"{_ad_blok_genel} alanı", f"{_alan_blok_genel:,.2f} m²"))
+
+      _gbi_genel_baslik = doc.add_paragraph()
+      _gbi_genel_run = _gbi_genel_baslik.add_run("GENEL BİNA BİLGİLERİ")
+      _gbi_genel_run.bold = True
+      _gbi_genel_run.italic = True
+      _gbi_genel_run.font.size = Pt(13)
+      _gbi_genel_tbl = doc.add_table(rows=1, cols=2)
+      _gbi_genel_tbl.style = "Table Grid"
+      _gbi_genel_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
+      _gbi_genel_tbl.rows[0].cells[1].text = "DEĞER"
+      for _cell in _gbi_genel_tbl.rows[0].cells:
+          for _run in _cell.paragraphs[0].runs:
+              _run.bold = True
+      for _etiket_genel, _deger_genel in _gbi_genel_verileri:
+          _gc_genel = _gbi_genel_tbl.add_row().cells
+          _gc_genel[0].text = _etiket_genel
+          _gc_genel[1].text = _deger_genel
   
       if bolum_2_aktif:
               # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
