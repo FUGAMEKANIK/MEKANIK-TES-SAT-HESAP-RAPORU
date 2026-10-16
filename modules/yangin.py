@@ -2239,20 +2239,84 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     _7113_rapor_key = "yangin_7113_rapora_ekle"
                     st.session_state.setdefault(_7113_rapor_key, True)
                     st.checkbox("7.11.2 debi hesabı rapora eklensin", key=_7113_rapor_key)
-                    _mahal_secenekleri7113 = ["Kapalı otopark (BYKHY Madde 60/2 şartları sağlanıyorsa)", "Sığınak (uygulanacak debi kriteri ayrıca doğrulanmalı)", "Kazan dairesi / bodrum depo (ilgili hüküm kapsamındaysa)", "Diğer mahal (katsayı proje standardına göre girilir)"]
+                    _mahal_secenekleri7113 = [
+                        "Kapalı otopark",
+                        "Sığınak",
+                        "Kazan dairesi / bodrum depo",
+                        "Diğer mahal",
+                    ]
                     _onceki_mahal7113 = st.session_state.get("yangin_7113_mahal", [_mahal_secenekleri7113[0]])
-                    if isinstance(_onceki_mahal7113, str): _onceki_mahal7113 = [_onceki_mahal7113]
-                    _oda_turu = st.multiselect("Hesaplanan mahaller (birden fazla seçebilirsiniz)", _mahal_secenekleri7113, default=[_m for _m in _onceki_mahal7113 if _m in _mahal_secenekleri7113], key="yangin_7113_mahal")
-                    _vcol1, _vcol2, _vcol3 = st.columns(3)
-                    with _vcol1: _alan7113 = st.number_input("Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0, key="yangin_7113_alan")
-                    with _vcol2: _yukseklik7113 = st.number_input("Mahal yüksekliği (m)", min_value=0.0, value=3.0, step=0.1, key="yangin_7113_yukseklik")
-                    with _vcol3: _n7113 = st.number_input("Hava değişim sayısı N (1/h)", min_value=0.0, value=10.0 if any(_m.startswith("Kapalı otopark") for _m in _oda_turu) else 0.0, step=1.0, key="yangin_7113_n")
-                    _hacim7113 = _alan7113 * _yukseklik7113
-                    _q7113_m3h = _hacim7113 * _n7113
-                    _q7113_m3s = _q7113_m3h / 3600.0
-                    st.markdown(f"**Mahal hacmi:** {_hacim7113:,.2f} m³  |  **Hesap debisi:** {_q7113_m3h:,.0f} m³/h ({_q7113_m3s:,.3f} m³/s)")
-                    st.caption("Formül: Q = V × N. Q m³/h cinsindedir; m³/s için 3600'e bölünür. 10 hava değişimi yalnızca ilgili yönetmelik koşulu sağlanan kapalı otopark gibi mevzuatta açıkça belirtilen durumlarda kullanılmalıdır. Sığınak ve diğer mahaller için N değeri ilgili mevzuat/standart veya onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2; genel tasarım ilkeleri Madde 85)")
-                    st.session_state["yangin_7113_hesap"] = {"mahal": _oda_turu, "alan_m2": _alan7113, "yukseklik_m": _yukseklik7113, "hacim_m3": _hacim7113, "hava_degisimi_1h": _n7113, "debi_m3h": _q7113_m3h, "debi_m3s": _q7113_m3s}
+                    if isinstance(_onceki_mahal7113, str):
+                        _onceki_mahal7113 = [_onceki_mahal7113]
+                    _oda_turu = st.multiselect(
+                        "Hesaplanacak mahaller (birden fazla seçebilirsiniz)",
+                        _mahal_secenekleri7113,
+                        default=[_m for _m in _onceki_mahal7113 if _m in _mahal_secenekleri7113],
+                        key="yangin_7113_mahal",
+                    )
+                    if _oda_turu:
+                        # Her mahal kendi sekmesinde ve kendi giriş anahtarlarıyla hesaplanır.
+                        _mahal_sekmeleri7113 = st.tabs(_oda_turu)
+                        _mahal_hesaplari7113 = []
+                        for _idx7113, (_mahal7113, _sekme7113) in enumerate(zip(_oda_turu, _mahal_sekmeleri7113)):
+                            _slug7113 = re.sub(r"[^a-zA-Z0-9]+", "_", _mahal7113).strip("_").lower()
+                            with _sekme7113:
+                                st.markdown(f"**{_mahal7113.upper()} — AYRI HESAP**")
+                                _vcol1, _vcol2, _vcol3 = st.columns(3)
+                                with _vcol1:
+                                    _alan7113 = st.number_input(
+                                        "Mahal alanı (m²)", min_value=0.0, value=200.0, step=10.0,
+                                        key=f"yangin_7113_{_slug7113}_alan",
+                                    )
+                                with _vcol2:
+                                    _yukseklik7113 = st.number_input(
+                                        "Mahal yüksekliği (m)", min_value=0.0, value=3.0, step=0.1,
+                                        key=f"yangin_7113_{_slug7113}_yukseklik",
+                                    )
+                                with _vcol3:
+                                    _varsayilan_n7113 = 10.0 if _mahal7113 == "Kapalı otopark" else 0.0
+                                    _n7113 = st.number_input(
+                                        "Hava değişim sayısı N (1/h)", min_value=0.0,
+                                        value=_varsayilan_n7113, step=1.0,
+                                        key=f"yangin_7113_{_slug7113}_n",
+                                    )
+                                _hacim7113 = _alan7113 * _yukseklik7113
+                                _q7113_m3h = _hacim7113 * _n7113
+                                _q7113_m3s = _q7113_m3h / 3600.0
+                                st.markdown(
+                                    f"**Mahal hacmi:** {_hacim7113:,.2f} m³  |  "
+                                    f"**Hesap debisi:** {_q7113_m3h:,.0f} m³/h "
+                                    f"({_q7113_m3s:,.3f} m³/s)"
+                                )
+                                st.caption(
+                                    "Formül: Q = V × N. Q m³/h cinsindedir; m³/s için 3600'e bölünür. "
+                                    "10 hava değişimi yalnızca ilgili yönetmelik koşulları sağlanan kapalı "
+                                    "otopark için başlangıç değeridir. Sığınak ve diğer mahallerin N değeri "
+                                    "ilgili mevzuat/standart veya onaylı tasarım kriterine göre girilmelidir."
+                                )
+                                _mahal_hesaplari7113.append({
+                                    "mahal": _mahal7113,
+                                    "alan_m2": _alan7113,
+                                    "yukseklik_m": _yukseklik7113,
+                                    "hacim_m3": _hacim7113,
+                                    "hava_degisimi_1h": _n7113,
+                                    "debi_m3h": _q7113_m3h,
+                                    "debi_m3s": _q7113_m3s,
+                                })
+                        st.session_state["yangin_7113_hesap"] = {
+                            "mahal": _oda_turu,
+                            "mahal_hesaplari": _mahal_hesaplari7113,
+                            "alan_m2": sum(x["alan_m2"] for x in _mahal_hesaplari7113),
+                            "yukseklik_m": None,
+                            "hacim_m3": sum(x["hacim_m3"] for x in _mahal_hesaplari7113),
+                            "hava_degisimi_1h": None,
+                            "debi_m3h": sum(x["debi_m3h"] for x in _mahal_hesaplari7113),
+                            "debi_m3s": sum(x["debi_m3s"] for x in _mahal_hesaplari7113),
+                        }
+                    else:
+                        st.info("Hesap yapmak için en az bir mahal seçin.")
+                        st.session_state["yangin_7113_hesap"] = {}
+
 
             elif _baslik.startswith("7.9 "):
                 # --------------------------------------------------------------
