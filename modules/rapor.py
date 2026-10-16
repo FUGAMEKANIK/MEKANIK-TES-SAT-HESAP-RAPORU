@@ -2938,14 +2938,13 @@ if _rapor_olustur_sidebar:
                   # 7.9 Merdiven basınçlandırma — seçilen mevzuat maddeleri ve her merdivenin hesabı
                   if _bk == "bolum_7110":
                       if bool(st.session_state.get("yangin_711_rapor_ui", True)):
-                          doc.add_heading("7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI", level=4)
+                          doc.add_heading("7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI VE TASARIM KRİTERLERİ", level=4)
                           _maddeler711_rapor = [
                               ("1", "Tasarım ilkeleri", "Duman kontrol sistemi olarak yapılan basınçlandırma, havalandırma ve duman tahliye tesisatı; binada bulunanlara zarar vermeyecek, paniği önleyecek ve binanın güvenli boşaltılmasını sağlayacak şekilde tasarlanmalı, tesis edilmeli ve çalışır durumda tutulmalıdır. (BYKHY Madde 85)"),
                               ("2", "Duman kontrolünün esasları", "Doğal duman tahliyesinde duman çekiş bacaları, duman kesicileri ve duman bölmeleri kullanılabilir. Mekanik duman kontrolünde iklimlendirme sistemi özel düzenlemelerle kullanılabilir veya ayrı mekanik havalandırma/duman kontrol sistemi kurulabilir. Duman tahliye ağızları sürekli açık veya yangında otomatik/elle açılabilir olmalı ve bakımları yapılmalıdır. (BYKHY Madde 86)"),
                               ("3", "İklimlendirme ve havalandırma tesisatının kullanımı", "Mevcut iklimlendirme ve havalandırma tesisatı duman kontrolü için kullanılacaksa mekanik duman kontrol sistemine ilişkin şartlar uygulanır. Kanallar uygun metal malzemeden yapılmalı, yeterli askılarla bağlanmalı, kaplama malzemesi zor alevlenici olmalı ve yangın güvenliği koşullarına uygun düzenlenmelidir. (BYKHY Madde 87)"),
                               ("4", "Özel mahallerde duman kontrolü", "Kazan dairesi, jeneratör odası, mutfak, otopark ve benzeri özel mahallerin havalandırma ve duman tahliye düzenleri, ilgili mahal için yönetmelikte belirtilen bağımsızlık, hava emişi, egzoz atışı ve yangın güvenliği koşullarına uygun tasarlanmalıdır. (BYKHY Madde 88)"),
                           ]
-                          doc.add_heading("7.11.1 DUMAN TAHLİYE SİSTEMİ YÖNETMELİK ESASLARI", level=4)
                           for _no711, _bas711, _met711 in _maddeler711_rapor:
                               if not bool(st.session_state.get(f"yangin_7111_madde_{_no711}", True)): continue
                               if not bool(st.session_state.get("yangin_711_yonetmelik_atiflari", True)): _met711 = _yangin_mevzuat_atiflarini_kaldir(_met711)
@@ -2953,7 +2952,7 @@ if _rapor_olustur_sidebar:
                           for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=len(_maddeler711_rapor)+1):
                               _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
                       if bool(st.session_state.get("yangin_7112_rapora_ekle", True)):
-                          doc.add_heading("7.11.2 DUMAN KONTROLÜ GEREKEN BİNA VE MAHALLER", level=4)
+                          doc.add_heading("ZORUNLULUK BULUNAN BİNA VE MAHALLER", level=4)
                           _zorunluluk711_rapor = [
                               ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
                               ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
@@ -2966,11 +2965,11 @@ if _rapor_olustur_sidebar:
                           for _no, _bas, _met in _zorunluluk711_rapor:
                               if not bool(st.session_state.get(f"yangin_7112_madde_{_no}", True)): continue
                               if not bool(st.session_state.get("yangin_7112_atiflari", True)): _met = _yangin_mevzuat_atiflarini_kaldir(_met)
-                              _p = doc.add_paragraph(); _r = _p.add_run(f"7.11.2.{_no} {_bas}: "); _r.bold = True; _p.add_run(_met)
+                              _p = doc.add_paragraph(); _r = _p.add_run(f"7.11.1.{int(_no) + 4} {_bas}: "); _r.bold = True; _p.add_run(_met)
                       if bool(st.session_state.get("yangin_7113_rapora_ekle", True)):
                           _h7113 = st.session_state.get("yangin_7113_hesap", {})
                           if _h7113:
-                              doc.add_heading("7.11.3 DUMAN TAHLİYE DEBİSİ HESABI", level=4)
+                              doc.add_heading("7.11.2 DUMAN TAHLİYE DEBİSİ HESABI", level=4)
                               _rows7113 = [
                                   ("Hesaplanan mahal", str(_h7113.get("mahal", "-"))),
                                   ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
