@@ -1180,7 +1180,7 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     # Bu bir aksiyon widget'ıdır; proje JSON'una hiçbir şekilde kaydedilmez.
     if st.button(
         "📄 RAPORU OLUŞTUR",
-        key="sidebar_rapor_olustur_v134",
+        key="sidebar_rapor_olustur_v134_app_unique_20261016",
         use_container_width=True,
         help="Hesap raporunu seçtiğiniz çıktı formatında hazırlar.",
     ):
