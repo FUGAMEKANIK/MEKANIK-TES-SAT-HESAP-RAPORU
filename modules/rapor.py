@@ -2974,19 +2974,37 @@ if _rapor_olustur_sidebar:
                           _h7113 = st.session_state.get("yangin_7113_hesap", {})
                           if _h7113:
                               doc.add_heading("7.11.2 DUMAN TAHLİYE DEBİSİ HESABI", level=4)
-                              _rows7113 = [
-                                  ("Hesaplanan mahaller", ", ".join(_h7113.get("mahal", [])) if isinstance(_h7113.get("mahal", []), list) else str(_h7113.get("mahal", "-"))),
-                                  ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
-                                  ("Mahal yüksekliği", f"{float(_h7113.get('yukseklik_m', 0)):,.2f} m"),
-                                  ("Mahal hacmi (V)", f"{float(_h7113.get('hacim_m3', 0)):,.2f} m³"),
-                                  ("Hava değişim sayısı (N)", f"{float(_h7113.get('hava_degisimi_1h', 0)):,.2f} 1/h"),
-                                  ("Hesap debisi (Q = V × N)", f"{float(_h7113.get('debi_m3h', 0)):,.0f} m³/h"),
-                                  ("Hesap debisi", f"{float(_h7113.get('debi_m3s', 0)):,.3f} m³/s"),
-                              ]
                               _tab7113 = doc.add_table(rows=0, cols=2); _tab7113.style = "Table Grid"
-                              for _lab, _val in _rows7113:
-                                  _cells = _tab7113.add_row().cells; _cells[0].text = _lab; _cells[1].text = _val
+                              _mahal_hesaplari7113 = _h7113.get("mahal_hesaplari", [])
+                              if _mahal_hesaplari7113:
+                                  for _mh7113 in _mahal_hesaplari7113:
+                                      _baslik_satir7113 = _tab7113.add_row().cells
+                                      _baslik_satir7113[0].merge(_baslik_satir7113[1])
+                                      _baslik_satir7113[0].text = str(_mh7113.get("mahal", "MAHAL")).upper() + " — AYRI HESAP"
+                                      _rows7113 = [
+                                          ("Mahal alanı", f"{float(_mh7113.get('alan_m2', 0)):,.2f} m²"),
+                                          ("Mahal yüksekliği", f"{float(_mh7113.get('yukseklik_m', 0)):,.2f} m"),
+                                          ("Mahal hacmi (V)", f"{float(_mh7113.get('hacim_m3', 0)):,.2f} m³"),
+                                          ("Hava değişim sayısı (N)", f"{float(_mh7113.get('hava_degisimi_1h', 0)):,.2f} 1/h"),
+                                          ("Hesap debisi (Q = V × N)", f"{float(_mh7113.get('debi_m3h', 0)):,.0f} m³/h"),
+                                          ("Hesap debisi", f"{float(_mh7113.get('debi_m3s', 0)):,.3f} m³/s"),
+                                      ]
+                                      for _lab, _val in _rows7113:
+                                          _cells = _tab7113.add_row().cells
+                                          _cells[0].text = _lab; _cells[1].text = _val
+                              else:
+                                  _rows7113 = [
+                                      ("Hesaplanan mahaller", ", ".join(_h7113.get("mahal", [])) if isinstance(_h7113.get("mahal", []), list) else str(_h7113.get("mahal", "-"))),
+                                      ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
+                                      ("Mahal hacmi (V)", f"{float(_h7113.get('hacim_m3', 0)):,.2f} m³"),
+                                      ("Hesap debisi (Q = V × N)", f"{float(_h7113.get('debi_m3h', 0)):,.0f} m³/h"),
+                                      ("Hesap debisi", f"{float(_h7113.get('debi_m3s', 0)):,.3f} m³/s"),
+                                  ]
+                                  for _lab, _val in _rows7113:
+                                      _cells = _tab7113.add_row().cells
+                                      _cells[0].text = _lab; _cells[1].text = _val
                               _pn = doc.add_paragraph("Hesap yöntemi: Q = V × N. N değeri, yalnızca ilgili mahal ve mevzuat koşulu için geçerli olan düzenlemeden alınmalıdır. Sığınak ve diğer mahaller için kullanılacak katsayı, ilgili mevzuat/standart ve onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2 ve Madde 85)")
+
 
                   if _bk == "bolum_79":
                       _79_rapor_maddeleri = [('1', 'Basınçlandırma zorunluluğu — yüksek merdiven kovaları', "Konutlar hariç, merdiven kovası yüksekliği 30,50 m'den fazla olan binalarda kaçış merdivenleri basınçlandırılır. Bodrum ve üst katlara hizmet eden merdiven aynı yuvada olsa dahi, gerekli yangına dayanımlı ve duman sızdırmaz ayırma ile ayrı çıkış sağlanmışsa üst katların yüksekliği esas alınır. (BYKHY Madde 89, 1)"), ('2', 'Dört kattan fazla bodrum katı', 'Bodrum kat sayısı dörtten fazla olan binalarda bodrum katlara hizmet veren kaçış merdivenleri basınçlandırılır. (BYKHY Madde 89, 2)'), ('3', 'Yüksek konutlarda basınçlandırma', "Yapı yüksekliği 51,50 m'den yüksek olan konutların kaçış merdivenlerinin basınçlandırılması zorunludur. (BYKHY Madde 89, 3)"), ('4', 'Acil durum asansörü kuyusu', 'Acil durum asansörü kuyularının yangın etkisi altında kalmaması için basınçlandırılması gerekir. (BYKHY Madde 89, 4)'), ('5', 'Kapalı ve açık kapı durumunda basınç farkı', 'Bütün kapılar kapalıyken merdiven yuvası ile bina kullanım alanları arasındaki basınç farkı en az 50 Pa; açık kapı durumu için en az 15 Pa olmalıdır. (BYKHY Madde 89, 5)'), ('6', 'Yangın güvenlik holü ile basınç dağılımı', 'Yangın güvenlik holü de basınçlandırılıyorsa merdiven tarafındaki basınç, hol tarafındaki basınçtan daha yüksek olacak şekilde dağılım oluşturulur. (BYKHY Madde 89, 6)'), ('7', 'Kapı açma kuvveti', 'Basınçlı hava ve otomatik kapı kapatıcısının etkisi birlikte dikkate alındığında, kapıyı açmak için kapı koluna uygulanması gereken kuvvet 110 N değerini aşmamalıdır. (BYKHY Madde 89, 7)'), ('8', 'Açık kapılarda hava hızı', 'Birbirini takip eden iki kat kapısı ile dışarı tahliye kapısı tam açıkken, her bir tam açık kapı için ortalama hava hızı en az 1 m/s olmalıdır. (BYKHY Madde 89, 8)'), ('9', 'Açık kapı ve sızıntı alanlarının tasarıma dahil edilmesi', 'Tasarımda en az iki iç kapının ve bir dış tahliye kapısının açık olacağı kabul edilir; diğer kapalı kapıların sızıntı alanları da hesaba katılır ve bina kat sayısına göre açık iç kapı sayısı artırılır. (BYKHY Madde 89, 9)'), ('10', 'Sızıntı debisinin karşılanması', 'Basınçlandırma havası debisi, sızıntı alanlarından çevreye oluşan hava akışlarını karşılayacak yeterlilikte olmalıdır. (BYKHY Madde 89, 10)'), ('11', 'Aşırı basıncın sınırlandırılması', 'Merdiven içinde aşırı basınç oluşmasını önlemek için aşırı basınç damperi ve frekans kontrollü fan gibi önlemler sağlanır. (BYKHY Madde 89, 11)'), ('12', 'Dış hava emişi ve üfleme noktaları', "Basınçlandırma havası doğrudan dışarıdan alınmalı ve egzoz çıkışlarından en az 5 m uzakta olmalıdır. Yüksekliği 25 m'den fazla kapalı merdivenlerde birden fazla üfleme noktası gerekir; iki noktalı düzende aralarındaki düşey mesafe en az merdiven yüksekliğinin yarısıdır. Yapı yüksekliği 51,50 m'den fazla ise her katta veya en çok üç katta bir üfleme yapılır. (BYKHY Madde 89, 12)"), ('13', 'Dış hava emişinde duman algılama', 'Basınçlandırma fanının dış hava emişine algılayıcı yerleştirilir; duman algılanması hâlinde fan otomatik durdurulur. (BYKHY Madde 89, 13)'), ('14', 'Yangın alarm sistemiyle otomatik çalıştırma', 'Basınçlandırma sistemi yangın algılama ve uyarı sistemi tarafından otomatik olarak çalıştırılmalıdır. (BYKHY Madde 89, 14)'), ('15', 'Elle çalıştırma ve durdurma', 'Basınçlandırma fanının elle çalıştırılıp durdurulabilmesi için açma-kapatma anahtarı bulunmalıdır. (BYKHY Madde 89, 15)'), ('16', 'Basınçlandırma olmayan merdivenlerde havalandırma', 'Kaçış merdiveni basınçlandırılmamışsa merdiven bölümünde açılabilir pencere veya sürekli havalandırma sağlayan tepe penceresi bulunmalıdır. (BYKHY Madde 89, 16)'), ('17', 'Mevcut binalarda basınçlandırma', "Mevcut binalarda dörtten fazla bodrum kata hizmet veren kaçış merdivenleri ile merdiven kovası yüksekliği 51,50 m'den fazla olan kaçış merdivenleri, Madde 89 esaslarına göre basınçlandırılır. (BYKHY Madde 163, 1)")]
