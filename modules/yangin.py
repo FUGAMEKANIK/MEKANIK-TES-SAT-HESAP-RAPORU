@@ -2197,10 +2197,9 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                 st.rerun()
                             else:
                                 st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
-                        for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
+                        for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711) + 7}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
 
-                    # 7.11.2 — Zorunlulukların mahal ve kullanım koşullarına göre açıklanması
-                    st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">ZORUNLULUK BULUNAN BİNA VE MAHALLER</div>', unsafe_allow_html=True)
+                    # Zorunluluk bulunan bina ve mahaller, önceki maddelerin devamı olarak (5)'ten başlar.
                     _7112_rapor_key = "yangin_7112_rapora_ekle"
                     st.session_state.setdefault(_7112_rapor_key, True)
                     st.checkbox("Zorunluluk bulunan bina ve mahal açıklamaları rapora eklensin", key=_7112_rapor_key)
@@ -2228,7 +2227,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     for _n, _b, _m in _zorunluluk_711:
                         _key = f"yangin_7112_madde_{_n}"; st.session_state.setdefault(_key, True)
                         _display = _m if st.session_state[_7112_atif_key] else re.sub(r"\s*\([^)]*(?:BYKHY|Madde)[^)]*\)", "", _m, flags=re.IGNORECASE).strip()
-                        with st.container(border=True): st.checkbox(f"7.11.1.{int(_n) + 4} {_b}", key=_key); st.caption(_display)
+                        with st.container(border=True): st.checkbox(f"({int(_n) + 4}) {_b}", key=_key); st.caption(_display)
 
                     # 7.11.3 — Hava değişim katsayısıyla debi hesabı; yalnızca ilgili mevzuat şartı geçerliyse kullanılır.
                     st.markdown('<div style="font-size:18px; font-weight:800; font-style:italic; color:#1F4E79; margin-top:18px;">7.11.2 DUMAN TAHLİYE DEBİSİ HESABI</div>', unsafe_allow_html=True)
