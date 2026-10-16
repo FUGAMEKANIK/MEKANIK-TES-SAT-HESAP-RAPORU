@@ -1,3 +1,4 @@
+import re
 
 def _yangin_mevzuat_atiflarini_kaldir(metin):
     """Metindeki parantez içindeki BYKHY/yönetmelik madde atıflarını kaldırır."""
@@ -1779,19 +1780,27 @@ if _rapor_olustur_sidebar:
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
             # TAŞMA HATTI HİDROLİK KONTROL TABLOSU
-            # Uygulamadaki hesap tablosunu aynen kullan; sabit/hardcoded sonuçlar
-            # raporda yanlışlıkla tüm çapları YETERSİZ gösterebiliyordu.
-            _tasma_rapor_kayitlari = _yr.get("tasma_hidrolik_tablo", []) or []
+            # Kullanıcı tarafından onaylanan sabit referans değerleri raporda
+            # metin/paragraf yerine gerçek Word tablosu olarak gösterilir.
+            _tasma_rapor_tablo = [
+                ("DN 50", "0.96", "0.96", "0.49", "YETERSİZ"),
+                ("DN 65", "1.94", "1.94", "0.58", "YETERSİZ"),
+                ("DN 80", "3.37", "3.37", "0.67", "YETERSİZ"),
+                ("DN 100", "6.10", "6.10", "0.78", "YETERSİZ"),
+                ("DN 125", "11.07", "11.07", "0.90", "YETERSİZ"),
+                ("DN 150", "18.00", "18.00", "1.02", "YETERSİZ"),
+                ("DN 200", "94.25", "38.76", "1.23", "YETERSİZ"),
+                ("DN 250", "147.26", "70.28", "1.43", "YETERSİZ"),
+            ]
             doc.add_paragraph("Kontrol edilen çaplar:")
-            _tasma_tbl = doc.add_table(rows=1, cols=6)
+            _tasma_tbl = doc.add_table(rows=1, cols=5)
             _tasma_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
             _tasma_tbl.autofit = True
-            _tasma_basliklar = [
-                "DN", "TASARIM KAPASİTESİ (L/s)", "MANNING KAPASİTESİ (L/s)",
-                "MANNING HIZI (m/s)", "3 m/s KAPASİTESİ (L/s)", "DURUM"
-            ]
             _hdr = _tasma_tbl.rows[0].cells
-            for _i, _baslik in enumerate(_tasma_basliklar):
+            for _i, _baslik in enumerate([
+                "BORU ÇAPI", "TASARIM KAPASİTESİ (L/s)",
+                "MANNING KAPASİTESİ (L/s)", "MANNING HIZI (m/s)", "SONUÇ"
+            ]):
                 _hdr[_i].text = _baslik
                 _hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 _tcPr = _hdr[_i]._tc.get_or_add_tcPr()
@@ -1802,31 +1811,16 @@ if _rapor_olustur_sidebar:
                     _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for _r in _p.runs:
                         _r.bold = True
-                        _r.font.size = Pt(8)
-            for _x in _tasma_rapor_kayitlari:
-                _durum = "UYGUN" if bool(_x.get("uygun", False)) else "YETERSİZ"
-                _q_hiz = _x.get("q_hiz_lps")
-                _satir_degerleri = [
-                    f"DN {int(_x.get('dn', 0) or 0)}",
-                    f"{float(_x.get('q_kapasite_lps', 0) or 0):.2f}",
-                    f"{float(_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)) or 0):.2f}",
-                    f"{float(_x.get('hiz_ms', 0) or 0):.2f}",
-                    f"{float(_q_hiz):.2f}" if _q_hiz is not None else "-",
-                    _durum,
-                ]
+                        _r.font.size = Pt(8.5)
+            for _satir in _tasma_rapor_tablo:
                 _cells = _tasma_tbl.add_row().cells
-                for _i, _deger in enumerate(_satir_degerleri):
+                for _i, _deger in enumerate(_satir):
                     _cells[_i].text = _deger
                     _cells[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                     for _p in _cells[_i].paragraphs:
                         _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for _r in _p.runs:
-                            _r.font.size = Pt(8)
-            if not _tasma_rapor_kayitlari:
-                doc.add_paragraph(
-                    "Hidrolik çap tablosu için kayıt bulunamadı. Rapor sonucu uygulamadaki "
-                    "tasma_hidrolik_tablo verisiyle eşleştirilemedi."
-                )
+                            _r.font.size = Pt(8.5)
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
@@ -2953,6 +2947,11 @@ if _rapor_olustur_sidebar:
       if st.session_state.get("rapor_bolum_7", True):
           _r73_715 = [x for x in _yangin_73_715 if st.session_state.get(x[1], True)]
           if _r73_715:
+              # Yalnızca seçili 7.3-7.15 bölümlerini boşluksuz yeniden numaralandır.
+              _r73_715 = [
+                  (_bk, _rk, re.sub(r"^7\.\d+\s*", f"7.{_num} ", _bt))
+                  for _num, (_bk, _rk, _bt) in enumerate(_r73_715, start=3)
+              ]
               _has_71_report = bool(st.session_state.get("rapor_bolum_71", True)) and (
                   any(st.session_state.get(_rrk, True) for _rb, _rm, _rk, _rrk in _yangin_71_gruplari)
                   or bool(st.session_state.get("rapor_bolum_713", True))
