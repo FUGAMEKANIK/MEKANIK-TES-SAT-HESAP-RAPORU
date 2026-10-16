@@ -1877,13 +1877,30 @@ with _t_sihhi:
               else:
                   _yagmur_depo_baslangic = float(_yagmur_mevcut_depo)
   
-              yagmur_secilen_depo = st.number_input(
-                  "Yağmur suyu deposu hacmi (m³) — elle müdahale edilebilir",
-                  min_value=0.0,
-                  step=0.5,
-                  key="yagmur_secilen_depo",
-                  help="Program hesaplanan hacmi 5 m³'ün bir üst katına otomatik yuvarlar ve bu değeri başlangıç olarak buraya aktarır. İsterseniz elle değiştirebilirsiniz."
+              # Depo hacmi varsayılan olarak otomatik hesaplanır. Kullanıcı isterse
+              # açıkça işaretleyerek manuel giriş alanını görünür hale getirir.
+              yagmur_depo_manuel_giris = st.checkbox(
+                  "Yağmur suyu deposu hacmini elle girmek istiyorum",
+                  value=bool(st.session_state.get("yagmur_depo_manuel_giris", False)),
+                  key="yagmur_depo_manuel_giris",
+                  help="İşaretlenmediğinde otomatik hesaplanan depo hacmi kullanılır."
               )
+              if yagmur_depo_manuel_giris:
+                  yagmur_secilen_depo = st.number_input(
+                      "Yağmur suyu deposu hacmi (m³) — manuel giriş",
+                      min_value=0.0,
+                      value=float(st.session_state.get("yagmur_secilen_depo", yagmur_otomatik_depo_hacmi)),
+                      step=0.5,
+                      key="yagmur_secilen_depo",
+                      help="Elle giriş aktif. İstediğiniz depo hacmini m³ olarak girin."
+                  )
+              else:
+                  yagmur_secilen_depo = float(yagmur_otomatik_depo_hacmi)
+                  st.session_state["yagmur_secilen_depo"] = yagmur_secilen_depo
+                  st.caption(
+                      f"Kullanılan otomatik depo hacmi: **{yagmur_secilen_depo:.2f} m³**. "
+                      "Elle değiştirmek için yukarıdaki kutuyu işaretleyin."
+                  )
   
               # Yağmur suyu deposu poz bağlantısı, Genel Bilgiler / kullanma suyu
               # deposu seçiminde kullanılan aynı 25.150.xx poz-kapasite tablosuna
