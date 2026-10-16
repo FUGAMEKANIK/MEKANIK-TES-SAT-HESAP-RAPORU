@@ -2438,11 +2438,15 @@ with _t_genel:
         chk_kalorifer = st.checkbox(
             "1. Kalorifer tesisatı", key="chk_kalorifer", value=True
         )
-        rej_kalorifer = st.selectbox(
-            "Kalorifer Rejimi:", sicaklik_secenekleri, index=0
+        sec_kalorifer = st.multiselect(
+            "Kalorifer Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["80/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_kalorifer_akiskan_v1",
         )
-        st.checkbox("Kalorifer tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_kalorifer_klima_gazi", value=True)
-        st.checkbox("Kalorifer tesisatında elektrik", key="akiskan_kalorifer_elektrik", value=True)
+        rej_kalorifer = next((x for x in sec_kalorifer if x in sicaklik_secenekleri), "80/60")
+        st.session_state["akiskan_kalorifer_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_kalorifer
+        st.session_state["akiskan_kalorifer_elektrik"] = "Elektrik" in sec_kalorifer
 
         chk_fco_ist = st.checkbox(
             "2. Fan-Coil ısıtma tesisatı", key="chk_fco_ist", value=True
@@ -2461,11 +2465,15 @@ with _t_genel:
         chk_ks_ist = st.checkbox(
             "4. Klima santrali ısıtma tesisatı", key="chk_ks_ist", value=True
         )
-        rej_ks_ist = st.selectbox(
-            "Klima Santrali Isıtma Rejimi:", sicaklik_secenekleri, index=0
+        sec_ks_ist = st.multiselect(
+            "Klima Santrali Isıtma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["80/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_ks_ist_akiskan_v1",
         )
-        st.checkbox("Klima santrali ısıtma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_ks_ist_klima_gazi", value=True)
-        st.checkbox("Klima santrali ısıtma tesisatında elektrik", key="akiskan_ks_ist_elektrik", value=True)
+        rej_ks_ist = next((x for x in sec_ks_ist if x in sicaklik_secenekleri), "80/60")
+        st.session_state["akiskan_ks_ist_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_ks_ist
+        st.session_state["akiskan_ks_ist_elektrik"] = "Elektrik" in sec_ks_ist
 
         chk_buhar = st.checkbox("9. Buhar tesisatı", key="chk_buhar", value=False)
         rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
@@ -2486,34 +2494,44 @@ with _t_genel:
         chk_ks_sog = st.checkbox(
             "5. Klima santrali Soğutma tesisatı", key="chk_ks_sog", value=True
         )
-        rej_ks_sog = st.selectbox(
-            "Klima Santrali Soğutma Rejimi:", sicaklik_secenekleri, index=5
+        sec_ks_sog = st.multiselect(
+            "Klima Santrali Soğutma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["7/12", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_ks_sog_akiskan_v1",
         )
-        st.checkbox("Klima santrali soğutma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_ks_sog_klima_gazi", value=True)
-        st.checkbox("Klima santrali soğutma tesisatında elektrik", key="akiskan_ks_sog_elektrik", value=True)
+        rej_ks_sog = next((x for x in sec_ks_sog if x in sicaklik_secenekleri), "7/12")
+        st.session_state["akiskan_ks_sog_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_ks_sog
+        st.session_state["akiskan_ks_sog_elektrik"] = "Elektrik" in sec_ks_sog
 
         chk_boyler = st.checkbox(
             "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
         )
         # Boyler ısıtma rejimi varsayılan olarak 80/60 olsun.
         # Seçim bölüm 4 kapalıyken de korunur; bölüm tekrar açıldığında aynı değer gelir.
-        rej_boyler = st.selectbox(
-            "Boyler Isıtma Rejimi:",
-            sicaklik_secenekleri,
-            index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v53"]),
-            key="rej_boyler_v53",
+        sec_boyler = st.multiselect(
+            "Boyler Isıtma Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=[st.session_state["rej_boyler_v53"], "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_boyler_akiskan_v1",
         )
-        st.checkbox("Boyler ısıtma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_boyler_klima_gazi", value=True)
-        st.checkbox("Boyler ısıtma tesisatında elektrik", key="akiskan_boyler_elektrik", value=True)
+        rej_boyler = next((x for x in sec_boyler if x in sicaklik_secenekleri), "80/60")
+        st.session_state["rej_boyler_v53"] = rej_boyler
+        st.session_state["akiskan_boyler_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_boyler
+        st.session_state["akiskan_boyler_elektrik"] = "Elektrik" in sec_boyler
 
         chk_k_sicak = st.checkbox(
             "7. Kullanma sıcak suyu", key="chk_k_sicak", value=True
         )
-        rej_k_sicak = st.selectbox(
-            "Kullanma Sıcak Suyu Rejimi:", sicaklik_secenekleri, index=7
+        sec_k_sicak = st.multiselect(
+            "Kullanma Sıcak Suyu Rejimi / Isı İletim Akışkanı:",
+            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            default=["10/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+            key="sec_k_sicak_akiskan_v1",
         )
-        st.checkbox("Kullanma sıcak suyunda klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_k_sicak_klima_gazi", value=True)
-        st.checkbox("Kullanma sıcak suyunda elektrik", key="akiskan_k_sicak_elektrik", value=True)
+        rej_k_sicak = next((x for x in sec_k_sicak if x in sicaklik_secenekleri), "10/60")
+        st.session_state["akiskan_k_sicak_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_k_sicak
+        st.session_state["akiskan_k_sicak_elektrik"] = "Elektrik" in sec_k_sicak
 
         chk_doseme = st.checkbox(
             "8. Döşemeden ısıtma tesisatı", key="chk_doseme", value=True
