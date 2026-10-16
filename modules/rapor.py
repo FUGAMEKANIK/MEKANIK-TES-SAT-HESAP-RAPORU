@@ -2947,11 +2947,8 @@ if _rapor_olustur_sidebar:
       if st.session_state.get("rapor_bolum_7", True):
           _r73_715 = [x for x in _yangin_73_715 if st.session_state.get(x[1], True)]
           if _r73_715:
-              # Yalnızca seçili 7.3-7.15 bölümlerini boşluksuz yeniden numaralandır.
-              _r73_715 = [
-                  (_bk, _rk, re.sub(r"^7\.\d+\s*", f"7.{_num} ", _bt))
-                  for _num, (_bk, _rk, _bt) in enumerate(_r73_715, start=3)
-              ]
+              # Başlıkların asıl numarası burada korunur. Bütün ana/alt başlıklar
+              # rapor oluşturmanın sonunda tek seferde aynı eşleme ile güncellenecek.
               _has_71_report = bool(st.session_state.get("rapor_bolum_71", True)) and (
                   any(st.session_state.get(_rrk, True) for _rb, _rm, _rk, _rrk in _yangin_71_gruplari)
                   or bool(st.session_state.get("rapor_bolum_713", True))
@@ -4243,6 +4240,71 @@ if _rapor_olustur_sidebar:
                   for _cell_no in _row_no.cells:
                       for _p_no in _cell_no.paragraphs:
                           _yangin_baslik_no_guncelle(_p_no)
+
+      # YANGIN BÖLÜMLERİNİ VE TÜM ALT BAŞLIKLARINI TEK EŞLEMEYLE NUMARALANDIR.
+      # Önceki sürüm yalnızca 7.3–7.15 ana başlıklarını değiştiriyor, örneğin
+      # 7.11.1 / 7.13.2 alt başlıklarını eski numaralarında bırakıyordu.
+      # Burada sadece rapora gerçekten dahil edilen ana bölümlerin başlıkları
+      # ve onlara bağlı numaralı alt başlıklar yeniden numaralandırılır.
+      _yangin_ana_bolumler_sira = [
+          ("rapor_bolum_73", 3), ("rapor_bolum_74", 4),
+          ("rapor_bolum_75", 5), ("rapor_bolum_76", 6),
+          ("rapor_bolum_77", 7), ("rapor_bolum_78", 8),
+          ("rapor_bolum_79", 9), ("rapor_bolum_710", 10),
+          ("rapor_bolum_7110", 11), ("rapor_bolum_7120", 12),
+          ("rapor_bolum_7130", 13), ("rapor_bolum_7140", 14),
+          ("rapor_bolum_7150", 15),
+      ]
+      _yangin_eski_yeni_no = {}
+      _yangin_yeni_no = 3
+      for _yangin_key, _yangin_eski_no in _yangin_ana_bolumler_sira:
+          if bool(st.session_state.get(_yangin_key, True)):
+              _yangin_eski_yeni_no[_yangin_eski_no] = _yangin_yeni_no
+              _yangin_yeni_no += 1
+
+      def _yangin_paragraf_numarasini_guncelle(_p):
+          # Başlığın ilk numarasını yakala; ör. 7.11.2 -> 7.8.2.
+          # Tek bir regex dönüşümü kullandığımız için 7.5 -> 7.4 değişimi
+          # sonradan tekrar eşleşip başka numaraya dönüşmez.
+          _metin = _p.text or ""
+          _m = re.match(r"^(\s*)7\.(3|4|5|6|7|8|9|10|11|12|13|14|15)(?=\.|\s|$)", _metin)
+          if not _m:
+              return
+          _eski_no = int(_m.group(2))
+          _yeni_no = _yangin_eski_yeni_no.get(_eski_no)
+          if _yeni_no is None or _yeni_no == _eski_no:
+              return
+          _yeni_metin = _m.group(1) + "7." + str(_yeni_no) + _metin[_m.end():]
+          # Numaralı başlıklar çoğunlukla tek run'dır. Run içinden değiştirmek
+          # Word biçimlendirmesini korur; bölünmüş run için güvenli yedek vardır.
+          _runs = list(_p.runs)
+          if _runs:
+              _run_no = None
+              for _ri, _run in enumerate(_runs):
+                  if re.match(r"^\s*7\.(3|4|5|6|7|8|9|10|11|12|13|14|15)(?=\.|\s|$)", _run.text or ""):
+                      _run_no = _ri
+                      break
+              if _run_no is not None:
+                  _runs[_run_no].text = re.sub(
+                      r"^(\s*)7\.(3|4|5|6|7|8|9|10|11|12|13|14|15)(?=\.|\s|$)",
+                      lambda _x: _x.group(1) + "7." + str(_yangin_eski_yeni_no.get(int(_x.group(2)), int(_x.group(2)))),
+                      _runs[_run_no].text,
+                      count=1,
+                  )
+              else:
+                  _runs[0].text = _yeni_metin
+                  for _run in _runs[1:]:
+                      _run.text = ""
+          else:
+              _p.add_run(_yeni_metin)
+
+      for _p in doc.paragraphs:
+          _yangin_paragraf_numarasini_guncelle(_p)
+      for _tbl in doc.tables:
+          for _row in _tbl.rows:
+              for _cell in _row.cells:
+                  for _p in _cell.paragraphs:
+                      _yangin_paragraf_numarasini_guncelle(_p)
 
       # Raporun Word dosyasına dönüştürülmesi ve indirme düğmesinin oluşturulması.
       def rapor_word_stillerini_uygula(_doc):
