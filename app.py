@@ -1546,7 +1546,35 @@ _BOLUM_NAV = [
     ("8. ISITMA TESİSATI", "bolum_8", "rapor_bolum_8"),
     ("9. SOĞUTMA TESİSATI", "bolum_9", "rapor_bolum_9"),
     ("10. HAVALANDIRMA TESİSATI", "bolum_10", "rapor_bolum_10"),
+ ]
+
+# 7.3-7.15 yangın alt bölümlerini, seçili olanlara göre boşluksuz numaralandır.
+# Anahtarlar sabit kalır; yalnızca menüde görünen numaralar değişir.
+_YANGIN_ALT_BOLUM_ANAHTARLARI = [
+    ("rapor_bolum_73", "YANGIN DOLABI SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+    ("rapor_bolum_74", "HİDRANT SİSTEMİ TASARIMI VE HESAPLAMALARI"),
+    ("rapor_bolum_75", "SPRİNKLER (YAĞMURLAMA) SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_76", "GAZLI SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_77", "KÖPÜKLÜ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_78", "DAVLUMBAZ SÖNDÜRME SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_79", "MERDİVEN BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_710", "ASANSÖR BASINÇLANDIRMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7110", "DUMAN TAHLİYE SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7120", "YANGIN SUYU DEPOLAMA SİSTEMİ TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7130", "YANGIN POMPA GRUBU TASARIM VE HESAPLAMALARI"),
+    ("rapor_bolum_7140", "YANGIN TESİSATI HİDROLİK HESAPLARI"),
+    ("rapor_bolum_7150", "YANGIN TESİSATI SONUÇ TABLOSU"),
 ]
+
+def _yangin_sidebar_baslik(anahtar, varsayilan_baslik):
+    secili = [
+        (key, ad) for key, ad in _YANGIN_ALT_BOLUM_ANAHTARLARI
+        if st.session_state.get(key, True)
+    ]
+    for sira, (key, ad) in enumerate(secili, start=3):
+        if key == anahtar:
+            return f"7.{sira} {ad}"
+    return varsayilan_baslik
 
 with st.sidebar:
     st.markdown("## 📑 PROJE BÖLÜMLERİ")
@@ -1575,10 +1603,9 @@ with st.sidebar:
             st.session_state[_key] = True
 
         if _anchor.startswith("bolum_63"):
-            # 6.3 alt başlıklarında numara, seçili kardeş bölümlere göre anlık değişir.
-            # Böylece örneğin 6.3.1 kapatılırsa 6.3.2 -> 6.3.1,
-            # 6.3.3 -> 6.3.2 ve 6.3.4 -> 6.3.3 olur.
             _baslik = _63_sidebar_baslik(_key, _baslik)
+        if _key in {k for k, _ in _YANGIN_ALT_BOLUM_ANAHTARLARI}:
+            _baslik = _yangin_sidebar_baslik(_key, _baslik)
 
         _c_nav, _c_chk = st.columns([8.5, 1.5], vertical_alignment="center")
         with _c_nav:
