@@ -1162,7 +1162,7 @@ psp_parametreleri = globals().get("psp_parametreleri", {})
 with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     st.button(
         "🆕 Yeni Proje",
-        key="proje_yeni_btn_v119",
+        key="proje_yeni_btn_v120_app",
         use_container_width=True,
         on_click=_yeni_proje_baslat,
         help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
