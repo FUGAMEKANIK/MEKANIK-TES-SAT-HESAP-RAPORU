@@ -1567,13 +1567,20 @@ _YANGIN_ALT_BOLUM_ANAHTARLARI = [
 ]
 
 def _yangin_sidebar_baslik(anahtar, varsayilan_baslik):
-    secili = [
-        (key, ad) for key, ad in _YANGIN_ALT_BOLUM_ANAHTARLARI
-        if st.session_state.get(key, True)
+    """Seçili 7.3–7.15 yangın bölümlerini boşluksuz ve deterministik gösterir."""
+    def _aktif(_key):
+        _v = st.session_state.get(_key, True)
+        if isinstance(_v, str):
+            return _v.strip().lower() not in {"", "0", "false", "hayır", "no", "off"}
+        return bool(_v)
+
+    _secili = [
+        (_key, _ad) for _key, _ad in _YANGIN_ALT_BOLUM_ANAHTARLARI
+        if _aktif(_key)
     ]
-    for sira, (key, ad) in enumerate(secili, start=3):
-        if key == anahtar:
-            return f"7.{sira} {ad}"
+    for _sira, (_key, _ad) in enumerate(_secili, start=3):
+        if _key == anahtar:
+            return f"7.{_sira} {_ad}"
     return varsayilan_baslik
 
 with st.sidebar:
