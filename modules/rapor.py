@@ -515,15 +515,20 @@ if _rapor_olustur_sidebar:
               )
   
               akiskan_maddeleri = []
-              if chk_kalorifer:
-                akiskan_maddeleri.append(
-                    f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
-                )
-              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_elektrik", True):
+              # Multiselect alanlarında seçilmeyen rejimler/akışkanlar rapora eklenmesin.
+              _akiskan_secimleri = {
+                  "kalorifer": st.session_state.get("sec_kalorifer_akiskan_v1", []),
+                  "klima_santrali_isitma": st.session_state.get("sec_ks_ist_akiskan_v1", []),
+                  "klima_santrali_sogutma": st.session_state.get("sec_ks_sog_akiskan_v1", []),
+                  "boyler": st.session_state.get("sec_boyler_akiskan_v1", []),
+                  "kullanma_sicak_su": st.session_state.get("sec_k_sicak_akiskan_v1", []),
+              }
+              _klima_gazi = "Klima Gazı (R134A ve/veya R410A ve/veya R52)"
+              if chk_kalorifer and rej_kalorifer in _akiskan_secimleri["kalorifer"]:
+                akiskan_maddeleri.append(f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.")
+              if chk_kalorifer and _klima_gazi in _akiskan_secimleri["kalorifer"]:
+                akiskan_maddeleri.append("Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
+              if chk_kalorifer and "Elektrik" in _akiskan_secimleri["kalorifer"]:
                 akiskan_maddeleri.append("Kalorifer tesisatında elektrik.")
               if chk_fco_ist:
                 akiskan_maddeleri.append(
@@ -533,45 +538,29 @@ if _rapor_olustur_sidebar:
                 akiskan_maddeleri.append(
                     f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
                 )
-              if chk_ks_ist:
-                akiskan_maddeleri.append(
-                    f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
-                )
-              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_elektrik", True):
+              if chk_ks_ist and rej_ks_ist in _akiskan_secimleri["klima_santrali_isitma"]:
+                akiskan_maddeleri.append(f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su.")
+              if chk_ks_ist and _klima_gazi in _akiskan_secimleri["klima_santrali_isitma"]:
+                akiskan_maddeleri.append("Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
+              if chk_ks_ist and "Elektrik" in _akiskan_secimleri["klima_santrali_isitma"]:
                 akiskan_maddeleri.append("Klima santrali ısıtma tesisatında elektrik.")
-              if chk_ks_sog:
-                akiskan_maddeleri.append(
-                    f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
-                )
-              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_elektrik", True):
+              if chk_ks_sog and rej_ks_sog in _akiskan_secimleri["klima_santrali_sogutma"]:
+                akiskan_maddeleri.append(f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su.")
+              if chk_ks_sog and _klima_gazi in _akiskan_secimleri["klima_santrali_sogutma"]:
+                akiskan_maddeleri.append("Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
+              if chk_ks_sog and "Elektrik" in _akiskan_secimleri["klima_santrali_sogutma"]:
                 akiskan_maddeleri.append("Klima santrali soğutma tesisatında elektrik.")
-              if chk_boyler:
-                akiskan_maddeleri.append(
-                    f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
-                )
-              if chk_boyler and st.session_state.get("akiskan_boyler_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_boyler and st.session_state.get("akiskan_boyler_elektrik", True):
+              if chk_boyler and rej_boyler in _akiskan_secimleri["boyler"]:
+                akiskan_maddeleri.append(f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su.")
+              if chk_boyler and _klima_gazi in _akiskan_secimleri["boyler"]:
+                akiskan_maddeleri.append("Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
+              if chk_boyler and "Elektrik" in _akiskan_secimleri["boyler"]:
                 akiskan_maddeleri.append("Boyler ısıtma tesisatında elektrik.")
-              if chk_k_sicak:
-                akiskan_maddeleri.append(
-                    f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
-                )
-              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_klima_gazi", True):
-                akiskan_maddeleri.append(
-                    "Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52)."
-                )
-              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_elektrik", True):
+              if chk_k_sicak and rej_k_sicak in _akiskan_secimleri["kullanma_sicak_su"]:
+                akiskan_maddeleri.append(f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.")
+              if chk_k_sicak and _klima_gazi in _akiskan_secimleri["kullanma_sicak_su"]:
+                akiskan_maddeleri.append("Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52).")
+              if chk_k_sicak and "Elektrik" in _akiskan_secimleri["kullanma_sicak_su"]:
                 akiskan_maddeleri.append("Kullanma sıcak suyunda elektrik.")
               if chk_doseme:
                 akiskan_maddeleri.append(
@@ -2710,10 +2699,55 @@ if _rapor_olustur_sidebar:
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
 
-          # Genel bina bilgileri 1. GENEL BİLGİLER bölümünde yönetilir.
-          # Yangın bölümünde ikinci kez tablo olarak gösterilmez; yangın hesapları
-          # ortak session_state değerlerini kullanmaya devam eder.
+          # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
+          # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
+          _gbi_rapor_verileri = [
+              ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
+              ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
+              ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
+              ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
+              ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
+              ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
+          ]
+          # Blok bilgilerini de aynı bina bilgileri tablosuna ekle.
+          # Alanlar yangin.py tarafından kullanılan session_state anahtarlarından okunur.
+          _blok_secim_rapor = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
+          try:
+              _blok_adet_rapor = 1 if _blok_secim_rapor.lower().startswith("tek") else int(_blok_secim_rapor.split()[0])
+          except (ValueError, IndexError):
+              _blok_adet_rapor = 1
+          _blok_adet_rapor = max(1, min(_blok_adet_rapor, 10))
+          _gbi_rapor_verileri.insert(0, ("Blok sayısı", str(_blok_adet_rapor)))
+          for _i_blok_rapor in range(1, _blok_adet_rapor + 1):
+              _ad_blok_rapor = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_adi", f"Blok {_i_blok_rapor}") or f"Blok {_i_blok_rapor}")
+              _alan_blok_rapor = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_alan_m2", 0.0) or 0.0)
+              _gbi_rapor_verileri.insert(_i_blok_rapor, (f"Blok {_i_blok_rapor} adı", _ad_blok_rapor))
+              _gbi_rapor_verileri.insert(_i_blok_rapor + 1, (f"{_ad_blok_rapor} alanı", f"{_alan_blok_rapor:,.2f} m²"))
 
+          _gbi_baslik = doc.add_paragraph()
+          _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
+          _gbi_run.bold = True
+          _gbi_run.italic = True
+          _gbi_run.font.size = Pt(13)
+          _gbi_tbl = doc.add_table(rows=1, cols=2)
+          _gbi_tbl.style = "Table Grid"
+          _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
+          _gbi_tbl.rows[0].cells[1].text = "DEĞER"
+          for _cell in _gbi_tbl.rows[0].cells:
+              for _run in _cell.paragraphs[0].runs:
+                  _run.bold = True
+          for _etiket, _deger in _gbi_rapor_verileri:
+              _gc = _gbi_tbl.add_row().cells
+              _gc[0].text = _etiket
+              _gc[1].text = _deger
+  
+  
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
           _manuel = bool(st.session_state.get("yangin_721_manuel", False))
