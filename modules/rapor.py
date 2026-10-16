@@ -344,52 +344,6 @@ if _rapor_olustur_sidebar:
           f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
       )
       doc.add_paragraph(yapi_metni)
-
-      # GENEL BİNA BİLGİLERİ: Genel Bilgiler bölümünde, yapı konum cümlesinin
-      # hemen altında gösterilir. Aynı tablo 7.2 Yangın bölümünde de korunur.
-      _gbi_genel_verileri = [
-          ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
-          ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
-          ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
-          ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
-          ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
-          ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
-      ]
-      _blok_secim_genel = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
-      try:
-          _blok_adet_genel = 1 if _blok_secim_genel.lower().startswith("tek") else int(_blok_secim_genel.split()[0])
-      except (ValueError, IndexError):
-          _blok_adet_genel = 1
-      _blok_adet_genel = max(1, min(_blok_adet_genel, 10))
-      _gbi_genel_verileri.insert(0, ("Blok sayısı", str(_blok_adet_genel)))
-      for _i_blok_genel in range(1, _blok_adet_genel + 1):
-          _ad_blok_genel = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_genel}_adi", f"Blok {_i_blok_genel}") or f"Blok {_i_blok_genel}")
-          _alan_blok_genel = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_genel}_alan_m2", 0.0) or 0.0)
-          _gbi_genel_verileri.insert(_i_blok_genel, (f"Blok {_i_blok_genel} adı", _ad_blok_genel))
-          _gbi_genel_verileri.insert(_i_blok_genel + 1, (f"{_ad_blok_genel} alanı", f"{_alan_blok_genel:,.2f} m²"))
-
-      _gbi_genel_baslik = doc.add_paragraph()
-      _gbi_genel_run = _gbi_genel_baslik.add_run("GENEL BİNA BİLGİLERİ")
-      _gbi_genel_run.bold = True
-      _gbi_genel_run.italic = True
-      _gbi_genel_run.font.size = Pt(13)
-      _gbi_genel_tbl = doc.add_table(rows=1, cols=2)
-      _gbi_genel_tbl.style = "Table Grid"
-      _gbi_genel_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
-      _gbi_genel_tbl.rows[0].cells[1].text = "DEĞER"
-      for _cell in _gbi_genel_tbl.rows[0].cells:
-          for _run in _cell.paragraphs[0].runs:
-              _run.bold = True
-      for _etiket_genel, _deger_genel in _gbi_genel_verileri:
-          _gc_genel = _gbi_genel_tbl.add_row().cells
-          _gc_genel[0].text = _etiket_genel
-          _gc_genel[1].text = _deger_genel
   
       if bolum_2_aktif:
               # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
@@ -561,20 +515,15 @@ if _rapor_olustur_sidebar:
               )
   
               akiskan_maddeleri = []
-              # Multiselect alanlarında seçilmeyen rejimler/akışkanlar rapora eklenmesin.
-              _akiskan_secimleri = {
-                  "kalorifer": st.session_state.get("sec_kalorifer_akiskan_v1", []),
-                  "klima_santrali_isitma": st.session_state.get("sec_ks_ist_akiskan_v1", []),
-                  "klima_santrali_sogutma": st.session_state.get("sec_ks_sog_akiskan_v1", []),
-                  "boyler": st.session_state.get("sec_boyler_akiskan_v1", []),
-                  "kullanma_sicak_su": st.session_state.get("sec_k_sicak_akiskan_v1", []),
-              }
-              _klima_gazi = "Klima Gazı (R134A ve/veya R410A ve/veya R52)"
-              if chk_kalorifer and rej_kalorifer in _akiskan_secimleri["kalorifer"]:
-                akiskan_maddeleri.append(f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su.")
-              if chk_kalorifer and _klima_gazi in _akiskan_secimleri["kalorifer"]:
-                akiskan_maddeleri.append("Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
-              if chk_kalorifer and "Elektrik" in _akiskan_secimleri["kalorifer"]:
+              if chk_kalorifer:
+                akiskan_maddeleri.append(
+                    f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
+                )
+              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_elektrik", True):
                 akiskan_maddeleri.append("Kalorifer tesisatında elektrik.")
               if chk_fco_ist:
                 akiskan_maddeleri.append(
@@ -584,29 +533,45 @@ if _rapor_olustur_sidebar:
                 akiskan_maddeleri.append(
                     f"Fan-Coil Soğutma tesisatında {rej_fco_sog} °C soğuk su."
                 )
-              if chk_ks_ist and rej_ks_ist in _akiskan_secimleri["klima_santrali_isitma"]:
-                akiskan_maddeleri.append(f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su.")
-              if chk_ks_ist and _klima_gazi in _akiskan_secimleri["klima_santrali_isitma"]:
-                akiskan_maddeleri.append("Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
-              if chk_ks_ist and "Elektrik" in _akiskan_secimleri["klima_santrali_isitma"]:
+              if chk_ks_ist:
+                akiskan_maddeleri.append(
+                    f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
+                )
+              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_elektrik", True):
                 akiskan_maddeleri.append("Klima santrali ısıtma tesisatında elektrik.")
-              if chk_ks_sog and rej_ks_sog in _akiskan_secimleri["klima_santrali_sogutma"]:
-                akiskan_maddeleri.append(f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su.")
-              if chk_ks_sog and _klima_gazi in _akiskan_secimleri["klima_santrali_sogutma"]:
-                akiskan_maddeleri.append("Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
-              if chk_ks_sog and "Elektrik" in _akiskan_secimleri["klima_santrali_sogutma"]:
+              if chk_ks_sog:
+                akiskan_maddeleri.append(
+                    f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
+                )
+              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_elektrik", True):
                 akiskan_maddeleri.append("Klima santrali soğutma tesisatında elektrik.")
-              if chk_boyler and rej_boyler in _akiskan_secimleri["boyler"]:
-                akiskan_maddeleri.append(f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su.")
-              if chk_boyler and _klima_gazi in _akiskan_secimleri["boyler"]:
-                akiskan_maddeleri.append("Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52).")
-              if chk_boyler and "Elektrik" in _akiskan_secimleri["boyler"]:
+              if chk_boyler:
+                akiskan_maddeleri.append(
+                    f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
+                )
+              if chk_boyler and st.session_state.get("akiskan_boyler_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_boyler and st.session_state.get("akiskan_boyler_elektrik", True):
                 akiskan_maddeleri.append("Boyler ısıtma tesisatında elektrik.")
-              if chk_k_sicak and rej_k_sicak in _akiskan_secimleri["kullanma_sicak_su"]:
-                akiskan_maddeleri.append(f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su.")
-              if chk_k_sicak and _klima_gazi in _akiskan_secimleri["kullanma_sicak_su"]:
-                akiskan_maddeleri.append("Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52).")
-              if chk_k_sicak and "Elektrik" in _akiskan_secimleri["kullanma_sicak_su"]:
+              if chk_k_sicak:
+                akiskan_maddeleri.append(
+                    f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
+                )
+              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_elektrik", True):
                 akiskan_maddeleri.append("Kullanma sıcak suyunda elektrik.")
               if chk_doseme:
                 akiskan_maddeleri.append(
@@ -1814,27 +1779,19 @@ if _rapor_olustur_sidebar:
                 f"Hidrolik kontrol sonucu: {'UYGUN' if _tasma_uygun else 'YETERSİZ'}"
             )
             # TAŞMA HATTI HİDROLİK KONTROL TABLOSU
-            # Kullanıcı tarafından onaylanan sabit referans değerleri raporda
-            # metin/paragraf yerine gerçek Word tablosu olarak gösterilir.
-            _tasma_rapor_tablo = [
-                ("DN 50", "0.96", "0.96", "0.49", "YETERSİZ"),
-                ("DN 65", "1.94", "1.94", "0.58", "YETERSİZ"),
-                ("DN 80", "3.37", "3.37", "0.67", "YETERSİZ"),
-                ("DN 100", "6.10", "6.10", "0.78", "YETERSİZ"),
-                ("DN 125", "11.07", "11.07", "0.90", "YETERSİZ"),
-                ("DN 150", "18.00", "18.00", "1.02", "YETERSİZ"),
-                ("DN 200", "94.25", "38.76", "1.23", "YETERSİZ"),
-                ("DN 250", "147.26", "70.28", "1.43", "YETERSİZ"),
-            ]
+            # Uygulamadaki hesap tablosunu aynen kullan; sabit/hardcoded sonuçlar
+            # raporda yanlışlıkla tüm çapları YETERSİZ gösterebiliyordu.
+            _tasma_rapor_kayitlari = _yr.get("tasma_hidrolik_tablo", []) or []
             doc.add_paragraph("Kontrol edilen çaplar:")
-            _tasma_tbl = doc.add_table(rows=1, cols=5)
+            _tasma_tbl = doc.add_table(rows=1, cols=6)
             _tasma_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
             _tasma_tbl.autofit = True
+            _tasma_basliklar = [
+                "DN", "TASARIM KAPASİTESİ (L/s)", "MANNING KAPASİTESİ (L/s)",
+                "MANNING HIZI (m/s)", "3 m/s KAPASİTESİ (L/s)", "DURUM"
+            ]
             _hdr = _tasma_tbl.rows[0].cells
-            for _i, _baslik in enumerate([
-                "BORU ÇAPI", "TASARIM KAPASİTESİ (L/s)",
-                "MANNING KAPASİTESİ (L/s)", "MANNING HIZI (m/s)", "SONUÇ"
-            ]):
+            for _i, _baslik in enumerate(_tasma_basliklar):
                 _hdr[_i].text = _baslik
                 _hdr[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 _tcPr = _hdr[_i]._tc.get_or_add_tcPr()
@@ -1845,16 +1802,31 @@ if _rapor_olustur_sidebar:
                     _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for _r in _p.runs:
                         _r.bold = True
-                        _r.font.size = Pt(8.5)
-            for _satir in _tasma_rapor_tablo:
+                        _r.font.size = Pt(8)
+            for _x in _tasma_rapor_kayitlari:
+                _durum = "UYGUN" if bool(_x.get("uygun", False)) else "YETERSİZ"
+                _q_hiz = _x.get("q_hiz_lps")
+                _satir_degerleri = [
+                    f"DN {int(_x.get('dn', 0) or 0)}",
+                    f"{float(_x.get('q_kapasite_lps', 0) or 0):.2f}",
+                    f"{float(_x.get('q_manning_lps', _x.get('q_kapasite_lps', 0)) or 0):.2f}",
+                    f"{float(_x.get('hiz_ms', 0) or 0):.2f}",
+                    f"{float(_q_hiz):.2f}" if _q_hiz is not None else "-",
+                    _durum,
+                ]
                 _cells = _tasma_tbl.add_row().cells
-                for _i, _deger in enumerate(_satir):
+                for _i, _deger in enumerate(_satir_degerleri):
                     _cells[_i].text = _deger
                     _cells[_i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                     for _p in _cells[_i].paragraphs:
                         _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for _r in _p.runs:
-                            _r.font.size = Pt(8.5)
+                            _r.font.size = Pt(8)
+            if not _tasma_rapor_kayitlari:
+                doc.add_paragraph(
+                    "Hidrolik çap tablosu için kayıt bulunamadı. Rapor sonucu uygulamadaki "
+                    "tasma_hidrolik_tablo verisiyle eşleştirilemedi."
+                )
             doc.add_paragraph(
                 "Not: Bu kontrol, taşma hattını cazibeli ve tam dolu dairesel boru kabulüyle Manning kapasitesi üzerinden ön boyutlandırır. "
                 "Son proje kontrolünde gerçek kotlar, çıkış koşulu ve akış rejimi ayrıca doğrulanmalıdır."
