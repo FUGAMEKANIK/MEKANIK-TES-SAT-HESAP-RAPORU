@@ -1162,7 +1162,7 @@ psp_parametreleri = globals().get("psp_parametreleri", {})
 with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     st.button(
         "🆕 Yeni Proje",
-        key="proje_yeni_btn_v120_app",
+        key="proje_yeni_btn_v119",
         use_container_width=True,
         on_click=_yeni_proje_baslat,
         help="Mevcut çalışmayı kapatır ve temiz bir yeni proje başlatır. Kayıtlı projeler silinmez.",
@@ -1174,13 +1174,13 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     _rapor_format = st.selectbox(
         "Çıktı formatı",
         ["Word (.docx)", "PDF (.pdf)", "HTML (.html)", "Metin (.txt)"],
-        key="rapor_cikti_format_v134_app",
+        key="rapor_cikti_format_v134",
     )
 
     # Bu bir aksiyon widget'ıdır; proje JSON'una hiçbir şekilde kaydedilmez.
     if st.button(
         "📄 RAPORU OLUŞTUR",
-        key="sidebar_rapor_olustur_v134_app_unique_20261016",
+        key="sidebar_rapor_olustur_v134",
         use_container_width=True,
         help="Hesap raporunu seçtiğiniz çıktı formatında hazırlar.",
     ):
