@@ -2241,6 +2241,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     st.checkbox("7.11.2 debi hesabı rapora eklensin", key=_7113_rapor_key)
                     _mahal_secenekleri7113 = [
                         "Kapalı otopark",
+                        "Koridorlar",
                         "Sığınak",
                         "Kazan dairesi / bodrum depo",
                         "Diğer mahal",
