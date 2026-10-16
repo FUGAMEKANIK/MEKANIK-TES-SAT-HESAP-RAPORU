@@ -1174,7 +1174,7 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     _rapor_format = st.selectbox(
         "Çıktı formatı",
         ["Word (.docx)", "PDF (.pdf)", "HTML (.html)", "Metin (.txt)"],
-        key="rapor_cikti_format_v134",
+        key="rapor_cikti_format_v134_app",
     )
 
     # Bu bir aksiyon widget'ıdır; proje JSON'una hiçbir şekilde kaydedilmez.
