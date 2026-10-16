@@ -2441,6 +2441,8 @@ with _t_genel:
         rej_kalorifer = st.selectbox(
             "Kalorifer Rejimi:", sicaklik_secenekleri, index=0
         )
+        st.checkbox("Kalorifer tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_kalorifer_klima_gazi", value=True)
+        st.checkbox("Kalorifer tesisatında elektrik", key="akiskan_kalorifer_elektrik", value=True)
 
         chk_fco_ist = st.checkbox(
             "2. Fan-Coil ısıtma tesisatı", key="chk_fco_ist", value=True
@@ -2462,6 +2464,8 @@ with _t_genel:
         rej_ks_ist = st.selectbox(
             "Klima Santrali Isıtma Rejimi:", sicaklik_secenekleri, index=0
         )
+        st.checkbox("Klima santrali ısıtma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_ks_ist_klima_gazi", value=True)
+        st.checkbox("Klima santrali ısıtma tesisatında elektrik", key="akiskan_ks_ist_elektrik", value=True)
 
         chk_buhar = st.checkbox("9. Buhar tesisatı", key="chk_buhar", value=False)
         rej_buhar = st.selectbox("Buhar Seçimi:", buhar_secenekleri, index=1)
@@ -2485,6 +2489,8 @@ with _t_genel:
         rej_ks_sog = st.selectbox(
             "Klima Santrali Soğutma Rejimi:", sicaklik_secenekleri, index=5
         )
+        st.checkbox("Klima santrali soğutma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_ks_sog_klima_gazi", value=True)
+        st.checkbox("Klima santrali soğutma tesisatında elektrik", key="akiskan_ks_sog_elektrik", value=True)
 
         chk_boyler = st.checkbox(
             "6. Boyler ısıtma tesisatı", key="chk_boyler", value=True
@@ -2497,6 +2503,8 @@ with _t_genel:
             index=sicaklik_secenekleri.index(st.session_state["rej_boyler_v53"]),
             key="rej_boyler_v53",
         )
+        st.checkbox("Boyler ısıtma tesisatında klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_boyler_klima_gazi", value=True)
+        st.checkbox("Boyler ısıtma tesisatında elektrik", key="akiskan_boyler_elektrik", value=True)
 
         chk_k_sicak = st.checkbox(
             "7. Kullanma sıcak suyu", key="chk_k_sicak", value=True
@@ -2504,6 +2512,8 @@ with _t_genel:
         rej_k_sicak = st.selectbox(
             "Kullanma Sıcak Suyu Rejimi:", sicaklik_secenekleri, index=7
         )
+        st.checkbox("Kullanma sıcak suyunda klima gazı (R134A ve/veya R410A ve/veya R52)", key="akiskan_k_sicak_klima_gazi", value=True)
+        st.checkbox("Kullanma sıcak suyunda elektrik", key="akiskan_k_sicak_elektrik", value=True)
 
         chk_doseme = st.checkbox(
             "8. Döşemeden ısıtma tesisatı", key="chk_doseme", value=True
