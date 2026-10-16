@@ -2180,12 +2180,23 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                     with _tab_711_ekle:
                         st.markdown("#### 7.11.1 Madde Ekleme")
                         _ekler711 = st.session_state.setdefault("yangin_7111_ek_maddeler", [])
-                        with st.form("yangin_7111_madde_ekle_form"):
-                            _eb711 = st.text_input("Madde başlığı", key="yangin_7111_yeni_baslik")
-                            _em711 = st.text_area("Madde açıklaması", key="yangin_7111_yeni_metin")
-                            _ekle711 = st.form_submit_button("Maddeyi ekle")
-                        if _ekle711 and _eb711.strip() and _em711.strip():
-                            _ekler711.append({"baslik": _eb711.strip(), "metin": _em711.strip()}); st.session_state["yangin_7111_ek_maddeler"] = _ekler711; st.rerun()
+                        # Proje kaydından geri yüklenen eski widget değerleri form gönderim
+                        # düğmesine atanamadığından, form_submit_button yerine benzersiz
+                        # anahtarlı normal buton kullanılır.
+                        _nonce711_key = "yangin_7111_ek_madde_nonce"
+                        st.session_state.setdefault(_nonce711_key, 0)
+                        _nonce711 = st.session_state[_nonce711_key]
+                        _eb711 = st.text_input("Madde başlığı", key=f"yangin_7111_yeni_baslik_{_nonce711}")
+                        _em711 = st.text_area("Madde açıklaması", key=f"yangin_7111_yeni_metin_{_nonce711}")
+                        _ekle711 = st.button("Maddeyi ekle", key=f"yangin_7111_ekle_buton_{_nonce711}")
+                        if _ekle711:
+                            if _eb711.strip() and _em711.strip():
+                                _ekler711.append({"baslik": _eb711.strip(), "metin": _em711.strip()})
+                                st.session_state["yangin_7111_ek_maddeler"] = _ekler711
+                                st.session_state[_nonce711_key] = _nonce711 + 1
+                                st.rerun()
+                            else:
+                                st.warning("Madde başlığı ve açıklaması birlikte girilmelidir.")
                         for _i711, _x711 in enumerate(_ekler711, 1): st.write(f"({_i711 + len(_duman_esaslari_711)}) {_x711.get('baslik','')}: {_x711.get('metin','')}")
 
                     # 7.11.2 — Zorunlulukların mahal ve kullanım koşullarına göre açıklanması
