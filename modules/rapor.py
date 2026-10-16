@@ -344,58 +344,7 @@ if _rapor_olustur_sidebar:
           f"Yapı {secilen_il} ili {secilen_ilce} ilçesinde inşa edilecektir."
       )
       doc.add_paragraph(yapi_metni)
-
-      # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
-      # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
-      _gbi_rapor_verileri = [
-          ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
-          ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
-          ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
-          ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
-          ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
-          ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
-          ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
-          ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
-      ]
-      # Blok bilgilerini de aynı bina bilgileri tablosuna ekle.
-      # Alanlar yangin.py tarafından kullanılan session_state anahtarlarından okunur.
-      _blok_secim_rapor = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
-      try:
-          _blok_adet_rapor = 1 if _blok_secim_rapor.lower().startswith("tek") else int(_blok_secim_rapor.split()[0])
-      except (ValueError, IndexError):
-          _blok_adet_rapor = 1
-      _blok_adet_rapor = max(1, min(_blok_adet_rapor, 10))
-      _gbi_rapor_verileri.insert(0, ("Blok sayısı", str(_blok_adet_rapor)))
-      for _i_blok_rapor in range(1, _blok_adet_rapor + 1):
-          _ad_blok_rapor = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_adi", f"Blok {_i_blok_rapor}") or f"Blok {_i_blok_rapor}")
-          _alan_blok_rapor = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_alan_m2", 0.0) or 0.0)
-          _gbi_rapor_verileri.insert(_i_blok_rapor, (f"Blok {_i_blok_rapor} adı", _ad_blok_rapor))
-          _gbi_rapor_verileri.insert(_i_blok_rapor + 1, (f"{_ad_blok_rapor} alanı", f"{_alan_blok_rapor:,.2f} m²"))
-
-      _gbi_baslik = doc.add_paragraph()
-      _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
-      _gbi_run.bold = True
-      _gbi_run.italic = True
-      _gbi_run.font.size = Pt(13)
-      _gbi_tbl = doc.add_table(rows=1, cols=2)
-      _gbi_tbl.style = "Table Grid"
-      _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
-      _gbi_tbl.rows[0].cells[1].text = "DEĞER"
-      for _cell in _gbi_tbl.rows[0].cells:
-          for _run in _cell.paragraphs[0].runs:
-              _run.bold = True
-      for _etiket, _deger in _gbi_rapor_verileri:
-          _gc = _gbi_tbl.add_row().cells
-          _gc[0].text = _etiket
-          _gc[1].text = _deger
-
-
-
-
+  
       if bolum_2_aktif:
               # --- 2. UYGULANACAK STANDART VE YÖNETMELİKLER ---
               ana_baslik_ekle("2. UYGULANACAK STANDART VE YÖNETMELİKLER")
@@ -570,6 +519,12 @@ if _rapor_olustur_sidebar:
                 akiskan_maddeleri.append(
                     f"Kalorifer tesisatında {rej_kalorifer} °C sıcak su."
                 )
+              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Kalorifer tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_kalorifer and st.session_state.get("akiskan_kalorifer_elektrik", True):
+                akiskan_maddeleri.append("Kalorifer tesisatında elektrik.")
               if chk_fco_ist:
                 akiskan_maddeleri.append(
                     f"Fan-Coil ısıtma tesisatında {rej_fco_ist} °C sıcak su."
@@ -582,18 +537,42 @@ if _rapor_olustur_sidebar:
                 akiskan_maddeleri.append(
                     f"Klima santrali ısıtma tesisatında {rej_ks_ist} °C sıcak su."
                 )
+              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Klima santrali ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_ks_ist and st.session_state.get("akiskan_ks_ist_elektrik", True):
+                akiskan_maddeleri.append("Klima santrali ısıtma tesisatında elektrik.")
               if chk_ks_sog:
                 akiskan_maddeleri.append(
                     f"Klima santrali Soğutma tesisatında {rej_ks_sog} °C soğuk su."
                 )
+              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Klima santrali soğutma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_ks_sog and st.session_state.get("akiskan_ks_sog_elektrik", True):
+                akiskan_maddeleri.append("Klima santrali soğutma tesisatında elektrik.")
               if chk_boyler:
                 akiskan_maddeleri.append(
                     f"Boyler ısıtma tesisatında {rej_boyler} °C sıcak su."
                 )
+              if chk_boyler and st.session_state.get("akiskan_boyler_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Boyler ısıtma tesisatında Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_boyler and st.session_state.get("akiskan_boyler_elektrik", True):
+                akiskan_maddeleri.append("Boyler ısıtma tesisatında elektrik.")
               if chk_k_sicak:
                 akiskan_maddeleri.append(
                     f"Kullanma sıcak suyunda {rej_k_sicak} °C sıcak su."
                 )
+              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_klima_gazi", True):
+                akiskan_maddeleri.append(
+                    "Kullanma sıcak suyunda Klima Gazı (R134A ve/veya R410A ve/veya R52)."
+                )
+              if chk_k_sicak and st.session_state.get("akiskan_k_sicak_elektrik", True):
+                akiskan_maddeleri.append("Kullanma sıcak suyunda elektrik.")
               if chk_doseme:
                 akiskan_maddeleri.append(
                     f"Döşemeden ısıtma tesisatında {rej_doseme} °C sıcak su."
@@ -2731,6 +2710,55 @@ if _rapor_olustur_sidebar:
   
           doc.add_heading("7.2 YANGIN TEHLİKE SINIFI VE TASARIM KRİTERLERİ", level=2)
 
+          # GENEL BİNA BİLGİLERİ - Yangın modülünde girilen ortak verileri
+          # rapora tablo olarak aktar. Sıhhi Tesisat tarafına dokunulmaz.
+          _gbi_rapor_verileri = [
+              ("Toplam yapı / kapalı kullanım alanı", f"{float(st.session_state.get('yangin_genel_toplam_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Kat sayısı", str(int(st.session_state.get('yangin_genel_kat_sayisi', 0) or 0))),
+              ("Bodrum kat sayısı", str(int(st.session_state.get('yangin_genel_bodrum_kat_sayisi', 0) or 0))),
+              ("Bina yüksekliği", f"{float(st.session_state.get('yangin_genel_bina_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Yapı yüksekliği", f"{float(st.session_state.get('yangin_genel_yapi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Merdiven kovası yüksekliği", f"{float(st.session_state.get('yangin_genel_merdiven_kovasi_yuksekligi_m', 0.0) or 0.0):,.2f} m"),
+              ("Toplam kişi sayısı", str(int(st.session_state.get('yangin_genel_kisi_sayisi', 0) or 0))),
+              ("Otopark araç kapasitesi", str(int(st.session_state.get('yangin_genel_otopark_arac_sayisi', 0) or 0))),
+              ("Kapalı otopark alanı", f"{float(st.session_state.get('yangin_genel_kapali_otopark_alan_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Yatak sayısı", str(int(st.session_state.get('yangin_genel_yatak_sayisi', 0) or 0))),
+              ("İmar / yerleşim alanı", f"{float(st.session_state.get('yangin_genel_imar_alani_m2', 0.0) or 0.0):,.2f} m²"),
+              ("Acil durum asansörü", "VAR" if bool(st.session_state.get('yangin_genel_acil_durum_asansoru', False)) else "YOK"),
+          ]
+          # Blok bilgilerini de aynı bina bilgileri tablosuna ekle.
+          # Alanlar yangin.py tarafından kullanılan session_state anahtarlarından okunur.
+          _blok_secim_rapor = str(st.session_state.get("yangin_genel_blok_sayisi", "Tek blok") or "Tek blok")
+          try:
+              _blok_adet_rapor = 1 if _blok_secim_rapor.lower().startswith("tek") else int(_blok_secim_rapor.split()[0])
+          except (ValueError, IndexError):
+              _blok_adet_rapor = 1
+          _blok_adet_rapor = max(1, min(_blok_adet_rapor, 10))
+          _gbi_rapor_verileri.insert(0, ("Blok sayısı", str(_blok_adet_rapor)))
+          for _i_blok_rapor in range(1, _blok_adet_rapor + 1):
+              _ad_blok_rapor = str(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_adi", f"Blok {_i_blok_rapor}") or f"Blok {_i_blok_rapor}")
+              _alan_blok_rapor = float(st.session_state.get(f"yangin_genel_blok_{_i_blok_rapor}_alan_m2", 0.0) or 0.0)
+              _gbi_rapor_verileri.insert(_i_blok_rapor, (f"Blok {_i_blok_rapor} adı", _ad_blok_rapor))
+              _gbi_rapor_verileri.insert(_i_blok_rapor + 1, (f"{_ad_blok_rapor} alanı", f"{_alan_blok_rapor:,.2f} m²"))
+
+          _gbi_baslik = doc.add_paragraph()
+          _gbi_run = _gbi_baslik.add_run("GENEL BİNA BİLGİLERİ")
+          _gbi_run.bold = True
+          _gbi_run.italic = True
+          _gbi_run.font.size = Pt(13)
+          _gbi_tbl = doc.add_table(rows=1, cols=2)
+          _gbi_tbl.style = "Table Grid"
+          _gbi_tbl.rows[0].cells[0].text = "BİNA BİLGİSİ"
+          _gbi_tbl.rows[0].cells[1].text = "DEĞER"
+          for _cell in _gbi_tbl.rows[0].cells:
+              for _run in _cell.paragraphs[0].runs:
+                  _run.bold = True
+          for _etiket, _deger in _gbi_rapor_verileri:
+              _gc = _gbi_tbl.add_row().cells
+              _gc[0].text = _etiket
+              _gc[1].text = _deger
+  
+  
           _secili_kayitlar = _yangin_721_secili_kayitlar()
           _otomatik = _ek1b_otomatik_sinif(_secili_kayitlar)
           _manuel = bool(st.session_state.get("yangin_721_manuel", False))
@@ -2953,80 +2981,38 @@ if _rapor_olustur_sidebar:
                               _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_no711}) {_bas711}: "); _rr711.bold = True; _p711.add_run(_met711)
                       if bool(st.session_state.get("yangin_7112_rapora_ekle", True)):
                           _zorunluluk711_rapor = [
-                              ('1', 'Koridorlar ve yüksek binaların ortak alanları', "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. Koridorların kaçış yolu niteliği, kompartımanlama ve duman kontrol gereklilikleri bina kullanımına ve ilgili yönetmelik hükümlerine göre ayrıca değerlendirilmelidir. (BYKHY Madde 87/12)"),
-                              ('2', 'Sığınaklarda duman tahliyesi ve çıkışlar', "İlgili mevzuatına uygun olarak 100 m²'den büyük sığınaklarda duman tahliye sistemi kurulmalı ve en az iki çıkış sağlanmalıdır. Yönetmeliğe göre algılama, uyarı ve söndürme sistemlerinin zorunlu olduğu binaların sığınaklarında bu sistemler de kurulmalıdır. (BYKHY Madde 59/1)"),
-                              ('3', 'Otoparkın açık veya kapalı kabul edilmesi — %5 açıklık şartı', "Bir otoparkın açık otopark kabul edilebilmesi için dışarıya olan toplam açık alan, döşeme alanının %5'inden fazla olmalıdır. Bu şart sağlanmıyorsa otopark kapalı otopark kabul edilir. (BYKHY Madde 60/1)"),
-                              ('4', 'Açık otoparklarda karşılıklı cephe açıklıkları', 'Açık otoparkta dışarıya olan açıklıklar iki cephede bulunuyorsa, bu açıklıklar karşılıklı iki cephede yer almalı ve her bir açıklık gerekli toplam açıklık alanının yarısından büyük olmalıdır. Kuranglez şeklindeki boşluklarda genişlik en az otopark kat yüksekliği kadar olmalı; ilave her kat için en az kat yüksekliğinin yarısı kadar artırılmalıdır. (BYKHY Madde 60/1)'),
-                              ('6', "2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliyesi", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi yapılmalıdır. Sistem binanın diğer bölümlerine hizmet veren sistemlerden bağımsız olmalı ve saatte en az 10 hava değişimi sağlamalıdır. (BYKHY Madde 60/2)"),
-                              ('7', 'Asansörle erişilen kapalı otoparklarda havalandırma', 'Araçların asansör ile alındığı kapalı otoparklarda doğal veya mekanik havalandırma sistemi yapılmalıdır. (BYKHY Madde 60/3)'),
-                              ('8', 'Kapalı otoparklarda LPG/CNG araç kısıtlaması', 'LPG veya sıkıştırılmış doğal gaz (CNG) yakıt sistemli araçlar kapalı otoparklara alınamaz. Alışveriş merkezlerindeki belirli otoparklar için yönetmelikte tanımlanan istisna ve koşullar ayrıca kontrol edilmelidir. (BYKHY Madde 60/4)'),
-                              ('9', 'Dizel yangın pompası ve acil durum jeneratörü mahalleri', 'Bu mahallerde gerekli havalandırma/duman kontrol düzenleri, diğer bölümlere hizmet veren sistemlerden bağımsız olarak tasarlanmalı; dış hava emişi ve egzoz atışı konumları ilgili mevzuat ve üretici şartlarına göre düzenlenmelidir. (BYKHY Madde 88)'),
-                              ('10', 'Mutfak pişirme alanları', 'Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden gerekli mesafede konumlandırılmalıdır. (BYKHY Madde 88)'),
-                              ('11', 'Kazan dairesi, bodrum depoları ve özel mahaller', 'Kazan dairesi, bodrum depoları ve benzeri özel mahallerin havalandırma ve duman tahliye düzenleri, mahalin kullanımına özgü yönetmelik hükümleri ve ilgili standartlara göre tasarlanmalıdır. Her mahal için aynı hava değişim katsayısı otomatik olarak uygulanmamalıdır. (BYKHY Madde 88)'),
-                              ('12', 'Parlayıcı organik toz bulunan mahaller', 'Parlayıcı organik toz bulunan üretim veya depolama alanlarında yangın ve patlama riskine uygun havalandırma ve duman kontrol önlemleri ilgili özel hükümlere göre değerlendirilmelidir. (BYKHY Madde 88)'),
+                              ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
+                              ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
+                              ("3", "Sığınaklar", "100 m²'den büyük sığınaklarda duman tahliye sistemi düzenlenmesi gerekir. Mahal alanı, kullanım amacı ve ilgili diğer hükümler proje özelinde kontrol edilmelidir. (BYKHY Madde 59/1)"),
+                              ("4", "Dizel yangın pompası ve acil durum jeneratörü mahalleri", "Mekanik havalandırmanın gerekli olduğu bu mahallerin sistemleri diğer bölümlere hizmet veren sistemlerden bağımsız tasarlanır. Dış hava emişi ve egzoz atış noktaları arasında en az 5 m mesafe sağlanır. (BYKHY Madde 88/1)"),
+                              ("5", "Mutfak pişirme alanları", "Otel, restoran, kafeterya ve benzeri yerlerin mutfak pişirme alanlarındaki mekanik egzoz sistemi diğer sistemlerden bağımsız olmalı; egzoz doğrudan dışarı atılmalı ve hava girişlerinden en az 5 m uzakta olmalıdır. (BYKHY Madde 88/2)"),
+                              ("6", "Kazan dairesi, bodrum depoları ve otoparklar", "Bu mahaller için özel havalandırma/duman tahliye koşulları, mahallin niteliği ve ilgili fıkra kapsamı doğrulanarak uygulanır; bütün mahallere koşulsuz aynı debi katsayısı uygulanmamalıdır. (BYKHY Madde 88/3)"),
+                              ("7", "Parlayıcı organik toz bulunan mahaller", "Bu mahallerde duman kontrolü ve havalandırma ihtiyacı ilgili özel hükümlere göre değerlendirilir. (BYKHY Madde 88/4)"),
                           ]
                           for _no, _bas, _met in _zorunluluk711_rapor:
                               if not bool(st.session_state.get(f"yangin_7112_madde_{_no}", True)): continue
                               if not bool(st.session_state.get("yangin_7112_atiflari", True)): _met = _yangin_mevzuat_atiflarini_kaldir(_met)
                               _p = doc.add_paragraph(); _r = _p.add_run(f"({int(_no) + 4}) {_bas}: "); _r.bold = True; _p.add_run(_met)
                       # Kullanıcının eklediği maddeler, dört ana ve yedi zorunluluk maddesinden sonra devam eder.
-                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=16):
+                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=12):
                           _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
                       if bool(st.session_state.get("yangin_7113_rapora_ekle", True)):
                           _h7113 = st.session_state.get("yangin_7113_hesap", {})
                           if _h7113:
                               doc.add_heading("7.11.2 DUMAN TAHLİYE DEBİSİ HESABI", level=4)
+                              _rows7113 = [
+                                  ("Hesaplanan mahal", str(_h7113.get("mahal", "-"))),
+                                  ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
+                                  ("Mahal yüksekliği", f"{float(_h7113.get('yukseklik_m', 0)):,.2f} m"),
+                                  ("Mahal hacmi (V)", f"{float(_h7113.get('hacim_m3', 0)):,.2f} m³"),
+                                  ("Hava değişim sayısı (N)", f"{float(_h7113.get('hava_degisimi_1h', 0)):,.2f} 1/h"),
+                                  ("Hesap debisi (Q = V × N)", f"{float(_h7113.get('debi_m3h', 0)):,.0f} m³/h"),
+                                  ("Hesap debisi", f"{float(_h7113.get('debi_m3s', 0)):,.3f} m³/s"),
+                              ]
                               _tab7113 = doc.add_table(rows=0, cols=2); _tab7113.style = "Table Grid"
-                              _mahal_hesaplari7113 = _h7113.get("mahal_hesaplari", [])
-                              if _mahal_hesaplari7113:
-                                  for _mh7113 in _mahal_hesaplari7113:
-                                      _baslik_satir7113 = _tab7113.add_row().cells
-                                      _baslik_satir7113[0].merge(_baslik_satir7113[1])
-                                      _baslik_satir7113[0].text = str(_mh7113.get("mahal", "MAHAL")).upper() + " — AYRI HESAP"
-                                      _rows7113 = [
-                                          ("Mahal alanı", f"{float(_mh7113.get('alan_m2', 0)):,.2f} m²"),
-                                          ("Mahal yüksekliği", f"{float(_mh7113.get('yukseklik_m', 0)):,.2f} m"),
-                                          ("Mahal hacmi (V)", f"{float(_mh7113.get('hacim_m3', 0)):,.2f} m³"),
-                                          ("Hava değişim sayısı (N)", f"{float(_mh7113.get('hava_degisimi_1h', 0)):,.2f} 1/h"),
-                                          ("Hesap debisi (Q = V × N)", f"{float(_mh7113.get('debi_m3h', 0)):,.0f} m³/h"),
-                                          ("Hesap debisi", f"{float(_mh7113.get('debi_m3s', 0)):,.3f} m³/s"),
-                                      ]
-                                      _koridor_fan7113 = _mh7113.get("koridor_fan_hesabi", {})
-                                      if _koridor_fan7113:
-                                          _rows7113.extend([
-                                              ("DUMAN TAHLİYE FANI — EXCEL HESAP YÖNTEMİ", ""),
-                                              ("Fan kapasitesi (Qfan = Q × 3)", f"{float(_koridor_fan7113.get('fan_debisi_m3h', 0)):,.0f} m³/h"),
-                                              ("Menfez adedi", str(_koridor_fan7113.get("menfez_adet", 1))),
-                                              ("Menfez ölçüsü", f"{float(_koridor_fan7113.get('menfez_en_cm', 0)):g} × {float(_koridor_fan7113.get('menfez_boy_cm', 0)):g} cm"),
-                                              ("Menfez başına debi", f"{float(_koridor_fan7113.get('menfez_basina_debi_m3h', 0)):,.2f} m³/h"),
-                                              ("Menfez efektif alanı", f"{float(_koridor_fan7113.get('menfez_en_cm', 0))*float(_koridor_fan7113.get('menfez_boy_cm', 0))/10000.0:.4f} m²"),
-                                              ("Menfez hızı", f"{float(_koridor_fan7113.get('menfez_hizi_ms', 0)):,.2f} m/s"),
-                                              ("Şaft/kanal kaybı", f"{float(_koridor_fan7113.get('kayip_saft_pa', 0)):,.0f} Pa"),
-                                              ("Menfez kaybı", f"{float(_koridor_fan7113.get('kayip_menfez_pa', 0)):,.0f} Pa"),
-                                              ("Panjur ve egzost atış kanalı kaybı", f"{float(_koridor_fan7113.get('kayip_panjur_pa', 0)):,.0f} Pa"),
-                                              ("Negatif basınç", f"{float(_koridor_fan7113.get('kayip_negatif_pa', 0)):,.0f} Pa"),
-                                              ("Toplam basınç kaybı", f"{float(_koridor_fan7113.get('kayip_toplam_pa', 0)):,.0f} Pa"),
-                                              (f"Emniyet faktörü (%{float(_koridor_fan7113.get('emniyet_yuzde', 10)):g})", f"{float(_koridor_fan7113.get('emniyet_pa', 0)):,.0f} Pa"),
-                                              ("Seçilen fan basıncı (50 Pa üst kademeye yuvarlanmış)", f"{float(_koridor_fan7113.get('fan_basinc_pa', 0)):,.0f} Pa"),
-                                              ("Motor gücü (hesap)", f"{float(_koridor_fan7113.get('motor_ham_kw', 0)):,.3f} kW"),
-                                              ("Seçilen motor gücü", f"{float(_koridor_fan7113.get('motor_secilen_kw', 0)):,.2f} kW"),
-                                          ])
-                                      for _lab, _val in _rows7113:
-                                          _cells = _tab7113.add_row().cells
-                                          _cells[0].text = _lab; _cells[1].text = _val
-                              else:
-                                  _rows7113 = [
-                                      ("Hesaplanan mahaller", ", ".join(_h7113.get("mahal", [])) if isinstance(_h7113.get("mahal", []), list) else str(_h7113.get("mahal", "-"))),
-                                      ("Mahal alanı", f"{float(_h7113.get('alan_m2', 0)):,.2f} m²"),
-                                      ("Mahal hacmi (V)", f"{float(_h7113.get('hacim_m3', 0)):,.2f} m³"),
-                                      ("Hesap debisi (Q = V × N)", f"{float(_h7113.get('debi_m3h', 0)):,.0f} m³/h"),
-                                      ("Hesap debisi", f"{float(_h7113.get('debi_m3s', 0)):,.3f} m³/s"),
-                                  ]
-                                  for _lab, _val in _rows7113:
-                                      _cells = _tab7113.add_row().cells
-                                      _cells[0].text = _lab; _cells[1].text = _val
-                              _pn = doc.add_paragraph("Genel mahal hesabı: Q = V × N. Koridor duman tahliye fanı hesabında, DUMAN TAHLİYE FANI.xlsx dosyasındaki yöntem izlenmiştir: fan kapasitesi = duman egzoz debisi × 3; basınç kayıplarına emniyet faktörü eklenmiş ve fan basıncı 50 Pa kademesine yukarı yuvarlanmıştır. Mahale uygulanacak hava değişim sayısı ve tasarım kriteri proje/mevzuat kapsamında doğrulanmalıdır.")
-
+                              for _lab, _val in _rows7113:
+                                  _cells = _tab7113.add_row().cells; _cells[0].text = _lab; _cells[1].text = _val
+                              _pn = doc.add_paragraph("Hesap yöntemi: Q = V × N. N değeri, yalnızca ilgili mahal ve mevzuat koşulu için geçerli olan düzenlemeden alınmalıdır. Sığınak ve diğer mahaller için kullanılacak katsayı, ilgili mevzuat/standart ve onaylı tasarım kriteriyle doğrulanmalıdır. (BYKHY Madde 60/2 ve Madde 85)")
 
                   if _bk == "bolum_79":
                       _79_rapor_maddeleri = [('1', 'Basınçlandırma zorunluluğu — yüksek merdiven kovaları', "Konutlar hariç, merdiven kovası yüksekliği 30,50 m'den fazla olan binalarda kaçış merdivenleri basınçlandırılır. Bodrum ve üst katlara hizmet eden merdiven aynı yuvada olsa dahi, gerekli yangına dayanımlı ve duman sızdırmaz ayırma ile ayrı çıkış sağlanmışsa üst katların yüksekliği esas alınır. (BYKHY Madde 89, 1)"), ('2', 'Dört kattan fazla bodrum katı', 'Bodrum kat sayısı dörtten fazla olan binalarda bodrum katlara hizmet veren kaçış merdivenleri basınçlandırılır. (BYKHY Madde 89, 2)'), ('3', 'Yüksek konutlarda basınçlandırma', "Yapı yüksekliği 51,50 m'den yüksek olan konutların kaçış merdivenlerinin basınçlandırılması zorunludur. (BYKHY Madde 89, 3)"), ('4', 'Acil durum asansörü kuyusu', 'Acil durum asansörü kuyularının yangın etkisi altında kalmaması için basınçlandırılması gerekir. (BYKHY Madde 89, 4)'), ('5', 'Kapalı ve açık kapı durumunda basınç farkı', 'Bütün kapılar kapalıyken merdiven yuvası ile bina kullanım alanları arasındaki basınç farkı en az 50 Pa; açık kapı durumu için en az 15 Pa olmalıdır. (BYKHY Madde 89, 5)'), ('6', 'Yangın güvenlik holü ile basınç dağılımı', 'Yangın güvenlik holü de basınçlandırılıyorsa merdiven tarafındaki basınç, hol tarafındaki basınçtan daha yüksek olacak şekilde dağılım oluşturulur. (BYKHY Madde 89, 6)'), ('7', 'Kapı açma kuvveti', 'Basınçlı hava ve otomatik kapı kapatıcısının etkisi birlikte dikkate alındığında, kapıyı açmak için kapı koluna uygulanması gereken kuvvet 110 N değerini aşmamalıdır. (BYKHY Madde 89, 7)'), ('8', 'Açık kapılarda hava hızı', 'Birbirini takip eden iki kat kapısı ile dışarı tahliye kapısı tam açıkken, her bir tam açık kapı için ortalama hava hızı en az 1 m/s olmalıdır. (BYKHY Madde 89, 8)'), ('9', 'Açık kapı ve sızıntı alanlarının tasarıma dahil edilmesi', 'Tasarımda en az iki iç kapının ve bir dış tahliye kapısının açık olacağı kabul edilir; diğer kapalı kapıların sızıntı alanları da hesaba katılır ve bina kat sayısına göre açık iç kapı sayısı artırılır. (BYKHY Madde 89, 9)'), ('10', 'Sızıntı debisinin karşılanması', 'Basınçlandırma havası debisi, sızıntı alanlarından çevreye oluşan hava akışlarını karşılayacak yeterlilikte olmalıdır. (BYKHY Madde 89, 10)'), ('11', 'Aşırı basıncın sınırlandırılması', 'Merdiven içinde aşırı basınç oluşmasını önlemek için aşırı basınç damperi ve frekans kontrollü fan gibi önlemler sağlanır. (BYKHY Madde 89, 11)'), ('12', 'Dış hava emişi ve üfleme noktaları', "Basınçlandırma havası doğrudan dışarıdan alınmalı ve egzoz çıkışlarından en az 5 m uzakta olmalıdır. Yüksekliği 25 m'den fazla kapalı merdivenlerde birden fazla üfleme noktası gerekir; iki noktalı düzende aralarındaki düşey mesafe en az merdiven yüksekliğinin yarısıdır. Yapı yüksekliği 51,50 m'den fazla ise her katta veya en çok üç katta bir üfleme yapılır. (BYKHY Madde 89, 12)"), ('13', 'Dış hava emişinde duman algılama', 'Basınçlandırma fanının dış hava emişine algılayıcı yerleştirilir; duman algılanması hâlinde fan otomatik durdurulur. (BYKHY Madde 89, 13)'), ('14', 'Yangın alarm sistemiyle otomatik çalıştırma', 'Basınçlandırma sistemi yangın algılama ve uyarı sistemi tarafından otomatik olarak çalıştırılmalıdır. (BYKHY Madde 89, 14)'), ('15', 'Elle çalıştırma ve durdurma', 'Basınçlandırma fanının elle çalıştırılıp durdurulabilmesi için açma-kapatma anahtarı bulunmalıdır. (BYKHY Madde 89, 15)'), ('16', 'Basınçlandırma olmayan merdivenlerde havalandırma', 'Kaçış merdiveni basınçlandırılmamışsa merdiven bölümünde açılabilir pencere veya sürekli havalandırma sağlayan tepe penceresi bulunmalıdır. (BYKHY Madde 89, 16)'), ('17', 'Mevcut binalarda basınçlandırma', "Mevcut binalarda dörtten fazla bodrum kata hizmet veren kaçış merdivenleri ile merdiven kovası yüksekliği 51,50 m'den fazla olan kaçış merdivenleri, Madde 89 esaslarına göre basınçlandırılır. (BYKHY Madde 163, 1)")]
@@ -3547,15 +3533,14 @@ if _rapor_olustur_sidebar:
                       _sprinkler_esaslari_rapor = [
                           ("1", "Yağmurlama sisteminin amacı ve kapsamı", "Yağmurlama sisteminin amacı; yangına erken tepki verilmesini sağlamak, yangını kontrol altına almak ve söndürmek için belirli bir süre içerisinde tasarım alanı üzerine belirlenen miktarda su boşaltmaktır. Sistem; alarm verilmesi ve itfaiyenin çağrılması gibi acil durum fonksiyonlarını da aktif hâle getirebilir. Yağmurlama sistemi; yağmurlama başlıkları, borular, bağlantı parçaları ve askılar, tesisat kontrol vanaları, alarm zilleri, akış göstergeleri, su pompaları ve acil durum güç kaynağı gibi elemanlardan meydana gelir. Yağmurlama sistemi elemanlarının TS EN 12259’a uygun olması şarttır. (BYKHY Madde 96, 1)"),
                           ("2", "Otomatik yağmurlama sistemi yapılması gereken yerler", "Yapı yüksekliği 30,50 m’den fazla olan konut haricindeki bütün binalarda; yapı yüksekliği 51,50 m’yi geçen konutlarda; ilgili kapalı otoparklarda; belirli büyüklükteki otel, yurt, pansiyon ve misafirhanelerde; toplam alanı 2000 m²’nin üzerinde olan katlı mağaza, alışveriş, ticaret, eğlence ve toplanma yerlerinde; toplam alanı 1000 m²’den fazla olan kolay alevlenici ve parlayıcı madde üretilen veya bulundurulan yapılarda otomatik yağmurlama sistemi kurulması mecburidir. (BYKHY Madde 96, 2)"),
-                          ("3", "600 m²’den büyük kapalı otoparklarda sprinkler zorunluluğu", "Alanlarının toplamı 600 m²’den büyük olan kapalı otoparklarda otomatik yağmurlama (sprinkler) sistemi, yangın dolabı sistemi ve itfaiye su alma ağızları yapılmalıdır. (BYKHY Madde 60/1)"),
-                          ("4", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su spreyi ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
-                          ("5", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
-                          ("6", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
-                          ("7", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
-                          ("8", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
-                          ("9", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
-                          ("10", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
-                          ("11", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
+                          ("3", "Yağmurlama yapılmayabilecek mahaller", "Yanıcı malzeme içermeyen ve yanıcı malzeme depolanmayan ıslak hacimlere, yanıcı malzeme ihtiva etmeyen ve yangına dirençli yapı elemanları ile ayrılan yangın merdiveni yuvalarına, asansör kuyusuna ve gazlı, kuru toz, su spreyi ve benzeri diğer otomatik söndürme sistemleri ile korunan mahallere yağmurlama sistemi yapılmayabilir. (BYKHY Madde 96, 3)"),
+                          ("4", "Yağmurlama yapılmayacak mahaller", "Su ile genişleyen veya reaksiyona girerek yangının büyümesine sebep olabilecek maddelerin bulunduğu mahallere yağmurlama sistemi yapılmaz. (BYKHY Madde 96, 4)"),
+                          ("5", "Tasarım standardı ve sprinkler başlıklarının yerleşimi", "Yağmurlama sistemi tasarımı TS EN 12845’e göre yapılır. Yağmurlama başlıklarının yerleştirilmesinde kullanım alanının tehlike sınıfı ve yağmurlama başlığının koruma alanı dikkate alınır. Düşük Tehlike ve Orta Tehlike-1 kullanım alanlarında bir adet standart yağmurlama başlığı en çok 21 m² alanı koruyacak şekilde yerleştirilebilir. (BYKHY Madde 96, 5)"),
+                          ("6", "Deprem bölgelerinde boru tesisatının korunması", "Birinci ve ikinci derece deprem bölgelerinde, sismik hareketlere karşı ana kolonların herhangi bir yöne sürüklenmemesi için dört yollu destek kullanılır. 65 mm ve daha büyük nominal çaplı boruların katlardan ana dağıtım borularına bağlanmasında esnek bağlantılar, boruların tavanlara tutturulmasında iki yollu enlemesine ve boylamasına sabitleme askı elemanları kullanılır. Dilatasyon geçişlerinde her üç yönde hareketi karşılayacak detaylar uygulanır. (BYKHY Madde 96, 6)"),
+                          ("7", "Yangın zonlarında kontrol ve test düzeni", "Yağmurlama sistemi ana besleme borusu birden fazla yangın zonuna hitap ediyor ise her bir zon veya kolon hattına akış anahtarları, test ve drenaj vanası ve izleme anahtarlı hat kesme vanası konulur. (BYKHY Madde 96, 7)"),
+                          ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
+                          ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
+                          ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
                       ]
                       for _no, _baslik_s, _metin_s in _sprinkler_esaslari_rapor:
                           if not bool(st.session_state.get(f"yangin_751_madde_{_no}", True)):
@@ -3568,7 +3553,7 @@ if _rapor_olustur_sidebar:
                           _p.add_run(_metin_s)
 
                       # Kullanıcının verdiği proje özel sprinkler esasları,
-                      # yönetmelikten gelen 1-11 maddelerinin devamı olarak 12-18
+                      # yönetmelikten gelen 1-10 maddelerinin devamı olarak 11-17
                       # şeklinde rapora aktarılır.
                       _sprinkler_proje_notlari_rapor = [
                           "Sprinkler sistem tipi olarak ıslak borulu sprinkler sistemi kurulacaktır. Zonlamada ıslak borulu sistem için yatayda 4831 m² maksimum zon alanı olarak alınmıştır.",
@@ -3579,7 +3564,7 @@ if _rapor_olustur_sidebar:
                           "Her bir söndürme mahali için hidrolik hesap sonucu çıkan köpük miktarı ve ekipmanı belirlenmiştir.",
                           "Sistemin manuel olarak devreden çıkartılarak düşük risk durumunda yangına bir seyyar söndürücü ile manuel müdahale yapılarak köpüklü söndürme sistemi boşaltılmadan yangının personel tarafından söndürülmesi sağlanabilecektir.",
                       ]
-                      for _i_not, _not in enumerate(_sprinkler_proje_notlari_rapor, start=12):
+                      for _i_not, _not in enumerate(_sprinkler_proje_notlari_rapor, start=11):
                           _p_not = doc.add_paragraph()
                           _r_not = _p_not.add_run(f"{_i_not}. ")
                           _r_not.bold = True
