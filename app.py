@@ -2000,7 +2000,7 @@ with _t_genel:
     # Bu bilgiler Genel Bilgiler sekmesinde bir kez girilir; yangın modülü
     # aynı session_state anahtarlarını kullanarak değerleri okumaya devam eder.
     # ------------------------------------------------------------------
-    with st.expander("GENEL BİNA BİLGİLERİ", expanded=False):
+    with st.expander("GENEL BİNA BİLGİLERİ", expanded=True):
         st.markdown(
             '<div style="font-size:16px;font-weight:700;font-style:italic;">'
             'Yangın Yönetmeliğine Göre Ortak Bina Verileri</div>', 
@@ -2448,18 +2448,33 @@ with _t_genel:
         st.session_state["akiskan_kalorifer_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_kalorifer
         st.session_state["akiskan_kalorifer_elektrik"] = "Elektrik" in sec_kalorifer
 
-        chk_klima_tesisati_v12 = st.checkbox(
-            "12. Klima Tesisatı", key="chk_klima_tesisati_v12", value=True
-        )
-        sec_klima_tesisati_v12 = st.multiselect(
-            "Klima Tesisatı Rejimi / Isı İletim Akışkanı:",
-            sicaklik_secenekleri + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
-            default=["80/60", "Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
-            key="sec_klima_tesisati_v12_akiskan_v1",
-        )
-        rej_klima_tesisati_v12 = next((x for x in sec_klima_tesisati_v12 if x in sicaklik_secenekleri), "80/60")
-        st.session_state["akiskan_klima_tesisati_v12_klima_gazi"] = "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_klima_tesisati_v12
-        st.session_state["akiskan_klima_tesisati_v12_elektrik"] = "Elektrik" in sec_klima_tesisati_v12
+        # Klima Tesisatı sekmesi: kalorifer tesisatındaki rejim/akışkan seçeneklerinin
+        # aynısını ayrı bir sekmede sunar; mevcut kalorifer seçim anahtarlarına dokunmaz.
+        with st.expander("Klima Tesisatı", expanded=False):
+            st.markdown("#### Klima Tesisatı")
+            chk_klima_tesisati = st.checkbox(
+                "Klima tesisatı", key="chk_klima_tesisati_v1", value=True
+            )
+            sec_klima_tesisati = st.multiselect(
+                "Klima Tesisatı Rejimi / Isı İletim Akışkanı:",
+                sicaklik_secenekleri
+                + ["Klima Gazı (R134A ve/veya R410A ve/veya R52)", "Elektrik"],
+                default=[
+                    "7/12",
+                    "Klima Gazı (R134A ve/veya R410A ve/veya R52)",
+                    "Elektrik",
+                ],
+                key="sec_klima_tesisati_akiskan_v1",
+            )
+            st.session_state["rej_klima_tesisati_v1"] = next(
+                (x for x in sec_klima_tesisati if x in sicaklik_secenekleri), "7/12"
+            )
+            st.session_state["akiskan_klima_tesisati_klima_gazi"] = (
+                "Klima Gazı (R134A ve/veya R410A ve/veya R52)" in sec_klima_tesisati
+            )
+            st.session_state["akiskan_klima_tesisati_elektrik"] = (
+                "Elektrik" in sec_klima_tesisati
+            )
 
         chk_fco_ist = st.checkbox(
             "2. Fan-Coil ısıtma tesisatı", key="chk_fco_ist", value=True
