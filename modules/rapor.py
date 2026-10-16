@@ -2955,7 +2955,6 @@ if _rapor_olustur_sidebar:
                               ('2', 'Sığınaklarda duman tahliyesi ve çıkışlar', "İlgili mevzuatına uygun olarak 100 m²'den büyük sığınaklarda duman tahliye sistemi kurulmalı ve en az iki çıkış sağlanmalıdır. Yönetmeliğe göre algılama, uyarı ve söndürme sistemlerinin zorunlu olduğu binaların sığınaklarında bu sistemler de kurulmalıdır. (BYKHY Madde 59/1)"),
                               ('3', 'Otoparkın açık veya kapalı kabul edilmesi — %5 açıklık şartı', "Bir otoparkın açık otopark kabul edilebilmesi için dışarıya olan toplam açık alan, döşeme alanının %5'inden fazla olmalıdır. Bu şart sağlanmıyorsa otopark kapalı otopark kabul edilir. (BYKHY Madde 60/1)"),
                               ('4', 'Açık otoparklarda karşılıklı cephe açıklıkları', 'Açık otoparkta dışarıya olan açıklıklar iki cephede bulunuyorsa, bu açıklıklar karşılıklı iki cephede yer almalı ve her bir açıklık gerekli toplam açıklık alanının yarısından büyük olmalıdır. Kuranglez şeklindeki boşluklarda genişlik en az otopark kat yüksekliği kadar olmalı; ilave her kat için en az kat yüksekliğinin yarısı kadar artırılmalıdır. (BYKHY Madde 60/1)'),
-                              ('5', "600 m²'den büyük kapalı otoparklarda yangın sistemleri", "Alanlarının toplamı 600 m²'den büyük olan kapalı otoparklarda otomatik yağmurlama sistemi, yangın dolabı sistemi ve itfaiye su alma ağızları yapılmalıdır. (BYKHY Madde 60/1)"),
                               ('6', "2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliyesi", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi yapılmalıdır. Sistem binanın diğer bölümlerine hizmet veren sistemlerden bağımsız olmalı ve saatte en az 10 hava değişimi sağlamalıdır. (BYKHY Madde 60/2)"),
                               ('7', 'Asansörle erişilen kapalı otoparklarda havalandırma', 'Araçların asansör ile alındığı kapalı otoparklarda doğal veya mekanik havalandırma sistemi yapılmalıdır. (BYKHY Madde 60/3)'),
                               ('8', 'Kapalı otoparklarda LPG/CNG araç kısıtlaması', 'LPG veya sıkıştırılmış doğal gaz (CNG) yakıt sistemli araçlar kapalı otoparklara alınamaz. Alışveriş merkezlerindeki belirli otoparklar için yönetmelikte tanımlanan istisna ve koşullar ayrıca kontrol edilmelidir. (BYKHY Madde 60/4)'),
@@ -2969,7 +2968,7 @@ if _rapor_olustur_sidebar:
                               if not bool(st.session_state.get("yangin_7112_atiflari", True)): _met = _yangin_mevzuat_atiflarini_kaldir(_met)
                               _p = doc.add_paragraph(); _r = _p.add_run(f"({int(_no) + 4}) {_bas}: "); _r.bold = True; _p.add_run(_met)
                       # Kullanıcının eklediği maddeler, dört ana ve yedi zorunluluk maddesinden sonra devam eder.
-                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=17):
+                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=16):
                           _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
                       if bool(st.session_state.get("yangin_7113_rapora_ekle", True)):
                           _h7113 = st.session_state.get("yangin_7113_hesap", {})
@@ -3516,6 +3515,7 @@ if _rapor_olustur_sidebar:
                           ("8", "Yedek yağmurlama başlıkları", "Muhtemel küçük çaplı yangınlarda yağmurlama başlığının patlaması veya birkaçının hasara uğraması hâlinde hemen değiştirilir. Yangın güvenlik sisteminin sürekliliği için 6 adetten az olmamak kaydıyla sistemin büyüklüğüne göre yeterli miktarda yedek yağmurlama başlığı ve başlığın değiştirilmesi için özel anahtarlar bulundurulur. (BYKHY Madde 96, 8)"),
                           ("9", "Kesme vanaları ve vanaların açık tutulması", "Yağmurlama sistemini besleyen borular üzerinde kesme vanaları bulunur. Boru hatlarında bulunan vanaların, bölgesel kontrol vanalarının ve su kaynağı ile yağmurlama sistemi arasında bulunan bütün vanaların devamlı açık kalmasını sağlayacak tedbirler alınır. (BYKHY Madde 96, 9)"),
                           ("10", "Basınç düşürücü vana ve manometreler", "Sistemde basınç düşürücü vana kullanılması hâlinde, her bir basınç düşürücü vananın önüne ve arkasına birer adet manometre konulur. (BYKHY Madde 96, 10)"),
+                          ("11", "600 m²’den büyük kapalı otoparklarda sprinkler zorunluluğu", "Alanlarının toplamı 600 m²’den büyük olan kapalı otoparklarda otomatik yağmurlama (sprinkler) sistemi, yangın dolabı sistemi ve itfaiye su alma ağızları yapılmalıdır. (BYKHY Madde 60/1)"),
                       ]
                       for _no, _baslik_s, _metin_s in _sprinkler_esaslari_rapor:
                           if not bool(st.session_state.get(f"yangin_751_madde_{_no}", True)):
