@@ -2949,10 +2949,7 @@ if _rapor_olustur_sidebar:
                               if not bool(st.session_state.get(f"yangin_7111_madde_{_no711}", True)): continue
                               if not bool(st.session_state.get("yangin_711_yonetmelik_atiflari", True)): _met711 = _yangin_mevzuat_atiflarini_kaldir(_met711)
                               _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_no711}) {_bas711}: "); _rr711.bold = True; _p711.add_run(_met711)
-                          for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=len(_maddeler711_rapor)+1):
-                              _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
                       if bool(st.session_state.get("yangin_7112_rapora_ekle", True)):
-                          doc.add_heading("ZORUNLULUK BULUNAN BİNA VE MAHALLER", level=4)
                           _zorunluluk711_rapor = [
                               ("1", "Yüksek binaların ortak alanları", "Yapı yüksekliği 51,50 m'nin üzerinde olan binaların hol ve koridor gibi ortak alanlarında duman kontrol sistemi yapılması zorunludur. (BYKHY Madde 87/12)"),
                               ("2", "Kapalı otoparklar", "Toplam alanı 2.000 m²'yi aşan kapalı otoparklarda mekanik duman tahliye sistemi kurulmalı ve sistem saatte en az 10 hava değişimini sağlayacak şekilde tasarlanmalıdır. Proje koşulları ve yürürlükteki yönetmelik metni ayrıca doğrulanmalıdır. (BYKHY Madde 60/2)"),
@@ -2965,7 +2962,10 @@ if _rapor_olustur_sidebar:
                           for _no, _bas, _met in _zorunluluk711_rapor:
                               if not bool(st.session_state.get(f"yangin_7112_madde_{_no}", True)): continue
                               if not bool(st.session_state.get("yangin_7112_atiflari", True)): _met = _yangin_mevzuat_atiflarini_kaldir(_met)
-                              _p = doc.add_paragraph(); _r = _p.add_run(f"7.11.1.{int(_no) + 4} {_bas}: "); _r.bold = True; _p.add_run(_met)
+                              _p = doc.add_paragraph(); _r = _p.add_run(f"({int(_no) + 4}) {_bas}: "); _r.bold = True; _p.add_run(_met)
+                      # Kullanıcının eklediği maddeler, dört ana ve yedi zorunluluk maddesinden sonra devam eder.
+                      for _ekno711, _ek711 in enumerate(st.session_state.get("yangin_7111_ek_maddeler", []), start=12):
+                          _p711 = doc.add_paragraph(); _rr711 = _p711.add_run(f"({_ekno711}) {_ek711.get('baslik', '')}: "); _rr711.bold = True; _p711.add_run(str(_ek711.get('metin', '')))
                       if bool(st.session_state.get("yangin_7113_rapora_ekle", True)):
                           _h7113 = st.session_state.get("yangin_7113_hesap", {})
                           if _h7113:
