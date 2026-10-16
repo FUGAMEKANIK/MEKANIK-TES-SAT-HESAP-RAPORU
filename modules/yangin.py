@@ -2295,6 +2295,57 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "otopark için başlangıç değeridir. Sığınak ve diğer mahallerin N değeri "
                                     "ilgili mevzuat/standart veya onaylı tasarım kriterine göre girilmelidir."
                                 )
+                                _koridor_ek7113 = {}
+                                if _mahal7113 == "Koridorlar":
+                                    st.markdown("#### Koridor Duman Tahliye Fanı — Excel hesap yöntemi")
+                                    _fan_debi7113 = st.number_input(
+                                        "Fan kapasitesi (m³/h)", min_value=0.0,
+                                        value=float(_q7113_m3h * 3), step=100.0,
+                                        key=f"yangin_7113_{_slug7113}_fan_debi",
+                                    )
+                                    _menfez_adet7113 = st.number_input(
+                                        "Menfez adedi", min_value=1, value=1, step=1,
+                                        key=f"yangin_7113_{_slug7113}_menfez_adet",
+                                    )
+                                    _menfez_en7113 = st.number_input(
+                                        "Menfez genişliği (cm)", min_value=1.0, value=30.0, step=5.0,
+                                        key=f"yangin_7113_{_slug7113}_menfez_en",
+                                    )
+                                    _menfez_boy7113 = st.number_input(
+                                        "Menfez yüksekliği (cm)", min_value=1.0, value=30.0, step=5.0,
+                                        key=f"yangin_7113_{_slug7113}_menfez_boy",
+                                    )
+                                    _kayip_saft7113 = st.number_input("Şaft/kanal kaybı (Pa)", min_value=0.0, value=0.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_saft")
+                                    _kayip_menfez7113 = st.number_input("Menfez kaybı (Pa)", min_value=0.0, value=35.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_menfez")
+                                    _kayip_panjur7113 = st.number_input("Panjur ve egzost atış kanalı kaybı (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_panjur")
+                                    _kayip_neg7113 = st.number_input("Negatif basınç (Pa)", min_value=0.0, value=100.0, step=5.0, key=f"yangin_7113_{_slug7113}_kayip_neg")
+                                    _emniyet_yuzde7113 = st.number_input("Basınç kaybı emniyet faktörü (%)", min_value=0.0, value=10.0, step=1.0, key=f"yangin_7113_{_slug7113}_emniyet")
+                                    _menfez_tek_debi7113 = _q7113_m3h / max(float(_menfez_adet7113), 1.0)
+                                    _menfez_alan7113 = (_menfez_en7113 * _menfez_boy7113) / 10000.0
+                                    _menfez_hiz7113 = (_menfez_tek_debi7113 / 3600.0 / _menfez_alan7113) if _menfez_alan7113 else 0.0
+                                    _kayip_top7113 = _kayip_saft7113 + _kayip_menfez7113 + _kayip_panjur7113 + _kayip_neg7113
+                                    _kayip_emn7113 = _kayip_top7113 * _emniyet_yuzde7113 / 100.0
+                                    _fan_basinc7113 = math.ceil((_kayip_top7113 + _kayip_emn7113) / 50.0) * 50.0 if (_kayip_top7113 + _kayip_emn7113) > 0 else 0.0
+                                    _motor_ham7113 = (_fan_debi7113 * _fan_basinc7113) / (198000.0 * 9.81) if _fan_debi7113 > 0 else 0.0
+                                    _motor_kademeler7113 = [0.25,0.37,0.55,0.75,1.1,1.5,2.2,3,4,5.5,7.5,11,15,18.5,22,30,37,45,55,75]
+                                    _motor_sec7113 = next((x for x in _motor_kademeler7113 if x >= _motor_ham7113), _motor_ham7113)
+                                    st.markdown(
+                                        f"**Menfez başına debi:** {_menfez_tek_debi7113:,.2f} m³/h  |  "
+                                        f"**Menfez hızı:** {_menfez_hiz7113:,.2f} m/s  |  "
+                                        f"**Toplam basınç kaybı:** {_kayip_top7113:,.0f} Pa  |  "
+                                        f"**Seçilen fan basıncı:** {_fan_basinc7113:,.0f} Pa  |  "
+                                        f"**Motor gücü:** {_motor_sec7113:,.2f} kW"
+                                    )
+                                    _koridor_ek7113 = {
+                                        "fan_debisi_m3h": _fan_debi7113, "menfez_adet": int(_menfez_adet7113),
+                                        "menfez_en_cm": _menfez_en7113, "menfez_boy_cm": _menfez_boy7113,
+                                        "menfez_basina_debi_m3h": _menfez_tek_debi7113, "menfez_hizi_ms": _menfez_hiz7113,
+                                        "kayip_saft_pa": _kayip_saft7113, "kayip_menfez_pa": _kayip_menfez7113,
+                                        "kayip_panjur_pa": _kayip_panjur7113, "kayip_negatif_pa": _kayip_neg7113,
+                                        "kayip_toplam_pa": _kayip_top7113, "emniyet_yuzde": _emniyet_yuzde7113,
+                                        "emniyet_pa": _kayip_emn7113, "fan_basinc_pa": _fan_basinc7113,
+                                        "motor_ham_kw": _motor_ham7113, "motor_secilen_kw": _motor_sec7113,
+                                    }
                                 _mahal_hesaplari7113.append({
                                     "mahal": _mahal7113,
                                     "alan_m2": _alan7113,
@@ -2303,6 +2354,7 @@ if not globals().get("_YANGIN_FRAGMENT_EXECUTED", False):
                                     "hava_degisimi_1h": _n7113,
                                     "debi_m3h": _q7113_m3h,
                                     "debi_m3s": _q7113_m3s,
+                                    "koridor_fan_hesabi": _koridor_ek7113,
                                 })
                         st.session_state["yangin_7113_hesap"] = {
                             "mahal": _oda_turu,
