@@ -1242,18 +1242,27 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
     # Böylece Streamlit Cloud yeniden başlasa bile uzak kaydedilmiş projeler
     # "Uygulama İçindeki Kayıtlı Proje" listesinde görünür.
     _mevcut_projeler = []
+    _proje_liste_hatasi = ""
     try:
         _proje_kayitlari = _PROJE_YONETICISI.proje_listesi()
-        _mevcut_projeler = [
-            {
-                "proje_id": str(x.get("proje_id", "")),
-                "proje_adi": str(x.get("proje_adi", x.get("proje_id", ""))),
-            }
-            for x in _proje_kayitlari
-            if str(x.get("proje_id", "")).strip()
-        ]
-    except Exception:
-        _mevcut_projeler = []
+    except Exception as _liste_hatasi:
+        # Uzak veritabanı (Supabase) geçici olarak hata verirse kayıtlı
+        # yerel projeleri de kaybetmiş gibi göstermeyelim. Önce yerel listeyi
+        # doğrudan al; hata mesajını da kullanıcıya görünür kıl.
+        _proje_liste_hatasi = str(_liste_hatasi)
+        try:
+            _proje_kayitlari = _PROJE_YONETICISI._yerel_proje_listesi()
+        except Exception as _yerel_liste_hatasi:
+            _proje_kayitlari = []
+            _proje_liste_hatasi += f" | Yerel liste hatası: {_yerel_liste_hatasi}"
+    _mevcut_projeler = [
+        {
+            "proje_id": str(x.get("proje_id", "")),
+            "proje_adi": str(x.get("proje_adi", x.get("proje_id", ""))),
+        }
+        for x in _proje_kayitlari
+        if str(x.get("proje_id", "")).strip()
+    ]
 
     st.caption("Yeni proje açmadan önce mevcut çalışmayı Kaydet veya Farklı Kaydet ile saklayabilirsiniz.")
 
@@ -1283,6 +1292,13 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
             key="proje_dis_dosya_indir_v116",
             use_container_width=True,
             help="Tarayıcınızın indirme ayarına göre dosya konumunu seçebilirsiniz.",
+        )
+
+    st.markdown("**📂 Kayıtlı Projeyi Aç**")
+    if _proje_liste_hatasi:
+        st.warning(
+            "Kayıtlı projelerin uzak listesini alırken sorun oluştu. "
+            "Yerel kayıtlar varsa yine gösteriliyor. Ayrıntı: " + _proje_liste_hatasi
         )
 
     if _mevcut_projeler:
@@ -1319,7 +1335,17 @@ with st.sidebar.expander("💾 PROJE YÖNETİMİ", expanded=True):
             )
         st.caption(f"Kayıtlı proje: **{_secili_proje_adi}**")
     else:
-        st.caption("Henüz uygulama içinde kayıtlı proje yok.")
+        st.selectbox(
+            "Kayıtlı proje seçin",
+            options=["Kayıtlı proje bulunamadı"],
+            index=0,
+            disabled=True,
+            key="proje_kayitli_liste_bos_v117",
+        )
+        st.caption(
+            "Uygulama içinde kayıtlı proje görünmüyorsa Kaydet ile bir proje kaydedin. "
+            "Daha önce Farklı Kaydet ile indirdiğiniz projeyi aşağıdan JSON dosyasıyla açabilirsiniz."
+        )
 
     st.markdown("**📂 Bilgisayardan / Masaüstünden Proje Aç**")
     st.file_uploader(
